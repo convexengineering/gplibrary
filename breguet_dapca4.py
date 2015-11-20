@@ -3,10 +3,10 @@ from gpkit import units
 from dapca4cost import DAPCA4Cost
 from breguet_range import Breguet_Range
 import gpkit
-
+    
 class breguet_dapca(Model):
-	"""
-	This is a test model just to see how I can get dapca4 and breguet_range to interact
+    """
+    This is a test model just to see how I can get dapca4 and breguet_range to interact
 	"""
 
 	def setup(self):
