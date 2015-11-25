@@ -28,7 +28,7 @@ class DAPCA4Cost(Model):
     def setup(self, eng_defined=False):
 
         # User Definied Variables
-        W_e = Var("W_e", 9200, "lbf", "Empty Weight")
+        W_e = Var("W_{e}", 9200, "lbf", "Empty Weight")
         V = Var("V", 420, "knots", "Maximum Velocity")
         Q = Var("Q", 5, "-", "Number produced in 5 years")
         FTA = Var("FTA", 1, "-", "Number of Flight Test Aircraft")
