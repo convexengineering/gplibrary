@@ -10,7 +10,6 @@ class Climb(Model):
     [2] https://en.wikipedia.org/wiki/Taylor_series
     [3] https://en.wikipedia.org/wiki/Thrust_specific_fuel_consumption
 
-
     Assumptions
     -----------
     - Assumes you want to minimize climb time
@@ -40,7 +39,7 @@ class Climb(Model):
         V    = Variable('V', 100, 'm/s', 'Freestream velocity')
         W    = Variable('W', 600000, 'N', 'Aircraft weight')
 
-        objective = t
+        objective = m_f 
 
         constraints = [# Climb time [1]
                        # uses Maclaurin series expansion of 1/(1-T/D) (ref [2])
