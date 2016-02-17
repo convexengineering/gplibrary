@@ -11,14 +11,23 @@ class GasPoweredHALE(Model):
         CD = Variable('C_D', '-', 'Drag coefficient')
         CL = Variable('C_L', '-', 'Lift coefficient')
         P_shaft = Variable('P_{shaft}', 'W', 'Shaft power')
+        T = Variable('Thrust','N','Cruise thrust')
+        D = Variable('Drag','N',' Cruise drag')
         S = Variable('S', 'm^2', 'Wing reference area')
         V = Variable('V', 'm/s', 'Cruise velocity')
         W = Variable('W', 'lbf', 'Aircraft weight')
 
-        eta_prop = Variable(r'\eta_{prop}', 0.7, '-', 'Propulsive efficiency')
+        # Propulsion metrics (for a 3 bladed propeller, activity factor 100, design CL = 0.5)
+        AdvRatio = Variable('J_{advance}','-','Advance ratio')
+        CPower = Variable('C_{Power}','-','Power coefficient')
+        CThrust = Variable('C_{Thrust}','-','Thrust coefficient')
+        nRot = Variable('n_{Rot}','1/s','Propeller rotation speed')
+        D_Prop = Variable('D_{Prop}','m','Propeller diameter')
+
+        eta_prop = Variable(r'\eta_{prop}', '-', 'Propulsive efficiency')
         rho = Variable(r'\rho', 'kg/m^3')
 
-        constraints.extend([P_shaft == V*W*CD/CL/eta_prop,   # eta*P = D*V
+        constraints.extend([#P_shaft == V*W*CD/CL/eta_prop,   # eta*P = D*V
                             W == 0.5*rho*V**2*CL*S])
 
         # Aerodynamics model
@@ -32,7 +41,14 @@ class GasPoweredHALE(Model):
         Cf = Variable("C_f", "-", "wing skin friction coefficient")
         Kwing = Variable("K_{wing}", 1.3, "-", "wing form factor")
         cl_16 = Variable("cl_{16}", 0.0001, "-", "profile stall coefficient")
+        
         constraints.extend([CD >= Cd0 + 2*Cf*Kwing + CL**2/(pi*e*A) + cl_16*CL**16,
+                            D == CD*1/2*rho*V**2*S,
+                            T == D,
+                            T == P_shaft*(CThrust/CPower)/(nRot*D_Prop),
+                            eta_prop == T*V/P_shaft,
+                            CPower == P_shaft/(rho*nRot**3*D_Prop**5),
+                            CThrust == T/(rho*nRot**2*D_Prop**4),
                             b**2 == S*A,
                             CL <= CLmax,
                             Re == rho*V/mu*(S/A)**0.5,
