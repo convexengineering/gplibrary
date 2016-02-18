@@ -20,13 +20,14 @@ class GasPoweredHALE(Model):
         AdvRatio = Variable('J_{advance}',1.7,'-','Advance ratio')
         CPower = Variable('C_{Power}',0.2,'-','Power coefficient')
         CThrust = Variable('C_{Thrust}',0.5,'-','Thrust coefficient')
+        CTorque = Variable('C_{Torque}','-','Torque coefficient')
         nRot = Variable('n_{Rot}','1/s','Propeller rotation speed')
-        D_Prop = Variable('D_{Prop}',.6,'m','Propeller diameter')
+        D_Prop = Variable('D_{Prop}',0.6,'m','Propeller diameter')
 
-        eta_prop = Variable(r'\eta_{prop}',0.8, '-', 'Propulsive efficiency')
+        eta_prop = Variable(r'\eta_{prop}',0.9,'-', 'Propulsive efficiency')
         rho = Variable(r'\rho', 'kg/m^3')
 
-        constraints.extend([#P_shaft == V*W*CD/CL/eta_prop,   # eta*P = D*V
+        constraints.extend([P_shaft == V*W*CD/CL/eta_prop,   # eta*P = D*V
                             W == 0.5*rho*V**2*CL*S])
 
         # Aerodynamics model
@@ -42,12 +43,16 @@ class GasPoweredHALE(Model):
         cl_16 = Variable("cl_{16}", 0.0001, "-", "profile stall coefficient")
         
         constraints.extend([CD >= Cd0 + 2*Cf*Kwing + CL**2/(pi*e*A) + cl_16*CL**16,
-                            T == CD*1/2*rho*V**2*S,
-                            T == P_shaft*(CThrust/CPower)/(nRot*D_Prop),
-                            eta_prop == T*V/P_shaft,
+                            #T == CD*1/2*rho*V**2*S,
+                            #T <= P_shaft*(CThrust/CPower)/(nRot*D_Prop),
+                            #eta_prop == T*V/P_shaft,
                             #AdvRatio == V/(nRot*D_Prop),
+                            #AdvRatio >= 1, AdvRatio <= 2.8,
+                            #AdvRatio == 1.8/0.23*CPower + 0.23,
                             #CPower == P_shaft/(rho*nRot**3*D_Prop**5),
                             #CThrust == T/(rho*nRot**2*D_Prop**4),
+                            #P_shaft >= 2*pi*nRot*(CTorque*rho*nRot**2*D_Prop**5),
+                            eta_prop == 1/(2*pi)*(CThrust/CTorque)*AdvRatio,
                             b**2 == S*A,
                             CL <= CLmax, 
                             Re == rho*V/mu*(S/A)**0.5,
@@ -71,15 +76,21 @@ class GasPoweredHALE(Model):
         W_fuel = Variable('W_{fuel}', 'lbf', 'Fuel Weight')
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
         wl = Variable('wl', 'lbf/ft^2', 'wing loading')
+        
+        # Higher fidelity weight modeling
+        # w_wing = Variable('w_{wing}','lbf','Wing weight')
+        # w_tail = Variable('w_{tail}','lbf','Tail weight')
+        W_avionics = Variable('w_{avionics}',7,'lbf','Avionics weight')
+        # w_boom = Variable('w_{boom}','lbf','Boom weight')
 
         f_airframe = Variable('f_{airframe}', 0.3, '-',
                               'Airframe weight fraction')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         constraints.extend([W_airframe >= W*f_airframe,
-                            W_zfw >= W_airframe + W_eng + W_pay,
+                            W_zfw >= W_airframe + W_eng + W_pay + W_avionics,
                             wl == W/S,
-                            W >= W_pay + W_eng + W_airframe + W_fuel])
+                            W >= W_pay + W_eng + W_airframe + W_fuel + W_avionics])
 
         # Breguet Range
         z_bre = Variable("z_bre", "-", "breguet coefficient")
