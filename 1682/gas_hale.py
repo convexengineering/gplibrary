@@ -61,9 +61,9 @@ class GasPoweredHALE(Model):
 
         # Engine Weight Model
         W_eng = Variable('W_{eng}', 'lbf', 'Engine weight')
-        W_engmin = Variable('W_{min}', 1.3, 'lbf', 'min engine weight')
+        W_engmin = Variable('W_{min}', 11, 'lbf', 'min engine weight')
         W_engmax = Variable('W_{max}', 275, 'lbf', 'max engine weight')
-        eta_t = Variable('\\eta_t', 0.75, '-', 'percent throttle')
+        eta_t = Variable('\\eta_t', 0.5, '-', 'percent throttle')
         eng_cnst = Variable('eng_{cnst}', 0.0011, '-',
                             'engine constant based off of power weight model')
         W_eng_installed = Variable('W_{eng-installed}','lbf','Installed engine weight')
@@ -98,7 +98,7 @@ class GasPoweredHALE(Model):
         z_bre = Variable("z_bre", "-", "breguet coefficient")
         h_fuel = Variable("h_{fuel}", 42e6, "J/kg", "heat of combustion")
         eta_0 = Variable("\\eta_0", 0.2, "-", "overall efficiency")
-        t = Variable('t', 7, 'days', 'time on station')
+        t = Variable('t', 5, 'days', 'time on station')
 
         constraints.extend([z_bre >= g*t*V*CD/(h_fuel*eta_0*CL),
                             W_fuel/W_zfw >= te_exp_minus1(z_bre, 3)])
@@ -129,17 +129,26 @@ class GasPoweredHALE(Model):
             h >= tan_lu*0.5*footprint + footprint**2/8./R_earth])
 
         # wind speed model
-        V_wind = Variable('V_{wind}', 'm/s', 'wind speed')
-        wd_cnst = Variable('wd_{cnst}', [0.002, 0.0015], 'm/s/ft',
+        V_wind = Variable('V_{wind}',43, 'm/s', 'wind speed')
+        wd_cnst = Variable('wd_{cnst}', 0.002, 'm/s/ft', 
                            'wind speed constant predited by model')
-        wd_ln = Variable('wd_{ln}', [13.009, 8.845], 'm/s',
+                            #0.002 is worst case, 0.0015 is mean at 45d
+        wd_ln = Variable('wd_{ln}', 13.009, 'm/s',
                          'linear wind speed variable')
+                        #13.009 is worst case, 8.845 is mean at 45deg
         h_min = Variable('h_{min}', 11800, 'ft', 'minimum height')
-        h_max = Variable('h_{max}', 20800, 'ft', 'maximum height')
-        constraints.extend([V_wind >= wd_cnst*h + wd_ln, # model predicting worse case scenario at 45 deg latitude
+        h_max = Variable('h_{max}', 15000, 'ft', 'maximum height')
+        constraints.extend([V_wind >= wd_cnst*h + wd_ln, 
                             V >= V_wind,
                             h >= h_min,
                             h <= h_max])
+                            # model predicting worse case scenario at 45 deg latitude
+
+        # fuel volume model
+        tc = Variable('tc', 0.1, '-', 'thickness to chord ratio')
+        rho_fuel = Variable('\\rho_{fuel}', 719, 'kg/m^3', 'density of gasoline')
+        constraints.extend([S**1.5*A**-0.5*tc >= W_fuel/g/rho_fuel])
+
 
         objective = W
 
