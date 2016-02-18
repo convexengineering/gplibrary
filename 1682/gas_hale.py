@@ -66,9 +66,11 @@ class GasPoweredHALE(Model):
         eta_t = Variable('\\eta_t', 0.75, '-', 'percent throttle')
         eng_cnst = Variable('eng_{cnst}', 0.0011, '-',
                             'engine constant based off of power weight model')
+        W_eng_installed = Variable('W_{eng-installed}','lbf','Installed engine weight')
         constraints.extend([W_eng >= W_engmin,
                             W_eng <= W_engmax,
-                            W_eng >= P_shaft*eng_cnst/eta_t * units('lbf/watt')])
+                            W_eng >= P_shaft*eng_cnst/eta_t * units('lbf/watt'),
+                            W_eng_installed >= 2.572*W_eng**0.922*units('lbf')**0.078])
 
         # Weight model
         W_airframe = Variable('W_{airframe}', 'lbf', 'Airframe weight')
@@ -88,9 +90,9 @@ class GasPoweredHALE(Model):
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         constraints.extend([W_airframe >= W*f_airframe,
-                            W_zfw >= W_airframe + W_eng + W_pay + W_avionics,
+                            W_zfw >= W_airframe + W_eng_installed + W_pay + W_avionics,
                             wl == W/S,
-                            W >= W_pay + W_eng + W_airframe + W_fuel + W_avionics])
+                            W >= W_pay + W_eng_installed + W_airframe + W_fuel + W_avionics])
 
         # Breguet Range
         z_bre = Variable("z_bre", "-", "breguet coefficient")
