@@ -67,6 +67,7 @@ class GasPoweredHALE(Model):
         eng_cnst = Variable('eng_{cnst}', 0.0011, '-',
                             'engine constant based off of power weight model')
         W_eng_installed = Variable('W_{eng-installed}','lbf','Installed engine weight')
+        
         constraints.extend([W_eng >= W_engmin,
                             W_eng <= W_engmax,
                             W_eng >= P_shaft*eng_cnst/eta_t * units('lbf/watt'),
@@ -82,7 +83,7 @@ class GasPoweredHALE(Model):
         # Higher fidelity weight modeling
         # w_wing = Variable('w_{wing}','lbf','Wing weight')
         # w_tail = Variable('w_{tail}','lbf','Tail weight')
-        W_avionics = Variable('w_{avionics}',7,'lbf','Avionics weight')
+        W_avionics = Variable('w_{avionics}',1,'lbf','Avionics weight')
         # w_boom = Variable('w_{boom}','lbf','Boom weight')
 
         f_airframe = Variable('f_{airframe}', 0.3, '-',
