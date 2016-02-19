@@ -10,7 +10,7 @@ class GasPoweredHALE(Model):
         # Steady level flight relations
         CD = Variable('C_D', '-', 'Drag coefficient')
         CL = Variable('C_L', '-', 'Lift coefficient')
-        P_shaft = Variable('P_{shaft}', 'W', 'Shaft power')
+        P_shaft = Variable('P_{shaft}', 'hp', 'Shaft power')
         S = Variable('S', 'm^2', 'Wing reference area')
         V = Variable('V', 'm/s', 'Cruise velocity')
         W = Variable('W', 'lbf', 'Aircraft weight')
@@ -40,39 +40,45 @@ class GasPoweredHALE(Model):
 
 
         # Engine Weight Model
-        W_eng = Variable('W_{eng}', 'lbf', 'Engine weight')
-        W_engmin = Variable('W_{min}', 13, 'lbf', 'min engine weight')
-        W_engmax = Variable('W_{max}', 1500, 'lbf', 'max engine weight')
-        eta_t = Variable('\\eta_t', 0.5, '-', 'percent throttle')
-        eng_cnst = Variable('eng_{cnst}', 0.0013, '-',
-                            'engine constant based off of power weight model')
-        constraints.extend([W_eng >= W_engmin,
-                            W_eng <= W_engmax,
-                            W_eng >= (P_shaft/eta_t)**1.1572*eng_cnst* units('lbf/watt^1.1572')])
+        W_eng = Variable('W_{eng}', 26.2, 'lbf', 'Engine weight')
+        #W_engmin = Variable('W_{min}', 13, 'lbf', 'min engine weight')
+        #W_engmax = Variable('W_{max}', 1500, 'lbf', 'max engine weight')
+        #eta_t = Variable('\\eta_t', 0.5, '-', 'percent throttle')
+        #eng_cnst = Variable('eng_{cnst}', 0.0013, '-',
+        #                    'engine constant based off of power weight model')
+        #constraints.extend([W_eng >= W_engmin,
+        #                    W_eng <= W_engmax,
+        #                    W_eng >= (P_shaft/eta_t)**1.1572*eng_cnst* units('lbf/watt^1.1572')])
 
         # Weight model
         W_airframe = Variable('W_{airframe}', 'lbf', 'Airframe weight')
         W_pay = Variable(r'W_{pay}', 5, 'lbf', 'Payload weight')
         W_fuel = Variable('W_{fuel}', 'lbf', 'Fuel Weight')
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
+        W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
+        W_fix = Variable('W_{fix}', 'lbf', 'Fixed weight')
         wl = Variable('wl', 'lbf/ft^2', 'wing loading')
 
         f_airframe = Variable('f_{airframe}', 0.3, '-',
                               'Airframe weight fraction')
+        f_fix = Variable('f_{fix}', 0.02, '-', 'payload weight fraction')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         constraints.extend([W_airframe >= W*f_airframe,
+                            W_fix >= W_pay + W_avionics,
                             W_zfw >= W_airframe + W_eng + W_pay,
                             wl == W/S,
+                            W == W_fix/f_fix,
                             W >= W_pay + W_eng + W_airframe + W_fuel])
 
         # Breguet Range
         z_bre = Variable("z_bre", "-", "breguet coefficient")
         h_fuel = Variable("h_{fuel}", 42e6, "J/kg", "heat of combustion")
         eta_0 = Variable("\\eta_0", 0.2, "-", "overall efficiency")
+        BSFC = Variable('BSFC', 0.527, 'lbf/hr/hp', 'brake specific fuel consumption')
         t = Variable('t', 4, 'days', 'time on station')
 
-        constraints.extend([z_bre >= g*t*V*CD/(h_fuel*eta_0*CL),
+        constraints.extend([z_bre >= V*t*BSFC*CD/CL/eta_prop,
                             W_fuel/W_zfw >= te_exp_minus1(z_bre, 3)])
 
         # Atmosphere model
@@ -102,10 +108,10 @@ class GasPoweredHALE(Model):
 
         # wind speed model
         V_wind = Variable('V_{wind}', 'm/s', 'wind speed')
-        wd_cnst = Variable('wd_{cnst}', 0.002, 'm/s/ft', 
+        wd_cnst = Variable('wd_{cnst}', 0.0015, 'm/s/ft', 
                            'wind speed constant predited by model')
                             #0.002 is worst case, 0.0015 is mean at 45d
-        wd_ln = Variable('wd_{ln}', 13.009, 'm/s',
+        wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
                          'linear wind speed variable')
                         #13.009 is worst case, 8.845 is mean at 45deg
         h_min = Variable('h_{min}', 11800, 'ft', 'minimum height')
