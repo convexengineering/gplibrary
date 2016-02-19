@@ -19,12 +19,12 @@ print z
 import numpy as np
 m.substitutions.update({"t": ('sweep', np.linspace(4, 7, 5)),
                         "d_{footprint}": ('sweep', np.linspace(0.1,0.4,5))})
-sol = m.solve(solver="mosek", verbosity=0, skipsweepfailures=True)
+sol = m.solve(solver="cvxopt", verbosity=0, skipsweepfailures=True)
 
 import numpy as np
 m.substitutions.update({"t": ('sweep', np.linspace(4, 7, 5)),
                         "d_{footprint}": ('sweep', np.linspace(0.1,0.4,5))})
-sol = m.solve(solver="mosek", verbosity=0, skipsweepfailures=True)
+sol = m.solve(solver="cvxopt", verbosity=0, skipsweepfailures=True)
 
 #%matplotlib inline
 from gpkit.interactive.plotting import contour_array

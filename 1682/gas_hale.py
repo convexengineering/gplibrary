@@ -81,7 +81,6 @@ class GasPoweredHALE(Model):
         W_fuel = Variable('W_{fuel}', 'lbf', 'Fuel Weight')
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
         W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
-        W_fix = Variable('W_{fix}', 'lbf', 'Fixed weight')
         wl = Variable('wl', 'lbf/ft^2', 'wing loading')
         
         # Higher fidelity weight modeling
@@ -94,8 +93,6 @@ class GasPoweredHALE(Model):
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         constraints.extend([W_airframe >= W*f_airframe,
-                            W_fix >= W_pay + W_avionics,
-                            W_zfw >= W_airframe + W_eng + W_pay,
                             wl == W/S,
                             W_zfw >= W_airframe + W_eng + W_pay + W_avionics,
                             wl == W/S,
@@ -157,6 +154,15 @@ class GasPoweredHALE(Model):
         rho_fuel = Variable('\\rho_{fuel}', 719, 'kg/m^3', 'density of gasoline')
         constraints.extend([S**1.5*A**-0.5*tc >= W_fuel/g/rho_fuel])
 
+        # Climb model
+        # rho_sl = Variable('\\rho_{sl}',1.225,'kg/m**3','Density at sea level')
+        # P_shaft_lapse = Variable('P_{shaft-lapse}',0.714/40000,'1/ft','Shaft power lapse rate')
+        # P_shaft_to = Variable('P_{shaft-to}','hp','Shaft power on takeoff')
+
+        # constraints.extend([
+        # 	1 <= P_shaft_to/P_shaft + P_shaft_lapse*h,
+        # 	P_shaft_to >= P_shaft
+        # 	])
 
         objective = W
 
