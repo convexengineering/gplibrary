@@ -41,14 +41,14 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Steady level flight model
 
-        CD = Variable('C_D', 0.05, '-', 'Drag coefficient')
-    	CL = Variable('C_L', 1, '-', 'Lift coefficient')
-        V = VectorVariable(Nseg,'V', 'm/s','cruise speed')
-        rho = VectorVariable(Nseg, r'\rho', [1.2, 1.2, 1.2], 'kg/m^3', 'air density')
+        CD = VectorVariable(Nseg, 'C_D', 0.05, '-', 'Drag coefficient')
+    	CL = VectorVariable(Nseg, 'C_L', '-', 'Lift coefficient')
+        V = VectorVariable(Nseg,'V', [15,15,15], 'm/s','cruise speed')
+        rho = VectorVariable(Nseg, r'\rho', [1.2, 0.7, 1.2], 'kg/m^3', 'air density')
         S = Variable('S', 190, 'ft^2', 'wing area')
         eta_prop = VectorVariable(Nseg, r'\eta_{prop}', [0.6, 0.8, 0.6], '-',
                                   'propulsive efficiency')
-        P_shaft = VectorVariable(Nseg, 'P_{shaft}', [30,30,30], 'hp', 'Shaft power')
+        P_shaft = VectorVariable(Nseg, 'P_{shaft}', 'hp', 'Shaft power')
 
         constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop,
                             0.5*rho*CL*S*V**2 == (W_end*W_begin)**0.5])
@@ -61,9 +61,29 @@ class GasPoweredHALE(Model):
         R = Variable('R', 100, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
-        constraints.extend([z_bre[1:] >= V[1:]*t[1:]*BSFC*CD/CL/eta_prop[1:],
-                            z_bre[0] >= R*BSFC*CD/CL/eta_prop[0],
+        constraints.extend([z_bre[1:] >= V[1:]*t*BSFC*CD[1:]/CL[1:]/eta_prop[1:],
+                            z_bre[0] >= R*BSFC*CD[0]/CL[0]/eta_prop[0],
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
+
+        #----------------------------------------------------
+        # Aerodynamics model
+
+        Cd0 = Variable('C_{d0}', 0.02, '-', "Non-wing drag coefficient")
+        CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
+        e = Variable('e', 0.9, '-', "Spanwise efficiency")
+        AR = Variable('AR', '-', "Aspect ratio")
+        b = Variable('b', 'ft', 'Span')
+        mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', "Dynamic viscosity")
+        Re = VectorVariable(Nseg, "Re", '-', "Reynolds number")
+        Cf = VectorVariable(Nseg, "C_f", "-", "wing skin friction coefficient")
+        Kwing = Variable("K_{wing}", 1.3, "-", "wing form factor")
+        cl_16 = Variable("cl_{16}", 0.0001, "-", "profile stall coefficient")
+
+        constraints.extend([CD >= Cd0 + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16,
+                            b**2 == S*AR,
+                            CL <= CLmax, 
+                            Re == rho*V/mu*(S/AR)**0.5,
+                            Cf >= 0.074/Re**0.2])
 
         objective = MTOW
         return objective, constraints
