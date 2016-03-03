@@ -20,7 +20,11 @@ class GasPoweredHALE(Model):
         W_end = VectorVariable(Nseg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight') 
-        W_zfw = Variable('W_{zfw}', 10, 'lbf', 'Zero fuel weight')
+        W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
+        W_payload = Variable('W_{fix}',10,'lbf', 'Payload weight')
+        W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
+        f_airframe = Variable('f_{airframe}', 0.3, '-', 'airframe weight fraction')
+        W_airframe = Variable('W_{airframe}', 'lbf', 'airframe weight')
         W_begin = W_end.left # define beginning of segment weight
         W_begin[0] = MTOW 
 
@@ -30,7 +34,9 @@ class GasPoweredHALE(Model):
         # weight must be greater than the zero fuel weight
         constraints.extend([MTOW >= W_end[0] + W_fuel[0], 
                             W_end[:-1] >= W_end[1:] + W_fuel[1:], 
-                            W_end[-1] >= W_zfw])
+                            W_end[-1] >= W_zfw,
+                            W_airframe >= f_airframe*MTOW,
+                            W_zfw >= W_payload + W_avionics + W_airframe])
         
         #----------------------------------------------------
         # Steady level flight model
@@ -53,6 +59,7 @@ class GasPoweredHALE(Model):
         BSFC = Variable('BSFC', 0.5, 'lbf/hr/hp', 'brake specific fuel consumption')
         t = VectorVariable(Nseg-1, 't', [5,0.2], 'days', 'time on station')
         R = Variable('R', 100, 'nautical_miles', 'range to station')
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         constraints.extend([z_bre[1:] >= V[1:]*t[1:]*BSFC*CD/CL/eta_prop[1:],
                             z_bre[0] >= R*BSFC*CD/CL/eta_prop[0],
