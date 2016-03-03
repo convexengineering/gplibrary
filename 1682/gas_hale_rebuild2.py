@@ -43,7 +43,7 @@ class GasPoweredHALE(Model):
 
         CD = VectorVariable(Nseg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(Nseg, 'C_L', '-', 'Lift coefficient')
-        V = VectorVariable(Nseg,'V', [15,15,15], 'm/s','cruise speed')
+        V = VectorVariable(Nseg, 'V', 'm/s','cruise speed')
         rho = VectorVariable(Nseg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 190, 'ft^2', 'wing area')
         eta_prop = VectorVariable(Nseg, r'\eta_{prop}', [0.6, 0.8, 0.6], '-',
@@ -51,18 +51,19 @@ class GasPoweredHALE(Model):
         P_shaft = VectorVariable(Nseg, 'P_{shaft}', 'hp', 'Shaft power')
 
         constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop,
-                            0.5*rho*CL*S*V**2 >= (W_end*W_begin)**0.5])
+                            0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2])
 
         #----------------------------------------------------
         # Breguet Range
         z_bre = VectorVariable(Nseg, 'z_{bre}', '-', 'breguet coefficient')
         BSFC = Variable('BSFC', 0.5, 'lbf/hr/hp', 'brake specific fuel consumption')
-        t = VectorVariable(Nseg-1, 't', [5,0.2], 'days', 'time on station')
+        t = VectorVariable(Nseg, 't', [0.2,5,0.2], 'days', 'time on station')
         R = Variable('R', 100, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
-        constraints.extend([z_bre[1:] >= V[1:]*t*BSFC*CD[1:]/CL[1:]/eta_prop[1:],
-                            z_bre[0] >= R*BSFC*CD[0]/CL[0]/eta_prop[0],
+        
+        constraints.extend([z_bre >= V*t*BSFC*CD/CL/eta_prop,
+                            R == V[0]*t[0],
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
 
         #----------------------------------------------------
@@ -91,7 +92,8 @@ class GasPoweredHALE(Model):
         h = VectorVariable(Nseg, 'h', [8000,15000,8000], 'ft', 'Altitude')
         gamma = Variable(r'\gamma',1.4,'-', 'Heat capacity ratio of air')
         p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
-        T_sl = VectorVariable(Nseg, 'T_{sl}', [288.15,288.15,288.15], 'K', 'Temperature at sea level')
+        T_sl = VectorVariable(Nseg, 'T_{sl}', [288.15,288.15,288.15], 'K',
+                              'Temperature at sea level')
         L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
         T_atm = VectorVariable(Nseg, 'T_{atm}', 'K', 'Air temperature')
         a_atm = VectorVariable(Nseg, 'a_{atm}','m/s', 'Speed of sound at altitude')
