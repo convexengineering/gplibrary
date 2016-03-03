@@ -41,7 +41,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Steady level flight model
 
-        CD = VectorVariable(Nseg, 'C_D', 0.05, '-', 'Drag coefficient')
+        CD = VectorVariable(Nseg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(Nseg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(Nseg,'V', [15,15,15], 'm/s','cruise speed')
         rho = VectorVariable(Nseg, r'\rho', 'kg/m^3', 'air density')
@@ -100,8 +100,7 @@ class GasPoweredHALE(Model):
 
         constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
                             T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                            rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH),
-                            a_atm == (gamma*R_spec*T_atm)**0.5])
+                            rho <= p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         objective = MTOW
