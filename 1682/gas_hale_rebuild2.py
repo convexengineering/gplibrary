@@ -51,7 +51,7 @@ class GasPoweredHALE(Model):
         P_shaft = VectorVariable(Nseg, 'P_{shaft}', 'hp', 'Shaft power')
 
         constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop,
-                            0.5*rho*CL*S*V**2 == (W_end*W_begin)**0.5])
+                            0.5*rho*CL*S*V**2 >= (W_end*W_begin)**0.5])
 
         #----------------------------------------------------
         # Breguet Range
@@ -100,7 +100,7 @@ class GasPoweredHALE(Model):
 
         constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
                             T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                            rho <= p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+                            rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         objective = MTOW
