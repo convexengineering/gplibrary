@@ -1,0 +1,70 @@
+\documentclass[10pt, a4paper]{article}
+\usepackage{latexsym}
+\usepackage{amssymb,amsmath}
+\usepackage[pdftex]{graphicx}
+\newcommand{\dbar}[1]{\Bar{\Bar{#1}}}
+
+\topmargin = 0.1in \textwidth=5.7in \textheight=8.6in
+
+\oddsidemargin = 0.1in \evensidemargin = 0.1in
+
+% headers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\chead{} 
+\rhead{\thepage} 
+% footer
+\lfoot{\small\scshape } 
+\cfoot{} 
+%%%% insert your name here %%%%
+\rfoot{\footnotesize Michael Burton} 
+\renewcommand{\headrulewidth}{.3pt} 
+\renewcommand{\footrulewidth}{.3pt}
+\setlength\voffset{-0.25in}
+\setlength\textheight{648pt}
+
+\begin{document}
+
+\title{Steady Level Flight}
+\author{Spring 16.82}
+\maketitle
+
+\section*{Assumptions} 
+
+\begin{enumerate}
+
+\item Steady state flight
+\item Angle of attack zero
+\item Thrust equals drag
+\item Lift equals wieght
+\item The weight is approximated by the average weight of the flight segment. 
+\item The average weight can be approximated by: $W_{avg} = \sqrt{W_{begin}*W_{end}}$.  Where $W_{begin}$ is the beginning of the flight segment and $W_{end}$ is the end of the flight segment. 
+
+\end{enumerate}
+
+\section*{Variables}
+
+\[\begin{array}{ll}
+    & C_D \\
+    & C_L\\
+    & R \\
+    & S \\
+    & W_{begin}[3]\\
+    & W_{end}[3]\\
+    & P_{shaft}[3]\\
+    & \eta_{prop}[3]\\
+    & \rho \\
+    & V[3] \\
+\end{array} \]
+
+\section*{Constraints}
+
+\[ \begin{array}{ll}
+    & P_{shaft} \geq 0.5\frac{C_D W_{begin} {V}}{C_L {\eta_{prop}}} + 0.5\frac{C_D {V} {W_{end}}}{C_L {\eta_{prop}}}\\
+    & 0.5C_L S {V}^{2} {\rho} = W_{begin}^{0.5} {W_{end}}^{0.5} \\
+\end{array} \]
+
+
+
+
+\end{document}

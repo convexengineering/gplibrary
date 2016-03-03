@@ -1,0 +1,67 @@
+\documentclass[10pt, a4paper]{article}
+\usepackage{latexsym}
+\usepackage{amssymb,amsmath}
+\usepackage[pdftex]{graphicx}
+\newcommand{\dbar}[1]{\Bar{\Bar{#1}}}
+
+\topmargin = 0.1in \textwidth=5.7in \textheight=8.6in
+
+\oddsidemargin = 0.1in \evensidemargin = 0.1in
+
+% headers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\chead{} 
+\rhead{\thepage} 
+% footer
+\lfoot{\small\scshape } 
+\cfoot{} 
+%%%% insert your name here %%%%
+\rfoot{\footnotesize Michael Burton} 
+\renewcommand{\headrulewidth}{.3pt} 
+\renewcommand{\footrulewidth}{.3pt}
+\setlength\voffset{-0.25in}
+\setlength\textheight{648pt}
+
+\begin{document}
+
+\title{Weight Model}
+\author{Spring 16.82}
+\maketitle
+
+\section*{Assumptions} 
+
+\begin{enumerate}
+
+\item Mass take off weight is greater than the end of the first segment weight plus that segment fuel weight. 
+\item The end of each flight segment weight must be greater than the next end of flight segment weight plus the fuel weight of the next flight segment.
+\item The end of the last flight segment weight must be greater than the zero fuel weight.
+
+\end{enumerate}
+
+\section*{Variables}
+
+\[\begin{array}{ll}
+    & W_{begin}[3]\\
+    & W_{end}[3]\\
+    & P_{shaft}[3]\\
+    & MTOW \\
+    & W_{fuel}[3] \\
+    & W_{zfw} \\
+\end{array} \]
+
+\section*{Constraints}
+
+\[ \begin{array}{ll}
+    & MTOW \geq {W_{end}}_{(0)} + {W_{fuel}}_{(0)} \\
+    & \begin{bmatrix} MTOW == {W_{begin}}_{(1)} \\
+    			      {W_{end}}_{(0)} == {W_{begin}}_{(1)} \\
+    			      {W_{end}}_{(1)} == {W_{begin}}_{(2)} \end{bmatrix} \\
+    & \begin{bmatrix}{W_{end}}_{(0)} \geq {W_{end}}_{(1)} + {W_{fuel}}_{(1)} \\ {W_{end}}_{(1)} \geq {W_{end}}_{(2)} + {W_{fuel}}_{(2)}\end{bmatrix} \\
+	        & {W_{end}}_{(2)} \geq W_{zfw} \\
+\end{array} \]
+
+
+
+
+\end{document}
