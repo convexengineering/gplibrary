@@ -1,0 +1,70 @@
+\documentclass[10pt, a4paper]{article}
+\usepackage{latexsym}
+\usepackage{amssymb,amsmath}
+\usepackage[pdftex]{graphicx}
+\newcommand{\dbar}[1]{\Bar{\Bar{#1}}}
+
+\topmargin = 0.1in \textwidth=5.7in \textheight=8.6in
+
+\oddsidemargin = 0.1in \evensidemargin = 0.1in
+
+% headers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\chead{} 
+\rhead{\thepage} 
+% footer
+\lfoot{\small\scshape } 
+\cfoot{} 
+%%%% insert your name here %%%%
+\rfoot{\footnotesize Michael Burton} 
+\renewcommand{\headrulewidth}{.3pt} 
+\renewcommand{\footrulewidth}{.3pt}
+\setlength\voffset{-0.25in}
+\setlength\textheight{648pt}
+
+\begin{document}
+
+\title{Aerodynamics Model}
+\author{Spring 16.82}
+\maketitle
+
+\section*{Assumptions} 
+
+\begin{enumerate}
+
+\item The wing is a box shape. 
+\item The non-wing drag is a constant
+\item The stall factor is based off standard airfoil polar.
+\item Reference length for Reynolds number is teh chord.
+\item The skin friction is based off of Blasius flat plate.
+\item The form factor for the wing is constant. 
+
+\end{enumerate}
+
+\section*{Variables}
+
+\[\begin{array}{ll}
+	& C_{L-max} \gets 1.5 \\
+	& C_{d0} \gets 0.02 \\
+	& K_{wing} \gets 1.3 \\
+	& S \gets 190~\mathrm{ft^{2}} \\
+	& \mu \gets 1.5 \times 10^{-5}~\mathrm{\tfrac{N\cdot s}{m^{2}}} \\
+	& cl_{16} \gets 0.0001 \\
+	& e \gets 0.9 \\
+\end{array} \]
+
+\section*{Constraints}
+
+\[ \begin{array}{ll}
+	& \begin{bmatrix}{C_D}_{(0)} \geq 0.3183\frac{{C_L}_{(0)}^{2}}{AR e} + 2K_{wing} {C_f}_{(0)} + C_{d0} + cl_{16} {C_L}_{(0)}^{16} \\ {C_D}_{(1)} \geq 0.3183\frac{{C_L}_{(1)}^{2}}{AR e} + 2K_{wing} {C_f}_{(1)} + C_{d0} + cl_{16} {C_L}_{(1)}^{16} \\ {C_D}_{(2)} \geq 0.3183\frac{{C_L}_{(2)}^{2}}{AR e} + 2K_{wing} {C_f}_{(2)} + C_{d0} + cl_{16} {C_L}_{(2)}^{16}\end{bmatrix} \\
+	& b^{2} = AR S \\
+	& \begin{bmatrix}C_{L-max} \geq {C_L}_{(0)} \\ C_{L-max} \geq {C_L}_{(1)} \\ C_{L-max} \geq {C_L}_{(2)}\end{bmatrix} \\
+	& \begin{bmatrix}{Re}_{(0)} = 0.3048\frac{S^{0.5} {V}_{(0)} {\rho}_{(0)}}{AR^{0.5} \mu} \\ {Re}_{(1)} = 0.3048\frac{S^{0.5} {V}_{(1)} {\rho}_{(1)}}{AR^{0.5} \mu} \\ {Re}_{(2)} = 0.3048\frac{S^{0.5} {V}_{(2)} {\rho}_{(2)}}{AR^{0.5} \mu}\end{bmatrix} \\
+	& \begin{bmatrix}{C_f}_{(0)} \geq \frac{0.074}{{Re}_{(0)}^{0.2}} \\ {C_f}_{(1)} \geq \frac{0.074}{{Re}_{(1)}^{0.2}} \\ {C_f}_{(2)} \geq \frac{0.074}{{Re}_{(2)}^{0.2}}\end{bmatrix} \\
+\end{array} \]
+
+
+
+
+\end{document}

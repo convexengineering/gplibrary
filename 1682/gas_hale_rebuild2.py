@@ -44,7 +44,7 @@ class GasPoweredHALE(Model):
         CD = VectorVariable(Nseg, 'C_D', 0.05, '-', 'Drag coefficient')
     	CL = VectorVariable(Nseg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(Nseg,'V', [15,15,15], 'm/s','cruise speed')
-        rho = VectorVariable(Nseg, r'\rho', [1.2, 0.7, 1.2], 'kg/m^3', 'air density')
+        rho = VectorVariable(Nseg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 190, 'ft^2', 'wing area')
         eta_prop = VectorVariable(Nseg, r'\eta_{prop}', [0.6, 0.8, 0.6], '-',
                                   'propulsive efficiency')
@@ -68,16 +68,16 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Aerodynamics model
 
-        Cd0 = Variable('C_{d0}', 0.02, '-', "Non-wing drag coefficient")
+        Cd0 = Variable('C_{d0}', 0.02, '-', 'Non-wing drag coefficient')
         CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
-        e = Variable('e', 0.9, '-', "Spanwise efficiency")
-        AR = Variable('AR', '-', "Aspect ratio")
+        e = Variable('e', 0.9, '-', 'Spanwise efficiency')
+        AR = Variable('AR', '-', 'Aspect ratio')
         b = Variable('b', 'ft', 'Span')
-        mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', "Dynamic viscosity")
-        Re = VectorVariable(Nseg, "Re", '-', "Reynolds number")
-        Cf = VectorVariable(Nseg, "C_f", "-", "wing skin friction coefficient")
-        Kwing = Variable("K_{wing}", 1.3, "-", "wing form factor")
-        cl_16 = Variable("cl_{16}", 0.0001, "-", "profile stall coefficient")
+        mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', 'Dynamic viscosity')
+        Re = VectorVariable(Nseg, 'Re', '-', 'Reynolds number')
+        Cf = VectorVariable(Nseg, 'C_f', '-', 'wing skin friction coefficient')
+        Kwing = Variable('K_{wing}', 1.3, '-', 'wing form factor')
+        cl_16 = Variable('cl_{16}', 0.0001, '-', 'profile stall coefficient')
 
         constraints.extend([CD >= Cd0 + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16,
                             b**2 == S*AR,
@@ -85,9 +85,28 @@ class GasPoweredHALE(Model):
                             Re == rho*V/mu*(S/AR)**0.5,
                             Cf >= 0.074/Re**0.2])
 
+        #----------------------------------------------------
+        # Atmosphere model
+
+        h = VectorVariable(Nseg, 'h', [8000,15000,8000], 'ft', 'Altitude')
+        gamma = Variable(r'\gamma',1.4,'-', 'Heat capacity ratio of air')
+        p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
+        T_sl = VectorVariable(Nseg, 'T_{sl}', [288.15,288.15,288.15], 'K', 'Temperature at sea level')
+        L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
+        T_atm = VectorVariable(Nseg, 'T_{atm}', 'K', 'Air temperature')
+        a_atm = VectorVariable(Nseg, 'a_{atm}','m/s', 'Speed of sound at altitude')
+        R_spec = Variable('R_{spec}', 287.058,'J/kg/K', 'Specific gas constant of air')
+        TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
+
+        constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
+                            T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
+                            rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH),
+                            a_atm == (gamma*R_spec*T_atm)**0.5])
+            # http://en.wikipedia.org/wiki/Density_of_air#Altitude
+
         objective = MTOW
         return objective, constraints
 
-if __name__ == "__main__":
+if __name__ == '__main__':
 	M = GasPoweredHALE()
 	M.solve()

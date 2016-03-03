@@ -48,17 +48,19 @@
     & MTOW \\
     & W_{fuel}[3] \\
     & W_{zfw} \\
+    & W_{avionics} \gets 2~\mathrm{lbf} \\
+    & W_{pay} \gets 10~\mathrm{lbf} \\
+    & f_{airframe} \gets 0.3\\
 \end{array} \]
 
 \section*{Constraints}
 
 \[ \begin{array}{ll}
-    & MTOW \geq {W_{end}}_{(0)} + {W_{fuel}}_{(0)} \\
-    & \begin{bmatrix} MTOW == {W_{begin}}_{(1)} \\
-    			      {W_{end}}_{(0)} == {W_{begin}}_{(1)} \\
-    			      {W_{end}}_{(1)} == {W_{begin}}_{(2)} \end{bmatrix} \\
-    & \begin{bmatrix}{W_{end}}_{(0)} \geq {W_{end}}_{(1)} + {W_{fuel}}_{(1)} \\ {W_{end}}_{(1)} \geq {W_{end}}_{(2)} + {W_{fuel}}_{(2)}\end{bmatrix} \\
-	        & {W_{end}}_{(2)} \geq W_{zfw} \\
+	& MTOW \geq {W_{end}}_{(0)} + {W_{fuel}}_{(0)} \\
+	& \begin{bmatrix}{W_{end}}_{(0)} \geq {W_{end}}_{(1)} + {W_{fuel}}_{(1)} \\ {W_{end}}_{(1)} \geq {W_{end}}_{(2)} + {W_{fuel}}_{(2)}\end{bmatrix} \\
+	& {W_{end}}_{(2)} \geq W_{zfw} \\
+	& W_{airframe} \geq MTOW f_{airframe} \\
+	& W_{zfw} \geq W_{airframe} + W_{avionics} + W_{pay} \\
 \end{array} \]
 
 
