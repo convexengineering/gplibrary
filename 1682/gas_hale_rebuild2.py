@@ -10,7 +10,10 @@ class GasPoweredHALE(Model):
 
         # define number of segments
         Nseg = 3
-
+        #Note: Nseg has to be an odd number
+        # defining indices of different flight segments
+        Nloiter = (Nseg-1)/2
+        
         constraints = []
 
         #----------------------------------------------------
@@ -23,7 +26,7 @@ class GasPoweredHALE(Model):
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
         W_pay = Variable('W_{pay}',10,'lbf', 'Payload weight')
         W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
-        f_airframe = Variable('f_{airframe}', 0.3, '-', 'airframe weight fraction')
+        f_airframe = Variable('f_{airframe}', 0.35, '-', 'airframe weight fraction')
         W_airframe = Variable('W_{airframe}', 'lbf', 'airframe weight')
         W_begin = W_end.left # define beginning of segment weight
         W_begin[0] = MTOW 
@@ -44,12 +47,15 @@ class GasPoweredHALE(Model):
     	CL = VectorVariable(Nseg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(Nseg, 'V', 'm/s','cruise speed')
         rho = VectorVariable(Nseg, r'\rho', 'kg/m^3', 'air density')
-        S = Variable('S', 190, 'ft^2', 'wing area')
+        S = Variable('S',20, 'ft^2', 'wing area')
         eta_prop = VectorVariable(Nseg, r'\eta_{prop}', [0.6, 0.8, 0.6], '-',
                                   'propulsive efficiency')
         P_shaft = VectorVariable(Nseg, 'P_{shaft}', 'hp', 'Shaft power')
 
-        constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop,
+        # Climb model
+        h_dot = VectorVariable(Nseg,'h_{dot}',[200,0,200],'ft/min','Climb rate')
+        
+        constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop + W_begin*h_dot/eta_prop,
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2])
 
         #----------------------------------------------------
@@ -98,6 +104,7 @@ class GasPoweredHALE(Model):
 
         constraints.extend([CD >= Cd0 + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16,
                             b**2 == S*AR,
+                            AR <= 20, # temporary constraint until we input a valid structural model
                             CL <= CLmax, 
                             Re == rho*V/mu*(S/AR)**0.5,
                             Cf >= 0.074/Re**0.2])
@@ -105,7 +112,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Atmosphere model
 
-        h = VectorVariable(Nseg, 'h', [8000,15000,8000], 'ft', 'Altitude')
+        h = VectorVariable(Nseg, 'h', 'ft', 'Altitude')
         gamma = Variable(r'\gamma',1.4,'-', 'Heat capacity ratio of air')
         p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
         T_sl = VectorVariable(Nseg, 'T_{sl}', [288.15,288.15,288.15], 'K',
@@ -118,7 +125,9 @@ class GasPoweredHALE(Model):
 
         constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
                             T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                            rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+                            rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH),
+                            h[Nloiter] >= 15000*units('ft') #makes sure that the loiter occurs above minimum h
+                            ])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         objective = MTOW
