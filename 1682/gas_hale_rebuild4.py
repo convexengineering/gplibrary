@@ -21,10 +21,10 @@ class GasPoweredHALE(Model):
         # define number of segments
         NSeg = 7 # number of flight segments
         NCruise = 2 # number of cruise segments
-        NLoiter = NSeg - NCruise # number of loiter segments
+        NLoiter = NSeg - NCruise# number of loiter segments
         iCruise = [0,-1] # cuise index
         iLoiter = [1] # loiter index
-        for i in range(2,NSeg): iLoiter.append(i)
+        for i in range(2,NSeg-1): iLoiter.append(i)
         iClimb = [0,1] # climb index
 
         #Note: NSeg has to be an odd number
@@ -75,7 +75,7 @@ class GasPoweredHALE(Model):
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
 
         # Climb model
-        h_dot = Variable(NSeg, 'h_{dot}', 200, 'ft/min', 'Climb rate')
+        h_dot = Variable(NSeg, 'h_{dot}', 500, 'ft/min', 'Climb rate')
         
         # Berk I kinda of disagree with the way you set up the climb model.  
         # The way you have it set up, you are combining the cruise and climb 
@@ -110,16 +110,16 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         BSFC = VectorVariable(NSeg,'BSFC', np.linspace(0.5,0.5,NSeg), 'lbf/hr/hp', 'brake specific fuel consumption')
-        t = VectorVariable(NSeg, 't', 'days', 'time on station')
+        t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
-        dt = Variable('dt', 5/NLoiter, 'days', 'time interval for loiter')
+        t_station = Variable('t_{station}', 3, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         constraints.extend([z_bre >= V*t*BSFC*CD/CL/eta_prop,
-                            R == V[iCruise]*t[iCruise],
-                            t[iLoiter] == dt,
-                            t[iCruise] <= t_cruise,
+                            R <= V[iCruise]*t[iCruise],
+                            t[iLoiter] >= t_station/NLoiter,
+                            t[0] <= t_cruise,
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
 
         #----------------------------------------------------
@@ -174,7 +174,8 @@ class GasPoweredHALE(Model):
         h_min = Variable('h_{min}', 1000, 'ft', 'minimum cruise altitude')
 
         constraints.extend([h[iLoiter] >= h_station,
-                            h[iCruise] >= h_min])
+                            h[iCruise] >= h_min
+                            ])
 
         #----------------------------------------------------
         # wind speed model
@@ -198,7 +199,7 @@ class GasPoweredHALE(Model):
         constraints.extend([#V_wind >= wd_cnst*h + wd_ln, 
                             V[iLoiter] >= V_wind])
 
-        objective = MTOW
+        objective = MTOW 
         return objective, constraints
 
 if __name__ == '__main__':
