@@ -83,9 +83,9 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Breguet Range
         z_bre = VectorVariable(Nseg, 'z_{bre}', '-', 'breguet coefficient')
-        BSFC = Variable('BSFC', 0.5, 'lbf/hr/hp', 'brake specific fuel consumption')
-        t = VectorVariable(Nseg, 't', [0.2,5,0.2], 'days', 'time on station')
-        R = Variable('R', 100, 'nautical_miles', 'range to station')
+        BSFC = VectorVariable(Nseg,'BSFC', [0.5,.55,0.5], 'lbf/hr/hp', 'brake specific fuel consumption')
+        t = VectorVariable(Nseg, 't', [0.4,5,0.2], 'days', 'time on station')
+        R = Variable('R', 600, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         
