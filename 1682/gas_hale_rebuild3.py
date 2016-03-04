@@ -14,7 +14,7 @@ class GasPoweredHALE(Model):
         # defining indices of different flight segments
         Nloiter = (Nseg-1)/2
         if Nseg == 3:
-            Nclimb = [0,2]
+            Ncruise = [0,2]
         elif Nseg == 7:
             Nclimb = [0,2,4,6]
             Ncruise = [1,5]
@@ -85,13 +85,13 @@ class GasPoweredHALE(Model):
         z_bre = VectorVariable(Nseg, 'z_{bre}', '-', 'breguet coefficient')
         BSFC = VectorVariable(Nseg,'BSFC', [0.5,.55,0.5], 'lbf/hr/hp', 'brake specific fuel consumption')
         t = VectorVariable(Nseg, 't', 'days', 'time on station')
-        R = Variable('R', 600, 'nautical_miles', 'range to station')
+        R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         
         constraints.extend([z_bre >= V*t*BSFC*CD/CL/eta_prop,
-                            R == V[0]*t[0],
-                            t[Nloiter] == 5*units('days'),
+                            R == V[Ncruise]*t[Ncruise],
+                            #t[Nloiter] == 5*units('days'),
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
 
         #----------------------------------------------------
@@ -146,11 +146,11 @@ class GasPoweredHALE(Model):
                             T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH),
                             h[Nloiter] >= h_min, #makes sure that the loiter occurs above minimum h
-                            h[Nclimb] >= 4000*units('ft')
+                            h[Ncruise] >= h_min
                             ])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
-        objective = MTOW
+        objective = 1/t[Nloiter]
         return objective, constraints
 
 if __name__ == '__main__':
