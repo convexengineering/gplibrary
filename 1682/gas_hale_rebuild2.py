@@ -13,6 +13,11 @@ class GasPoweredHALE(Model):
         #Note: Nseg has to be an odd number
         # defining indices of different flight segments
         Nloiter = (Nseg-1)/2
+        if Nseg == 3:
+            Nclimb = [0,2]
+        elif Nseg == 7:
+            Nclimb = [0,2,4,6]
+            Ncruise = [1,5]
         
         constraints = []
 
@@ -126,7 +131,8 @@ class GasPoweredHALE(Model):
         constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
                             T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH),
-                            h[Nloiter] >= 15000*units('ft') #makes sure that the loiter occurs above minimum h
+                            h[Nloiter] >= 15000*units('ft'), #makes sure that the loiter occurs above minimum h
+                            h[Nclimb] >= 4000*units('ft')
                             ])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
