@@ -8,16 +8,33 @@ gpkit.settings['latex_modelname'] = False
 class GasPoweredHALE(Model):
     def setup(self):
 
+        # Ok I disagree with how you have this set up. I think it's a good 
+        # to break this down.  But I think the climb constraint can be built
+        # into the flight segments.  I propose this: let's have 1 segement 
+        # cruise out.  Let's have 5 segments on loiter to improve fidelity.
+        # and lets have another cruise segment coming back.  And then we 
+        # build the climb constraints using the beginning weights of the 
+        # first section when we get up to cruise altitude and then the 
+        # beginning of the second section when we climb to get up to station.
+
+
         # define number of segments
-        NSeg = 3
+        NSeg = 7 # number of flight segments
+        NCruise = 2 # number of cruise segments
+        NLoiter = NSeg - NCruise # number of loiter segments
+        iCruise = [0,-1] # cuise index
+        iLoiter = [1] # loiter index
+        for i in range(2,NSeg): iLoiter.append(i)
+        iClimb = [0,1] # climb index
+
         #Note: NSeg has to be an odd number
         # defining indices of different flight segments
-        NLoiter = (NSeg-1)/2
-        if NSeg == 3:
-            NCruise = [0,2]
-        elif NSeg == 7:
-            Nclimb = [0,2,4,6]
-            NCruise = [1,5]
+        #NLoiter = (NSeg-1)/2
+        #if NSeg == 3:
+        #    NCruise = [0,2]
+        #elif NSeg == 7:
+        #    Nclimb = [0,2,4,6]
+        #    NCruise = [1,5]
         
         constraints = []
 
@@ -53,13 +70,24 @@ class GasPoweredHALE(Model):
         V = VectorVariable(NSeg, 'V', 'm/s','cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 16, 'ft^2', 'wing area')
-        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', [0.8,0.6,0.8], '-',
+        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', np.linspace(0.8,0.8,NSeg), '-',
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
 
         # Climb model
-        h_dot = Variable(NSeg, 'h_{dot}', [200,0,0], 'ft/min', 'Climb rate')
-        constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop + W_begin*h_dot/eta_prop,
+        h_dot = Variable(NSeg, 'h_{dot}', 200, 'ft/min', 'Climb rate')
+        
+        # Berk I kinda of disagree with the way you set up the climb model.  
+        # The way you have it set up, you are combining the cruise and climb 
+        # conditions.  I believe those need to be separate. Also this is 
+        # saying that each flight segment has to also meet a climb constaint
+        # If you look at what I did I imposed the climb condition hdot <= 
+        # (T-D)*V/W for the first and second leg which will probably be the 
+        # hardest.  
+
+        constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop, # + W_begin*h_dot/eta_prop,
+                            W_begin[iClimb]*CD[iClimb]/CL[iClimb] >= h_dot*W_begin[iClimb]/V[iClimb] + 
+                                                      0.5*rho[iClimb]*V[iClimb]**2*S*CD[iClimb],
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2])
 
         #----------------------------------------------------
@@ -81,14 +109,17 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
-        BSFC = VectorVariable(NSeg,'BSFC', [0.5,.55,0.6], 'lbf/hr/hp', 'brake specific fuel consumption')
+        BSFC = VectorVariable(NSeg,'BSFC', np.linspace(0.5,0.5,NSeg), 'lbf/hr/hp', 'brake specific fuel consumption')
         t = VectorVariable(NSeg, 't', 'days', 'time on station')
+        t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
+        dt = Variable('dt', 5/NLoiter, 'days', 'time interval for loiter')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         constraints.extend([z_bre >= V*t*BSFC*CD/CL/eta_prop,
-                            R == V[NCruise]*t[NCruise],
-                            t[NLoiter] == 5*units('days'),
+                            R == V[iCruise]*t[iCruise],
+                            t[iLoiter] == dt,
+                            t[iCruise] <= t_cruise,
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
 
         #----------------------------------------------------
@@ -118,36 +149,54 @@ class GasPoweredHALE(Model):
         h = VectorVariable(NSeg, 'h', 'ft', 'Altitude')
         gamma = Variable(r'\gamma',1.4,'-', 'Heat capacity ratio of air')
         p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
-        T_sl = VectorVariable(NSeg, 'T_{sl}', [288.15,288.15,288.15], 'K',
-                              'Temperature at sea level')
+        T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
         L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
         T_atm = VectorVariable(NSeg, 'T_{atm}', 'K', 'Air temperature')
         a_atm = VectorVariable(NSeg, 'a_{atm}','m/s', 'Speed of sound at altitude')
         R_spec = Variable('R_{spec}', 287.058,'J/kg/K', 'Specific gas constant of air')
         TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
 
+        # ok so I issue I have with this one is that we are subjecting ourselves
+        # to some altitude for cruise going out to station.  It may want to fly
+        # lower than this, so we should let it tell us what it wants to fly at. 
+
         constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
                             T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH),
-                            h[NLoiter] >= 15000*units('ft'), #makes sure that the loiter occurs above minimum h
+                            #h[NLoiter] >= 15000*units('ft'), #makes sure that the loiter occurs above minimum h
+                            #h[NCruise] >= h_min
                             ])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------
-        # wind speed model
-        V_wind = VectorVariable(NSeg, 'V_{wind}', 'm/s', 'wind speed')
-        wd_cnst = Variable('wd_{cnst}', 0.0015, 'm/s/ft', 
-                           'wind speed constant predicted by model')
-                            #0.002 is worst case, 0.0015 is mean at 45d
-        wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
-                         'linear wind speed variable')
-                        #13.009 is worst case, 8.845 is mean at 45deg
-        h_min = Variable('h_{min}', 11800, 'ft', 'minimum height')
-        h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
+        # altitude constraints
+        h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
+        h_min = Variable('h_{min}', 1000, 'ft', 'minimum cruise altitude')
 
-        constraints.extend([V_wind >= wd_cnst*h + wd_ln, 
-                            V >= V_wind,
-                            h[NCruise] >= h_min])
+        constraints.extend([h[iLoiter] >= h_station,
+                            h[iCruise] >= h_min])
+
+        #----------------------------------------------------
+        # wind speed model
+
+        # So this wind model is based on the 95%. Which from what Oren is telling us
+        # is probably overkill.  I think it would be better to break up the wind 
+        # speed by directly specifying the wind speeds over time.  That way we can vary
+        # it and say well, if its only 30 m/s one day of the 5 we're up there this is 
+        # what happens to our endurance. 
+
+        V_wind = VectorVariable(NLoiter, 'V_{wind}', [20,25,30,10,15], 'm/s', 'wind speed')
+        #wd_cnst = Variable('wd_{cnst}', 0.0015, 'm/s/ft', 
+        #                   'wind speed constant predicted by model')
+        #                    #0.002 is worst case, 0.0015 is mean at 45d
+        #wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
+        #                 'linear wind speed variable')
+        #                #13.009 is worst case, 8.845 is mean at 45deg
+        #h_min = Variable('h_{min}', 11800, 'ft', 'minimum height')
+        #h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
+
+        constraints.extend([#V_wind >= wd_cnst*h + wd_ln, 
+                            V[iLoiter] >= V_wind])
 
         objective = MTOW
         return objective, constraints
