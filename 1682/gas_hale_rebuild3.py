@@ -31,7 +31,7 @@ class GasPoweredHALE(Model):
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
         W_pay = Variable('W_{pay}',10,'lbf', 'Payload weight')
         W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
-        f_airframe = Variable('f_{airframe}', 0.35, '-', 'airframe weight fraction')
+        f_airframe = Variable('f_{airframe}', 0.25, '-', 'airframe weight fraction')
         W_airframe = Variable('W_{airframe}', 'lbf', 'airframe weight')
         W_begin = W_end.left # define beginning of segment weight
         W_begin[0] = MTOW 
@@ -52,7 +52,7 @@ class GasPoweredHALE(Model):
     	CL = VectorVariable(Nseg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(Nseg, 'V', 'm/s','cruise speed')
         rho = VectorVariable(Nseg, r'\rho', 'kg/m^3', 'air density')
-        S = Variable('S',20, 'ft^2', 'wing area')
+        S = Variable('S',16, 'ft^2', 'wing area')
         eta_prop = VectorVariable(Nseg, r'\eta_{prop}', [0.6, 0.8, 0.6], '-',
                                   'propulsive efficiency')
         P_shaft = VectorVariable(Nseg, 'P_{shaft}', 'hp', 'Shaft power')
@@ -83,7 +83,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Breguet Range
         z_bre = VectorVariable(Nseg, 'z_{bre}', '-', 'breguet coefficient')
-        BSFC = VectorVariable(Nseg,'BSFC', [0.5,.55,0.5], 'lbf/hr/hp', 'brake specific fuel consumption')
+        BSFC = VectorVariable(Nseg,'BSFC', [0.5,.55,0.6], 'lbf/hr/hp', 'brake specific fuel consumption')
         t = VectorVariable(Nseg, 't', 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
@@ -91,7 +91,7 @@ class GasPoweredHALE(Model):
         
         constraints.extend([z_bre >= V*t*BSFC*CD/CL/eta_prop,
                             R == V[Ncruise]*t[Ncruise],
-                            #t[Nloiter] == 5*units('days'),
+                            t[Nloiter] == 5*units('days'),
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
 
         #----------------------------------------------------
@@ -145,12 +145,12 @@ class GasPoweredHALE(Model):
         constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
                             T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH),
-                            h[Nloiter] >= h_min, #makes sure that the loiter occurs above minimum h
+                            h[Nloiter] >= 15000*units('ft'), #makes sure that the loiter occurs above minimum h
                             h[Ncruise] >= h_min
                             ])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
-        objective = 1/t[Nloiter]
+        objective = MTOW
         return objective, constraints
 
 if __name__ == '__main__':
