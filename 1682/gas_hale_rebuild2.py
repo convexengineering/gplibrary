@@ -14,7 +14,7 @@ class GasPoweredHALE(Model):
         constraints = []
 
         #----------------------------------------------------
-        # Weight and fuel model
+        # Fuel weight model 
 
         MTOW = Variable('MTOW', 'lbf', 'max take off weight')
         W_end = VectorVariable(Nseg, 'W_{end}', 'lbf', 'segment-end weight')
@@ -35,8 +35,7 @@ class GasPoweredHALE(Model):
         constraints.extend([MTOW >= W_end[0] + W_fuel[0], 
                             W_end[:-1] >= W_end[1:] + W_fuel[1:], 
                             W_end[-1] >= W_zfw,
-                            W_airframe >= f_airframe*MTOW,
-                            W_zfw >= W_pay + W_avionics + W_airframe])
+                            W_airframe >= f_airframe*MTOW])
         
         #----------------------------------------------------
         # Steady level flight model
@@ -52,6 +51,23 @@ class GasPoweredHALE(Model):
 
         constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop,
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2])
+
+        #----------------------------------------------------
+        # Engine Model
+        W_eng = Variable('W_{eng}', 'lbf', 'Engine weight')
+        W_engtot = Variable('W_{eng-tot}', 'lbf', 'Installed engine weight')
+        W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
+        P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
+
+        # Engine Weight Constraints
+        constraints.extend([W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
+                            W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078])
+
+        #----------------------------------------------------
+        # Weight breakdown
+        constraints.extend([W_airframe >= f_airframe*MTOW,
+                            W_zfw >= W_pay + W_avionics + W_airframe + W_engtot])
+        
 
         #----------------------------------------------------
         # Breguet Range
