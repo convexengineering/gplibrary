@@ -13,6 +13,7 @@ class GasPoweredHALE(Model):
         constraints = []
 ```
 
+
 ## Flight segment definitions
 ```python
 
@@ -28,6 +29,7 @@ class GasPoweredHALE(Model):
             NCruise = [1,5]
 ```
 
+
 # Fuel weight model
 ```python
 
@@ -42,6 +44,7 @@ class GasPoweredHALE(Model):
         W_begin = W_end.left # define beginning of segment weight
         W_begin[0] = MTOW
 ```
+
 ## Assumptions
 
 *  Mass take off weight is greater than the end of the first segment weight plus that segment fuel weight.
@@ -54,6 +57,7 @@ class GasPoweredHALE(Model):
                             W_end[-1] >= W_zfw,
                             W_airframe >= f_airframe*MTOW])
 ```
+
 
 # Steady level flight model
 ## Assumptions
@@ -75,6 +79,7 @@ class GasPoweredHALE(Model):
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
 ```
+
 # Climb model
 ```python
 
@@ -82,6 +87,7 @@ class GasPoweredHALE(Model):
         constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop + W_begin*h_dot/eta_prop,
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2])
 ```
+
 # Engine Model
 ```python
 
@@ -90,18 +96,21 @@ class GasPoweredHALE(Model):
         W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
         P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
 ```
+
 ## Engine Weight constraints
 ```python
 
         constraints.extend([W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
                             W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078])
 ```
+
 # Weight breakdown
 ```python
 
         constraints.extend([W_airframe >= f_airframe*MTOW,
                             W_zfw >= W_pay + W_avionics + W_airframe + W_engtot])
 ```
+
 # Breguet Range
 ## Assumptions
 * Constant speed during each flight section
@@ -120,6 +129,8 @@ class GasPoweredHALE(Model):
                             t[NLoiter] == 5*units('days'),
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
 ```
+
+
 # Aerodynamics model
 ## Assumptions
 * The wing is a box shape.
@@ -145,6 +156,7 @@ class GasPoweredHALE(Model):
         constraints.extend([CD >= Cd0 + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16,
                             b**2 == S*AR,
 ```
+
 In place of an actual structural model, we impose $AR \leq 20$.
 ```python
 
@@ -153,6 +165,7 @@ In place of an actual structural model, we impose $AR \leq 20$.
                             Re == rho*V/mu*(S/AR)**0.5,
                             Cf >= 0.074/Re**0.2])
 ```
+
 # Atmosphere model
 ## Assumptions
 * Valid only to the top of the troposphere.
@@ -179,6 +192,8 @@ In place of an actual structural model, we impose $AR \leq 20$.
                             h[NLoiter] >= 15000*units('ft'), # makes sure that the loiter occurs above minimum h
                             ])
 ```
+
+
 # Wind speed model
 ```python
 
@@ -196,8 +211,9 @@ In place of an actual structural model, we impose $AR \leq 20$.
                             V >= V_wind,
                             h[NCruise] >= h_min])
 ```
-# Conclusion
 
+
+# Conclusion
 ```python
 
         objective = MTOW
@@ -209,6 +225,7 @@ if __name__ == "__main__":
     with open("sol.tex", "w") as f:
         f.write(M.solution.table(latex=True))
 ```
+
 
 # Solution
 \input{sol.tex}
