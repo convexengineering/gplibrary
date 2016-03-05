@@ -2,6 +2,7 @@
 *.md.py
 *.aux
 *.generated.tex
+*.md.tex.md
 
 # iPython checkpoint folders
 .ipynb_checkpoints/
