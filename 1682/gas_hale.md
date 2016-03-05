@@ -222,10 +222,10 @@ In place of an actual structural model, we impose $AR \leq 20$.
 if __name__ == "__main__":
     M = GasPoweredHALE()
     M.solve()
-    with open("sol.tex", "w") as f:
+    with open("sol.generated.tex", "w") as f:
         f.write(M.solution.table(latex=True))
 ```
 
 
 # Solution
-\input{sol.tex}
+\input{sol.generated.tex}

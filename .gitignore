@@ -1,3 +1,8 @@
+# documentation temp files
+*.md.py
+*.aux
+*.generated.tex
+
 # iPython checkpoint folders
 .ipynb_checkpoints/
 
