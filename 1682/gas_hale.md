@@ -144,10 +144,11 @@ In place of an actual structural model, we impose $AR \leq 20$.
                             Cf >= 0.074/Re**0.2])
 ```
 # Atmosphere model
-# Assumptions
+## Assumptions
 * Valid only to the top of the troposphere.
+
 ## References
-[wp:Density of Air](http://en.wikipedia.org/wiki/Density_of_air#Altitude)
+* [wp:Density of Air](http://en.wikipedia.org/wiki/Density_of_air#Altitude)
 ```python
 
         h = VectorVariable(NSeg, 'h', 'ft', 'Altitude')
@@ -183,7 +184,7 @@ In place of an actual structural model, we impose $AR \leq 20$.
                             V >= V_wind,
                             h[NCruise] >= h_min])
 ```
-# Objective and testing
+# Conclusion
 ```python
         objective = MTOW
         return objective, constraints
