@@ -1,5 +1,6 @@
 # Gas HALE model
 ```python
+#inPDF: skip
 
 from numpy import pi
 from gpkit import VectorVariable, Variable, Model, units
@@ -222,10 +223,12 @@ In place of an actual structural model, we impose $AR \leq 20$.
 if __name__ == "__main__":
     M = GasPoweredHALE()
     M.solve()
-    with open("sol.generated.tex", "w") as f:
-        f.write(M.solution.table(latex=True))
 ```
 
 
 # Solution
-\input{sol.generated.tex}
+```python
+#inPDF: replace with sol.generated.tex
+    with open("sol.generated.tex", "w") as f:
+        f.write(M.solution.table(latex=True))
+```
