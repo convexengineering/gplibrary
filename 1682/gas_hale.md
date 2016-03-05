@@ -51,6 +51,7 @@ class GasPoweredHALE(Model):
 *  Mass take off weight is greater than the end of the first segment weight plus that segment fuel weight.
 * The end of each flight segment weight must be greater than the next end of flight segment weight plus the fuel weight of the next flight segment.
 * The end of the last flight segment weight must be greater than the zero fuel weight
+
 ```python
 
         constraints.extend([MTOW >= W_end[0] + W_fuel[0],
@@ -117,6 +118,7 @@ class GasPoweredHALE(Model):
 * Constant speed during each flight section
 * Constant BSFC
 * The $\ln$ can be approximated using a Taylor-series expansion
+
 ```python
 
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
@@ -140,6 +142,7 @@ class GasPoweredHALE(Model):
 * Reference length for Reynolds number is teh chord.
 * The skin friction is based off of Blasius flat plate.
 * The form factor for the wing is constant.
+
 ```python
 
 
@@ -173,6 +176,7 @@ In place of an actual structural model, we impose $AR \leq 20$.
 
 ## References
 * [wp:Density of Air](http://en.wikipedia.org/wiki/Density_of_air#Altitude)
+
 ```python
 
 
