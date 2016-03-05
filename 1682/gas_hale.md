@@ -197,12 +197,18 @@ In place of an actual structural model, we impose $AR \leq 20$.
                             h[NCruise] >= h_min])
 ```
 # Conclusion
+
 ```python
 
         objective = MTOW
         return objective, constraints
 
-if __name__ == '__main__':
-	M = GasPoweredHALE()
-	M.solve()
+if __name__ == "__main__":
+    M = GasPoweredHALE()
+    M.solve()
+    with open("sol.tex", "w") as f:
+        f.write(M.solution.table(latex=True))
 ```
+
+# Solution
+\input{sol.tex}
