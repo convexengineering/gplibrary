@@ -1,5 +1,6 @@
 # Gas HALE model
 ```python
+
 from numpy import pi
 from gpkit import VectorVariable, Variable, Model, units
 from gpkit.tools import te_exp_minus1
@@ -29,10 +30,10 @@ class GasPoweredHALE(Model):
 
 # Fuel weight model
 ```python
+
         MTOW = Variable('MTOW', 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
-        W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
-                                'segment-fuel weight')
+        W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf', 'segment-fuel weight')
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
         W_pay = Variable('W_{pay}',10,'lbf', 'Payload weight')
         W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
@@ -47,6 +48,7 @@ class GasPoweredHALE(Model):
 * The end of each flight segment weight must be greater than the next end of flight segment weight plus the fuel weight of the next flight segment.
 * The end of the last flight segment weight must be greater than the zero fuel weight
 ```python
+
         constraints.extend([MTOW >= W_end[0] + W_fuel[0],
                             W_end[:-1] >= W_end[1:] + W_fuel[1:],
                             W_end[-1] >= W_zfw,
@@ -63,6 +65,7 @@ class GasPoweredHALE(Model):
 * The average weight can be approximated by: $W_{avg} = \sqrt{W_{begin} W_{end}}$.  Where $W_{begin}$ is the beginning of the flight segment and $W_{end}$ is the end of the flight segment.
 
 ```python
+
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s','cruise speed')
@@ -74,12 +77,14 @@ class GasPoweredHALE(Model):
 ```
 # Climb model
 ```python
+
         h_dot = Variable(NSeg, 'h_{dot}', [200,0,0], 'ft/min', 'Climb rate')
         constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop + W_begin*h_dot/eta_prop,
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2])
 ```
 # Engine Model
 ```python
+
         W_eng = Variable('W_{eng}', 'lbf', 'Engine weight')
         W_engtot = Variable('W_{eng-tot}', 'lbf', 'Installed engine weight')
         W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
@@ -87,11 +92,13 @@ class GasPoweredHALE(Model):
 ```
 ## Engine Weight constraints
 ```python
+
         constraints.extend([W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
                             W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078])
 ```
 # Weight breakdown
 ```python
+
         constraints.extend([W_airframe >= f_airframe*MTOW,
                             W_zfw >= W_pay + W_avionics + W_airframe + W_engtot])
 ```
@@ -101,6 +108,7 @@ class GasPoweredHALE(Model):
 * Constant BSFC
 * The $\ln$ can be approximated using a Taylor-series expansion
 ```python
+
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         BSFC = VectorVariable(NSeg,'BSFC', [0.5,.55,0.6], 'lbf/hr/hp', 'brake specific fuel consumption')
         t = VectorVariable(NSeg, 't', 'days', 'time on station')
@@ -114,13 +122,14 @@ class GasPoweredHALE(Model):
 ```
 # Aerodynamics model
 ## Assumptions
-* The wing is a box shape. 
+* The wing is a box shape.
 * The non-wing drag is a constant
 * The stall factor is based off standard airfoil polar.
 * Reference length for Reynolds number is teh chord.
 * The skin friction is based off of Blasius flat plate.
-* The form factor for the wing is constant. 
+* The form factor for the wing is constant.
 ```python
+
 
         Cd0 = Variable('C_{d0}', 0.02, '-', 'Non-wing drag coefficient')
         CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
@@ -138,6 +147,7 @@ class GasPoweredHALE(Model):
 ```
 In place of an actual structural model, we impose $AR \leq 20$.
 ```python
+
                             AR <= 20,
                             CL <= CLmax,
                             Re == rho*V/mu*(S/AR)**0.5,
@@ -150,6 +160,7 @@ In place of an actual structural model, we impose $AR \leq 20$.
 ## References
 * [wp:Density of Air](http://en.wikipedia.org/wiki/Density_of_air#Altitude)
 ```python
+
 
         h = VectorVariable(NSeg, 'h', 'ft', 'Altitude')
         gamma = Variable(r'\gamma',1.4,'-', 'Heat capacity ratio of air')
@@ -170,6 +181,7 @@ In place of an actual structural model, we impose $AR \leq 20$.
 ```
 # Wind speed model
 ```python
+
         V_wind = VectorVariable(NSeg, 'V_{wind}', 'm/s', 'wind speed')
         wd_cnst = Variable('wd_{cnst}', 0.0015, 'm/s/ft',
                            'wind speed constant predicted by model')
@@ -186,6 +198,7 @@ In place of an actual structural model, we impose $AR \leq 20$.
 ```
 # Conclusion
 ```python
+
         objective = MTOW
         return objective, constraints
 
