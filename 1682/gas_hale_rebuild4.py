@@ -101,7 +101,7 @@ class GasPoweredHALE(Model):
         Cd0 = Variable('C_{d0}', 0.02, '-', 'Non-wing drag coefficient')
         CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
         e = Variable('e', 0.9, '-', 'Spanwise efficiency')
-        AR = Variable('AR', '-', 'Aspect ratio')
+        AR = Variable('AR', 20, '-', 'Aspect ratio')
         b = Variable('b', 'ft', 'Span')
         mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', 'Dynamic viscosity')
         Re = VectorVariable(NSeg, 'Re', '-', 'Reynolds number')
@@ -111,7 +111,6 @@ class GasPoweredHALE(Model):
 
         constraints.extend([CD >= Cd0 + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16,
                             b**2 == S*AR,
-                            AR <= 20, # temporary constraint until we input a valid structural model
                             CL <= CLmax, 
                             Re == rho*V/mu*(S/AR)**0.5,
                             Cf >= 0.074/Re**0.2])

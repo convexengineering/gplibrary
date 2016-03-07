@@ -9,13 +9,14 @@ class GasPoweredHALE(Model):
     def setup(self):
 
         # define number of segments
-        NSeg = 7 # number of flight segments
+        NSeg = 9 # number of flight segments
         NCruise = 2 # number of cruise segments
-        NLoiter = NSeg - NCruise# number of loiter segments
-        iCruise = [0,-1] # cuise index
-        iLoiter = [1] # loiter index
-        for i in range(2,NSeg-1): iLoiter.append(i)
-        iClimb = [0,1] # climb index
+        NClimb = 2 # number of climb segments
+        NLoiter = NSeg - NCruise - NClimb# number of loiter segments
+        iCruise = [1,-1] # cuise index
+        iLoiter = [3] # loiter index
+        for i in range(4,NSeg-1): iLoiter.append(i)
+        iClimb = [0,2] # climb index
 
         constraints = []
 
@@ -56,10 +57,10 @@ class GasPoweredHALE(Model):
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
 
         # Climb model
-        h_dot = Variable(NSeg, 'h_{dot}', 500, 'ft/min', 'Climb rate')
+        h_dot = Variable('h_{dot}', 500, 'ft/min', 'Climb rate')
         
         constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop, # + W_begin*h_dot/eta_prop,
-                            W_begin[iClimb]*CD[iClimb]/CL[iClimb] >= h_dot*W_begin[iClimb]/V[iClimb] + 
+                            P_shaft[iClimb]*eta_prop[iClimb]/V[iClimb] >= h_dot*W_begin[iClimb]/V[iClimb] + 
                                                       0.5*rho[iClimb]*V[iClimb]**2*S*CD[iClimb],
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2])
 
@@ -82,7 +83,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
-        BSFC = VectorVariable(NSeg,'BSFC', 'lbf/hr/hp', 'brake specific fuel consumption')
+        BSFC = VectorVariable(NSeg, 'BSFC', 'lbf/hr/hp', 'brake specific fuel consumption')
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
         t_station = Variable('t_{station}', 'days', 'time on station')
@@ -92,19 +93,29 @@ class GasPoweredHALE(Model):
         constraints.extend([z_bre >= V*t*BSFC*CD/CL/eta_prop,
                             R <= V[iCruise]*t[iCruise],
                             t[iLoiter] >= t_station/NLoiter,
-                            t[0] <= t_cruise,
+                            t[iCruise[0]] <= t_cruise,
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
 
         #----------------------------------------------------
         # BSFC model
-        J = Variable('J', 0.6, '-', 'advance ratio on propellors')
-        RPM = VectorVariable(NSeg, 'RPM', '1/minute', 'rotational speed')
+        J = Variable('J', 0.127, '1/radians', 'advance ratio on propellors')
+        RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'rotational speed')
         R_prop = Variable('R_{prop}', 9, 'inches', 'Prop radius')
-        RPM_ref = Variable('RPM_{ref}', 3000, '1/minute', 'reference rotational speed') 
-        BSFC_ref = Variable('BSFC_{ref}', 2.7768, 'lbf/hp/hr', 'reference BSFC')
+        RPM_ref = Variable('RPM_{ref}', 3000, 'rpm', 'reference rotational speed') 
+        rho_fuel = Variable(r'\rho_{fuel}', 6.01, 'lbf/gallon', 'density of 100LL')
+        mdot_fuel = VectorVariable(NSeg, r'\dot{m}_{fuel}', 'cm^3/hr', 'fuel consumption')
+        mdot_fuelref = Variable(r'\dot{m}_{fuel-ref}', 360, 'cm^3/hr', 
+                                'fuel consumption reference')
+        Tau = VectorVariable(NSeg, r'\Tau', 'N*m', 'torque')
+        Tau_ref = Variable(r'\Tau_{ref}', 0.55, 'N*m', 'reference torque')
 
-        constraints.extend([J == V/RPM/R_prop,
-                            (BSFC/BSFC_ref) + 1.6377*(RPM/RPM_ref) >= 0.3354*(RPM/RPM_ref)**2 + 2.3664,
+        constraints.extend([#J == V/RPM/R_prop,
+                            Tau <= 3*units('N*m'),
+                            Tau/Tau_ref >= 0.9143*(RPM/RPM_ref)**1.5663,
+                            P_shaft <= Tau*RPM,
+                            mdot_fuel/mdot_fuelref >= 0.9164*(RPM/RPM_ref)**1.5462,
+                            BSFC >= mdot_fuel*rho_fuel/P_shaft,
+                            RPM >= 2000*units('rpm'),
                             ])
         # BSFC data was taken from http://www.3w-international.com/Drone_Engines_Sale/engine-details-test-data/engine-data-3W-28i-HFE-FI.php
 
@@ -114,7 +125,7 @@ class GasPoweredHALE(Model):
         Cd0 = Variable('C_{d0}', 0.02, '-', 'Non-wing drag coefficient')
         CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
         e = Variable('e', 0.9, '-', 'Spanwise efficiency')
-        AR = Variable('AR', '-', 'Aspect ratio')
+        AR = Variable('AR', 20, '-', 'Aspect ratio')
         b = Variable('b', 'ft', 'Span')
         mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', 'Dynamic viscosity')
         Re = VectorVariable(NSeg, 'Re', '-', 'Reynolds number')
@@ -124,7 +135,6 @@ class GasPoweredHALE(Model):
 
         constraints.extend([CD >= Cd0 + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16,
                             b**2 == S*AR,
-                            AR <= 20, # temporary constraint until we input a valid structural model
                             CL <= CLmax, 
                             Re == rho*V/mu*(S/AR)**0.5,
                             Cf >= 0.074/Re**0.2])
@@ -153,7 +163,11 @@ class GasPoweredHALE(Model):
         h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
 
         constraints.extend([h[iLoiter] >= h_station,
-                            h[iCruise] >= h_min])
+                            h[iCruise] >= h_min,
+                            h[iClimb] >= h_min, 
+                            t[iClimb[0]]*h_dot == h_min,
+                            t[iClimb[1]]*h_dot == 10000*units('ft'),
+                            ])
 
         #----------------------------------------------------
         # wind speed model
