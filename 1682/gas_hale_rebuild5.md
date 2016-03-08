@@ -68,7 +68,7 @@ class GasPoweredHALE(Model):
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
 
-        constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop, # + W_begin*h_dot/eta_prop,
+        constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop, 
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2])
 ```
 
@@ -76,8 +76,9 @@ class GasPoweredHALE(Model):
 ```python
         h_dot = Variable('h_{dot}', 500, 'ft/min', 'Climb rate')
         
-        constraints.extend([P_shaft[iClimb]*eta_prop[iClimb]/V[iClimb] >= h_dot*W_begin[iClimb]/V[iClimb] + 
-                                                      0.5*rho[iClimb]*V[iClimb]**2*S*CD[iClimb]])
+        constraints.extend([P_shaft[iClimb]*eta_prop[iClimb]/V[iClimb] >=
+			    h_dot*W_begin[iClimb]/V[iClimb] + 
+                            0.5*rho[iClimb]*V[iClimb]**2*S*CD[iClimb]])
                            
 ```
 
