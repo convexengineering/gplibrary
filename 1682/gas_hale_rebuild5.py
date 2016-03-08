@@ -51,19 +51,19 @@ class GasPoweredHALE(Model):
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s','cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
-        S = Variable('S', 16, 'ft^2', 'wing area')
+        S = Variable('S', 'ft^2', 'wing area')
         eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-',
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
+        T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
         # Climb model
-        h_dot = Variable('h_{dot}', 'ft/min', 'Climb rate')
-        h_dot_min = Variable('h_{dot-min}', 100,'ft/min','Minimum Climb Rate')
+        h_dot = Variable('h_{dot}', 100, 'ft/min', 'Climb rate')
         
-        constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop, # + W_begin*h_dot/eta_prop,
-                            P_shaft[iClimb]*eta_prop[iClimb]/V[iClimb] >= h_dot*W_begin[iClimb]/V[iClimb] + 
-                                                      0.5*rho[iClimb]*V[iClimb]**2*S*CD[iClimb],
-                            h_dot >= h_dot_min,
+        constraints.extend([P_shaft >= T*V/eta_prop, # + W_begin*h_dot/eta_prop,
+                            P_shaft[iClimb]*eta_prop[iClimb] >= h_dot*W_begin[iClimb] + 
+                                             0.5*rho[iClimb]*V[iClimb]**3*S*CD[iClimb],
+                            T >= 0.5*rho*V**2*CD*S,
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
                             eta_prop[iClimb] == 0.5,
                             eta_prop[iCruise] == 0.6,
