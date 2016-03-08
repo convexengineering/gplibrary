@@ -57,11 +57,13 @@ class GasPoweredHALE(Model):
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
 
         # Climb model
-        h_dot = Variable('h_{dot}', 500, 'ft/min', 'Climb rate')
+        h_dot = Variable('h_{dot}', 'ft/min', 'Climb rate')
+        h_dot_min = Variable('h_{dot-min}', 100,'ft/min','Minimum Climb Rate')
         
         constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop, # + W_begin*h_dot/eta_prop,
                             P_shaft[iClimb]*eta_prop[iClimb]/V[iClimb] >= h_dot*W_begin[iClimb]/V[iClimb] + 
                                                       0.5*rho[iClimb]*V[iClimb]**2*S*CD[iClimb],
+                            h_dot >= h_dot_min,
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
                             eta_prop[iClimb] == 0.5,
                             eta_prop[iCruise] == 0.6,
@@ -103,6 +105,7 @@ class GasPoweredHALE(Model):
 
         #----------------------------------------------------
         # BSFC model
+        # Need improved propeller model. Consult Drela. 
         J = Variable('J', 0.127, '1/radians', 'advance ratio on propellors')
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'rotational speed')
         R_prop = Variable('R_{prop}', 9, 'inches', 'Prop radius')
@@ -112,6 +115,7 @@ class GasPoweredHALE(Model):
         mdot_fuelref = Variable(r'\dot{m}_{fuel-ref}', 360, 'cm^3/hr', 
                                 'fuel consumption reference')
         Tau = VectorVariable(NSeg, r'\Tau', 'N*m', 'torque')
+            # Tau always converges to 3. Perhaps this is not optimal...
         Tau_ref = Variable(r'\Tau_{ref}', 0.55, 'N*m', 'reference torque')
 
         constraints.extend([#J == V/RPM/R_prop,
@@ -170,7 +174,8 @@ class GasPoweredHALE(Model):
         constraints.extend([h[iLoiter] >= h_station,
                             h[iCruise] >= h_min,
                             h[iClimb] >= h_min, 
-                            t[iClimb[0]]*h_dot == h_min,
+                            t[iClimb[0]]*h_dot == h_min, # still need to determine min cruise altitude, 
+                                                        #and make these variables independent of user-input numbers
                             t[iClimb[1]]*h_dot == 10000*units('ft'),
                             ])
 
