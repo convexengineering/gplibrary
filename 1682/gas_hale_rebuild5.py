@@ -90,10 +90,10 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
-        BSFC = VectorVariable(NSeg, 'BSFC', 'lbf/hr/hp', 'brake specific fuel consumption')
+        BSFC = Variable('BSFC', 0.7, 'lbf/hr/hp', 'brake specific fuel consumption')
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
-        t_station = Variable('t_{station}', 'days', 'time on station')
+        t_station = Variable('t_{station}', 5, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
@@ -102,31 +102,6 @@ class GasPoweredHALE(Model):
                             t[iLoiter] >= t_station/NLoiter,
                             t[iCruise[0]] <= t_cruise,
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
-
-        #----------------------------------------------------
-        # BSFC model
-        # Need improved propeller model. Consult Drela. 
-        J = Variable('J', 0.127, '1/radians', 'advance ratio on propellors')
-        RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'rotational speed')
-        R_prop = Variable('R_{prop}', 9, 'inches', 'Prop radius')
-        RPM_ref = Variable('RPM_{ref}', 3000, 'rpm', 'reference rotational speed') 
-        rho_fuel = Variable(r'\rho_{fuel}', 6.01, 'lbf/gallon', 'density of 100LL')
-        mdot_fuel = VectorVariable(NSeg, r'\dot{m}_{fuel}', 'cm^3/hr', 'fuel consumption')
-        mdot_fuelref = Variable(r'\dot{m}_{fuel-ref}', 360, 'cm^3/hr', 
-                                'fuel consumption reference')
-        Tau = VectorVariable(NSeg, r'\Tau', 'N*m', 'torque')
-            # Tau always converges to 3. Perhaps this is not optimal...
-        Tau_ref = Variable(r'\Tau_{ref}', 0.55, 'N*m', 'reference torque')
-
-        constraints.extend([#J == V/RPM/R_prop,
-                            Tau <= 3*units('N*m'),
-                            Tau/Tau_ref >= 0.9143*(RPM/RPM_ref)**1.5663,
-                            P_shaft <= Tau*RPM,
-                            mdot_fuel/mdot_fuelref >= 0.9164*(RPM/RPM_ref)**1.5462,
-                            BSFC >= mdot_fuel*rho_fuel/P_shaft,
-                            RPM >= 2000*units('rpm'),
-                            ])
-        # BSFC data was taken from http://www.3w-international.com/Drone_Engines_Sale/engine-details-test-data/engine-data-3W-28i-HFE-FI.php
 
         #----------------------------------------------------
         # Aerodynamics model
@@ -182,11 +157,11 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = VectorVariable(NLoiter, 'V_{wind}', [20,25,30,10,15], 'm/s', 'wind speed')
+        V_wind = Variable('V_{wind}', 25, 'm/s', 'wind speed')
 
         constraints.extend([V[iLoiter] >= V_wind])
 
-        objective = 1/t_station 
+        objective = MTOW 
         return objective, constraints
 
 if __name__ == '__main__':
