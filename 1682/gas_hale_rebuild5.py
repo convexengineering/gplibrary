@@ -52,7 +52,7 @@ class GasPoweredHALE(Model):
         V = VectorVariable(NSeg, 'V', 'm/s','cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 16, 'ft^2', 'wing area')
-        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', np.linspace(0.8,0.8,NSeg), '-',
+        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-',
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
 
@@ -62,7 +62,12 @@ class GasPoweredHALE(Model):
         constraints.extend([P_shaft >= V*(W_end+W_begin)/2*CD/CL/eta_prop, # + W_begin*h_dot/eta_prop,
                             P_shaft[iClimb]*eta_prop[iClimb]/V[iClimb] >= h_dot*W_begin[iClimb]/V[iClimb] + 
                                                       0.5*rho[iClimb]*V[iClimb]**2*S*CD[iClimb],
-                            0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2])
+                            0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
+                            eta_prop[iClimb] == 0.5,
+                            eta_prop[iCruise] == 0.6,
+                            eta_prop[iLoiter] == 0.8
+                            ])# Propulsive efficiency variation with different flight segments,
+                              # will change depending on propeller characteristics
 
         #----------------------------------------------------
         # Engine Model
