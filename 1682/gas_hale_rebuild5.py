@@ -1,4 +1,5 @@
 from numpy import pi
+import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units
 from gpkit.tools import te_exp_minus1
 import gpkit
@@ -52,7 +53,7 @@ class GasPoweredHALE(Model):
         V = VectorVariable(NSeg, 'V', 'm/s','cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 'ft^2', 'wing area')
-        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-',
+        eta_prop = Variable(r'\eta_{prop}', 0.7, '-',
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
@@ -61,13 +62,13 @@ class GasPoweredHALE(Model):
         h_dot = Variable('h_{dot}', 100, 'ft/min', 'Climb rate')
         
         constraints.extend([P_shaft >= T*V/eta_prop, # + W_begin*h_dot/eta_prop,
-                            P_shaft[iClimb]*eta_prop[iClimb] >= h_dot*W_begin[iClimb] + 
+                            P_shaft[iClimb]*eta_prop >= h_dot*W_begin[iClimb] + 
                                              0.5*rho[iClimb]*V[iClimb]**3*S*CD[iClimb],
                             T >= 0.5*rho*V**2*CD*S,
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
-                            eta_prop[iClimb] == 0.5,
-                            eta_prop[iCruise] == 0.6,
-                            eta_prop[iLoiter] == 0.8
+                            #eta_prop[iClimb] == 0.5,
+                            #eta_prop[iCruise] == 0.6,
+                            #eta_prop[iLoiter] == 0.8
                             ])# Propulsive efficiency variation with different flight segments,
                               # will change depending on propeller characteristics
 
@@ -165,5 +166,50 @@ class GasPoweredHALE(Model):
         return objective, constraints
 
 if __name__ == '__main__':
-	M = GasPoweredHALE()
-	M.solve()
+    M = GasPoweredHALE()
+    sol = M.solve()
+
+    #----------------------------------------------
+    # post processing
+    
+    M.substitutions.update({'BSFC': ('sweep', np.linspace(0.3,1,15))})
+    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    
+    BSFC = sol('BSFC')
+    MTOW = sol('MTOW')
+    b = sol('b')
+
+    plt.close()
+    plt.plot(BSFC,MTOW)
+    plt.xlabel('BSFC [lbf/hp/hr]')
+    plt.ylabel('MTOW [lbf]')
+    plt.savefig('BSFCvsMTOW.png')
+
+    plt.close()
+    plt.plot(BSFC,b)
+    plt.xlabel('BSFC [lbf/hp/hr]')
+    plt.ylabel('b [ft]')
+    plt.savefig('BSFCvsb.png')
+
+    M.substitutions.update({r'\eta_{prop}':('sweep', np.linspace(0.5,1,15)), 'BSFC':0.7})
+    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+
+    eta_prop = sol(r'\eta_{prop}')
+    MTOW = sol('MTOW')
+    b = sol('b')
+
+    plt.close()
+    plt.plot(eta_prop,MTOW)
+    plt.xlabel('eta_prop ')
+    plt.ylabel('MTOW [lbf]')
+    plt.savefig('eta_propvsMTOW.png')
+
+    plt.close()
+    plt.plot(eta_prop,b)
+    plt.xlabel('eta_prop ')
+    plt.ylabel('b [ft]')
+    plt.savefig('eta_propvsb.png')
+    plt.close()
+        
+
+
