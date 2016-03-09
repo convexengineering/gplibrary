@@ -53,24 +53,25 @@ class GasPoweredHALE(Model):
         V = VectorVariable(NSeg, 'V', 'm/s','cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 'ft^2', 'wing area')
-        eta_prop = Variable(r'\eta_{prop}', 0.7, '-',
+        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', 0.7, '-',
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
         # Climb model
-        h_dot = Variable('h_{dot}', 100, 'ft/min', 'Climb rate')
+        h_dot = Variable('h_{dot}', 300, 'ft/min', 'Climb rate')
         
-        constraints.extend([P_shaft >= T*V/eta_prop, # + W_begin*h_dot/eta_prop,
-                            P_shaft[iClimb]*eta_prop >= h_dot*W_begin[iClimb] + 
-                                             0.5*rho[iClimb]*V[iClimb]**3*S*CD[iClimb],
+        constraints.extend([P_shaft >= T*V/eta_prop + W_begin*h_dot/eta_prop,
+                            P_shaft[iClimb] >= T[iClimb]*V[iClimb]/eta_prop[iClimb] + 
+                                               W_begin[iClimb]*h_dot/eta_prop[iClimb],
                             T >= 0.5*rho*V**2*CD*S,
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
-                            #eta_prop[iClimb] == 0.5,
-                            #eta_prop[iCruise] == 0.6,
-                            #eta_prop[iLoiter] == 0.8
-                            ])# Propulsive efficiency variation with different flight segments,
-                              # will change depending on propeller characteristics
+                            eta_prop[iClimb] == 0.5,
+                            eta_prop[iCruise] == 0.6,
+                            eta_prop[iLoiter] == 0.8
+                            ])
+        # Propulsive efficiency variation with different flight segments,
+        # will change depending on propeller characteristics
 
         #----------------------------------------------------
         # Engine Model
@@ -84,25 +85,36 @@ class GasPoweredHALE(Model):
                             W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078])
 
         #----------------------------------------------------
-        # Weight breakdown
-        constraints.extend([W_airframe >= f_airframe*MTOW,
-                            W_zfw >= W_pay + W_avionics + W_airframe + W_engtot])
-        
-        #----------------------------------------------------
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
-        BSFC = Variable('BSFC', 0.7, 'lbf/hr/hp', 'brake specific fuel consumption')
+        BSFC = Variable('BSFC', 0.7, 'lb/hr/hp',
+                              'brake specific fuel consumption')
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
         t_station = Variable('t_{station}', 5, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
-        constraints.extend([z_bre >= V*t*BSFC*CD/CL/eta_prop,
+        constraints.extend([z_bre >= V*t*BSFC*g*CD/CL/eta_prop,
                             R <= V[iCruise]*t[iCruise],
                             t[iLoiter] >= t_station/NLoiter,
                             t[iCruise[0]] <= t_cruise,
                             W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
+
+        #----------------------------------------------------
+        # BSFC model
+        
+        #h_fuel = Variable("h_{fuel}", 42e6, "J/kg", "heat of combustion")
+        #eta_th = VectorVariable(NSeg, r'\eta_{th}', np.linspace(0.25, 0.25, NSeg),  '-', 'thermal efficiency')
+        #theta = VectorVariable(NSeg, r'\theta', np.linspace(1,1,NSeg), '-', 'throttle setting')
+        #Q = VectorVariable(NSeg, 'Q',np.linspace(1.9,1.9,NSeg), 'N*m', 'engine torque')
+        #Q_max = Variable('Q_{max}', 2.58, 'N*m', 'maximum torque')
+        #eta_otto = Variable(r'\eta_{otto}', 0.5, '-', 'maximum thermal efficiency, otto')
+        #A0 = Variable('A_0', 1.3548, '-', 'thermal coefficient A0')
+        #A1 = Variable('A_1', 
+        #
+        #constraints.extend([BSFC >= 1/h_fuel/eta_th/theta*(Q/Q_max),
+        #                    ])
 
         #----------------------------------------------------
         # Aerodynamics model
@@ -110,7 +122,7 @@ class GasPoweredHALE(Model):
         Cd0 = Variable('C_{d0}', 0.02, '-', 'Non-wing drag coefficient')
         CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
         e = Variable('e', 0.9, '-', 'Spanwise efficiency')
-        AR = Variable('AR', 20, '-', 'Aspect ratio')
+        AR = Variable('AR', '-', 'Aspect ratio')
         b = Variable('b', 'ft', 'Span')
         mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', 'Dynamic viscosity')
         Re = VectorVariable(NSeg, 'Re', '-', 'Reynolds number')
@@ -150,10 +162,82 @@ class GasPoweredHALE(Model):
         constraints.extend([h[iLoiter] >= h_station,
                             h[iCruise] >= h_min,
                             h[iClimb] >= h_min, 
-                            t[iClimb[0]]*h_dot == h_min, # still need to determine min cruise altitude, 
-                                                        #and make these variables independent of user-input numbers
+                            t[iClimb[0]]*h_dot == h_min, 
+                            # still need to determine min cruise altitude, 
+                            #and make these variables independent of user-input numbers
                             t[iClimb[1]]*h_dot == 10000*units('ft'),
                             ])
+
+        #----------------------------------------------------
+        # Weight breakdown
+
+        W_cent = Variable('W_{cent}', 'lbf', 'Center aircraft weight')
+        W_fuse = Variable('W_{fuse}', 2, 'lbf', 'fuselage weight') 
+        W_wing = Variable('W_{wing}', 'lbf', 'Total wing structural weight')
+        m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
+        m_skin = Variable('m_{skin}','kg','Skin mass')
+        m_tail = Variable('m_{tail}', 0.75, 'kg', 'tail mass')
+        W_fueltot = Variable('W_{fueltot}', 'lbf', 'total fuel weight')
+
+        W_fueltot = 0
+        for j in range(0,NSeg):
+            W_fueltot += W_fuel[j]
+
+        constraints.extend([W_wing >= m_skin*g + m_cap*g,
+                            W_cent >= W_fueltot + W_pay + W_engtot + W_fuse,
+                            W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g]) 
+
+        #----------------------------------------------------
+        # Structural model
+
+        # Structural parameters
+        rho_skin = Variable(r'\rho_{skin}', 0.1, 'g/cm^2', 'Wing Skin Density') 
+        rho_cap = Variable(r'\rho_{cap}',1.76, 'g/cm^3', 'Density of CF cap')
+        E_cap = Variable('E_{cap}', 2e7, 'psi', 'Youngs modulus of CF cap')
+        sigma_cap = Variable(r'\sigma_{cap}', 475e6,'Pa', 'Cap stress') 
+        
+        # Structural lengths
+        h_spar = Variable('h_{spar}', 'm', 'Spar height') 
+        t_cap = Variable('t_{cap}', 0.028, 'in', 'Spar cap thickness') 
+        #arbitrarily placed based on available cf
+        w_cap = Variable('w_{cap}', 'in', 'Spar cap width')
+        c = Variable('c', 'ft', 'Wing chord') #assumes straight, untapered wing
+
+        # Structural ratios
+        tau = Variable(r'\tau', 0.12,'-', 'Airfoil thickness ratio') #find better number
+        LoverA = Variable('LoverA', 'lbf/ft^2', 'Wing loading')
+        lambda_c = Variable(r'\lambda_c', '-', 'Taper ratio')
+
+        # Structural areas
+        A_capcent = Variable('A_{capcent}', 'm**2', 'Cap area at center')
+        A_cap = Variable('A_{cap}', 'm**2', 'Cap area') #currently assumes constant area
+
+        # Structural volumes
+        Vol_cap = Variable('Vol_{cap}', 'm**3', 'Cap volume')
+
+        # Structural evaluation parameters
+        M_cent = Variable('M_cent', 'N*m', 'Center bending moment')
+        F = Variable('F', 'N', 'Load on wings')
+        SL = Variable('SL', 'Pa', 'Shear load') #need to add constraint
+        N_Max = Variable('N_{Max}', 5,'-', 'Load factor') 
+        #load rating for max number of g's
+        P_cap = Variable('P_{cap}', 'N', 'Cap load')
+        delta_tip = Variable(r'\delta_{tip}', 'ft', 'Tip deflection') 
+        #need to add constraint
+
+        constraints.extend([m_skin >= rho_skin*S*2,
+                            F >= W_cent*N_Max,
+                            c == S/b,
+                            M_cent >= b*F/8,
+                            P_cap >= M_cent/h_spar,
+                            A_capcent >= P_cap/sigma_cap,
+                            Vol_cap >= A_capcent*b/3,
+                            m_cap == rho_cap*Vol_cap,
+                            h_spar <= tau*c,
+                            w_cap == A_capcent/t_cap,
+                            LoverA == MTOW/S,
+                            delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
+                            delta_tip <= b/5]) 
 
         #----------------------------------------------------
         # wind speed model
@@ -172,44 +256,44 @@ if __name__ == '__main__':
     #----------------------------------------------
     # post processing
     
-    M.substitutions.update({'BSFC': ('sweep', np.linspace(0.3,1,15))})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    
-    BSFC = sol('BSFC')
-    MTOW = sol('MTOW')
-    b = sol('b')
+    #M.substitutions.update({'BSFC': ('sweep', np.linspace(0.3,1,15))})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #
+    #BSFC = sol('BSFC')
+    #MTOW = sol('MTOW')
+    #b = sol('b')
 
-    plt.close()
-    plt.plot(BSFC,MTOW)
-    plt.xlabel('BSFC [lbf/hp/hr]')
-    plt.ylabel('MTOW [lbf]')
-    plt.savefig('BSFCvsMTOW.png')
+    #plt.close()
+    #plt.plot(BSFC,MTOW)
+    #plt.xlabel('BSFC [lbf/hp/hr]')
+    #plt.ylabel('MTOW [lbf]')
+    #plt.savefig('BSFCvsMTOW.png')
 
-    plt.close()
-    plt.plot(BSFC,b)
-    plt.xlabel('BSFC [lbf/hp/hr]')
-    plt.ylabel('b [ft]')
-    plt.savefig('BSFCvsb.png')
+    #plt.close()
+    #plt.plot(BSFC,b)
+    #plt.xlabel('BSFC [lbf/hp/hr]')
+    #plt.ylabel('b [ft]')
+    #plt.savefig('BSFCvsb.png')
 
-    M.substitutions.update({r'\eta_{prop}':('sweep', np.linspace(0.5,1,15)), 'BSFC':0.7})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #M.substitutions.update({r'\eta_{prop}':('sweep', np.linspace(0.5,1,15)), 'BSFC':0.7})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    eta_prop = sol(r'\eta_{prop}')
-    MTOW = sol('MTOW')
-    b = sol('b')
+    #eta_prop = sol(r'\eta_{prop}')
+    #MTOW = sol('MTOW')
+    #b = sol('b')
 
-    plt.close()
-    plt.plot(eta_prop,MTOW)
-    plt.xlabel('eta_prop ')
-    plt.ylabel('MTOW [lbf]')
-    plt.savefig('eta_propvsMTOW.png')
+    #plt.close()
+    #plt.plot(eta_prop,MTOW)
+    #plt.xlabel('eta_prop ')
+    #plt.ylabel('MTOW [lbf]')
+    #plt.savefig('eta_propvsMTOW.png')
 
-    plt.close()
-    plt.plot(eta_prop,b)
-    plt.xlabel('eta_prop ')
-    plt.ylabel('b [ft]')
-    plt.savefig('eta_propvsb.png')
-    plt.close()
+    #plt.close()
+    #plt.plot(eta_prop,b)
+    #plt.xlabel('eta_prop ')
+    #plt.ylabel('b [ft]')
+    #plt.savefig('eta_propvsb.png')
+    #plt.close()
         
 
 
