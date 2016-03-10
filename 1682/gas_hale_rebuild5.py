@@ -59,12 +59,11 @@ class GasPoweredHALE(Model):
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
         # Climb model
-        h_dot = Variable('h_{dot}', 300, 'ft/min', 'Climb rate')
+        h_dot = Variable('h_{dot}', 120, 'ft/min', 'Climb rate')
         
         constraints.extend([P_shaft >= T*V/eta_prop,
-                            P_shaft[iClimb] >= T[iClimb]*V[iClimb]/eta_prop[iClimb] + 
-                                               W_begin[iClimb]*h_dot/eta_prop[iClimb],
                             T >= 0.5*rho*V**2*CD*S,
+                            T[iClimb] >= 0.5*rho[iClimb]*V[iClimb]**2*CD[iClimb]*S + W_begin[iClimb]*h_dot/V[iClimb],
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
                             eta_prop[iClimb] == 0.5,
                             eta_prop[iCruise] == 0.6,
