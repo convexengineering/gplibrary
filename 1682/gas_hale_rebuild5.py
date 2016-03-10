@@ -37,7 +37,7 @@ class GasPoweredHALE(Model):
         Vol_pay = Variable('Vol_{pay}',0.5,'ft^3','Payload volume')
 
         # Avionics model
-        W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
+        W_avionics = Variable('W_{avionics}', 8, 'lbf', 'Avionics weight')
         Vol_avionics = Variable('Vol_{avionics}',0.125,'ft^3','Avionics volume')
 
         # end of first segment weight + first segment fuel weight must be greater 
@@ -137,7 +137,7 @@ class GasPoweredHALE(Model):
         S_fuse = Variable('S_{fuse}', 'ft^2', 'Fuselage surface area')
         Cffuse = Variable('C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
         CDfuse = Variable('C_{D-fuse}', '-', 'fueslage drag')
-        l_fuse = Variable('l_{fuse}',3,'ft', 'fuselage length')
+        l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
         Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
 
         # landing gear
@@ -283,9 +283,9 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = VectorVariable(NLoiter,'V_{wind}',[30,20,35,15,25], 'm/s', 'wind speed')
+        V_wind = VectorVariable(NLoiter,'V_{wind}', np.linspace(25,25,NLoiter), 'm/s', 'wind speed')
 
-        constraints.extend([V[iLoiter] >= V_wind*0.5])
+        constraints.extend([V[iLoiter] >= V_wind])
 
         objective = MTOW 
         return objective, constraints
