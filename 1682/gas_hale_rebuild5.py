@@ -202,15 +202,10 @@ class GasPoweredHALE(Model):
         m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
         m_skin = Variable('m_{skin}','kg','Skin mass')
         m_tail = Variable('m_{tail}', 0.75, 'kg', 'tail mass')
-        W_fueltot = Variable('W_{fueltot}', 'lbf', 'total fuel weight')
-
-        W_fueltot = 0
-        for j in range(0,NSeg):
-            W_fueltot += W_fuel[j]
 
         constraints.extend([W_wing >= m_skin*g + m_cap*g,
                             W_fuse == m_fuse*g,
-                            W_cent >= W_fueltot + W_pay + W_engtot + W_fuse + W_avionics,
+                            W_cent >= W_fuel.sum() + W_pay + W_engtot + W_fuse + W_avionics,
                             W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g + W_avionics]) 
 
         #----------------------------------------------------
@@ -284,7 +279,7 @@ class GasPoweredHALE(Model):
         constraints.extend([m_fuse >= S_fuse*rho_skin,
                             (l_fuse/k1fuse)**3 == Vol_fuse,
                             (S_fuse/k2fuse)**3 == Vol_fuse**2,
-                            Vol_fuel >= W_fueltot/rho_fuel,
+                            Vol_fuel >= W_fuel.sum()/rho_fuel,
                             Vol_fuse >= Vol_fuel+Vol_avionics+Vol_pay])
 
         #----------------------------------------------------
