@@ -68,7 +68,7 @@ class GasPoweredHALE(Model):
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
                             eta_prop[iClimb] == 0.5,
                             eta_prop[iCruise] == 0.6,
-                            eta_prop[iLoiter] == 0.8
+                            eta_prop[iLoiter] == 0.7
                             ])
         # Propulsive efficiency variation with different flight segments,
         # will change depending on propeller characteristics
@@ -104,7 +104,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # BSFC model
         
-        #h_fuel = Variable("h_{fuel}", 42e6, "J/kg", "heat of combustion")
+        #h_fuel = Variable('h_{fuel}', 42e6, 'J/kg', 'heat of combustion')
         #eta_th = VectorVariable(NSeg, r'\eta_{th}', np.linspace(0.25, 0.25, NSeg),  '-', 'thermal efficiency')
         #theta = VectorVariable(NSeg, r'\theta', np.linspace(1,1,NSeg), '-', 'throttle setting')
         #Q = VectorVariable(NSeg, 'Q',np.linspace(1.9,1.9,NSeg), 'N*m', 'engine torque')
@@ -119,7 +119,6 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Aerodynamics model
 
-        Cd0 = Variable('C_{d0}', 0.02, '-', 'Non-wing drag coefficient')
         CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
         e = Variable('e', 0.9, '-', 'Spanwise efficiency')
         AR = Variable('AR', '-', 'Aspect ratio')
@@ -130,11 +129,23 @@ class GasPoweredHALE(Model):
         Kwing = Variable('K_{wing}', 1.3, '-', 'wing form factor')
         cl_16 = Variable('cl_{16}', 0.0001, '-', 'profile stall coefficient')
 
-        constraints.extend([CD >= Cd0 + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16,
+        # fuselage drag 
+        Kfuse = Variable('K_{fuse}', 1.1, '-', 'Fuselage form factor')
+        S_fuse = Variable('S_{fuse}', 'ft^2', 'Fuselage surface area')
+        Cffuse = Variable('C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
+        CDfuse = Variable('C_{D-fuse}', '-', 'fueslage drag')
+        l_fuse = Variable('l_{fuse}', 2, 'ft', 'fuselage length')
+        Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
+        
+        constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16,
                             b**2 == S*AR,
                             CL <= CLmax, 
                             Re == rho*V/mu*(S/AR)**0.5,
-                            Cf >= 0.074/Re**0.2])
+                            Cf >= 0.074/Re**0.2,
+                            CDfuse >= Kfuse*S_fuse*Cffuse/S,
+                            Refuse == rho*V/mu*l_fuse,
+                            Cffuse >= 0.074/Refuse**0.2,
+                            ])
 
         #----------------------------------------------------
         # Atmosphere model
@@ -172,8 +183,9 @@ class GasPoweredHALE(Model):
         # Weight breakdown
 
         W_cent = Variable('W_{cent}', 'lbf', 'Center aircraft weight')
-        W_fuse = Variable('W_{fuse}', 2, 'lbf', 'fuselage weight') 
+        W_fuse = Variable('W_{fuse}', 'lbf', 'fuselage weight') 
         W_wing = Variable('W_{wing}', 'lbf', 'Total wing structural weight')
+        m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
         m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
         m_skin = Variable('m_{skin}','kg','Skin mass')
         m_tail = Variable('m_{tail}', 0.75, 'kg', 'tail mass')
@@ -184,6 +196,7 @@ class GasPoweredHALE(Model):
             W_fueltot += W_fuel[j]
 
         constraints.extend([W_wing >= m_skin*g + m_cap*g,
+                            W_fuse == m_fuse*g,
                             W_cent >= W_fueltot + W_pay + W_engtot + W_fuse,
                             W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g]) 
 
@@ -238,6 +251,21 @@ class GasPoweredHALE(Model):
                             LoverA == MTOW/S,
                             delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
                             delta_tip <= b/5]) 
+
+        #----------------------------------------------------
+        # Fuselage model
+
+        k1fuse = Variable('k_{1-fuse}', 2.5, '-', 'fuselage form factor 1')
+        k2fuse = Variable('k-{2-fuse}', 20, '-', 'fuselage form factor 2')
+        Vol_fuel = Variable('Vol_{fuel}',  'm**3', 'Fuel Volume')
+        rho_fuel = Variable(r'\rho_{fuel}', 6.01, 'lbf/gallon', 'density of 100LL')
+        Vol_fuse = Variable('Vol_{fuse}', 'm**3', 'fuselage volume')
+
+        constraints.extend([m_fuse >= S_fuse*rho_skin,
+                            (l_fuse/k1fuse)**3 == Vol_fuse,
+                            (S_fuse/k2fuse)**3 == Vol_fuse**2,
+                            Vol_fuel >= W_fueltot/rho_fuel,
+                            Vol_fuse >= Vol_fuel])
 
         #----------------------------------------------------
         # wind speed model
