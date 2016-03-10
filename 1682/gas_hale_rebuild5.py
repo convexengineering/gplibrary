@@ -27,10 +27,8 @@ class GasPoweredHALE(Model):
         MTOW = Variable('MTOW', 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
-                                'segment-fuel weight') 
+                                'segment-fuel weight')
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
-        f_airframe = Variable('f_{airframe}', 0.25, '-', 'airframe weight fraction')
-        W_airframe = Variable('W_{airframe}', 'lbf', 'airframe weight')
         W_begin = W_end.left # define beginning of segment weight
         W_begin[0] = MTOW 
 
@@ -100,7 +98,7 @@ class GasPoweredHALE(Model):
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
-        constraints.extend([z_bre >= V*t*BSFC*g*CD/CL/eta_prop,
+        constraints.extend([z_bre >= V*t*BSFC*g*T/W_end/eta_prop,
                             R <= V[iCruise]*t[iCruise],
                             t[iLoiter] >= t_station/NLoiter,
                             t[iCruise[0]] <= t_cruise,
@@ -186,10 +184,10 @@ class GasPoweredHALE(Model):
         constraints.extend([h[iLoiter] >= h_station,
                             h[iCruise] >= h_min,
                             h[iClimb] >= h_min, 
-                            t[iClimb[0]]*h_dot == h_min, 
+                            t[iClimb[0]]*h_dot >= h_min, 
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
-                            t[iClimb[1]]*h_dot == 10000*units('ft'),
+                            t[iClimb[1]]*h_dot >= 10000*units('ft'),
                             ])
 
         #----------------------------------------------------
@@ -204,7 +202,7 @@ class GasPoweredHALE(Model):
         m_tail = Variable('m_{tail}', 0.75, 'kg', 'tail mass')
 
         constraints.extend([W_wing >= m_skin*g + m_cap*g,
-                            W_fuse == m_fuse*g,
+                            W_fuse >= m_fuse*g,
                             W_cent >= W_fuel.sum() + W_pay + W_engtot + W_fuse + W_avionics,
                             W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g + W_avionics]) 
 
@@ -270,8 +268,8 @@ class GasPoweredHALE(Model):
         k1fuse = Variable('k_{1-fuse}', 2.5, '-', 'fuselage form factor 1')
         k2fuse = Variable('k-{2-fuse}', 20, '-', 'fuselage form factor 2')
 
-        # Volumes 
-        Vol_fuel = Variable('Vol_{fuel}',  'm**3', 'Fuel Volume')
+        # Volumes
+        Vol_fuel = Variable('Vol_{fuel}', 'm**3', 'Fuel Volume')
         Vol_fuse = Variable('Vol_{fuse}', 'm**3', 'fuselage volume')
 
 
@@ -287,14 +285,14 @@ class GasPoweredHALE(Model):
 
         V_wind = VectorVariable(NLoiter,'V_{wind}',[30,20,35,15,25], 'm/s', 'wind speed')
 
-        constraints.extend([V[iLoiter] >= V_wind])
+        constraints.extend([V[iLoiter] >= V_wind*0.5])
 
         objective = MTOW 
         return objective, constraints
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
-    sol = M.solve()
+    sol = M.solve("mosek")
 
     #----------------------------------------------
     # post processing
