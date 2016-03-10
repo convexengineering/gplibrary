@@ -53,7 +53,7 @@ class GasPoweredHALE(Model):
         V = VectorVariable(NSeg, 'V', 'm/s','cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 'ft^2', 'wing area')
-        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', 0.7, '-',
+        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-',
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
@@ -136,8 +136,16 @@ class GasPoweredHALE(Model):
         CDfuse = Variable('C_{D-fuse}', '-', 'fueslage drag')
         l_fuse = Variable('l_{fuse}', 2, 'ft', 'fuselage length')
         Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
+
+        # landing gear
+        A_rearland = Variable('A_{rear-land}', 6, 'in^2', 'rear landing gear frontal area')
+        A_frontland = Variable('A_{front-land}', 6, 'in^2', 'front landing gear frontal area')
+        CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
+        CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
         
-        constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16,
+        constraints.extend([CD >= CDfuse + CDAland + 2*Cf*Kwing + CL**2/(pi*e*AR)
+                                + cl_16*CL**16,
+                            CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S,
                             b**2 == S*AR,
                             CL <= CLmax, 
                             Re == rho*V/mu*(S/AR)**0.5,
