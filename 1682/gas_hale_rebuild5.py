@@ -29,12 +29,18 @@ class GasPoweredHALE(Model):
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight') 
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
-        W_pay = Variable('W_{pay}',10,'lbf', 'Payload weight')
-        W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
         f_airframe = Variable('f_{airframe}', 0.25, '-', 'airframe weight fraction')
         W_airframe = Variable('W_{airframe}', 'lbf', 'airframe weight')
         W_begin = W_end.left # define beginning of segment weight
         W_begin[0] = MTOW 
+
+        # Payload model
+        W_pay = Variable('W_{pay}',10,'lbf', 'Payload weight')
+        Vol_pay = Variable('Vol_{pay}',0.5,'ft^3','Payload volume')
+
+        # Avionics model
+        W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
+        Vol_avionics = Variable('Vol_{avionics}',0.125,'ft^3','Avionics volume')
 
         # end of first segment weight + first segment fuel weight must be greater 
         # than MTOW.  Each end of segment weight must be greater than the next end
@@ -133,7 +139,7 @@ class GasPoweredHALE(Model):
         S_fuse = Variable('S_{fuse}', 'ft^2', 'Fuselage surface area')
         Cffuse = Variable('C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
         CDfuse = Variable('C_{D-fuse}', '-', 'fueslage drag')
-        l_fuse = Variable('l_{fuse}', 2, 'ft', 'fuselage length')
+        l_fuse = Variable('l_{fuse}',3,'ft', 'fuselage length')
         Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
 
         # landing gear
@@ -204,8 +210,8 @@ class GasPoweredHALE(Model):
 
         constraints.extend([W_wing >= m_skin*g + m_cap*g,
                             W_fuse == m_fuse*g,
-                            W_cent >= W_fueltot + W_pay + W_engtot + W_fuse,
-                            W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g]) 
+                            W_cent >= W_fueltot + W_pay + W_engtot + W_fuse + W_avionics,
+                            W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g + W_avionics]) 
 
         #----------------------------------------------------
         # Structural model
@@ -262,22 +268,29 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuselage model
 
+        # Constants
+        rho_fuel = Variable(r'\rho_{fuel}', 6.01, 'lbf/gallon', 'density of 100LL')
+
+        # Non-dimensional variables
         k1fuse = Variable('k_{1-fuse}', 2.5, '-', 'fuselage form factor 1')
         k2fuse = Variable('k-{2-fuse}', 20, '-', 'fuselage form factor 2')
+
+        # Volumes 
         Vol_fuel = Variable('Vol_{fuel}',  'm**3', 'Fuel Volume')
-        rho_fuel = Variable(r'\rho_{fuel}', 6.01, 'lbf/gallon', 'density of 100LL')
         Vol_fuse = Variable('Vol_{fuse}', 'm**3', 'fuselage volume')
+
+
 
         constraints.extend([m_fuse >= S_fuse*rho_skin,
                             (l_fuse/k1fuse)**3 == Vol_fuse,
                             (S_fuse/k2fuse)**3 == Vol_fuse**2,
                             Vol_fuel >= W_fueltot/rho_fuel,
-                            Vol_fuse >= Vol_fuel])
+                            Vol_fuse >= Vol_fuel+Vol_avionics+Vol_pay])
 
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = Variable('V_{wind}', 25, 'm/s', 'wind speed')
+        V_wind = VectorVariable(NLoiter,'V_{wind}',[30,20,35,15,25], 'm/s', 'wind speed')
 
         constraints.extend([V[iLoiter] >= V_wind])
 
