@@ -37,8 +37,8 @@ class GasPoweredHALE(Model):
         Vol_pay = Variable('Vol_{pay}',0.5,'ft^3','Payload volume')
 
         # Avionics model
-        W_avionics = Variable('W_{avionics}', 2, 'lbf', 'Avionics weight')
-        Vol_avionics = Variable('Vol_{avionics}',0.125,'ft^3','Avionics volume')
+        W_avionics = Variable('W_{avionics}', 6, 'lbf', 'Avionics weight')
+        Vol_avionics = Variable('Vol_{avionics}',0.5,'ft^3','Avionics volume')
 
         # end of first segment weight + first segment fuel weight must be greater 
         # than MTOW.  Each end of segment weight must be greater than the next end
@@ -63,18 +63,20 @@ class GasPoweredHALE(Model):
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
         # Climb model
-        h_dot = Variable('h_{dot}', 120, 'ft/min', 'Climb rate')
+        h_dot = Variable('h_{dot}', 200, 'ft/min', 'Climb rate')
         
         constraints.extend([P_shaft >= T*V/eta_prop,
                             T >= 0.5*rho*V**2*CD*S,
                             T[iClimb] >= 0.5*rho[iClimb]*V[iClimb]**2*CD[iClimb]*S + W_begin[iClimb]*h_dot/V[iClimb],
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
                             eta_prop[iClimb] == 0.5,
-                            eta_prop[iCruise] == 0.6,
+                             eta_prop[iCruise] == 0.6,
                             eta_prop[iLoiter] == 0.7
                             ])
         # Propulsive efficiency variation with different flight segments,
         # will change depending on propeller characteristics
+
+
 
         #----------------------------------------------------
         # Engine Model
@@ -83,9 +85,14 @@ class GasPoweredHALE(Model):
         W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
         P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
 
+        # For DF35 engine
+        P_shaftmax = VectorVariable(NSeg,'P_{shaft-max}','hp','Max shaft power at altitude')
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}',2.189,'kW','Max shaft power at MSL')
+
         # Engine Weight Constraints
         constraints.extend([W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
-                            W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078])
+                            W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078
+                            ])
 
         #----------------------------------------------------
         # Breguet Range
@@ -190,6 +197,10 @@ class GasPoweredHALE(Model):
                             t[iClimb[1]]*h_dot >= 10000*units('ft'),
                             ])
 
+        # Shaft power constraint on engine with altitude
+        #constraints.extend([P_shaftmax == P_shaftmaxMSL*1.0641*2.71828**(0.843*15000*units('ft')/h)
+        #                ])
+
         #----------------------------------------------------
         # Weight breakdown
 
@@ -283,16 +294,16 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = VectorVariable(NLoiter,'V_{wind}',[30,20,35,15,25], 'm/s', 'wind speed')
+        V_wind = VectorVariable(NLoiter,'V_{wind}',np.linspace(25,25,NLoiter), 'm/s', 'wind speed')
 
-        constraints.extend([V[iLoiter] >= V_wind*0.5])
+        constraints.extend([V[iLoiter] >= V_wind])
 
         objective = MTOW 
         return objective, constraints
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
-    sol = M.solve("mosek")
+    sol = M.solve('cvxopt')
 
     #----------------------------------------------
     # post processing
