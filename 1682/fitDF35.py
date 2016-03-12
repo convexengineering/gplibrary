@@ -3,11 +3,11 @@ import numpy as np
 from numpy import logspace, log, log10
 import matplotlib.pyplot as plt
 # you have to change it to this and run the file form gpfit
-from gpfit.fit import fit
+from fit import fit
 
 # since this is not an installable code source you have to navigate to the
 # ~gpfit folder.  
-df = pd.read_csv('../gpkit-models/1682/DF35_maxPvh.csv')
+df = pd.read_csv('DF35_maxPvh.csv')
 
 h = df['ft']
 #h = np.delete(h,[0])
@@ -32,4 +32,4 @@ plt.ylabel('log(1-Pnorm)')
 K = 2
 Type = 'SMA'
 
-cstrt, rms_error = fit(logh,logL,K,Type)
+cstrt, rms_error = fit(logh[1:-1],logL[1:-1],K,Type)
