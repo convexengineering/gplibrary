@@ -51,7 +51,8 @@ class GasPoweredHALE(Model):
         
         #----------------------------------------------------
         # Steady level flight model
-
+        t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
+        h = VectorVariable(NSeg, 'h', 'ft', 'Altitude')
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s','cruise speed')
@@ -65,7 +66,7 @@ class GasPoweredHALE(Model):
         # Climb model
         h_dot = Variable('h_{dot}', 200, 'ft/min', 'Climb rate')
         
-        constraints.extend([P_shaft >= T*V/eta_prop,
+        constraints.extend([P_shaft == T*V/eta_prop,
                             T >= 0.5*rho*V**2*CD*S,
                             T[iClimb] >= 0.5*rho[iClimb]*V[iClimb]**2*CD[iClimb]*S + W_begin[iClimb]*h_dot/V[iClimb],
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
@@ -76,22 +77,36 @@ class GasPoweredHALE(Model):
         # Propulsive efficiency variation with different flight segments,
         # will change depending on propeller characteristics
 
+        # altitude constraints
+        h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
+        h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
 
+        constraints.extend([h[iLoiter] >= h_station,
+                            h[iCruise] >= h_min,
+                            h[iClimb] >= h_min, 
+                            t[iClimb[0]]*h_dot >= h_min, 
+                            # still need to determine min cruise altitude, 
+                            #and make these variables independent of user-input numbers
+                            t[iClimb[1]]*h_dot >= 10000*units('ft'),
+                            ])
 
         #----------------------------------------------------
-        # Engine Model
-        W_eng = Variable('W_{eng}', 'lbf', 'Engine weight')
-        W_engtot = Variable('W_{eng-tot}', 'lbf', 'Installed engine weight')
-        W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
-        P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
+        # Engine Model (DF35)
+        #W_eng = Variable('W_{eng}', 'lbf', 'Engine weight') 
+        W_engtot = Variable('W_{eng-tot}',6, 'lbf', 'Installed engine weight')#conservative for 4.2 engine complete with prop, generator and structures
+        #W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
+        #P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
 
         # For DF35 engine
-        P_shaftmax = VectorVariable(NSeg,'P_{shaft-max}','hp','Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}',2.189,'kW','Max shaft power at MSL')
+        #P_shaftmax = VectorVariable(NSeg,'P_{shaft-max}','hp','Max shaft power at altitude')
+        #P_shaftmaxMSL = Variable('P_{shaft-maxMSL}',2.189,'kW','Max shaft power at MSL')
+        #LFactor = VectorVariable(NSeg,'LFactor','-','Max shaft power loss factor')
 
         # Engine Weight Constraints
-        constraints.extend([W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
-                            W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078
+        constraints.extend([#W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
+                            #W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078
+                            #LFactor == 0.906**(1/0.15)*(h/h_station)**0.92,
+                            #P_shaftmax/P_shaftmaxMSL + LFactor <= 1
                             ])
 
         #----------------------------------------------------
@@ -99,9 +114,8 @@ class GasPoweredHALE(Model):
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         BSFC = Variable('BSFC', 0.7, 'lb/hr/hp',
                               'brake specific fuel consumption')
-        t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
-        t_station = Variable('t_{station}', 5, 'days', 'time on station')
+        t_station = Variable('t_{station}',5, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
@@ -167,8 +181,6 @@ class GasPoweredHALE(Model):
 
         #----------------------------------------------------
         # Atmosphere model
-
-        h = VectorVariable(NSeg, 'h', 'ft', 'Altitude')
         gamma = Variable(r'\gamma',1.4,'-', 'Heat capacity ratio of air')
         p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
         T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
@@ -184,19 +196,7 @@ class GasPoweredHALE(Model):
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------
-        # altitude constraints
-        h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
-        h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
-
-        constraints.extend([h[iLoiter] >= h_station,
-                            h[iCruise] >= h_min,
-                            h[iClimb] >= h_min, 
-                            t[iClimb[0]]*h_dot >= h_min, 
-                            # still need to determine min cruise altitude, 
-                            #and make these variables independent of user-input numbers
-                            t[iClimb[1]]*h_dot >= 10000*units('ft'),
-                            ])
-
+        
         # Shaft power constraint on engine with altitude
         #constraints.extend([P_shaftmax == P_shaftmaxMSL*1.0641*2.71828**(0.843*15000*units('ft')/h)
         #                ])
@@ -298,7 +298,7 @@ class GasPoweredHALE(Model):
 
         constraints.extend([V[iLoiter] >= V_wind])
 
-        objective = MTOW 
+        objective = MTOW
         return objective, constraints
 
 if __name__ == '__main__':

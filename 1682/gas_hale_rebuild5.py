@@ -65,7 +65,7 @@ class GasPoweredHALE(Model):
         # Climb model
         h_dot = Variable('h_{dot}', 200, 'ft/min', 'Climb rate')
         
-        constraints.extend([P_shaft >= T*V/eta_prop,
+        constraints.extend([P_shaft == T*V/eta_prop,
                             T >= 0.5*rho*V**2*CD*S,
                             T[iClimb] >= 0.5*rho[iClimb]*V[iClimb]**2*CD[iClimb]*S + W_begin[iClimb]*h_dot/V[iClimb],
                             0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2,
