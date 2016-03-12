@@ -92,25 +92,23 @@ class GasPoweredHALE(Model):
 
         #----------------------------------------------------
         # Engine Model (DF35)
-        #W_eng = Variable('W_{eng}', 'lbf', 'Engine weight') 
         W_engtot = Variable('W_{eng-tot}',6, 'lbf', 'Installed engine weight')#conservative for 4.2 engine complete with prop, generator and structures
-        #W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
-        #P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
         BSFC_min = Variable('BSFC_{min}',0.32,'kg/kW/hr','Minimum BSFC')
-        BSFC = VectorVariable(NSeg,np.linspace(0.6,.6,NSeg),'BSFC', 'lb/hr/hp',
+        BSFC = VectorVariable(NSeg,'BSFC', 'lb/hr/hp',
                               'brake specific fuel consumption') #np.linspace(0.7,0.7,NSeg)
         RPM_max = Variable('RPM_{max}',9000,'1/min','Maximum RPM')
         RPM = VectorVariable(NSeg,'RPM','1/min','Engine operating RPM')
 
-        #P_shaftmax = VectorVariable(NSeg,'P_{shaft-max}','hp','Max shaft power at altitude')
-        #P_shaftmaxMSL = Variable('P_{shaft-maxMSL}',2.189,'kW','Max shaft power at MSL')
-        #LFactor = VectorVariable(NSeg,'LFactor','-','Max shaft power loss factor')
+        P_shaftmax = VectorVariable(NSeg,'P_{shaft-max}','hp','Max shaft power at altitude')
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}',2.189,'kW','Max shaft power at MSL')
+        LFactor = VectorVariable(NSeg,'LFactor','-','Max shaft power loss factor')
 
         # Engine Weight Constraints
         constraints.extend([#W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
                             #W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078
-                            #LFactor == 0.906**(1/0.15)*(h/h_station)**0.92,
-                            #P_shaftmax/P_shaftmaxMSL + LFactor <= 1
+                            LFactor >= 0.906**(1/0.15)*(h/h_station)**0.92,
+                            P_shaftmax/P_shaftmaxMSL + LFactor <= 1,
+                            P_shaft <= P_shaftmax,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                             0.0268*(RPM/RPM_max)**9.62,
                             RPM <= RPM_max
