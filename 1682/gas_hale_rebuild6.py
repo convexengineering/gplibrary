@@ -103,6 +103,8 @@ class GasPoweredHALE(Model):
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}',2.189,'kW','Max shaft power at MSL')
         LFactor = VectorVariable(NSeg,'LFactor','-','Max shaft power loss factor')
 
+        V_max = VectorVariable(NSeg,'V_{max}','m/s','maximum speed')
+
         # Engine Weight Constraints
         constraints.extend([#W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
                             #W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078
@@ -111,7 +113,9 @@ class GasPoweredHALE(Model):
                             P_shaft <= P_shaftmax,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                             0.0268*(RPM/RPM_max)**9.62,
-                            RPM <= RPM_max
+                            RPM <= RPM_max,
+                            V_max >= 40*units('m/s'),
+                            P_shaftmax/P_shaft >= (V_max/V)**(2) #rough maximum speed model, assuming constant propulsive efficiency and BSFC
                             ])
 
         #----------------------------------------------------
