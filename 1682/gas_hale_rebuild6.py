@@ -64,7 +64,7 @@ class GasPoweredHALE(Model):
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
         # Climb model
-        h_dot = Variable('h_{dot}', 200, 'ft/min', 'Climb rate')
+        h_dot = Variable('h_{dot}', 120, 'ft/min', 'Climb rate')
         
         constraints.extend([P_shaft == T*V/eta_prop,
                             T >= 0.5*rho*V**2*CD*S,
@@ -113,8 +113,9 @@ class GasPoweredHALE(Model):
                             P_shaft <= P_shaftmax,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                             0.0268*(RPM/RPM_max)**9.62,
+                            (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292,
                             RPM <= RPM_max,
-                            V_max >= 40*units('m/s'),
+                            V_max >= 42*units('m/s'),
                             P_shaftmax/P_shaft >= (V_max/V)**(2) #rough maximum speed model, assuming constant propulsive efficiency and BSFC
                             ])
 
