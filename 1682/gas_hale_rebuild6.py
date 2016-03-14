@@ -104,7 +104,7 @@ class GasPoweredHALE(Model):
         RPM = VectorVariable(NSeg, 'RPM', '1/min', 'Engine operating RPM')
 
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.189, 'kW', 'Max shaft power at MSL')
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 'kW', 'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
 
         V_max = VectorVariable(NSeg, 'V_{max}', 'm/s', 'maximum required speed')
@@ -205,13 +205,15 @@ class GasPoweredHALE(Model):
         W_fuse = Variable('W_{fuse}', 'lbf', 'fuselage weight') 
         W_wing = Variable('W_{wing}', 'lbf', 'Total wing structural weight')
         m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
+        W_fueltot = Variable('W_{fuel-tot}', 'lbf', 'total fuel weight')
         m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
         m_skin = Variable('m_{skin}', 'kg', 'Skin mass')
         m_tail = Variable('m_{tail}', 0.75, 'kg', 'tail mass')
 
         constraints.extend([W_wing >= m_skin*g + m_cap*g, 
                             W_fuse >= m_fuse*g, 
-                            W_cent >= W_fuel.sum() + W_pay + W_engtot + W_fuse + W_avionics, 
+                            W_fueltot >= W_fuel.sum(),
+                            W_cent >= W_fueltot + W_pay + W_engtot + W_fuse + W_avionics, 
                             W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g + W_avionics]) 
 
         #----------------------------------------------------

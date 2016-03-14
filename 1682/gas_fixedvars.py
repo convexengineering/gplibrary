@@ -63,7 +63,7 @@ class GasPoweredHALE(Model):
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
         # Climb model
-        h_dot = Variable('h_{dot}', 120, 'ft/min', 'Climb rate')
+        h_dot = Variable('h_{dot}', 125, 'ft/min', 'Climb rate')
         
         constraints.extend([P_shaft == T*V/eta_prop, 
                             T >= 0.5*rho*V**2*CD*S, 
@@ -105,7 +105,7 @@ class GasPoweredHALE(Model):
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.189, 'kW', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
-        V_max = Variable('V_{max}', 42, 'm/s', 'maximum required speed')
+        V_max = VectorVariable(NSeg, 'V_{max}', 'm/s', 'maximum required speed')
 
         # Engine Weight Constraints
         constraints.extend([Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92, 
@@ -115,7 +115,8 @@ class GasPoweredHALE(Model):
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            P_shaftmax/P_shaft >= (V_max/V)**(2) 
+                            V_max >= 42*units('m/s'),
+                            P_shaftmax/P_shaft >= (V_max/V)**(2), 
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
@@ -123,7 +124,7 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
-        t_station = Variable('t_{station}', 'days', 'time on station')
+        t_station = Variable('t_{station}', 5, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
@@ -155,16 +156,17 @@ class GasPoweredHALE(Model):
         Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
 
         # landing gear
-        A_rearland = Variable('A_{rear-land}', 6, 'in^2',
-                              'rear landing gear frontal area')
-        A_frontland = Variable('A_{front-land}', 6, 'in^2', 
-                               'front landing gear frontal area')
-        CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
-        CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
+        #A_rearland = Variable('A_{rear-land}', 6, 'in^2',
+        #                      'rear landing gear frontal area')
+        #A_frontland = Variable('A_{front-land}', 6, 'in^2', 
+        #                       'front landing gear frontal area')
+        #CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
+        CDAland = Variable('CDA_{land}', 1e-10, '-', 'normalized drag coefficient landing gear')
+        # this doesn't solve when this is commented out. Need to fix. 
         
-        constraints.extend([CD >= CDfuse + CDAland + 2*Cf*Kwing + CL**2/(pi*e*AR)
-                                + cl_16*CL**16, 
-                            CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S, 
+        constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
+                                + cl_16*CL**16 + CDAland, 
+                            #CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S, 
                             b**2 == S*AR, 
                             CL <= CLmax, 
                             Re == rho*V/mu*(S/AR)**0.5, 
@@ -290,7 +292,7 @@ class GasPoweredHALE(Model):
 
         constraints.extend([V[iLoiter] >= V_wind])
 
-        objective = 1/t_station
+        objective = MTOW
         return objective, constraints
 
 if __name__ == '__main__':
