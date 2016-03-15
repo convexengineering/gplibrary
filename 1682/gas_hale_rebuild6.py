@@ -52,7 +52,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Steady level flight model
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
-        h = VectorVariable(NSeg, 'h', 'm', 'Altitude')
+        h = VectorVariable(NSeg, 'h', 'ft', 'Altitude')
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
@@ -64,7 +64,7 @@ class GasPoweredHALE(Model):
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
         # Climb model
-        h_dot = Variable('h_{dot}', 120, 'ft/min', 'Climb rate')
+        h_dot = Variable('h_{dot}', 200, 'ft/min', 'Climb rate')
         
         constraints.extend([P_shaft == T*V/eta_prop, 
                             T >= 0.5*rho*V**2*CD*S, 
@@ -82,8 +82,11 @@ class GasPoweredHALE(Model):
         h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
 
         constraints.extend([h[iLoiter] >= h_station, 
-                            h[iCruise] >= h_min, 
-                            h[iClimb] >= h_min, 
+                            # h[iCruise] >= h_min, 
+                            # h[iClimb] >= h_min,
+                            h[iClimb[0]] == 1*units('ft'),
+                            h[iCruise] >= h_min,
+                            h[iClimb[1]] >= h[iCruise[0]],
                             t[iClimb[0]]*h_dot >= h_min, 
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
@@ -105,7 +108,7 @@ class GasPoweredHALE(Model):
         RPM = VectorVariable(NSeg, 'RPM', '1/min', 'Engine operating RPM')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
                                     'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 'kW', 'Max shaft power at MSL')
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 'hp', 'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
 
         V_max = VectorVariable(NSeg, 'V_{max}', 'm/s', 'maximum required speed')
@@ -167,15 +170,27 @@ class GasPoweredHALE(Model):
         l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
         Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
 
-        # landing gear
-        A_rearland = Variable('A_{rear-land}', 6, 'in^2', 'rear landing gear frontal area')
-        A_frontland = Variable('A_{front-land}', 6, 'in^2', 'front landing gear frontal area')
-        CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
-        CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
+        # # landing gear
+        # A_rearland = Variable('A_{rear-land}', 6, 'in^2', 'rear landing gear frontal area')
+        # A_frontland = Variable('A_{front-land}', 6, 'in^2', 'front landing gear frontal area')
+        # CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
+        # CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
         
-        constraints.extend([CD >= CDfuse + CDAland + 2*Cf*Kwing + CL**2/(pi*e*AR)
+        # constraints.extend([CD >= CDfuse + CDAland + 2*Cf*Kwing + CL**2/(pi*e*AR)
+        #                         + cl_16*CL**16, 
+        #                     CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S, 
+        #                     b**2 == S*AR, 
+        #                     CL <= CLmax, 
+        #                     Re == rho*V/mu*(S/AR)**0.5, 
+        #                     Cf >= 0.074/Re**0.2, 
+        #                     CDfuse >= Kfuse*S_fuse*Cffuse/S, 
+        #                     Refuse == rho*V/mu*l_fuse, 
+        #                     Cffuse >= 0.074/Refuse**0.2, 
+        #                     ])
+
+        # No landing gear
+        constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
                                 + cl_16*CL**16, 
-                            CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S, 
                             b**2 == S*AR, 
                             CL <= CLmax, 
                             Re == rho*V/mu*(S/AR)**0.5, 
