@@ -63,7 +63,7 @@ class GasPoweredHALE(Model):
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
         # Climb model
-        h_dot = Variable('h_{dot}', 'ft/min', 'Climb rate')
+        h_dot = VectorVariable(2, 'h_{dot}', 'ft/min', 'Climb rate')
         
         constraints.extend([P_shaft == T*V/eta_prop, 
                             T >= 0.5*rho*V**2*CD*S, 
@@ -86,10 +86,11 @@ class GasPoweredHALE(Model):
                             h[iCruise] == h_min, 
                             h[iClimb[0]] == h_min, 
                             h[iClimb[1]] == h_station, 
-                            t[iClimb[0]]*h_dot >= h_min, 
+                            t[iClimb[0]]*h_dot[0] >= h_min, 
+                            h_dot[0] <= 1000*units('ft/min'),
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
-                            t[iClimb[1]]*h_dot >= 10000*units('ft'), 
+                            t[iClimb[1]]*h_dot[1] >= 10000*units('ft'), 
                             ])
 
         #----------------------------------------------------
