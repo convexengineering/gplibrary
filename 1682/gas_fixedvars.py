@@ -147,9 +147,6 @@ class GasPoweredHALE(Model):
         b = Variable('b', 'ft', 'Span')
         mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', 'Dynamic viscosity')
         Re = VectorVariable(NSeg, 'Re', '-', 'Reynolds number')
-        Cf = VectorVariable(NSeg, 'C_f', '-', 'wing skin friction coefficient')
-        Kwing = Variable('K_{wing}', 1.3, '-', 'wing form factor')
-        cl_16 = Variable('cl_{16}', 0.0001, '-', 'profile stall coefficient')
 
         # fuselage drag 
         Kfuse = Variable('K_{fuse}', 1.1, '-', 'Fuselage form factor')
@@ -157,18 +154,20 @@ class GasPoweredHALE(Model):
         Cffuse = Variable('C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
         CDfuse = Variable('C_{D-fuse}', '-', 'fueslage drag')
         l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
-        Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
+        Refuse = VectorVariable(NSeg, 'Re_{fuse}', '-', 'fuselage Reynolds number')
+        Re_ref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
+        cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
 
-        constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
-                                + cl_16*CL**16, 
-                            b**2 == S*AR, 
-                            CL <= CLmax, 
-                            Re == rho*V/mu*(S/AR)**0.5, 
-                            Cf >= 0.074/Re**0.2, 
-                            CDfuse >= Kfuse*S_fuse*Cffuse/S, 
-                            Refuse == rho*V/mu*l_fuse, 
-                            Cffuse >= 0.074/Refuse**0.2, 
-                            ])
+        constraints.extend([
+            CD >= CDfuse + cdp + CL**2/(pi*e*AR),
+            cdp >= ((0.006 + 0.005*CL**2 + 0.00012*CL**10)*(Re/Re_ref)**-0.3),
+            b**2 == S*AR, 
+            CL <= CLmax, 
+            Re == rho*V/mu*(S/AR)**0.5, 
+            CDfuse >= Kfuse*S_fuse*Cffuse/S, 
+            Refuse == rho*V/mu*l_fuse, 
+            Cffuse >= 0.074/Refuse**0.2, 
+            ])
 
         #----------------------------------------------------
         # landing gear
@@ -260,6 +259,8 @@ class GasPoweredHALE(Model):
         #load rating for max number of g's
         P_cap = Variable('P_{cap}', 'N', 'Cap load')
         delta_tip = Variable(r'\delta_{tip}', 'ft', 'Tip deflection') 
+        delta_tip_max = Variable(r'\delta_{tip-max}', 0.2, '-',
+                                 'max tip deflection ratio') 
         #need to add constraint
 
         constraints.extend([m_skin >= rho_skin*S*2, 
@@ -274,7 +275,7 @@ class GasPoweredHALE(Model):
                             w_cap == A_capcent/t_cap, 
                             LoverA == MTOW/S, 
                             delta_tip == b**2*sigma_cap/(4*E_cap*h_spar), 
-                            delta_tip <= b/5]) 
+                            delta_tip/b <= delta_tip_max]) 
 
         #----------------------------------------------------
         # Fuselage model
