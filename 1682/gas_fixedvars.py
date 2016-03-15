@@ -102,7 +102,7 @@ class GasPoweredHALE(Model):
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
                                     'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.189, 'kW', 
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 9.189, 'kW', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
         V_max = VectorVariable(NSeg, 'V_{max}', 'm/s', 'maximum required speed')
@@ -187,8 +187,12 @@ class GasPoweredHALE(Model):
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
         TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
 
-        constraints.extend([T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                            rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+        constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
+                            #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+                            rho[iClimb[0]] == 1.055*units('kg/m^3'),
+                            rho[iCruise] == 1.055*units('kg/m^3'),
+                            rho[iClimb[1]] == 0.7377*units('kg/m^3'),
+                            rho[iLoiter] == 0.7377*units('kg/m^3')])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------

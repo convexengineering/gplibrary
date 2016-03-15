@@ -52,7 +52,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Steady level flight model
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
-        h = VectorVariable(NSeg, 'h', 'ft', 'Altitude')
+        h = VectorVariable(NSeg, 'h', 'm', 'Altitude')
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
@@ -94,16 +94,17 @@ class GasPoweredHALE(Model):
         # Engine Model (DF35)
 
         W_eng = Variable('W_{eng}', 'lbf', 'engine weight')
-        W_engtot = Variable('W_{eng-tot}', 'lbf', 'Installed engine weight')#conservative for 4.2 engine complete with prop, generator and structures
+        W_engtot = Variable('W_{eng-tot}', 'lbf', 'Installed engine weight')
+            #conservative for 4.2 engine complete with prop, generator and structures
         W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
         P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
         BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp', 
-                              'brake specific fuel consumption') #np.linspace(0.7, 0.7, NSeg)
+                              'brake specific fuel consumption') 
         RPM_max = Variable('RPM_{max}', 9000, '1/min', 'Maximum RPM')
         RPM = VectorVariable(NSeg, 'RPM', '1/min', 'Engine operating RPM')
-
-        P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 'Max shaft power at altitude')
+        P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
+                                    'Max shaft power at altitude')
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 'kW', 'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
 
@@ -115,24 +116,20 @@ class GasPoweredHALE(Model):
         #BSFC vs. RPM relation
         #Pshaft vs. RPM relation
         #Rough estimation for V_max
-        constraints.extend([#W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
-                            #W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078
-                            Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92,
-                            P_shaftmax/P_shaftmaxMSL + Lfactor <= 1,
-                            P_shaft <= P_shaftmax
-                            ])
 
         # Engine Weight Constraints
         constraints.extend([W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075, 
                             W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078,
                             P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
+                            Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92,
                             P_shaft <= P_shaftmax, 
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
                             V_max >= 42*units('m/s'),
-                            P_shaftmax/P_shaft >= (V_max/V)**(2) #rough maximum speed model, assuming constant propulsive efficiency and BSFC
+                            P_shaftmax/P_shaft >= (V_max/V)**(2) 
+        #rough maximum speed model, assuming constant propulsive efficiency and BSFC
                             ])
 
         #----------------------------------------------------
@@ -197,11 +194,17 @@ class GasPoweredHALE(Model):
         T_atm = VectorVariable(NSeg, 'T_{atm}', 'K', 'Air temperature')
         a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s', 'Speed of sound at altitude')
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
+        rho_sl = Variable(r'\rho_{sl}', 1,22649, 'kg/m^3', 'density fo air at sea level')
+        h_ref = Variable('h_{ref}', 5500, 'm', 'reference altitude')
         TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
 
         constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
-                            T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                            rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+                            #T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
+                            #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)
+                            rho[iClimb[0]] == 1.055*units('kg/m^3'),
+                            rho[iCruise] == 1.055*units('kg/m^3'),
+                            rho[iClimb[1]] == 0.7377*units('kg/m^3'),
+                            rho[iLoiter] == 0.7377*units('kg/m^3')])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------
