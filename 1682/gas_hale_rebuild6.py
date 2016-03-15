@@ -170,25 +170,6 @@ class GasPoweredHALE(Model):
         l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
         Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
 
-        # # landing gear
-        # A_rearland = Variable('A_{rear-land}', 6, 'in^2', 'rear landing gear frontal area')
-        # A_frontland = Variable('A_{front-land}', 6, 'in^2', 'front landing gear frontal area')
-        # CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
-        # CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
-        
-        # constraints.extend([CD >= CDfuse + CDAland + 2*Cf*Kwing + CL**2/(pi*e*AR)
-        #                         + cl_16*CL**16, 
-        #                     CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S, 
-        #                     b**2 == S*AR, 
-        #                     CL <= CLmax, 
-        #                     Re == rho*V/mu*(S/AR)**0.5, 
-        #                     Cf >= 0.074/Re**0.2, 
-        #                     CDfuse >= Kfuse*S_fuse*Cffuse/S, 
-        #                     Refuse == rho*V/mu*l_fuse, 
-        #                     Cffuse >= 0.074/Refuse**0.2, 
-        #                     ])
-
-        # No landing gear
         constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
                                 + cl_16*CL**16, 
                             b**2 == S*AR, 
@@ -199,6 +180,20 @@ class GasPoweredHALE(Model):
                             Refuse == rho*V/mu*l_fuse, 
                             Cffuse >= 0.074/Refuse**0.2, 
                             ])
+
+        
+        #----------------------------------------------------
+        # landing gear
+        #A_rearland = Variable('A_{rear-land}', 6, 'in^2',
+        #                      'rear landing gear frontal area')
+        #A_frontland = Variable('A_{front-land}', 6, 'in^2', 
+        #                       'front landing gear frontal area')
+        #CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
+        #CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
+
+        #constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
+        #                        + cl_16*CL**16 + CDAland, 
+        #                    CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S]) 
 
         #----------------------------------------------------
         # Atmosphere model
@@ -213,7 +208,8 @@ class GasPoweredHALE(Model):
         h_ref = Variable('h_{ref}', 5500, 'm', 'reference altitude')
         TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
 
-        constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
+        constraints.extend([#h <= [20000, 20000, 20000]*units.m,  
+                            # Model valid to top of troposphere
                             #T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)
                             rho[iClimb[0]] == 1.055*units('kg/m^3'),
@@ -221,12 +217,6 @@ class GasPoweredHALE(Model):
                             rho[iClimb[1]] == 0.7377*units('kg/m^3'),
                             rho[iLoiter] == 0.7377*units('kg/m^3')])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
-
-        #----------------------------------------------------
-        
-        # Shaft power constraint on engine with altitude
-        #constraints.extend([P_shaftmax == P_shaftmaxMSL*1.0641*2.71828**(0.843*15000*units('ft')/h)
-        #                ])
 
         #----------------------------------------------------
         # Weight breakdown

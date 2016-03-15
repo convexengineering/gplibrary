@@ -77,6 +77,7 @@ class GasPoweredHALE(Model):
         # Propulsive efficiency variation with different flight segments, 
         # will change depending on propeller characteristics
 
+        #----------------------------------------------------
         # altitude constraints
         h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
         h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
@@ -155,18 +156,8 @@ class GasPoweredHALE(Model):
         l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
         Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
 
-        # landing gear
-        #A_rearland = Variable('A_{rear-land}', 6, 'in^2',
-        #                      'rear landing gear frontal area')
-        #A_frontland = Variable('A_{front-land}', 6, 'in^2', 
-        #                       'front landing gear frontal area')
-        #CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
-        CDAland = Variable('CDA_{land}', 1e-10, '-', 'normalized drag coefficient landing gear')
-        # this doesn't solve when this is commented out. Need to fix. 
-        
         constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
-                                + cl_16*CL**16 + CDAland, 
-                            #CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S, 
+                                + cl_16*CL**16, 
                             b**2 == S*AR, 
                             CL <= CLmax, 
                             Re == rho*V/mu*(S/AR)**0.5, 
@@ -175,6 +166,19 @@ class GasPoweredHALE(Model):
                             Refuse == rho*V/mu*l_fuse, 
                             Cffuse >= 0.074/Refuse**0.2, 
                             ])
+
+        #----------------------------------------------------
+        # landing gear
+        #A_rearland = Variable('A_{rear-land}', 6, 'in^2',
+        #                      'rear landing gear frontal area')
+        #A_frontland = Variable('A_{front-land}', 6, 'in^2', 
+        #                       'front landing gear frontal area')
+        #CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
+        #CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
+
+        #constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
+        #                        + cl_16*CL**16 + CDAland, 
+        #                    CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S]) 
 
         #----------------------------------------------------
         # Atmosphere model
