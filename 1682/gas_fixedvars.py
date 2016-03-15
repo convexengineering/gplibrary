@@ -24,7 +24,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuel weight model 
 
-        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
+        MTOW = Variable('MTOW','lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf', 'segment-fuel weight')
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
@@ -51,7 +51,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Steady level flight model
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
-        h = VectorVariable(NSeg, 'h', 'ft', 'Altitude')
+        h = VectorVariable(NSeg, 'h', 'm', 'altitude')
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
@@ -82,9 +82,9 @@ class GasPoweredHALE(Model):
         h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
         h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
 
-        constraints.extend([h[iLoiter] >= h_station, 
-                            h[iCruise] >= h_min, 
-                            h[iClimb] >= h_min, 
+        constraints.extend([h[iLoiter] == h_station, 
+                            h[iCruise] == h_min, 
+                            h[iClimb] == h_min, 
                             t[iClimb[0]]*h_dot >= h_min, 
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
@@ -116,16 +116,16 @@ class GasPoweredHALE(Model):
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            V_max[iLoiter] >= 42*units('m/s'),
-                            P_shaftmax/P_shaft >= (V_max/V)**(2), 
+                            V_max[iLoiter] >= 38*units('m/s'),
+                            P_shaftmax/P_shaft == (V_max/V)**(2), 
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
         #----------------------------------------------------
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
-        t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
-        t_station = Variable('t_{station}', 5, 'days', 'time on station')
+        t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
+        t_station = Variable('t_{station}', 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
@@ -190,6 +190,8 @@ class GasPoweredHALE(Model):
         a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s', 'Speed of sound at altitude')
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
         TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
+        rho_sl = Variable(r'\rho_{sl}', 1.225, 'kg/m^3', 'density of air at sea level')
+        h_ref = Variable('h_{ref}', 5500, 'm', 'reference height for atm model')
 
         constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
@@ -197,6 +199,7 @@ class GasPoweredHALE(Model):
                             rho[iCruise] == 1.055*units('kg/m^3'),
                             rho[iClimb[1]] == 0.7377*units('kg/m^3'),
                             rho[iLoiter] == 0.7377*units('kg/m^3')])
+                            #(rho/rho_sl) == 0.66*(h/h_ref)**-0.141])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------
@@ -295,12 +298,12 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = VectorVariable(NLoiter, 'V_{wind}', np.linspace(25, 25, NLoiter), 
+        V_wind = Variable('V_{wind}', 25, 
                                 'm/s', 'wind speed')
 
         constraints.extend([V[iLoiter] >= V_wind])
 
-        objective = MTOW
+        objective = 1/t_station 
         return objective, constraints
 
 if __name__ == '__main__':
@@ -310,44 +313,74 @@ if __name__ == '__main__':
     #----------------------------------------------
     # post processing
     
-    #M.substitutions.update({'BSFC': ('sweep', np.linspace(0.3, 1, 15))})
+    #M.substitutions.update({'MTOW': ('sweep', np.linspace(70, 150, 15))})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
     #
-    #BSFC = sol('BSFC')
     #MTOW = sol('MTOW')
-    #b = sol('b')
+    #t_station = sol('t_{station}')
 
     #plt.close()
-    #plt.plot(BSFC, MTOW)
-    #plt.xlabel('BSFC [lbf/hp/hr]')
-    #plt.ylabel('MTOW [lbf]')
-    #plt.savefig('BSFCvsMTOW.png')
+    #plt.plot(MTOW, t_station)
+    #plt.xlabel('MTOW [lbf]')
+    #plt.ylabel('t_station [days]')
+    #plt.grid()
+    #plt.savefig('tvsMTOW.png')
 
-    #plt.close()
-    #plt.plot(BSFC, b)
-    #plt.xlabel('BSFC [lbf/hp/hr]')
-    #plt.ylabel('b [ft]')
-    #plt.savefig('BSFCvsb.png')
-
-    #M.substitutions.update({r'\eta_{prop}':('sweep', np.linspace(0.5, 1, 15)), 'BSFC':0.7})
+    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15)), 'MTOW':85})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #eta_prop = sol(r'\eta_{prop}')
-    #MTOW = sol('MTOW')
-    #b = sol('b')
+    #R = sol('R')
+    #t_station = sol('t_{station}')
 
     #plt.close()
-    #plt.plot(eta_prop, MTOW)
-    #plt.xlabel('eta_prop ')
-    #plt.ylabel('MTOW [lbf]')
-    #plt.savefig('eta_propvsMTOW.png')
+    #plt.plot(R, t_station)
+    #plt.xlabel('R [nm]')
+    #plt.grid()
+    #plt.ylabel('t_station [days]')
+    #plt.savefig('tvsR.png')
+
+    #M.substitutions.update({'h_{min}':('sweep',np.linspace(1000,15000,15)),r'\rho'[1]:[1.19,1.16, 1.12, 1.09, 1.06, 1.03, 0.99, 0.96, 0.94, 0.91, 0.88, 0.85, 0.82, 0.80, 0.77],'R':85})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+
+    #h_min = sol('h_{min}')
+    #t_station = sol('t_{station}')
 
     #plt.close()
-    #plt.plot(eta_prop, b)
-    #plt.xlabel('eta_prop ')
-    #plt.ylabel('b [ft]')
-    #plt.savefig('eta_propvsb.png')
+    #plt.plot(h_min, t_station)
+    #plt.xlabel('h_min [ft]')
+    #plt.grid()
+    #plt.ylabel('t_station [days]')
+    #plt.savefig('tvsh_min.png')
+
+    #M.substitutions.update({'h_{station}':('sweep', np.linspace(15000,20000, 15)), r'\rho' 'h_{min}':5000})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+
+    #h_station = sol('h_{station}')
+    #t_station = sol('t_{station}')
+
     #plt.close()
-        
+    #plt.plot(h_station, t_station)
+    #plt.xlabel('h_station [lbf]')
+    #plt.grid()
+    #plt.ylabel('t_station [days]')
+    #plt.savefig('tvsh_station.png')
 
+    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'h_{station}':15000, 'MTOW': 87})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
+    #V_wind87 = sol('V_{wind}')
+    #t_station87 = sol('t_{station}')
+
+    #plt.close()
+
+    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'h_{station}':15000, 'MTOW': 96})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+
+    #V_wind96 = sol('V_{wind}')
+    #t_station96 = sol('t_{station}')
+
+    #plt.plot(V_wind87, t_station87, V_wind96, t_station96)
+    #plt.xlabel('V_wind [m/s]')
+    #plt.ylabel('t_station [days]')
+    #plt.grid()
+    #plt.savefig('tvsV_wind96.png')
