@@ -69,7 +69,7 @@ class GasPoweredHALE(Model):
                             T >= 0.5*rho*V**2*CD*S, 
                             T[iClimb] >= 0.5*rho[iClimb]*V[iClimb]**2*CD[iClimb]*S + 
                                          W_begin[iClimb]*h_dot/V[iClimb], 
-                            0.5*rho*CL*S*V**2 >= (W_end+W_begin)/2, 
+                            0.5*rho*CL*S*V**2 == (W_end*W_begin)**0.5, 
                             eta_prop[iClimb] == 0.5, 
                             eta_prop[iCruise] == 0.6, 
                             eta_prop[iLoiter] == 0.7
