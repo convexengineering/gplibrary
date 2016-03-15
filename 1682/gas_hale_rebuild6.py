@@ -105,7 +105,12 @@ class GasPoweredHALE(Model):
 
         V_max = VectorVariable(NSeg,'V_{max}','m/s','maximum speed')
 
-        # Engine Weight Constraints
+        # Engine Operational Model
+        # Includes: 
+        #Lapse rate with altitude
+        #BSFC vs. RPM relation
+        #Pshaft vs. RPM relation
+        #Rough estimation for V_max
         constraints.extend([#W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
                             #W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078
                             LFactor >= 0.906**(1/0.15)*(h/h_station)**0.92,
