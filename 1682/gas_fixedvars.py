@@ -103,7 +103,7 @@ class GasPoweredHALE(Model):
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
                                     'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 9.189, 'kW', 
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.189, 'kW', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
         V_max = VectorVariable(NSeg, 'V_{max}', 'm/s', 'maximum required speed')
@@ -116,7 +116,7 @@ class GasPoweredHALE(Model):
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            V_max >= 42*units('m/s'),
+                            V_max[iLoiter] >= 42*units('m/s'),
                             P_shaftmax/P_shaft >= (V_max/V)**(2), 
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
