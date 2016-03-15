@@ -51,7 +51,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Steady level flight model
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
-        h = VectorVariable(NSeg, 'h', 'm', 'altitude')
+        h = VectorVariable(NSeg, 'h', 'ft', 'altitude')
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
@@ -84,7 +84,8 @@ class GasPoweredHALE(Model):
 
         constraints.extend([h[iLoiter] == h_station, 
                             h[iCruise] == h_min, 
-                            h[iClimb] == h_min, 
+                            h[iClimb[0]] == h_min, 
+                            h[iClimb[1]] == h_station, 
                             t[iClimb[0]]*h_dot >= h_min, 
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
@@ -94,8 +95,9 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Engine Model (DF35)
 
-        W_engtot = Variable('W_{eng-tot}', 6, 'lbf', 'Installed engine weight')
+        W_engtot = Variable('W_{eng-tot}', 5.9+2.1, 'lbf', 'Installed engine weight')
                 #conservative for 4.2 engine complete with prop, generator and structures
+        FuelOilFrac = Variable('FuelOilFrac',.98,'-','Fuel-oil fraction')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
         BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp', 
                               'brake specific fuel consumption') 
@@ -103,7 +105,7 @@ class GasPoweredHALE(Model):
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
                                     'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.189, 'kW', 
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.189*2, 'kW', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
         V_max = VectorVariable(NSeg, 'V_{max}', 'm/s', 'maximum required speed')
@@ -126,7 +128,7 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
-        t_station = Variable('t_{station}', 'days', 'time on station')
+        t_station = Variable('t_{station}',6, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
@@ -134,7 +136,7 @@ class GasPoweredHALE(Model):
                             R <= V[iCruise]*t[iCruise], 
                             t[iLoiter] >= t_station/NLoiter, 
                             t[iCruise[0]] <= t_cruise, 
-                            W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
+                            FuelOilFrac*W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
 
         #----------------------------------------------------
         # Aerodynamics model
@@ -304,7 +306,7 @@ class GasPoweredHALE(Model):
 
         constraints.extend([V[iLoiter] >= V_wind])
 
-        objective = 1/t_station 
+        objective = MTOW
         return objective, constraints
 
 if __name__ == '__main__':
