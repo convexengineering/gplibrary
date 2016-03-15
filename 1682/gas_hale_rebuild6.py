@@ -24,7 +24,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuel weight model 
 
-        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
+        MTOW = Variable('MTOW','lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf', 
                                 'segment-fuel weight')
@@ -109,7 +109,6 @@ class GasPoweredHALE(Model):
 
         V_max = VectorVariable(NSeg, 'V_{max}', 'm/s', 'maximum required speed')
 
-<<<<<<< HEAD
         # Engine Operational Model
         # Includes: 
         #Lapse rate with altitude
@@ -118,14 +117,14 @@ class GasPoweredHALE(Model):
         #Rough estimation for V_max
         constraints.extend([#W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075,
                             #W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078
-                            LFactor >= 0.906**(1/0.15)*(h/h_station)**0.92,
-                            P_shaftmax/P_shaftmaxMSL + LFactor <= 1,
-                            P_shaft <= P_shaftmax,
+                            Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92,
+                            P_shaftmax/P_shaftmaxMSL + Lfactor <= 1,
+                            P_shaft <= P_shaftmax
+                            ])
 
         # Engine Weight Constraints
         constraints.extend([W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075, 
                             W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078,
-                            Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92, 
                             P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
                             P_shaft <= P_shaftmax, 
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
@@ -140,7 +139,7 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
-        t_station = Variable('t_{station}', 5, 'days', 'time on station')
+        t_station = Variable('t_{station}',6,'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
@@ -305,8 +304,8 @@ class GasPoweredHALE(Model):
 
         #----------------------------------------------------
         # wind speed model
-
-        V_wind = VectorVariable(NLoiter, 'V_{wind}', np.linspace(25, 25, NLoiter), 'm/s', 'wind speed')
+        V_wind = Variable('V_{wind}', 25, 'm/s', 'wind speed')
+        #V_wind = VectorVariable(NLoiter, 'V_{wind}', np.linspace(25, 25, NLoiter), 'm/s', 'wind speed')
 
         constraints.extend([V[iLoiter] >= V_wind])
 
