@@ -118,7 +118,7 @@ class GasPoweredHALE(Model):
         #Rough estimation for V_max
 
         # Engine Weight Constraints
-        constraints.extend([W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075, 
+        constraints.extend([W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075, 
                             W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078,
                             P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
                             Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92,
@@ -127,7 +127,7 @@ class GasPoweredHALE(Model):
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            V_max >= 42*units('m/s'),
+                            V_max[iLoiter] >= 42*units('m/s'),
                             P_shaftmax/P_shaft >= (V_max/V)**(2) 
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
                             ])
