@@ -26,7 +26,7 @@ class GasPoweredHALE(Model):
 
         MTOW = Variable('MTOW', 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
-        W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf', 
+        W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight')
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
         W_begin = W_end.left # define beginning of segment weight
@@ -52,13 +52,13 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Steady level flight model
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
-        h = VectorVariable(NSeg, 'h', 'ft', 'Altitude')
+        h = VectorVariable(NSeg, 'h', 'ft', 'altitude')
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 'ft^2', 'wing area')
-        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-', 
+        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-',
                                   'propulsive efficiency')
         eta_propCruise = Variable(r'\eta_{prop-cruise}',0.6,'-','propulsive efficiency in cruise')
         eta_propClimb = Variable(r'\eta_{prop-climb}',0.5,'-','propulsive efficiency in climb')
@@ -102,39 +102,40 @@ class GasPoweredHALE(Model):
         # Engine Model (DF35)
 
         W_eng = Variable('W_{eng}', 'lbf', 'engine weight')
-        W_engtot = Variable('W_{eng-tot}', 'lbf', 'Installed engine weight')#conservative for 4.2 engine complete with prop, generator and structures
+        W_engtot = Variable('W_{eng-tot}', 'lbf', 'Installed engine weight')
         W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
         P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
-        BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp', 
-                              'brake specific fuel consumption') #np.linspace(0.7, 0.7, NSeg)
+        BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp',
+                              'brake specific fuel consumption')
         RPM_max = Variable('RPM_{max}', 9000, 'rpm', 'Maximum RPM')
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
-
-        P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.189, 'kW', 'Max shaft power at MSL')
+        P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
+                                    'Max shaft power at altitude')
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 'hp', 'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
 
-        V_max = Variable('V_{max}', 42, 'm/s', 'maximum required speed')
-
         # Engine Weight Constraints
-        constraints.extend([W_eng/W_engref >= 0.5538*(P_shaft/P_shaftref)**1.075, 
+        constraints.extend([W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075, 
                             W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078,
-                            Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92, 
+                            Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92,
                             P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
                             P_shaft <= P_shaftmax, 
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            P_shaftmax/P_shaft >= (V_max/V)**(2) #rough maximum speed model, assuming constant propulsive efficiency and BSFC
+                            P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
+                            P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
+                            P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
+                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
                             ])
 
         #----------------------------------------------------
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
-        t_cruise = Variable('t_{cruise}', 0.5, 'days', 'time to station')
-        t_station = Variable('t_{station}', 5, 'days', 'time on station')
+        t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
+        t_station = Variable('t_{station}',6,'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
@@ -153,9 +154,6 @@ class GasPoweredHALE(Model):
         b = Variable('b', 'ft', 'Span')
         mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', 'Dynamic viscosity')
         Re = VectorVariable(NSeg, 'Re', '-', 'Reynolds number')
-        Cf = VectorVariable(NSeg, 'C_f', '-', 'wing skin friction coefficient')
-        Kwing = Variable('K_{wing}', 1.3, '-', 'wing form factor')
-        cl_16 = Variable('cl_{16}', 0.0001, '-', 'profile stall coefficient')
 
         # fuselage drag 
         Kfuse = Variable('K_{fuse}', 1.1, '-', 'Fuselage form factor')
@@ -163,25 +161,33 @@ class GasPoweredHALE(Model):
         Cffuse = Variable('C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
         CDfuse = Variable('C_{D-fuse}', '-', 'fueslage drag')
         l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
-        Refuse = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
+        Refuse = VectorVariable(NSeg, 'Re_{fuse}', '-', 'fuselage Reynolds number')
+        Re_ref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
+        cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
 
+        constraints.extend([
+            CD >= CDfuse + cdp + CL**2/(pi*e*AR),
+            cdp >= ((0.006 + 0.005*CL**2 + 0.00012*CL**10)*(Re/Re_ref)**-0.3),
+            b**2 == S*AR, 
+            CL <= CLmax, 
+            Re == rho*V/mu*(S/AR)**0.5, 
+            CDfuse >= Kfuse*S_fuse*Cffuse/S, 
+            Refuse == rho*V/mu*l_fuse, 
+            Cffuse >= 0.074/Refuse**0.2, 
+            ])
+
+        #----------------------------------------------------
         # landing gear
-        A_rearland = Variable('A_{rear-land}', 6, 'in^2', 'rear landing gear frontal area')
-        A_frontland = Variable('A_{front-land}', 6, 'in^2', 'front landing gear frontal area')
-        CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
-        CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
-        
-        constraints.extend([CD >= CDfuse + CDAland + 2*Cf*Kwing + CL**2/(pi*e*AR)
-                                + cl_16*CL**16, 
-                            CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S, 
-                            b**2 == S*AR, 
-                            CL <= CLmax, 
-                            Re == rho*V/mu*(S/AR)**0.5, 
-                            Cf >= 0.074/Re**0.2, 
-                            CDfuse >= Kfuse*S_fuse*Cffuse/S, 
-                            Refuse == rho*V/mu*l_fuse, 
-                            Cffuse >= 0.074/Refuse**0.2, 
-                            ])
+        #A_rearland = Variable('A_{rear-land}', 6, 'in^2',
+        #                      'rear landing gear frontal area')
+        #A_frontland = Variable('A_{front-land}', 6, 'in^2', 
+        #                       'front landing gear frontal area')
+        #CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
+        #CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
+
+        #constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
+        #                        + cl_16*CL**16 + CDAland, 
+        #                    CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S]) 
 
         #----------------------------------------------------
         # Atmosphere model
@@ -194,16 +200,13 @@ class GasPoweredHALE(Model):
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
         TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
 
-        constraints.extend([#h <= [20000, 20000, 20000]*units.m,  # Model valid to top of troposphere
-                            T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                            rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+        constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
+                            #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+                            rho[iClimb[0]] == 1.055*units('kg/m^3'),
+                            rho[iCruise] == 1.055*units('kg/m^3'),
+                            rho[iClimb[1]] == 0.7377*units('kg/m^3'),
+                            rho[iLoiter] == 0.7377*units('kg/m^3')])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
-
-        #----------------------------------------------------
-        
-        # Shaft power constraint on engine with altitude
-        #constraints.extend([P_shaftmax == P_shaftmaxMSL*1.0641*2.71828**(0.843*15000*units('ft')/h)
-        #                ])
 
         #----------------------------------------------------
         # Weight breakdown
@@ -211,15 +214,20 @@ class GasPoweredHALE(Model):
         W_cent = Variable('W_{cent}', 'lbf', 'Center aircraft weight')
         W_fuse = Variable('W_{fuse}', 'lbf', 'fuselage weight') 
         W_wing = Variable('W_{wing}', 'lbf', 'Total wing structural weight')
+        W_fueltot = Variable('W_{fuel-tot}', 'lbf', 'total fuel weight')
+        W_skid = Variable('W_{skid}', 3, 'lbf', 'skid weight')
         m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
         m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
         m_skin = Variable('m_{skin}', 'kg', 'Skin mass')
-        m_tail = Variable('m_{tail}', 0.75, 'kg', 'tail mass')
+        m_tail = Variable('m_{tail}', 1, 'kg', 'tail mass')
+        m_rib = Variable('m_{rib}', 1.2, 'kg','rib mass')
 
-        constraints.extend([W_wing >= m_skin*g + m_cap*g, 
-                            W_fuse >= m_fuse*g, 
-                            W_cent >= W_fuel.sum() + W_pay + W_engtot + W_fuse + W_avionics, 
-                            W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g + W_avionics]) 
+        constraints.extend([W_wing >= m_skin*g + 1.2*m_cap*g, 
+                            W_fuse >= m_fuse*g + m_rib*g, 
+                            W_fueltot >= W_fuel.sum(),
+                            W_cent >= W_fueltot + W_pay + W_engtot + W_fuse + W_avionics + W_skid, 
+                            W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g +
+                                     W_avionics + W_skid]) 
 
         #----------------------------------------------------
         # Structural model
@@ -257,6 +265,8 @@ class GasPoweredHALE(Model):
         #load rating for max number of g's
         P_cap = Variable('P_{cap}', 'N', 'Cap load')
         delta_tip = Variable(r'\delta_{tip}', 'ft', 'Tip deflection') 
+        delta_tip_max = Variable(r'\delta_{tip-max}', 0.2, '-',
+                                 'max tip deflection ratio') 
         #need to add constraint
 
         constraints.extend([m_skin >= rho_skin*S*2, 
@@ -271,7 +281,7 @@ class GasPoweredHALE(Model):
                             w_cap == A_capcent/t_cap, 
                             LoverA == MTOW/S, 
                             delta_tip == b**2*sigma_cap/(4*E_cap*h_spar), 
-                            delta_tip <= b/5]) 
+                            delta_tip/b <= delta_tip_max]) 
 
         #----------------------------------------------------
         # Fuselage model
@@ -281,7 +291,7 @@ class GasPoweredHALE(Model):
 
         # Non-dimensional variables
         k1fuse = Variable('k_{1-fuse}', 2.5, '-', 'fuselage form factor 1')
-        k2fuse = Variable('k-{2-fuse}', 20, '-', 'fuselage form factor 2')
+        k2fuse = Variable('k-{2-fuse}', 5.58, '-', 'fuselage form factor 2')
 
         # Volumes
         Vol_fuel = Variable('Vol_{fuel}', 'm**3', 'Fuel Volume')
@@ -298,7 +308,8 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = VectorVariable(NLoiter, 'V_{wind}', np.linspace(25, 25, NLoiter), 'm/s', 'wind speed')
+        V_wind = Variable('V_{wind}', 25, 
+                                'm/s', 'wind speed')
 
         constraints.extend([V[iLoiter] >= V_wind])
 
@@ -360,13 +371,13 @@ class GasPoweredHALE(Model):
 
         constraints.extend([C_fly >= (H_E*R_E + H_T*R_T + H_M*R_M + H_Q*R_Q + C_D +
                                       C_F + C_M + C_eng*N_eng + C_avn),
-                            H_E >= H_E_const*W_zfw**0.777*V_max**0.894*Q**0.163,
-                            H_T >= H_T_const*W_zfw**0.777*V_max**0.696*Q**0.263,
-                            H_M >= H_M_const*W_zfw**0.82*V_max**0.484*Q**0.641,
+                            H_E >= H_E_const*W_zfw**0.777*V[2]**0.894*Q**0.163,
+                            H_T >= H_T_const*W_zfw**0.777*V[2]**0.696*Q**0.263,
+                            H_M >= H_M_const*W_zfw**0.82*V[2]**0.484*Q**0.641,
                             H_Q >= H_Q_const*H_E,
-                            C_D >= C_D_const*W_zfw**0.630*V_max**1.3,
-                            C_F >= C_F_const*W_zfw**0.325*V_max**0.822*FTA**1.21,
-                            C_M >= C_M_const*W_zfw**0.921*V_max**0.621*Q**0.799,
+                            C_D >= C_D_const*W_zfw**0.630*V[2]**1.3,
+                            C_F >= C_F_const*W_zfw**0.325*V[2]**0.822*FTA**1.21,
+                            C_M >= C_M_const*W_zfw**0.921*V[2]**0.621*Q**0.799,
                             C_avn >= R_avn*W_zfw,
                             ])
 

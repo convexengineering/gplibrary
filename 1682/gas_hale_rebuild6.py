@@ -24,7 +24,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuel weight model 
 
-        MTOW = Variable('MTOW','lbf', 'max take off weight')
+        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight')
@@ -106,10 +106,10 @@ class GasPoweredHALE(Model):
         W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
         P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
-        BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp', 
-                              'brake specific fuel consumption') 
-        RPM_max = Variable('RPM_{max}', 9000, '1/min', 'Maximum RPM')
-        RPM = VectorVariable(NSeg, 'RPM', '1/min', 'Engine operating RPM')
+        BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp',
+                              'brake specific fuel consumption')
+        RPM_max = Variable('RPM_{max}', 9000, 'rpm', 'Maximum RPM')
+        RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
                                     'Max shaft power at altitude')
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 'hp', 'Max shaft power at MSL')
@@ -130,7 +130,6 @@ class GasPoweredHALE(Model):
                             P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
                             P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
                             ])
-        #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
         #----------------------------------------------------
         # Breguet Range
