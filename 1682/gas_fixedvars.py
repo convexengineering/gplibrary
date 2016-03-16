@@ -88,6 +88,7 @@ class GasPoweredHALE(Model):
                             h[iClimb[1]] == h_station, 
                             t[iClimb[0]]*h_dot[0] >= h_min, 
                             h_dot[0] <= 1000*units('ft/min'),
+                            h_dot <= 500*units('ft/min'),
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
                             t[iClimb[1]]*h_dot[1] >= 10000*units('ft'), 
@@ -120,7 +121,6 @@ class GasPoweredHALE(Model):
                             (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
                             V_max[iLoiter] >= 38*units('m/s'),
-                            P_shaft[iClimb] == P_shaftmax[iClimb],
                             P_shaftmax[iLoiter]/P_shaft[iLoiter] == (V_max[iLoiter]/V[iLoiter])**(2), 
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
@@ -131,12 +131,14 @@ class GasPoweredHALE(Model):
         t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
         t_station = Variable('t_{station}',6, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
+        R_cruise = Variable('R_{cruise}',180,'nautical_miles','range to station during climb')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         constraints.extend([z_bre >= V*t*BSFC*g*T/W_end/eta_prop, 
-                            R <= V[iCruise]*t[iCruise], 
+                            R_cruise <= V[iCruise[0]]*t[iCruise[0]], 
+                            R <= V[iCruise[1]]*t[iCruise[1]], 
                             t[iLoiter] >= t_station/NLoiter, 
-                            t[iCruise[0]] <= t_cruise, 
+                            sum(t[[0,1,2]]) <= t_cruise, 
                             FuelOilFrac*W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
 
         #----------------------------------------------------
@@ -215,10 +217,11 @@ class GasPoweredHALE(Model):
         m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
         m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
         m_skin = Variable('m_{skin}', 'kg', 'Skin mass')
-        m_tail = Variable('m_{tail}', 0.75, 'kg', 'tail mass')
+        m_tail = Variable('m_{tail}', 1, 'kg', 'tail mass')
+        m_rib = Variable('m_{rib}', 0.8, 'kg','rib mass')
 
         constraints.extend([W_wing >= m_skin*g + m_cap*g, 
-                            W_fuse >= m_fuse*g, 
+                            W_fuse >= m_fuse*g + m_rib*g, 
                             W_fueltot >= W_fuel.sum(),
                             W_cent >= W_fueltot + W_pay + W_engtot + W_fuse + W_avionics, 
                             W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g +
