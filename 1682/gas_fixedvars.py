@@ -100,7 +100,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Engine Model (DF35)
 
-        W_engtot = Variable('W_{eng-tot}', 6, 'lbf', 'Installed engine weight')
+        W_engtot = Variable('W_{eng-tot}', 6*2, 'lbf', 'Installed engine weight')
                 #conservative for 4.2 engine complete with prop, generator and structures
         FuelOilFrac = Variable('FuelOilFrac',.98,'-','Fuel-oil fraction')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
@@ -110,7 +110,7 @@ class GasPoweredHALE(Model):
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
                                     'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.93, 'hp', 
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.93*2, 'hp', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
         V_max = VectorVariable(NLoiter, 'V_{max}', 'm/s', 'maximum required speed')
@@ -222,18 +222,19 @@ class GasPoweredHALE(Model):
         W_fuse = Variable('W_{fuse}', 'lbf', 'fuselage weight') 
         W_wing = Variable('W_{wing}', 'lbf', 'Total wing structural weight')
         W_fueltot = Variable('W_{fuel-tot}', 'lbf', 'total fuel weight')
+        W_skid = Variable('W_{skid}', 3, 'lbf', 'skid weight')
         m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
         m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
         m_skin = Variable('m_{skin}', 'kg', 'Skin mass')
         m_tail = Variable('m_{tail}', 1, 'kg', 'tail mass')
-        m_rib = Variable('m_{rib}', 0.8, 'kg','rib mass')
+        m_rib = Variable('m_{rib}', 1.2, 'kg','rib mass')
 
-        constraints.extend([W_wing >= m_skin*g + m_cap*g, 
+        constraints.extend([W_wing >= m_skin*g + 1.2*m_cap*g, 
                             W_fuse >= m_fuse*g + m_rib*g, 
                             W_fueltot >= W_fuel.sum(),
-                            W_cent >= W_fueltot + W_pay + W_engtot + W_fuse + W_avionics, 
+                            W_cent >= W_fueltot + W_pay + W_engtot + W_fuse + W_avionics + W_skid, 
                             W_zfw >= W_pay + W_engtot + W_fuse + W_wing + m_tail*g +
-                                     W_avionics]) 
+                                     W_avionics + W_skid]) 
 
         #----------------------------------------------------
         # Structural model
@@ -297,7 +298,7 @@ class GasPoweredHALE(Model):
 
         # Non-dimensional variables
         k1fuse = Variable('k_{1-fuse}', 2.5, '-', 'fuselage form factor 1')
-        k2fuse = Variable('k-{2-fuse}', 20, '-', 'fuselage form factor 2')
+        k2fuse = Variable('k-{2-fuse}', 5.58, '-', 'fuselage form factor 2')
 
         # Volumes
         Vol_fuel = Variable('Vol_{fuel}', 'm**3', 'Fuel Volume')
