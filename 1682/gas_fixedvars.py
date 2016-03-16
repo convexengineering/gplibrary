@@ -57,8 +57,11 @@ class GasPoweredHALE(Model):
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 'ft^2', 'wing area')
-        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-', 
-                                  'propulsive efficiency')
+        eta_prop = VectorVariable(NSeg, r'\eta_{prop}','-','propulsive efficiency')
+        eta_propCruise = Variable(r'\eta_{prop-cruise}',0.6,'-','propulsive efficiency in cruise')
+        eta_propClimb = Variable(r'\eta_{prop-climb}',0.5,'-','propulsive efficiency in climb')
+        eta_propLoiter = Variable(r'\eta_{prop-loiter}',0.7,'-','propulsive efficiency in loiter')
+
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
@@ -69,10 +72,10 @@ class GasPoweredHALE(Model):
                             T >= 0.5*rho*V**2*CD*S, 
                             T[iClimb] >= 0.5*rho[iClimb]*V[iClimb]**2*CD[iClimb]*S + 
                                          W_begin[iClimb]*h_dot/V[iClimb], 
-                            0.5*rho*CL*S*V**2 == (W_end*W_begin)**0.5, 
-                            eta_prop[iClimb] == 0.5, 
-                            eta_prop[iCruise] == 0.6, 
-                            eta_prop[iLoiter] == 0.7
+                            0.5*rho*CL*S*V**2 == (W_end*W_begin)**0.5,
+                            eta_prop[iLoiter] == eta_propLoiter,
+                            eta_prop[iCruise] == eta_propCruise,
+                            eta_prop[iClimb] == eta_propClimb
                             ])
         # Propulsive efficiency variation with different flight segments, 
         # will change depending on propeller characteristics
