@@ -26,7 +26,8 @@ class GasPoweredHALE(Model):
 
         MTOW = Variable('MTOW','lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
-        W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf', 'segment-fuel weight')
+        W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
+                                'segment-fuel weight')
         W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
         W_begin = W_end.left # define beginning of segment weight
         W_begin[0] = MTOW 
@@ -57,11 +58,11 @@ class GasPoweredHALE(Model):
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
         S = Variable('S', 'ft^2', 'wing area')
-        eta_prop = VectorVariable(NSeg, r'\eta_{prop}','-','propulsive efficiency')
+        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-',
+                                  'propulsive efficiency')
         eta_propCruise = Variable(r'\eta_{prop-cruise}',0.6,'-','propulsive efficiency in cruise')
         eta_propClimb = Variable(r'\eta_{prop-climb}',0.5,'-','propulsive efficiency in climb')
         eta_propLoiter = Variable(r'\eta_{prop-loiter}',0.7,'-','propulsive efficiency in loiter')
-
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
@@ -113,7 +114,6 @@ class GasPoweredHALE(Model):
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.93*2, 'hp', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
-        V_max = VectorVariable(NLoiter, 'V_{max}', 'm/s', 'maximum required speed')
 
         # Engine Weight Constraints
         constraints.extend([Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92, 
@@ -127,9 +127,6 @@ class GasPoweredHALE(Model):
                             P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
                             P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
                             P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
-                            #P_shaftmax[iLoiter]*eta_prop[iLoiter] >= 0.5*rho[iLoiter]*V_max**3*CD[iLoiter]*S,
-                            #V_max >= 30*units('m/s')
-                            #P_shaftmax[iLoiter]/P_shaft[iLoiter] == (V_max/V[iLoiter])**(3), 
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
@@ -203,8 +200,6 @@ class GasPoweredHALE(Model):
         a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s', 'Speed of sound at altitude')
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
         TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
-        rho_sl = Variable(r'\rho_{sl}', 1.225, 'kg/m^3', 'density of air at sea level')
-        h_ref = Variable('h_{ref}', 5500, 'm', 'reference height for atm model')
 
         constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
@@ -212,7 +207,6 @@ class GasPoweredHALE(Model):
                             rho[iCruise] == 1.055*units('kg/m^3'),
                             rho[iClimb[1]] == 0.7377*units('kg/m^3'),
                             rho[iLoiter] == 0.7377*units('kg/m^3')])
-                            #(rho/rho_sl) == 0.66*(h/h_ref)**-0.141])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------
