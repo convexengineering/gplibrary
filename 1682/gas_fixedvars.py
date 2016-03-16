@@ -7,7 +7,7 @@ import numpy as np
 gpkit.settings['latex_modelname'] = False
 
 class GasPoweredHALE(Model):
-    def setup(self):
+    def __init__(self):
 
         # define number of segments
         NSeg = 9 # number of flight segments
@@ -101,7 +101,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Engine Model (DF35)
 
-        W_engtot = Variable('W_{eng-tot}', 6*2, 'lbf', 'Installed engine weight')
+        W_engtot = Variable('W_{eng-tot}', 6, 'lbf', 'Installed engine weight')
                 #conservative for 4.2 engine complete with prop, generator and structures
         FuelOilFrac = Variable('FuelOilFrac',.98,'-','Fuel-oil fraction')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
@@ -111,14 +111,15 @@ class GasPoweredHALE(Model):
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
                                     'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.93*2, 'hp', 
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.93, 'hp', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
+        P_avn = VectorVariable(NSeg, 'P_{avn}', [0,0,0,42,42,42,42,42,0], 'watts', 'avionics power')
 
         # Engine Weight Constraints
         constraints.extend([Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92, 
                             P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
-                            P_shaft <= P_shaftmax, 
+                            P_shaftmax >= P_shaft + P_avn, 
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
@@ -162,6 +163,7 @@ class GasPoweredHALE(Model):
         Cffuse = Variable('C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
         CDfuse = Variable('C_{D-fuse}', '-', 'fueslage drag')
         l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
+        l_cent = Variable('l_{cent}', 'ft', 'center fuselage length')
         Refuse = VectorVariable(NSeg, 'Re_{fuse}', '-', 'fuselage Reynolds number')
         Re_ref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
         cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
@@ -174,7 +176,7 @@ class GasPoweredHALE(Model):
             Re == rho*V/mu*(S/AR)**0.5, 
             CDfuse >= Kfuse*S_fuse*Cffuse/S, 
             Refuse == rho*V/mu*l_fuse, 
-            Cffuse >= 0.074/Refuse**0.2, 
+            Cffuse >= 0.455/Refuse**0.3, 
             ])
 
         #----------------------------------------------------
@@ -199,10 +201,12 @@ class GasPoweredHALE(Model):
         T_atm = VectorVariable(NSeg, 'T_{atm}', 'K', 'Air temperature')
         a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s', 'Speed of sound at altitude')
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
-        TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
+        rho_sl = Variable(r'\rho_{sl}', 'kg/m^3', 'density at sea level')
+        #TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
 
         constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+                            rho_sl == 1.225*units('kg/m^3'),
                             rho[iClimb[0]] == 1.055*units('kg/m^3'),
                             rho[iCruise] == 1.055*units('kg/m^3'),
                             rho[iClimb[1]] == 0.7377*units('kg/m^3'),
@@ -291,20 +295,23 @@ class GasPoweredHALE(Model):
         rho_fuel = Variable(r'\rho_{fuel}', 6.01, 'lbf/gallon', 'density of 100LL')
 
         # Non-dimensional variables
-        k1fuse = Variable('k_{1-fuse}', 2.5, '-', 'fuselage form factor 1')
-        k2fuse = Variable('k-{2-fuse}', 5.58, '-', 'fuselage form factor 2')
+        k1fuse = Variable('k_{1-fuse}', 2.858, '-', 'fuselage form factor 1')
+        k2fuse = Variable('k-{2-fuse}', 5.938, '-', 'fuselage form factor 2')
+        w_cent = Variable('w_{cent}', 'ft', 'center fuselage width')
+        fr = Variable('fr', 3.5, '-', 'fineness ratio fuselage')
 
         # Volumes
         Vol_fuel = Variable('Vol_{fuel}', 'm**3', 'Fuel Volume')
         Vol_fuse = Variable('Vol_{fuse}', 'm**3', 'fuselage volume')
 
-
-
         constraints.extend([m_fuse >= S_fuse*rho_skin, 
+                            l_cent == fr*w_cent,
+                            l_fuse >= l_cent*1.1,
                             (l_fuse/k1fuse)**3 == Vol_fuse, 
                             (S_fuse/k2fuse)**3 == Vol_fuse**2, 
+                            Vol_fuse >= l_cent*w_cent**2,
                             Vol_fuel >= W_fuel.sum()/rho_fuel, 
-                            Vol_fuse >= Vol_fuel+Vol_avionics+Vol_pay])
+                            l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay])
 
         #----------------------------------------------------
         # wind speed model
@@ -315,11 +322,30 @@ class GasPoweredHALE(Model):
         constraints.extend([V[iLoiter] >= V_wind])
 
         objective = MTOW
-        return objective, constraints
+        Model.__init__(self,objective,constraints)
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
     sol = M.solve('cvxopt')
+
+    P_shaftmaxMSL = sol('P_{shaft-maxMSL}')
+    P_shaftmax = sol('P_{shaft-max}')
+    V = sol('V')
+    CD = sol('C_D')
+    rho = sol(r'\rho')
+    S = sol('S')
+    eta_prop = sol(r'\eta_{prop}')
+    T = sol('T')
+    rhoSL = sol(r'\rho_{sl}')
+
+    V_maxTO = ((P_shaftmaxMSL/0.5/0.5/rhoSL/S/CD[0]/1.2).to('m**3/s**3'))**(1./3)
+    V_max = ((P_shaftmaxMSL/0.5/0.5/rhoSL/S/CD/1.2).to('m**3/s**3'))**(1./3)
+
+    print "Max velocity at TO: %.1f [m/s]" % (V_maxTO.magnitude)
+    print "Max velocity at cruise: %.1f [m/s]" % (V_max[1].magnitude)
+    print "Max velocity at climb: %.1f [m/s]" % (V_max[0].magnitude)
+    print "Max velocity at loiter: %.1f [m/s]" % (V_max[3].magnitude)
+
 
     #----------------------------------------------
     # post processing
