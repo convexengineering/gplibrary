@@ -100,7 +100,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Engine Model (DF35)
 
-        W_engtot = Variable('W_{eng-tot}', 5.9+2.1, 'lbf', 'Installed engine weight')
+        W_engtot = Variable('W_{eng-tot}', 6, 'lbf', 'Installed engine weight')
                 #conservative for 4.2 engine complete with prop, generator and structures
         FuelOilFrac = Variable('FuelOilFrac',.98,'-','Fuel-oil fraction')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
@@ -110,10 +110,10 @@ class GasPoweredHALE(Model):
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
                                     'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.189*2, 'kW', 
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.93, 'hp', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
-        V_max = VectorVariable(NSeg, 'V_{max}', 'm/s', 'maximum required speed')
+        V_max = VectorVariable(NLoiter, 'V_{max}', 'm/s', 'maximum required speed')
 
         # Engine Weight Constraints
         constraints.extend([Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92, 
@@ -123,8 +123,13 @@ class GasPoweredHALE(Model):
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            V_max[iLoiter] >= 38*units('m/s'),
-                            P_shaftmax[iLoiter]/P_shaft[iLoiter] == (V_max[iLoiter]/V[iLoiter])**(2), 
+                            P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
+                            P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
+                            P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
+                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
+                            #P_shaftmax[iLoiter]*eta_prop[iLoiter] >= 0.5*rho[iLoiter]*V_max**3*CD[iLoiter]*S,
+                            #V_max >= 30*units('m/s')
+                            #P_shaftmax[iLoiter]/P_shaft[iLoiter] == (V_max/V[iLoiter])**(3), 
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
