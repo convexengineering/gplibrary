@@ -34,7 +34,7 @@ class GasPoweredHALE(Model):
 
         # Payload model
         W_pay = Variable('W_{pay}', 10, 'lbf', 'Payload weight')
-        Vol_pay = Variable('Vol_{pay}', 0.5, 'ft^3', 'Payload volume')
+        Vol_pay = Variable('Vol_{pay}', 1, 'ft^3', 'Payload volume')
 
         # Avionics model
         W_avionics = Variable('W_{avionics}', 8, 'lbf', 'Avionics weight')
@@ -83,7 +83,7 @@ class GasPoweredHALE(Model):
 
         #----------------------------------------------------
         # altitude constraints
-        h_station = Variable('h_{station}', 20000, 'ft', 'minimum altitude at station')
+        h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
         h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
 
         constraints.extend([h[iLoiter] == h_station, 
@@ -95,13 +95,13 @@ class GasPoweredHALE(Model):
                             h_dot <= 500*units('ft/min'),
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
-                            t[iClimb[1]]*h_dot[1] >= 15000*units('ft'), 
+                            t[iClimb[1]]*h_dot[1] >= 10000*units('ft'), 
                             ])
 
         #----------------------------------------------------
         # Engine Model (DF35)
 
-        W_engtot = Variable('W_{eng-tot}', 6, 'lbf', 'Installed engine weight')
+        W_engtot = Variable('W_{eng-tot}', 8, 'lbf', 'Installed engine weight')
                 #conservative for 4.2 engine complete with prop, generator and structures
         FuelOilFrac = Variable('FuelOilFrac',.98,'-','Fuel-oil fraction')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
@@ -111,7 +111,7 @@ class GasPoweredHALE(Model):
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
                                     'Max shaft power at altitude')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.93, 'hp', 
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.84, 'hp', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
         P_avn = VectorVariable(NSeg, 'P_{avn}', [40,40,40,50,50,50,50,50,40], 'watts', 'avionics power')
@@ -128,10 +128,10 @@ class GasPoweredHALE(Model):
                             RPM <= RPM_max, 
                             P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
                             P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
-                            P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329,
-                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329
-                            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
-                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
+                            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329,
+                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329
+                            P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
+                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
@@ -213,10 +213,10 @@ class GasPoweredHALE(Model):
                             rho_sl == 1.225*units('kg/m^3'),
                             rho[iClimb[0]] == 1.055*units('kg/m^3'),
                             rho[iCruise] == 1.055*units('kg/m^3'),
-                            rho[iClimb[1]] == 0.652*units('kg/m^3'),
-                            rho[iLoiter] == 0.652*units('kg/m^3')])
-                            #rho[iClimb[1]] == 0.7377*units('kg/m^3'),
-                            #rho[iLoiter] == 0.7377*units('kg/m^3')])
+                            #rho[iClimb[1]] == 0.652*units('kg/m^3'),
+                            #rho[iLoiter] == 0.652*units('kg/m^3')])
+                            rho[iClimb[1]] == 0.7377*units('kg/m^3'),
+                            rho[iLoiter] == 0.7377*units('kg/m^3')])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------
@@ -230,8 +230,8 @@ class GasPoweredHALE(Model):
         m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
         m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
         m_skin = Variable('m_{skin}', 'kg', 'Skin mass')
-        m_tail = Variable('m_{tail}', 1, 'kg', 'tail mass')
-        m_rib = Variable('m_{rib}', 1.2, 'kg','rib mass')
+        m_tail = Variable('m_{tail}', 1*1.5, 'kg', 'tail mass')
+        m_rib = Variable('m_{rib}', 1.2*1.5, 'kg','rib mass')
 
         constraints.extend([W_wing >= m_skin*g + 1.2*m_cap*g, 
                             W_fuse >= m_fuse*g + m_rib*g, 
