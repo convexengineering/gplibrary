@@ -33,6 +33,7 @@
 
 \begin{enumerate}
 \item Fixed Engine Weight $ W_{eng-tot} \gets 6~\mathrm{lbf} \text{ } P_{shaft-maxMSL} \gets 2.189~\mathrm{kW} $.  Also assuming that engine performance is affected by altitude and RPM. This BSFC model is technically fit for a single propellor.  We are assuming that the the variance in BSFC curves in the family of propellers is small.  
+\item Fixed propller 18x8
 \item Fixed range to station $ R \gets 200~\mathrm{nmi} $
 \item Fixed payload $ W_{pay} \gets 10~\mathrm{lbf} \text{ } Vol_{pay} \gets 0.5~\mathrm{ft^{3}} $
 \item Fixed altitude at cruise $ h_{cruise} \gets 5000~\mathrm{ft} $
@@ -42,6 +43,8 @@
 \item Fixed time to get on station  $ t_{cruise} \leq 1~\mathrm{day} $
 \item Constant wind speed during loiter $ V_{wind} \gets 25~\mathrm{m/s} $
 \item Fuselage fineness ratio $ fr \gets 3.5 $
+\item Power during climb/cuise $ P_{avn} \gets 40~\mathrm{watts} $
+\item Power during loiter  $ P_{avn} \gets 50~\mathrm{watts} $
 \end{enumerate}
 \newpage
 

@@ -24,7 +24,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuel weight model 
 
-        MTOW = Variable('MTOW','lbf', 'max take off weight')
+        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight')
@@ -114,7 +114,7 @@ class GasPoweredHALE(Model):
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.93, 'hp', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
-        P_avn = VectorVariable(NSeg, 'P_{avn}', [38,38,38,42,42,42,42,42,38], 'watts', 'avionics power')
+        P_avn = VectorVariable(NSeg, 'P_{avn}', [40,40,40,50,50,50,50,50,40], 'watts', 'avionics power')
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
 
         # Engine Weight Constraints
@@ -137,7 +137,7 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
-        t_station = Variable('t_{station}','days', 'time on station')
+        t_station = Variable('t_{station}', 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         R_cruise = Variable('R_{cruise}',180,'nautical_miles','range to station during climb')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
@@ -323,7 +323,7 @@ class GasPoweredHALE(Model):
 
         constraints.extend([V[iLoiter] >= V_wind])
 
-        objective = MTOW
+        objective = MTOW 
         Model.__init__(self,objective,constraints, **kwargs)
 
 if __name__ == '__main__':
@@ -362,7 +362,7 @@ if __name__ == '__main__':
     #plt.grid()
     #plt.savefig('tvsMTOW.png')
 
-    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15)), 'MTOW':83})
+    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15)), 'MTOW':91})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
     #R = sol('R')
