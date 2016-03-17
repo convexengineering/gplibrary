@@ -7,7 +7,7 @@ import numpy as np
 gpkit.settings['latex_modelname'] = False
 
 class GasPoweredHALE(Model):
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         # define number of segments
         NSeg = 9 # number of flight segments
@@ -114,15 +114,17 @@ class GasPoweredHALE(Model):
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 2.93, 'hp', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
-        P_avn = VectorVariable(NSeg, 'P_{avn}', [0,0,0,42,42,42,42,42,0], 'watts', 'avionics power')
+        P_avn = VectorVariable(NSeg, 'P_{avn}', [38,38,38,42,42,42,42,42,38], 'watts', 'avionics power')
+        P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
 
         # Engine Weight Constraints
         constraints.extend([Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92, 
                             P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
-                            P_shaftmax >= P_shaft + P_avn, 
+                            P_shaftmax >= P_shafttot, 
+                            P_shafttot >= P_shaft + P_avn*1.25,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
-                            (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
+                            (P_shafttot/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
                             P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
                             P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
@@ -135,12 +137,12 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
-        t_station = Variable('t_{station}',6, 'days', 'time on station')
+        t_station = Variable('t_{station}','days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         R_cruise = Variable('R_{cruise}',180,'nautical_miles','range to station during climb')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
-        constraints.extend([z_bre >= V*t*BSFC*g*T/W_end/eta_prop, 
+        constraints.extend([z_bre >= P_shafttot*t*BSFC*g/W_end,
                             R_cruise <= V[iCruise[0]]*t[iCruise[0]], 
                             R <= V[iCruise[1]]*t[iCruise[1]], 
                             t[iLoiter] >= t_station/NLoiter, 
@@ -322,12 +324,12 @@ class GasPoweredHALE(Model):
         constraints.extend([V[iLoiter] >= V_wind])
 
         objective = MTOW
-        Model.__init__(self,objective,constraints)
+        Model.__init__(self,objective,constraints, **kwargs)
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
-    sol = M.solve('cvxopt')
-
+    M.substitutions.update({M["t_{station}"]:6})
+    sol = M.solve('cvxopt') 
     P_shaftmaxMSL = sol('P_{shaft-maxMSL}')
     P_shaftmax = sol('P_{shaft-max}')
     V = sol('V')
@@ -338,12 +340,10 @@ if __name__ == '__main__':
     T = sol('T')
     rhoSL = sol(r'\rho_{sl}')
 
-    V_maxTO = ((P_shaftmaxMSL/0.5/0.5/rhoSL/S/CD[0]/1.2).to('m**3/s**3'))**(1./3)
-    V_max = ((P_shaftmaxMSL/0.5/0.5/rhoSL/S/CD/1.2).to('m**3/s**3'))**(1./3)
+    V_maxTO = ((P_shaftmaxMSL*0.5/0.5/rhoSL/S/CD[0]).to('m**3/s**3'))**(1./3)
+    V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m**3/s**3'))**(1./3)
 
     print "Max velocity at TO: {:.1f~}".format(V_maxTO)
-    print "Max velocity at cruise: {:.1f~}".format(V_max[1])
-    print "Max velocity at climb: {:.1f~}".format(V_max[0])
     print "Max velocity at loiter: {:.1f~}".format(V_max[3])
 
     #----------------------------------------------
@@ -401,27 +401,27 @@ if __name__ == '__main__':
     #plt.ylabel('t_station [days]')
     #plt.savefig('tvsh_station.png')
 
-    M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'MTOW': 83})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'MTOW': 83})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    V_wind83 = sol('V_{wind}')
-    t_station83 = sol('t_{station}')
+    #V_wind83 = sol('V_{wind}')
+    #t_station83 = sol('t_{station}')
 
-    plt.close()
-    plt.plot(V_wind83, t_station83)
-    plt.xlabel('V_wind [m/s]')
-    plt.ylabel('t_station [days]')
-    plt.grid()
-    plt.savefig('tvsV_wind83.png')
+    #plt.close()
+    #plt.plot(V_wind83, t_station83)
+    #plt.xlabel('V_wind [m/s]')
+    #plt.ylabel('t_station [days]')
+    #plt.grid()
+    #plt.savefig('tvsV_wind83.png')
 
-    M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'MTOW': 89})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'MTOW': 89})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    V_wind89 = sol('V_{wind}')
-    t_station89 = sol('t_{station}')
+    #V_wind89 = sol('V_{wind}')
+    #t_station89 = sol('t_{station}')
 
-    plt.plot(V_wind83, t_station83, V_wind89, t_station89)
-    plt.xlabel('V_wind [m/s]')
-    plt.ylabel('t_station [days]')
-    plt.grid()
-    plt.savefig('tvsV_wind89.png')
+    #plt.plot(V_wind83, t_station83, V_wind89, t_station89)
+    #plt.xlabel('V_wind [m/s]')
+    #plt.ylabel('t_station [days]')
+    #plt.grid()
+    #plt.savefig('tvsV_wind89.png')
