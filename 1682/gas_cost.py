@@ -7,7 +7,7 @@ import numpy as np
 gpkit.settings['latex_modelname'] = False
 
 class GasPoweredHALE(Model):
-    def setup(self):
+    def __init__(self):
 
         # define number of segments
         NSeg = 9 # number of flight segments
@@ -24,7 +24,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuel weight model 
 
-        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
+        MTOW = Variable('MTOW', 100, 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight')
@@ -198,7 +198,7 @@ class GasPoweredHALE(Model):
         T_atm = VectorVariable(NSeg, 'T_{atm}', 'K', 'Air temperature')
         a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s', 'Speed of sound at altitude')
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
-        TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
+        #TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
 
         constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
@@ -340,7 +340,7 @@ class GasPoweredHALE(Model):
         H_Q = Variable("H_{Q}", "hrs", "Quality control hours for inspection")
 
         # Cost Variableibles
-        C_D = Variable("C_D", "USD2012", "Development Cost")
+        C_Dev = Variable("C_{Dev}", "USD2012", "Development Cost")
         C_F = Variable("C_F", "USD2012", "Flight Test Cost to prove airworthiness")
         C_M = Variable("C_M", "USD2012", "Materials cost of aluminum airframe")
         C_fly = Variable("C_{fly}", "USD2012", "RDT&E Flyaway Cost")
@@ -359,9 +359,9 @@ class GasPoweredHALE(Model):
                         "H_M power law proportionality constant")
         H_Q_const = Variable("H_{Q_const}", 0.133, "-",
                         "H_Q power law proportionality constant")
-        C_D_const = Variable("C_{D_const}", 91.3,
+        C_Dev_const = Variable("C_{Dev_const}", 91.3,
                         units.USD2012/(units.lbf**0.630 * units.knots**1.3),
-                        "C_D power law proportionality constant")
+                        "C_Dev power law proportionality constant")
         C_F_const = Variable("C_{F_const}", 2498,
                         units.USD2012/(units.lbf**0.325 * units.knots**0.822),
                         "C_F power law proportionality constant")
@@ -369,20 +369,20 @@ class GasPoweredHALE(Model):
                         units.USD2012/(units.lbf**0.921 * units.knots**0.621),
                         "C_M power law proportionality constant")
 
-        constraints.extend([C_fly >= (H_E*R_E + H_T*R_T + H_M*R_M + H_Q*R_Q + C_D +
+        constraints.extend([C_fly >= (H_E*R_E + H_T*R_T + H_M*R_M + H_Q*R_Q + C_Dev +
                                       C_F + C_M + C_eng*N_eng + C_avn),
                             H_E >= H_E_const*W_zfw**0.777*V[2]**0.894*Q**0.163,
                             H_T >= H_T_const*W_zfw**0.777*V[2]**0.696*Q**0.263,
                             H_M >= H_M_const*W_zfw**0.82*V[2]**0.484*Q**0.641,
                             H_Q >= H_Q_const*H_E,
-                            C_D >= C_D_const*W_zfw**0.630*V[2]**1.3,
+                            C_Dev >= C_Dev_const*W_zfw**0.630*V[2]**1.3,
                             C_F >= C_F_const*W_zfw**0.325*V[2]**0.822*FTA**1.21,
                             C_M >= C_M_const*W_zfw**0.921*V[2]**0.621*Q**0.799,
                             C_avn >= R_avn*W_zfw,
                             ])
 
-        objective = MTOW
-        return objective, constraints
+        objective = C_fly 
+        Model.__init__(self, objective, constraints)
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
