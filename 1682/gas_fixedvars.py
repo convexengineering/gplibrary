@@ -341,11 +341,10 @@ if __name__ == '__main__':
     V_maxTO = ((P_shaftmaxMSL/0.5/0.5/rhoSL/S/CD[0]/1.2).to('m**3/s**3'))**(1./3)
     V_max = ((P_shaftmaxMSL/0.5/0.5/rhoSL/S/CD/1.2).to('m**3/s**3'))**(1./3)
 
-    print "Max velocity at TO: %.1f [m/s]" % (V_maxTO.magnitude)
-    print "Max velocity at cruise: %.1f [m/s]" % (V_max[1].magnitude)
-    print "Max velocity at climb: %.1f [m/s]" % (V_max[0].magnitude)
-    print "Max velocity at loiter: %.1f [m/s]" % (V_max[3].magnitude)
-
+    print "Max velocity at TO: {:.1f~}".format(V_maxTO)
+    print "Max velocity at cruise: {:.1f~}".format(V_max[1])
+    print "Max velocity at climb: {:.1f~}".format(V_max[0])
+    print "Max velocity at loiter: {:.1f~}".format(V_max[3])
 
     #----------------------------------------------
     # post processing
@@ -363,7 +362,7 @@ if __name__ == '__main__':
     #plt.grid()
     #plt.savefig('tvsMTOW.png')
 
-    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15)), 'MTOW':85})
+    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15)), 'MTOW':83})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
     #R = sol('R')
@@ -402,22 +401,27 @@ if __name__ == '__main__':
     #plt.ylabel('t_station [days]')
     #plt.savefig('tvsh_station.png')
 
-    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'h_{station}':15000, 'MTOW': 87})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'MTOW': 83})
+    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #V_wind87 = sol('V_{wind}')
-    #t_station87 = sol('t_{station}')
+    V_wind83 = sol('V_{wind}')
+    t_station83 = sol('t_{station}')
 
-    #plt.close()
+    plt.close()
+    plt.plot(V_wind83, t_station83)
+    plt.xlabel('V_wind [m/s]')
+    plt.ylabel('t_station [days]')
+    plt.grid()
+    plt.savefig('tvsV_wind83.png')
 
-    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'h_{station}':15000, 'MTOW': 96})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'MTOW': 89})
+    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #V_wind96 = sol('V_{wind}')
-    #t_station96 = sol('t_{station}')
+    V_wind89 = sol('V_{wind}')
+    t_station89 = sol('t_{station}')
 
-    #plt.plot(V_wind87, t_station87, V_wind96, t_station96)
-    #plt.xlabel('V_wind [m/s]')
-    #plt.ylabel('t_station [days]')
-    #plt.grid()
-    #plt.savefig('tvsV_wind96.png')
+    plt.plot(V_wind83, t_station83, V_wind89, t_station89)
+    plt.xlabel('V_wind [m/s]')
+    plt.ylabel('t_station [days]')
+    plt.grid()
+    plt.savefig('tvsV_wind89.png')
