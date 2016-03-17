@@ -83,7 +83,7 @@ class GasPoweredHALE(Model):
 
         #----------------------------------------------------
         # altitude constraints
-        h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
+        h_station = Variable('h_{station}', 20000, 'ft', 'minimum altitude at station')
         h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
 
         constraints.extend([h[iLoiter] == h_station, 
@@ -95,7 +95,7 @@ class GasPoweredHALE(Model):
                             h_dot <= 500*units('ft/min'),
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
-                            t[iClimb[1]]*h_dot[1] >= 10000*units('ft'), 
+                            t[iClimb[1]]*h_dot[1] >= 15000*units('ft'), 
                             ])
 
         #----------------------------------------------------
@@ -128,8 +128,10 @@ class GasPoweredHALE(Model):
                             RPM <= RPM_max, 
                             P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
                             P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
-                            P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
-                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
+                            P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329,
+                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329
+                            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
+                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
@@ -162,7 +164,7 @@ class GasPoweredHALE(Model):
         # fuselage drag 
         Kfuse = Variable('K_{fuse}', 1.1, '-', 'Fuselage form factor')
         S_fuse = Variable('S_{fuse}', 'ft^2', 'Fuselage surface area')
-        Cffuse = Variable('C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
+        Cffuse = VectorVariable(NSeg, 'C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
         CDfuse = Variable('C_{D-fuse}', '-', 'fueslage drag')
         l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
         l_cent = Variable('l_{cent}', 'ft', 'center fuselage length')
@@ -171,7 +173,7 @@ class GasPoweredHALE(Model):
         cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
 
         constraints.extend([
-            CD >= CDfuse + cdp + CL**2/(pi*e*AR),
+            CD >= (CDfuse + cdp + CL**2/(pi*e*AR))*1.3,
             cdp >= ((0.006 + 0.005*CL**2 + 0.00012*CL**10)*(Re/Re_ref)**-0.3),
             b**2 == S*AR, 
             CL <= CLmax, 
@@ -211,8 +213,10 @@ class GasPoweredHALE(Model):
                             rho_sl == 1.225*units('kg/m^3'),
                             rho[iClimb[0]] == 1.055*units('kg/m^3'),
                             rho[iCruise] == 1.055*units('kg/m^3'),
-                            rho[iClimb[1]] == 0.7377*units('kg/m^3'),
-                            rho[iLoiter] == 0.7377*units('kg/m^3')])
+                            rho[iClimb[1]] == 0.652*units('kg/m^3'),
+                            rho[iLoiter] == 0.652*units('kg/m^3')])
+                            #rho[iClimb[1]] == 0.7377*units('kg/m^3'),
+                            #rho[iLoiter] == 0.7377*units('kg/m^3')])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------
