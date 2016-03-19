@@ -91,8 +91,6 @@ class GasPoweredHALE(Model):
                             h[iClimb[0]] == h_min, 
                             h[iClimb[1]] == h_station, 
                             t[iClimb[0]]*h_dot[0] >= h_min, 
-                            h_dot[0] <= 1000*units('ft/min'),
-                            h_dot <= 500*units('ft/min'),
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
                             t[iClimb[1]]*h_dot[1] >= 10000*units('ft'), 
@@ -211,12 +209,14 @@ class GasPoweredHALE(Model):
         constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
                             rho_sl == 1.225*units('kg/m^3'),
-                            rho[iClimb[0]] == 1.055*units('kg/m^3'),
-                            rho[iCruise] == 1.055*units('kg/m^3'),
+                            (rho/rho_sl)**0.1 == 0.954*(h/h_station)**(-0.0284)
+                            #rho[iClimb[0]] == 1.055*units('kg/m^3'),
+                            #rho[iCruise] == 1.055*units('kg/m^3'),
                             #rho[iClimb[1]] == 0.652*units('kg/m^3'),
                             #rho[iLoiter] == 0.652*units('kg/m^3')])
-                            rho[iClimb[1]] == 0.7377*units('kg/m^3'),
-                            rho[iLoiter] == 0.7377*units('kg/m^3')])
+                            #rho[iClimb[1]] == 0.7377*units('kg/m^3'),
+                            #rho[iLoiter] == 0.7377*units('kg/m^3')
+                            ])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------
