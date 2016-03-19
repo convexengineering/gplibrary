@@ -148,7 +148,30 @@ class GasPoweredHALE(Model):
                             t[iLoiter] >= t_station/NLoiter, 
                             sum(t[[0,1,2]]) <= t_cruise, 
                             FuelOilFrac*W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
+        
+        #----------------------------------------------------
+        # Atmosphere model
+        gamma = Variable(r'\gamma', 1.4, '-', 'Heat capacity ratio of air')
+        p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
+        rho_sl = Variable(r'\rho_{sl}', 'kg/m^3', 'density at sea level')
+        T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
+        mu_sl = Variable(r'\mu_{sl}', 1.789*10**-5, 'N*s/m^2','Dynamic viscosity at sea level')
+        L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
+        T_atm = VectorVariable(NSeg, 'T_{atm}', 'K', 'Air temperature')
+        a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s', 'Speed of sound at altitude')
+        mu_atm = VectorVariable(NSeg,r'\mu', 'N*s/m^2', 'Dynamic viscosity')
 
+        R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
+        #TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
+
+        constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
+                            #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+                            rho_sl == 1.225*units('kg/m^3'),
+                            (rho/rho_sl)**0.1 == 0.954*(h/h_station)**(-0.0284),
+                            (T_atm/T_sl)**0.1 == 0.989*(h/h_station)**(-0.00666),
+                            (mu_atm/mu_sl)**0.1 == 0.991*(h/h_station)**(-0.00529)
+                            ])
+            # http://en.wikipedia.org/wiki/Density_of_air#Altitude
         #----------------------------------------------------
         # Aerodynamics model
 
@@ -156,7 +179,6 @@ class GasPoweredHALE(Model):
         e = Variable('e', 0.9, '-', 'Spanwise efficiency')
         AR = Variable('AR', '-', 'Aspect ratio')
         b = Variable('b', 'ft', 'Span')
-        mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', 'Dynamic viscosity')
         Re = VectorVariable(NSeg, 'Re', '-', 'Reynolds number')
 
         # fuselage drag 
@@ -175,9 +197,9 @@ class GasPoweredHALE(Model):
             cdp >= ((0.006 + 0.005*CL**2 + 0.00012*CL**10)*(Re/Re_ref)**-0.3),
             b**2 == S*AR, 
             CL <= CLmax, 
-            Re == rho*V/mu*(S/AR)**0.5, 
+            Re == rho*V/mu_atm*(S/AR)**0.5, 
             CDfuse >= Kfuse*S_fuse*Cffuse/S, 
-            Refuse == rho*V/mu*l_fuse, 
+            Refuse == rho*V/mu_atm*l_fuse, 
             Cffuse >= 0.455/Refuse**0.3, 
             ])
 
@@ -193,26 +215,6 @@ class GasPoweredHALE(Model):
         #constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
         #                        + cl_16*CL**16 + CDAland, 
         #                    CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S]) 
-
-        #----------------------------------------------------
-        # Atmosphere model
-        gamma = Variable(r'\gamma', 1.4, '-', 'Heat capacity ratio of air')
-        p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
-        T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
-        L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
-        T_atm = VectorVariable(NSeg, 'T_{atm}', 'K', 'Air temperature')
-        a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s', 'Speed of sound at altitude')
-        R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
-        rho_sl = Variable(r'\rho_{sl}', 'kg/m^3', 'density at sea level')
-        #TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
-
-        constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                            #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
-                            rho_sl == 1.225*units('kg/m^3'),
-                            (rho/rho_sl)**0.1 == 0.954*(h/h_station)**(-0.0284),
-                            (T_atm/T_sl)**0.1 == 0.989*(h/h_station)**(-0.00666)
-                            ])
-            # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
         #----------------------------------------------------
         # Weight breakdown
