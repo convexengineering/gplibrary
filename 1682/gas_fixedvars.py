@@ -115,6 +115,8 @@ class GasPoweredHALE(Model):
         P_avn = VectorVariable(NSeg, 'P_{avn}', [40,40,40,50,50,50,50,50,40], 'watts', 'avionics power')
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
 
+        V_max = VectorVariable(NSeg,'V_{max}','m/s','Maximum velocity')
+
         # Engine Weight Constraints
         constraints.extend([Lfactor == 0.906**(1/0.15)*(h/h_station)**0.92, 
                             P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
@@ -126,10 +128,11 @@ class GasPoweredHALE(Model):
                             RPM <= RPM_max, 
                             P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
                             P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
-                            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329,
-                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329,
+                            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329, #value at 20kft
+                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329, #value at 20kft
                             P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
-                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
+                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481,
+                            P_shaft/P_shaftmax == (V/V_max)**3.
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
@@ -350,11 +353,11 @@ if __name__ == '__main__':
     T = sol('T')
     rhoSL = sol(r'\rho_{sl}')
 
-    V_maxTO = ((P_shaftmaxMSL*0.5/0.5/rhoSL/S/CD[0]).to('m**3/s**3'))**(1./3)
-    V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m**3/s**3'))**(1./3)
+    #V_maxTO = ((P_shaftmaxMSL*0.5/0.5/rhoSL/S/CD[0]))**(1./3.)
+    # = ((P_shaftmax*0.7/0.5/rho/S/CD))**(1./3.)
 
-    print "Max velocity at TO: {:.1f~}".format(V_maxTO)
-    print "Max velocity at loiter: {:.1f~}".format(V_max[3])
+    #print "Max velocity at TO: {:.1f~}".format(V_maxTO)
+    #print "Max velocity at loiter: {:.1f~}".format(V_max[3])
 
     #----------------------------------------------
     # post processing
