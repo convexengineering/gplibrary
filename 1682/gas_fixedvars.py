@@ -116,18 +116,18 @@ class GasPoweredHALE(Model):
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
 
         # Engine Weight Constraints
-        constraints.extend([Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92, 
+        constraints.extend([Lfactor == 0.906**(1/0.15)*(h/h_station)**0.92, 
                             P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
                             P_shaftmax >= P_shafttot, 
                             P_shafttot >= P_shaft + P_avn*1.25,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
-                            (P_shafttot/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
+                            (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
                             P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
                             P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
                             #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329,
-                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329
+                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329,
                             P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
                             P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
                             ])
@@ -209,13 +209,8 @@ class GasPoweredHALE(Model):
         constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
                             #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
                             rho_sl == 1.225*units('kg/m^3'),
-                            (rho/rho_sl)**0.1 == 0.954*(h/h_station)**(-0.0284)
-                            #rho[iClimb[0]] == 1.055*units('kg/m^3'),
-                            #rho[iCruise] == 1.055*units('kg/m^3'),
-                            #rho[iClimb[1]] == 0.652*units('kg/m^3'),
-                            #rho[iLoiter] == 0.652*units('kg/m^3')])
-                            #rho[iClimb[1]] == 0.7377*units('kg/m^3'),
-                            #rho[iLoiter] == 0.7377*units('kg/m^3')
+                            (rho/rho_sl)**0.1 == 0.954*(h/h_station)**(-0.0284),
+                            (T_atm/T_sl)**0.1 == 0.989*(h/h_station)**(-0.00666)
                             ])
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
 
