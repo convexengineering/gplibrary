@@ -322,10 +322,19 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = Variable('V_{wind}', 25, 
-                                'm/s', 'wind speed')
+        V_wind = VectorVariable(NSeg, 'V_{wind}', 'm/s', 'wind speed')
+        wd_cnst = Variable('wd_{cnst}', 0.001077, 'm/s/ft', 
+                           'wind speed constant predicted by model')
+                            #0.002 is worst case, 0.0015 is mean at 45d
+        wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
+                         'linear wind speed variable')
+                        #13.009 is worst case, 8.845 is mean at 45deg
+        h_min = Variable('h_{min}', 11800, 'ft', 'minimum height')
+        h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
 
-        constraints.extend([V[iLoiter] >= V_wind])
+        constraints.extend([V_wind >= wd_cnst*h + wd_ln, 
+                            V >= V_wind,
+                            h[NCruise] >= h_min])
 
         objective = MTOW 
         Model.__init__(self,objective,constraints, **kwargs)
