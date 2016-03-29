@@ -24,7 +24,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuel weight model 
 
-        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
+        MTOW = Variable('MTOW', 143, 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight')
@@ -85,6 +85,7 @@ class GasPoweredHALE(Model):
         # altitude constraints
         h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
         h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
+        deltah = Variable(r'\delta_h', 10000, 'ft', 'delta height')
 
         constraints.extend([h[iLoiter] == h_station, 
                             h[iCruise] == h_min, 
@@ -93,7 +94,7 @@ class GasPoweredHALE(Model):
                             t[iClimb[0]]*h_dot[0] >= h_min, 
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
-                            t[iClimb[1]]*h_dot[1] >= 10000*units('ft'), 
+                            t[iClimb[1]]*h_dot[1] >= deltah
                             ])
 
         #----------------------------------------------------
@@ -329,20 +330,21 @@ class GasPoweredHALE(Model):
         wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
                          'linear wind speed variable')
                         #13.009 is worst case, 8.845 is mean at 45deg
-        h_min = Variable('h_{min}', 11800, 'ft', 'minimum height')
-        h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
+        #h_min = Variable('h_{min}', 11800, 'ft', 'minimum height')
+        #h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
 
         constraints.extend([V_wind >= wd_cnst*h + wd_ln, 
                             V >= V_wind,
-                            h[NCruise] >= h_min])
+                            #h[NCruise] >= 11800*units('ft')
+                            ])
 
-        objective = MTOW 
+        objective = 1/t_station 
         Model.__init__(self,objective,constraints, **kwargs)
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
-    M.substitutions.update({M["t_{station}"]:6})
-    sol = M.solve('cvxopt') 
+    #M.substitutions.update({M["t_{station}"]:6})
+    sol = M.solve('mosek') 
     P_shaftmaxMSL = sol('P_{shaft-maxMSL}')
     P_shaftmax = sol('P_{shaft-max}')
     V = sol('V')
@@ -353,11 +355,11 @@ if __name__ == '__main__':
     T = sol('T')
     rhoSL = sol(r'\rho_{sl}')
 
-    #V_maxTO = ((P_shaftmaxMSL*0.5/0.5/rhoSL/S/CD[0]))**(1./3.)
-    # = ((P_shaftmax*0.7/0.5/rho/S/CD))**(1./3.)
+    V_maxTO = ((P_shaftmaxMSL*0.5/0.5/rhoSL/S/CD[0]).to('m^3/s^3'))**(1./3.)
+    V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m^3/s^3'))**(1./3.)
 
-    #print "Max velocity at TO: {:.1f~}".format(V_maxTO)
-    #print "Max velocity at loiter: {:.1f~}".format(V_max[3])
+    print "Max velocity at TO: {:.1f~}".format(V_maxTO)
+    print "Max velocity at loiter: {:.1f~}".format(V_max[3])
 
     #----------------------------------------------
     # post processing
@@ -375,7 +377,7 @@ if __name__ == '__main__':
     #plt.grid()
     #plt.savefig('tvsMTOW.png')
 
-    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15)), 'MTOW':91})
+    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15)), 'MTOW':143})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
     #R = sol('R')
@@ -386,13 +388,15 @@ if __name__ == '__main__':
     #plt.xlabel('R [nm]')
     #plt.grid()
     #plt.ylabel('t_station [days]')
+    #plt.axis([0,600,0,10])
     #plt.savefig('tvsR.png')
 
-    #M.substitutions.update({'h_{min}':('sweep',np.linspace(1000,15000,15)),r'\rho'[1]:[1.19,1.16, 1.12, 1.09, 1.06, 1.03, 0.99, 0.96, 0.94, 0.91, 0.88, 0.85, 0.82, 0.80, 0.77],'R':85})
+    #M.substitutions.update({'h_{min}':('sweep',[1000,10000,15000])}) #, r'\delta_h': ('sweep', np.flipud(np.linspace(0,14000,3)))})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
     #h_min = sol('h_{min}')
     #t_station = sol('t_{station}')
+    #deltah = sol(r'\delta_h')
 
     #plt.close()
     #plt.plot(h_min, t_station)
