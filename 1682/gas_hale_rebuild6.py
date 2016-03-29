@@ -7,7 +7,7 @@ import numpy as np
 gpkit.settings['latex_modelname'] = False
 
 class GasPoweredHALE(Model):
-    def setup(self):
+    def __init__(self, **kwargs):
 
         # define number of segments
         NSeg = 9 # number of flight segments
@@ -24,7 +24,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuel weight model 
 
-        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
+        MTOW = Variable('MTOW', 143, 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight')
@@ -34,7 +34,7 @@ class GasPoweredHALE(Model):
 
         # Payload model
         W_pay = Variable('W_{pay}', 10, 'lbf', 'Payload weight')
-        Vol_pay = Variable('Vol_{pay}', 0.5, 'ft^3', 'Payload volume')
+        Vol_pay = Variable('Vol_{pay}', 1, 'ft^3', 'Payload volume')
 
         # Avionics model
         W_avionics = Variable('W_{avionics}', 8, 'lbf', 'Avionics weight')
@@ -85,17 +85,18 @@ class GasPoweredHALE(Model):
         # altitude constraints
         h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
         h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
+        deltah = Variable(r'\delta_h', 10000, 'ft', 'delta height')
 
         constraints.extend([h[iLoiter] == h_station, 
                             h[iCruise] == h_min, 
                             h[iClimb[0]] == h_min, 
                             h[iClimb[1]] == h_station, 
                             t[iClimb[0]]*h_dot[0] >= h_min, 
-                            h_dot[0] <= 1000*units('ft/min'),
-                            h_dot <= 500*units('ft/min'),
+                            #h_dot[0] <= 1000*units('ft/min'),
+                            #h_dot <= 500*units('ft/min'),
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
-                            t[iClimb[1]]*h_dot[1] >= 10000*units('ft'), 
+                            t[iClimb[1]]*h_dot[1] >= deltah
                             ])
 
         #----------------------------------------------------
@@ -115,16 +116,19 @@ class GasPoweredHALE(Model):
                                     'Max shaft power at altitude')
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 'hp', 'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
+        P_avn = VectorVariable(NSeg, 'P_{avn}', [40,40,40,50,50,50,50,50,40], 'watts', 'avionics power')
+        P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
 
         # Engine Weight Constraints
-        constraints.extend([W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075, 
-                            W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078,
-                            Lfactor >= 0.906**(1/0.15)*(h/h_station)**0.92,
+        constraints.extend([Lfactor == 0.906**(1/0.15)*(h/h_station)**0.92, 
                             P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
-                            P_shaft <= P_shaftmax, 
+                            W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075, 
+                            W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078,
+                            P_shaftmax >= P_shafttot, 
+                            P_shafttot >= P_shaft + P_avn*1.25,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
-                            (P_shaft/P_shaftmax)**0.1 >= 0.999*(RPM/RPM_max)**0.292, 
+                            (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
                             P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
                             P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
@@ -137,16 +141,41 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
-        t_station = Variable('t_{station}',6,'days', 'time on station')
+        t_station = Variable('t_{station}', 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
+        R_cruise = Variable('R_{cruise}',180,'nautical_miles','range to station during climb')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
-        constraints.extend([z_bre >= V*t*BSFC*g*T/W_end/eta_prop, 
-                            R <= V[iCruise]*t[iCruise], 
+        constraints.extend([z_bre >= P_shafttot*t*BSFC*g/W_end,
+                            R_cruise <= V[iCruise[0]]*t[iCruise[0]], 
+                            R <= V[iCruise[1]]*t[iCruise[1]], 
                             t[iLoiter] >= t_station/NLoiter, 
-                            t[iCruise[0]] <= t_cruise, 
-                            W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
+                            sum(t[[0,1,2]]) <= t_cruise, 
+                            FuelOilFrac*W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
+        
+        #----------------------------------------------------
+        # Atmosphere model
+        gamma = Variable(r'\gamma', 1.4, '-', 'Heat capacity ratio of air')
+        p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
+        rho_sl = Variable(r'\rho_{sl}', 'kg/m^3', 'density at sea level')
+        T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
+        mu_sl = Variable(r'\mu_{sl}', 1.789*10**-5, 'N*s/m^2','Dynamic viscosity at sea level')
+        L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
+        T_atm = VectorVariable(NSeg, 'T_{atm}', 'K', 'Air temperature')
+        a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s', 'Speed of sound at altitude')
+        mu_atm = VectorVariable(NSeg,r'\mu', 'N*s/m^2', 'Dynamic viscosity')
 
+        R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
+        #TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
+
+        constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
+                            #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
+                            rho_sl == 1.225*units('kg/m^3'),
+                            (rho/rho_sl)**0.1 == 0.954*(h/h_station)**(-0.0284),
+                            (T_atm/T_sl)**0.1 == 0.989*(h/h_station)**(-0.00666),
+                            (mu_atm/mu_sl)**0.1 == 0.991*(h/h_station)**(-0.00529)
+                            ])
+            # http://en.wikipedia.org/wiki/Density_of_air#Altitude
         #----------------------------------------------------
         # Aerodynamics model
 
@@ -154,28 +183,28 @@ class GasPoweredHALE(Model):
         e = Variable('e', 0.9, '-', 'Spanwise efficiency')
         AR = Variable('AR', '-', 'Aspect ratio')
         b = Variable('b', 'ft', 'Span')
-        mu = Variable(r'\mu', 1.5e-5, 'N*s/m^2', 'Dynamic viscosity')
         Re = VectorVariable(NSeg, 'Re', '-', 'Reynolds number')
 
         # fuselage drag 
         Kfuse = Variable('K_{fuse}', 1.1, '-', 'Fuselage form factor')
         S_fuse = Variable('S_{fuse}', 'ft^2', 'Fuselage surface area')
-        Cffuse = Variable('C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
+        Cffuse = VectorVariable(NSeg, 'C_{f-fuse}', '-', 'Fuselage skin friction coefficient')
         CDfuse = Variable('C_{D-fuse}', '-', 'fueslage drag')
         l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
+        l_cent = Variable('l_{cent}', 'ft', 'center fuselage length')
         Refuse = VectorVariable(NSeg, 'Re_{fuse}', '-', 'fuselage Reynolds number')
         Re_ref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
         cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
 
         constraints.extend([
-            CD >= CDfuse + cdp + CL**2/(pi*e*AR),
+            CD >= (CDfuse + cdp + CL**2/(pi*e*AR))*1.3,
             cdp >= ((0.006 + 0.005*CL**2 + 0.00012*CL**10)*(Re/Re_ref)**-0.3),
             b**2 == S*AR, 
             CL <= CLmax, 
-            Re == rho*V/mu*(S/AR)**0.5, 
+            Re == rho*V/mu_atm*(S/AR)**0.5, 
             CDfuse >= Kfuse*S_fuse*Cffuse/S, 
-            Refuse == rho*V/mu*l_fuse, 
-            Cffuse >= 0.074/Refuse**0.2, 
+            Refuse == rho*V/mu_atm*l_fuse, 
+            Cffuse >= 0.455/Refuse**0.3, 
             ])
 
         #----------------------------------------------------
@@ -192,25 +221,6 @@ class GasPoweredHALE(Model):
         #                    CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S]) 
 
         #----------------------------------------------------
-        # Atmosphere model
-        gamma = Variable(r'\gamma', 1.4, '-', 'Heat capacity ratio of air')
-        p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
-        T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
-        L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
-        T_atm = VectorVariable(NSeg, 'T_{atm}', 'K', 'Air temperature')
-        a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s', 'Speed of sound at altitude')
-        R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
-        TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
-
-        constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                            #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
-                            rho[iClimb[0]] == 1.055*units('kg/m^3'),
-                            rho[iCruise] == 1.055*units('kg/m^3'),
-                            rho[iClimb[1]] == 0.7377*units('kg/m^3'),
-                            rho[iLoiter] == 0.7377*units('kg/m^3')])
-            # http://en.wikipedia.org/wiki/Density_of_air#Altitude
-
-        #----------------------------------------------------
         # Weight breakdown
 
         W_cent = Variable('W_{cent}', 'lbf', 'Center aircraft weight')
@@ -221,8 +231,8 @@ class GasPoweredHALE(Model):
         m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
         m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
         m_skin = Variable('m_{skin}', 'kg', 'Skin mass')
-        m_tail = Variable('m_{tail}', 1, 'kg', 'tail mass')
-        m_rib = Variable('m_{rib}', 1.2, 'kg','rib mass')
+        m_tail = Variable('m_{tail}', 1*1.5, 'kg', 'tail mass')
+        m_rib = Variable('m_{rib}', 1.2*1.5, 'kg','rib mass')
 
         constraints.extend([W_wing >= m_skin*g + 1.2*m_cap*g, 
                             W_fuse >= m_fuse*g + m_rib*g, 
@@ -292,20 +302,23 @@ class GasPoweredHALE(Model):
         rho_fuel = Variable(r'\rho_{fuel}', 6.01, 'lbf/gallon', 'density of 100LL')
 
         # Non-dimensional variables
-        k1fuse = Variable('k_{1-fuse}', 2.5, '-', 'fuselage form factor 1')
-        k2fuse = Variable('k-{2-fuse}', 5.58, '-', 'fuselage form factor 2')
+        k1fuse = Variable('k_{1-fuse}', 2.858, '-', 'fuselage form factor 1')
+        k2fuse = Variable('k-{2-fuse}', 5.938, '-', 'fuselage form factor 2')
+        w_cent = Variable('w_{cent}', 'ft', 'center fuselage width')
+        fr = Variable('fr', 3.5, '-', 'fineness ratio fuselage')
 
         # Volumes
         Vol_fuel = Variable('Vol_{fuel}', 'm**3', 'Fuel Volume')
         Vol_fuse = Variable('Vol_{fuse}', 'm**3', 'fuselage volume')
 
-
-
         constraints.extend([m_fuse >= S_fuse*rho_skin, 
+                            l_cent == fr*w_cent,
+                            l_fuse >= l_cent*1.1,
                             (l_fuse/k1fuse)**3 == Vol_fuse, 
                             (S_fuse/k2fuse)**3 == Vol_fuse**2, 
+                            Vol_fuse >= l_cent*w_cent**2,
                             Vol_fuel >= W_fuel.sum()/rho_fuel, 
-                            Vol_fuse >= Vol_fuel+Vol_avionics+Vol_pay])
+                            l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay])
 
         #----------------------------------------------------
         # wind speed model
@@ -315,10 +328,23 @@ class GasPoweredHALE(Model):
 
         constraints.extend([V[iLoiter] >= V_wind])
 
-        objective = MTOW
-        return objective, constraints
+        objective = 1/t_station 
+        Model.__init__(self,objective,constraints, **kwargs)
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
     sol = M.solve('cvxopt')
 
+    M.substitutions.update({'MTOW': ('sweep', np.linspace(70, 500, 15))})
+    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    
+    MTOW = sol('MTOW')
+    t_station = sol('t_{station}')
+
+    plt.close()
+    plt.plot(MTOW, t_station)
+    plt.xlabel('MTOW [lbf]')
+    plt.ylabel('t_station [days]')
+    plt.grid()
+    plt.axis([70,500,0,15])
+    plt.savefig('tvsMTOW.png')
