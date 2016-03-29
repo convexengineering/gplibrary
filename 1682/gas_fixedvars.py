@@ -24,7 +24,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuel weight model 
 
-        MTOW = Variable('MTOW', 143, 'lbf', 'max take off weight')
+        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight')
@@ -127,13 +127,13 @@ class GasPoweredHALE(Model):
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
-                            P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
-                            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329, #value at 20kft
-                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329, #value at 20kft
-                            P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
-                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481,
-                            P_shaft/P_shaftmax == (V/V_max)**3.
+                            #P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
+                            #P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
+                            ##P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329, #value at 20kft
+                            ##P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329, #value at 20kft
+                            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
+                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481,
+                            #P_shaft/P_shaftmax == (V/V_max)**3.
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
@@ -141,7 +141,7 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
-        t_station = Variable('t_{station}', 'days', 'time on station')
+        t_station = Variable('t_{station}', 6, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         R_cruise = Variable('R_{cruise}',180,'nautical_miles','range to station during climb')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
@@ -323,22 +323,27 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = VectorVariable(NSeg, 'V_{wind}', 'm/s', 'wind speed')
-        wd_cnst = Variable('wd_{cnst}', 0.001077, 'm/s/ft', 
-                           'wind speed constant predicted by model')
-                            #0.002 is worst case, 0.0015 is mean at 45d
-        wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
-                         'linear wind speed variable')
+        V_wind = Variable('V_{wind}', 25, 'm/s', 'wind speed')
+        #wd_cnst = Variable('wd_{cnst}', 0.001077, 'm/s/ft', 
+        #                   'wind speed constant predicted by model')
+        #                    #0.002 is worst case, 0.0015 is mean at 45d
+        #wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
+        #                 'linear wind speed variable')
                         #13.009 is worst case, 8.845 is mean at 45deg
         #h_min = Variable('h_{min}', 11800, 'ft', 'minimum height')
         #h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
 
-        constraints.extend([V_wind >= wd_cnst*h + wd_ln, 
-                            V >= V_wind,
+        constraints.extend([#V_wind >= wd_cnst*h + wd_ln, 
+                            V[iLoiter] >= V_wind,
                             #h[NCruise] >= 11800*units('ft')
                             ])
 
-        objective = 1/t_station 
+        P_shaftsum = Variable('P_{shaft-sum}', 'hp', 'sum of P_shaftmax')
+        constraints.extend([P_shaftsum >= sum(P_shaftmax),
+                            P_shaftsum <= 1000*units('hp')])
+
+
+        objective = MTOW/P_shaftsum
         Model.__init__(self,objective,constraints, **kwargs)
 
 if __name__ == '__main__':
@@ -391,7 +396,7 @@ if __name__ == '__main__':
     #plt.axis([0,600,0,10])
     #plt.savefig('tvsR.png')
 
-    #M.substitutions.update({'h_{min}':('sweep',[1000,10000,15000])}) #, r'\delta_h': ('sweep', np.flipud(np.linspace(0,14000,3)))})
+    #M.substitutions.update({'h_{min}': ('sweep', np.linspace(1000,15000,15))})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
     #h_min = sol('h_{min}')
@@ -418,20 +423,21 @@ if __name__ == '__main__':
     #plt.ylabel('t_station [days]')
     #plt.savefig('tvsh_station.png')
 
-    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'MTOW': 83})
+    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40))})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #V_wind83 = sol('V_{wind}')
-    #t_station83 = sol('t_{station}')
+    #V_wind = sol('V_{wind}')
+    #t_station = sol('t_{station}')
 
     #plt.close()
-    #plt.plot(V_wind83, t_station83)
+    #plt.plot(V_wind, t_station)
     #plt.xlabel('V_wind [m/s]')
     #plt.ylabel('t_station [days]')
+    #plt.axis([0,40,0,10])
     #plt.grid()
-    #plt.savefig('tvsV_wind83.png')
+    #plt.savefig('tvsV_wind.png')
 
-    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'MTOW': 89})
+    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)), 'MTOW': })
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
     #V_wind89 = sol('V_{wind}')
