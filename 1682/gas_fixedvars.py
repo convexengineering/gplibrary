@@ -116,7 +116,7 @@ class GasPoweredHALE(Model):
 
         V_max = VectorVariable(NSeg,'V_{max}','m/s','Maximum velocity')
 
-        # Engine Weight Constraints
+        # Engine Power Relations
         constraints.extend([P_shaftmax >= P_shafttot, 
                             P_shafttot >= P_shaft + P_avn*1.25, #need to figure out better value for alternator efficiency
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
@@ -155,11 +155,12 @@ class GasPoweredHALE(Model):
 
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
 
+        # Atmospheric variation with altitude (valid from 0-7km of altitude)
         constraints.extend([(rho/rho_sl)**0.1 == 0.954*(h/h_station)**(-0.0284),
                             (T_atm/T_sl)**0.1 == 0.989*(h/h_station)**(-0.00666),
                             (mu_atm/mu_sl)**0.1 == 0.991*(h/h_station)**(-0.00529)
                             ])
-            # http://en.wikipedia.org/wiki/Density_of_air#Altitude
+
         #----------------------------------------------------
         # Aerodynamics model
 
@@ -190,19 +191,6 @@ class GasPoweredHALE(Model):
             Refuse == rho*V/mu_atm*l_fuse, 
             Cffuse >= 0.455/Refuse**0.3, 
             ])
-
-        #----------------------------------------------------
-        # landing gear
-        #A_rearland = Variable('A_{rear-land}', 6, 'in^2',
-        #                      'rear landing gear frontal area')
-        #A_frontland = Variable('A_{front-land}', 6, 'in^2', 
-        #                       'front landing gear frontal area')
-        #CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
-        #CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
-
-        #constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
-        #                        + cl_16*CL**16 + CDAland, 
-        #                    CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S]) 
 
         #----------------------------------------------------
         # Weight breakdown
@@ -263,7 +251,6 @@ class GasPoweredHALE(Model):
         delta_tip = Variable(r'\delta_{tip}', 'ft', 'Tip deflection') 
         delta_tip_max = Variable(r'\delta_{tip-max}', 0.2, '-',
                                  'max tip deflection ratio') 
-        #need to add constraint
 
         constraints.extend([m_skin >= rho_skin*S*2, 
                             F >= W_cent*N_Max, 
