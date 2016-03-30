@@ -13,7 +13,7 @@ class GasPoweredHALE(Model):
         NSeg = 9 # number of flight segments
         NCruise = 2 # number of cruise segments
         NClimb = 2 # number of climb segments
-        NLoiter = NSeg - NCruise - NClimb# number of loiter segments
+        NLoiter = NSeg - NCruise - NClimb # number of loiter segments
         iCruise = [1, -1] # cuise index
         iLoiter = [3] # loiter index
         for i in range(4, NSeg-1): iLoiter.append(i)
@@ -66,7 +66,9 @@ class GasPoweredHALE(Model):
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
 
         # Climb model
-        h_dot = VectorVariable(2, 'h_{dot}', 'ft/min', 'Climb rate')
+        h_dot = VectorVariable(NClimb, 'h_{dot}', 'ft/min', 'Climb rate')
+        # Currently climb rate is being optimized to reduce fuel consumption. 
+        # In future, could implement min climb rate. 
         
         constraints.extend([P_shaft == T*V/eta_prop, 
                             T >= 0.5*rho*V**2*CD*S, 
@@ -87,15 +89,8 @@ class GasPoweredHALE(Model):
         h = VectorVariable(NSeg, 'h', 
                 [5000,5000,15000,15000,15000,
                  15000,15000,15000,5000], 'ft', 'altitude')
-        deltah = Variable(r'\delta_h', h_station.value-h_cruise.value, 'ft', 'delta height')
-#[], 
-        constraints.extend([#h[iLoiter] == h_station, 
-                            #h[iCruise] == h_cruise, 
-                            #h[iClimb[0]] == h_cruise, 
-                            #h[iClimb[1]] == h_station, 
-                            t[iClimb[0]]*h_dot[0] >= h_cruise, 
-                            # still need to determine min cruise altitude, 
-                            #and make these variables independent of user-input numbers
+        deltah = Variable(r'\delta_h', h_station.value-h_cruise.value, 'ft', 'delta height') 
+        constraints.extend([t[iClimb[0]]*h_dot[0] >= h_cruise, 
                             t[iClimb[1]]*h_dot[1] >= deltah
                             ])
 
@@ -116,7 +111,6 @@ class GasPoweredHALE(Model):
                 [P_shaftmaxMSL.value*(1-(0.906**(1/0.15)*(v.value/h_station.value)**0.92)) for v in h])
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.84, 'hp', 
                                  'Max shaft power at MSL')
-        Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
         P_avn = VectorVariable(NSeg, 'P_{avn}', [40,40,40,50,50,50,50,50,40], 'watts', 'avionics power')
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
 
@@ -124,14 +118,12 @@ class GasPoweredHALE(Model):
 
         # Engine Weight Constraints
         constraints.extend([P_shaftmax >= P_shafttot, 
-                            P_shafttot >= P_shaft + P_avn*1.25,
+                            P_shafttot >= P_shaft + P_avn*1.25, #need to figure out better value for alternator efficiency
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            #P_shaft/P_shaftmax == (V/V_max)**3.
                             ])
-        #rough maximum speed model, assuming constant propulsive efficiency and BSFC
 
         #----------------------------------------------------
         # Breguet Range
@@ -153,7 +145,7 @@ class GasPoweredHALE(Model):
         # Atmosphere model
         gamma = Variable(r'\gamma', 1.4, '-', 'Heat capacity ratio of air')
         p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
-        rho_sl = Variable(r'\rho_{sl}', 'kg/m^3', 'density at sea level')
+        rho_sl = Variable(r'\rho_{sl}',1.225, 'kg/m^3', 'density at sea level')
         T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
         mu_sl = Variable(r'\mu_{sl}', 1.789*10**-5, 'N*s/m^2','Dynamic viscosity at sea level')
         L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
@@ -162,12 +154,8 @@ class GasPoweredHALE(Model):
         mu_atm = VectorVariable(NSeg,r'\mu', 'N*s/m^2', 'Dynamic viscosity')
 
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
-        #TH = (g/R_spec/L_atm).value.magnitude  # dimensionless
 
-        constraints.extend([#T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                            #rho == p_sl*T_atm**(TH-1)/R_spec/(T_sl**TH)])
-                            rho_sl == 1.225*units('kg/m^3'),
-                            (rho/rho_sl)**0.1 == 0.954*(h/h_station)**(-0.0284),
+        constraints.extend([(rho/rho_sl)**0.1 == 0.954*(h/h_station)**(-0.0284),
                             (T_atm/T_sl)**0.1 == 0.989*(h/h_station)**(-0.00666),
                             (mu_atm/mu_sl)**0.1 == 0.991*(h/h_station)**(-0.00529)
                             ])
@@ -340,7 +328,7 @@ class GasPoweredHALE(Model):
 if __name__ == '__main__':
     M = GasPoweredHALE()
     #M.substitutions.update({M["t_{station}"]:6})
-    sol = M.solve('mosek') 
+    sol = M.solve('cvxopt') 
     P_shaftmaxMSL = sol('P_{shaft-maxMSL}')
     P_shaftmax = sol('P_{shaft-max}')
     V = sol('V')
