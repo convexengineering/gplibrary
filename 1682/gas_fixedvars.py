@@ -52,7 +52,6 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Steady level flight model
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
-        h = VectorVariable(NSeg, 'h', 'ft', 'altitude')
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
@@ -84,14 +83,17 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # altitude constraints
         h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
-        h_min = Variable('h_{min}', 5000, 'ft', 'minimum cruise altitude')
-        deltah = Variable(r'\delta_h', 10000, 'ft', 'delta height')
-
-        constraints.extend([h[iLoiter] == h_station, 
-                            h[iCruise] == h_min, 
-                            h[iClimb[0]] == h_min, 
-                            h[iClimb[1]] == h_station, 
-                            t[iClimb[0]]*h_dot[0] >= h_min, 
+        h_cruise = Variable('h_{cruise}', 5000, 'ft', 'minimum cruise altitude')
+        h = VectorVariable(NSeg, 'h', 
+                [5000,5000,15000,15000,15000,
+                 15000,15000,15000,5000], 'ft', 'altitude')
+        deltah = Variable(r'\delta_h', h_station.value-h_cruise.value, 'ft', 'delta height')
+#[], 
+        constraints.extend([#h[iLoiter] == h_station, 
+                            #h[iCruise] == h_cruise, 
+                            #h[iClimb[0]] == h_cruise, 
+                            #h[iClimb[1]] == h_station, 
+                            t[iClimb[0]]*h_dot[0] >= h_cruise, 
                             # still need to determine min cruise altitude, 
                             #and make these variables independent of user-input numbers
                             t[iClimb[1]]*h_dot[1] >= deltah
@@ -108,8 +110,10 @@ class GasPoweredHALE(Model):
                               'brake specific fuel consumption') 
         RPM_max = Variable('RPM_{max}', 9000, 'rpm', 'Maximum RPM')
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
-        P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
-                                    'Max shaft power at altitude')
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.84, 'hp', 
+                                 'Max shaft power at MSL')
+        P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}',
+                [P_shaftmaxMSL.value*(1-(0.906**(1/0.15)*(v.value/h_station.value)**0.92)) for v in h])
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.84, 'hp', 
                                  'Max shaft power at MSL')
         Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
@@ -119,20 +123,12 @@ class GasPoweredHALE(Model):
         V_max = VectorVariable(NSeg,'V_{max}','m/s','Maximum velocity')
 
         # Engine Weight Constraints
-        constraints.extend([Lfactor == 0.906**(1/0.15)*(h/h_station)**0.92, 
-                            P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
-                            P_shaftmax >= P_shafttot, 
+        constraints.extend([P_shaftmax >= P_shafttot, 
                             P_shafttot >= P_shaft + P_avn*1.25,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            #P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
-                            #P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
-                            ##P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329, #value at 20kft
-                            ##P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329, #value at 20kft
-                            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
-                            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481,
                             #P_shaft/P_shaftmax == (V/V_max)**3.
                             ])
         #rough maximum speed model, assuming constant propulsive efficiency and BSFC
@@ -330,7 +326,7 @@ class GasPoweredHALE(Model):
         #wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
         #                 'linear wind speed variable')
                         #13.009 is worst case, 8.845 is mean at 45deg
-        #h_min = Variable('h_{min}', 11800, 'ft', 'minimum height')
+        #h_cruise = Variable('h_{cruise}', 11800, 'ft', 'minimum height')
         #h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
 
         constraints.extend([#V_wind >= wd_cnst*h + wd_ln, 
@@ -338,12 +334,7 @@ class GasPoweredHALE(Model):
                             #h[NCruise] >= 11800*units('ft')
                             ])
 
-        P_shaftsum = Variable('P_{shaft-sum}', 'hp', 'sum of P_shaftmax')
-        constraints.extend([P_shaftsum >= sum(P_shaftmax),
-                            P_shaftsum <= 1000*units('hp')])
-
-
-        objective = MTOW/P_shaftsum
+        objective = MTOW
         Model.__init__(self,objective,constraints, **kwargs)
 
 if __name__ == '__main__':
@@ -396,21 +387,21 @@ if __name__ == '__main__':
     #plt.axis([0,600,0,10])
     #plt.savefig('tvsR.png')
 
-    #M.substitutions.update({'h_{min}': ('sweep', np.linspace(1000,15000,15))})
+    #M.substitutions.update({'h_{cruise}': ('sweep', np.linspace(1000,15000,15))})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #h_min = sol('h_{min}')
+    #h_cruise = sol('h_{cruise}')
     #t_station = sol('t_{station}')
     #deltah = sol(r'\delta_h')
 
     #plt.close()
-    #plt.plot(h_min, t_station)
-    #plt.xlabel('h_min [ft]')
+    #plt.plot(h_cruise, t_station)
+    #plt.xlabel('h_cruise [ft]')
     #plt.grid()
     #plt.ylabel('t_station [days]')
-    #plt.savefig('tvsh_min.png')
+    #plt.savefig('tvsh_cruise.png')
 
-    #M.substitutions.update({'h_{station}':('sweep', np.linspace(15000,20000, 15)), r'\rho' 'h_{min}':5000})
+    #M.substitutions.update({'h_{station}':('sweep', np.linspace(15000,20000, 15)), r'\rho' 'h_{cruise}':5000})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
     #h_station = sol('h_{station}')
