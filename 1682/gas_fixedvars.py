@@ -115,7 +115,7 @@ class GasPoweredHALE(Model):
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
 
         V_max = VectorVariable(NSeg,'V_{max}','m/s','Maximum velocity')
-
+        
         # Engine Power Relations
         constraints.extend([P_shaftmax >= P_shafttot, 
                             P_shafttot >= P_shaft + P_avn*1.25, #need to figure out better value for alternator efficiency
@@ -160,6 +160,7 @@ class GasPoweredHALE(Model):
                             (T_atm/T_sl)**0.1 == 0.989*(h/h_station)**(-0.00666),
                             (mu_atm/mu_sl)**0.1 == 0.991*(h/h_station)**(-0.00529)
                             ])
+
 
         #----------------------------------------------------
         # Aerodynamics model
@@ -316,21 +317,42 @@ if __name__ == '__main__':
     M = GasPoweredHALE()
     #M.substitutions.update({M["t_{station}"]:6})
     sol = M.solve('cvxopt') 
-    P_shaftmaxMSL = sol('P_{shaft-maxMSL}')
+    P_shaftmaxMSL = 4355; #W
     P_shaftmax = sol('P_{shaft-max}')
     V = sol('V')
     CD = sol('C_D')
     rho = sol(r'\rho')
-    S = sol('S')
+    S = sol('S')*.3048**2 #m^2
     eta_prop = sol(r'\eta_{prop}')
     T = sol('T')
     rhoSL = sol(r'\rho_{sl}')
+    h = sol('h_{station}')*0.3048 #m
+    wd_cnst = 0.001077/.3048
+    wd_ln = 8.845
+    eta_propLoiter = 0.7
 
-    V_maxTO = ((P_shaftmaxMSL*0.5/0.5/rhoSL/S/CD[0]).to('m^3/s^3'))**(1./3.)
-    V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m^3/s^3'))**(1./3.)
+    #Finding maximum altitude (post-processing)
 
-    print "Max velocity at TO: {:.1f~}".format(V_maxTO)
-    print "Max velocity at loiter: {:.1f~}".format(V_max[3])
+    h_max = np.ones([1,5])*15000*0.3048;
+    rho_maxalt= np.zeros([1,5]);
+    V_maxalt = np.ones([1,5])*25;
+    P_shaftmaxalt = np.zeros([1,5])
+
+    for i in range(0,h_max.shape[1]):
+        while P_shaftmaxalt[0,i] == 0 or P_shaftmaxalt[0,i]*eta_propLoiter >= .5*rho_maxalt[0,i]*V_maxalt[0,i]**3.*CD[3+i]*S:
+            h_max[0,i] = h_max[0,i] + 250.
+            V_maxalt[0,i] = wd_cnst*h_max[0,i] + wd_ln
+            rho_maxalt[0,i] = (0.954*(h_max[0,i]/h)**(-0.0284))**10*rhoSL
+            P_shaftmaxalt[0,i] = P_shaftmaxMSL*(1-(0.906**(1/0.15)*(h_max[0,i]/h)**0.92))
+            
+    h_max = h_max/0.3048 # Back to feet
+    print h_max
+
+    #V_maxTO = ((P_shaftmaxMSL*0.5/0.5/rhoSL/S/CD[0]).to('m^3/s^3'))**(1./3.)
+    #V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m^3/s^3'))**(1./3.)
+
+    #print "Max velocity at TO: {:.1f~}".format(V_maxTO)
+    #print "Max velocity at loiter: {:.1f~}".format(V_max[3])
 
     #----------------------------------------------
     # post processing
