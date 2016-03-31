@@ -56,7 +56,7 @@ class GasPoweredHALE(Model):
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
         rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
-        S = Variable('S', 'ft^2', 'wing area')
+        S = Variable('S', 25.63, 'ft^2', 'wing area')
         eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-',
                                   'propulsive efficiency')
         eta_propCruise = Variable(r'\eta_{prop-cruise}',0.6,'-','propulsive efficiency in cruise')
@@ -84,7 +84,7 @@ class GasPoweredHALE(Model):
 
         #----------------------------------------------------
         # altitude constraints
-        h_station = Variable('h_{station}', 27000, 'ft', 'minimum altitude at station')
+        h_station = Variable('h_{station}', 21500, 'ft', 'minimum altitude at station')
         h_cruise = Variable('h_{cruise}', 5000, 'ft', 'minimum cruise altitude')
         h = VectorVariable(NSeg, 'h', 
                 [h_cruise.value,h_cruise.value,h_station.value,h_station.value,h_station.value,
@@ -168,7 +168,7 @@ class GasPoweredHALE(Model):
 
         CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
         e = Variable('e', 0.9, '-', 'Spanwise efficiency')
-        AR = Variable('AR', '-', 'Aspect ratio')
+        AR = Variable('AR', 27.5, '-', 'Aspect ratio')
         b = Variable('b', 'ft', 'Span')
         Re = VectorVariable(NSeg, 'Re', '-', 'Reynolds number')
 
@@ -198,8 +198,8 @@ class GasPoweredHALE(Model):
         # Weight breakdown
 
         W_cent = Variable('W_{cent}', 'lbf', 'Center aircraft weight')
-        W_fuse = Variable('W_{fuse}', 'lbf', 'fuselage weight') 
-        W_wing = Variable('W_{wing}', 'lbf', 'Total wing structural weight')
+        W_fuse = Variable('W_{fuse}', 6.589, 'lbf', 'fuselage weight') 
+        W_wing = Variable('W_{wing}', 12.64, 'lbf', 'Total wing structural weight')
         W_fueltot = Variable('W_{fuel-tot}', 'lbf', 'total fuel weight')
         W_skid = Variable('W_{skid}', 3, 'lbf', 'skid weight')
         m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
@@ -317,9 +317,9 @@ class GasPoweredHALE(Model):
 if __name__ == '__main__':
     M = GasPoweredHALE()
     #M.substitutions.update({M["t_{station}"]:6})
-    sol = M.solve('cvxopt') 
+    sol = M.solve('mosek') 
     P_shaftmaxMSL = 4355; #W
-    sol = M.solve('cvxopt') 
+    #sol = M.solve('cvxopt') 
     P_shaftmax = sol('P_{shaft-max}')
     V = sol('V')
     CD = sol('C_D')
@@ -335,29 +335,29 @@ if __name__ == '__main__':
 
     #Finding maximum altitude (post-processing)
 
-    h_max = np.ones([1,5])*15000*0.3048;
-    rho_maxalt= np.zeros([1,5]);
-    V_maxalt = np.ones([1,5])*25;
-    P_shaftmaxalt = np.zeros([1,5])
+    #h_max = np.ones([1,5])*15000*0.3048;
+    #rho_maxalt= np.zeros([1,5]);
+    #V_maxalt = np.ones([1,5])*25;
+    #P_shaftmaxalt = np.zeros([1,5])
 
-    for i in range(0,h_max.shape[1]):
-        while P_shaftmaxalt[0,i] == 0 or P_shaftmaxalt[0,i]*eta_propLoiter >= .5*rho_maxalt[0,i]*V_maxalt[0,i]**3.*CD[3+i]*S:
-            h_max[0,i] = h_max[0,i] + 250.
-            V_maxalt[0,i] = wd_cnst*h_max[0,i] + wd_ln
-            rho_maxalt[0,i] = (0.954*(h_max[0,i]/h)**(-0.0284))**10*rhoSL
-            P_shaftmaxalt[0,i] = P_shaftmaxMSL*(1-(0.906**(1/0.15)*(h_max[0,i]/h)**0.92))
-            
-    h_max = h_max/0.3048 # Back to feet
-    print h_max
+    #for i in range(0,h_max.shape[1]):
+    #    while P_shaftmaxalt[0,i] == 0 or P_shaftmaxalt[0,i]*eta_propLoiter >= .5*rho_maxalt[0,i]*V_maxalt[0,i]**3.*CD[3+i]*S:
+    #        h_max[0,i] = h_max[0,i] + 250.
+    #        V_maxalt[0,i] = wd_cnst*h_max[0,i] + wd_ln
+    #        rho_maxalt[0,i] = (0.954*(h_max[0,i]/h)**(-0.0284))**10*rhoSL
+    #        P_shaftmaxalt[0,i] = P_shaftmaxMSL*(1-(0.906**(1/0.15)*(h_max[0,i]/h)**0.92))
+    #        
+    #h_max = h_max/0.3048 # Back to feet
+    #print h_max
+
+    ##print "Max velocity at TO: {:.1f~}".format(V_maxTO)
+    ##print "Max velocity at loiter: {:.1f~}".format(V_max[3])
+
+    #V_maxTO = ((P_shaftmaxMSL.value*0.5/0.5/rhoSL/S/CD[0]).to('m^3/s^3'))**(1./3.)
+    #V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m^3/s^3'))**(1./3.)
 
     #print "Max velocity at TO: {:.1f~}".format(V_maxTO)
     #print "Max velocity at loiter: {:.1f~}".format(V_max[3])
-
-    V_maxTO = ((P_shaftmaxMSL.value*0.5/0.5/rhoSL/S/CD[0]).to('m^3/s^3'))**(1./3.)
-    V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m^3/s^3'))**(1./3.)
-
-    print "Max velocity at TO: {:.1f~}".format(V_maxTO)
-    print "Max velocity at loiter: {:.1f~}".format(V_max[3])
 
     #----------------------------------------------
     # post processing
