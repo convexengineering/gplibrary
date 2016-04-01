@@ -34,7 +34,8 @@ class GasPoweredHALE(Model):
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
         constraints.extend([t[iClimb[0]]*h_dot[0] >= h_cruise, 
-                            t[iClimb[1]]*h_dot[1] >= deltah
+                            t[iClimb[1]]*h_dot[1] >= deltah,
+                            h_dot >= 100*units('ft/min')
                             ])
 
         #----------------------------------------------------
@@ -305,19 +306,19 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = Variable('V_{wind}', 25, 'm/s', 'wind speed')
-        #wd_cnst = Variable('wd_{cnst}', 0.001077, 'm/s/ft', 
-        #                   'wind speed constant predicted by model')
-        #                    #0.002 is worst case, 0.0015 is mean at 45d
-        #wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
-        #                 'linear wind speed variable')
-        #               #13.009 is worst case, 8.845 is mean at 45deg
-        #h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
+        V_wind = VectorVariable(2, 'V_{wind}', 'm/s', 'wind speed')
+        wd_cnst = Variable('wd_{cnst}', 0.001077, 'm/s/ft', 
+                           'wind speed constant predicted by model')
+                            #0.002 is worst case, 0.0015 is mean at 45d
+        wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
+                         'linear wind speed variable')
+                       #13.009 is worst case, 8.845 is mean at 45deg
+        h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
 
-        constraints.extend([#V_wind[0] >= wd_cnst*h_station + wd_ln,
-                            #V_wind[1] >= wd_cnst*h_cruise + wd_ln,
-                            V[iLoiter] >= V_wind,
-                            #V[iCruise] >= V_wind
+        constraints.extend([V_wind[0] >= wd_cnst*h_station + wd_ln,
+                            V_wind[1] >= wd_cnst*h_cruise + wd_ln,
+                            V[iLoiter] >= V_wind[0],
+                            V[iCruise] >= V_wind[1]
                             #h[NCruise] >= 11800*units('ft')
                             ])
 
@@ -385,19 +386,19 @@ if __name__ == '__main__':
     #plt.grid()
     #plt.savefig('tvsMTOW.png')
 
-    M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15))})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15))})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    R = sol('R')
-    t_station = sol('t_{station}')
+    #R = sol('R')
+    #t_station = sol('t_{station}')
 
-    plt.close()
-    plt.plot(R, t_station)
-    plt.xlabel('R [nm]')
-    plt.grid()
-    plt.ylabel('t_station [days]')
-    plt.axis([0,600,0,10])
-    plt.savefig('tvsR.png')
+    #plt.close()
+    #plt.plot(R, t_station)
+    #plt.xlabel('R [nm]')
+    #plt.grid()
+    #plt.ylabel('t_station [days]')
+    #plt.axis([0,600,0,10])
+    #plt.savefig('tvsR.png')
 
     #M.substitutions.update({'h_{cruise}': ('sweep', np.linspace(1000,15000,15))})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
@@ -453,3 +454,17 @@ if __name__ == '__main__':
     #plt.grid()
     #plt.axis([0.64,0.72,0,10])
     #plt.savefig('tvseta_prop.png')
+
+    M.substitutions.update({'W_{pay}':('sweep',np.linspace(4,40,15))})
+    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+
+    W_pay = sol('W_{pay}')
+    t_station = sol('t_{station}')
+
+    plt.close()
+    plt.plot(W_pay, t_station)
+    plt.xlabel('W_pay')
+    plt.ylabel('t_station [days]')
+    plt.grid()
+    plt.axis([4,40,0,10])
+    plt.savefig('tvsW_pay.png')
