@@ -31,16 +31,17 @@ class GasPoweredHALE(Model):
         deltah = Variable(r'\delta_h', h_station.value-h_cruise.value, 'ft', 'delta height') 
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         h_dot = VectorVariable(NClimb, 'h_{dot}', 'ft/min', 'Climb rate')
-        g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
+        h_dotmin = Variable('h_{dot-min}', 100, 'ft/min', 'minimum necessary climb rate')
 
         constraints.extend([t[iClimb[0]]*h_dot[0] >= h_cruise, 
                             t[iClimb[1]]*h_dot[1] >= deltah,
-                            h_dot >= 100*units('ft/min')
+                            h_dot >= h_dotmin 
                             ])
 
         #----------------------------------------------------
         # Atmosphere model
         gamma = Variable(r'\gamma', 1.4, '-', 'Heat capacity ratio of air')
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
         p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
         rho_sl = Variable(r'\rho_{sl}',1.225, 'kg/m^3', 'density at sea level')
         T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
@@ -53,8 +54,6 @@ class GasPoweredHALE(Model):
 
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K', 'Specific gas constant of air')
         h_ref = Variable('h_{ref}', 15000, 'ft', 'ref altitude')
-
-        #TH = (g/R_spec/L_atm*units('J*s^2/m^2/kg')).value# dimensionless
 
         rho = VectorVariable(NSeg, r'\rho', 
                 [p_sl.value*x.value**(5.257-1)/R_spec.value/(T_sl.value**5.257) for x in T_atm], 
@@ -125,7 +124,6 @@ class GasPoweredHALE(Model):
         # Propulsive efficiency variation with different flight segments, 
         # will change depending on propeller characteristics
 
-
         #----------------------------------------------------
         # Engine Model (DF35)
 
@@ -140,17 +138,14 @@ class GasPoweredHALE(Model):
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.84, 'hp', 
                                  'Max shaft power at MSL')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}',
-                [P_shaftmaxMSL.value*(1-(0.906**(1/0.15)*(v.value/(15000*units('ft')))**0.92)) for v in h])
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.84, 'hp', 
-                                 'Max shaft power at MSL')
+                [P_shaftmaxMSL.value*(1-(0.906**(1/0.15)*(v.value/h_ref.value)**0.92)) for v in h])
         P_avn = VectorVariable(NSeg, 'P_{avn}', [40,40,40,50,50,50,50,50,40], 'watts', 'avionics power')
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
-
-        V_max = VectorVariable(NSeg,'V_{max}','m/s','Maximum velocity')
+        eta_alternator = Variable(r'\eta_{alternator}', 0.8, '-', 'alternator efficiency')
         
         # Engine Power Relations
         constraints.extend([P_shaftmax >= P_shafttot, 
-                            P_shafttot >= P_shaft + P_avn*1.25, #need to figure out better value for alternator efficiency
+                            P_shafttot >= P_shaft + P_avn/eta_alternator,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292, 
@@ -455,16 +450,16 @@ if __name__ == '__main__':
     #plt.axis([0.64,0.72,0,10])
     #plt.savefig('tvseta_prop.png')
 
-    M.substitutions.update({'W_{pay}':('sweep',np.linspace(4,40,15))})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #M.substitutions.update({'W_{pay}':('sweep',np.linspace(4,40,15))})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    W_pay = sol('W_{pay}')
-    t_station = sol('t_{station}')
+    #W_pay = sol('W_{pay}')
+    #t_station = sol('t_{station}')
 
-    plt.close()
-    plt.plot(W_pay, t_station)
-    plt.xlabel('W_pay')
-    plt.ylabel('t_station [days]')
-    plt.grid()
-    plt.axis([4,40,0,10])
-    plt.savefig('tvsW_pay.png')
+    #plt.close()
+    #plt.plot(W_pay, t_station)
+    #plt.xlabel('W_pay')
+    #plt.ylabel('t_station [days]')
+    #plt.grid()
+    #plt.axis([4,40,0,10])
+    #plt.savefig('tvsW_pay.png')
