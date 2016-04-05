@@ -139,13 +139,16 @@ class GasPoweredHALE(Model):
                                  'Max shaft power at MSL')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}',
                 [P_shaftmaxMSL.value*(1-(0.906**(1/0.15)*(v.value/h_ref.value)**0.92)) for v in h])
-        P_avn = VectorVariable(NSeg, 'P_{avn}', [40,40,40,50,50,50,50,50,40], 'watts', 'avionics power')
+        P_avn = Variable('P_{avn}', 40, 'watts', 'avionics power')
+        P_pay = Variable('P_{pay}', 10, 'watts', 'payload power')
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
         eta_alternator = Variable(r'\eta_{alternator}', 0.8, '-', 'alternator efficiency')
         
         # Engine Power Relations
         constraints.extend([P_shaftmax >= P_shafttot, 
-                            P_shafttot >= P_shaft + P_avn/eta_alternator,
+                            P_shafttot[iCruise] >= P_shaft[iCruise] + P_avn/eta_alternator,
+                            P_shafttot[iClimb] >= P_shaft[iClimb] + P_avn/eta_alternator,
+                            P_shafttot[iLoiter] >= P_shaft[iLoiter] + (P_avn+P_pay)/eta_alternator,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292, 
@@ -458,8 +461,22 @@ if __name__ == '__main__':
 
     #plt.close()
     #plt.plot(W_pay, t_station)
-    #plt.xlabel('W_pay')
+    #plt.xlabel('W_pay [lbs]')
     #plt.ylabel('t_station [days]')
     #plt.grid()
     #plt.axis([4,40,0,10])
     #plt.savefig('tvsW_pay.png')
+    
+    M.substitutions.update({'P_{pay}':('sweep',np.linspace(5,100,20))})
+    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+
+    P_pay = sol('P_{pay}')
+    t_station = sol('t_{station}')
+
+    plt.close()
+    plt.plot(P_pay, t_station)
+    plt.xlabel('P_pay [watts]')
+    plt.ylabel('t_station [days]')
+    plt.grid()
+    plt.axis([5,100,0,10])
+    plt.savefig('tvsP_pay.png')
