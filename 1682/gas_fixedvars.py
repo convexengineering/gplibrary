@@ -143,6 +143,7 @@ class GasPoweredHALE(Model):
         P_pay = Variable('P_{pay}', 10, 'watts', 'payload power')
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
         eta_alternator = Variable(r'\eta_{alternator}', 0.8, '-', 'alternator efficiency')
+        m_dotfuel = VectorVariable(NSeg, 'm_{dot-fuel}', 'lb/sec', 'fuel flow rate')
         
         # Engine Power Relations
         constraints.extend([P_shaftmax >= P_shafttot, 
@@ -153,6 +154,7 @@ class GasPoweredHALE(Model):
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
+                            P_shafttot*BSFC == m_dotfuel
                             ])
 
         #----------------------------------------------------
