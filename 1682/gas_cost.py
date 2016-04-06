@@ -69,7 +69,7 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Fuel weight model 
 
-        MTOW = Variable('MTOW', 143, 'lbf', 'max take off weight')
+        MTOW = Variable('MTOW', 100, 'lbf', 'max take off weight')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
                                 'segment-fuel weight')
@@ -99,7 +99,7 @@ class GasPoweredHALE(Model):
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
     	CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
-        S = Variable('S', 25.63, 'ft^2', 'wing area')
+        S = Variable('S', 'ft^2', 'wing area')
         eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-',
                                   'propulsive efficiency')
         eta_propCruise = Variable(r'\eta_{prop-cruise}',0.6,'-','propulsive efficiency in cruise')
@@ -127,35 +127,40 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Engine Model (DF35)
 
-        W_engtot = Variable('W_{eng-tot}', 8, 'lbf', 'Installed engine weight')
-                #conservative for 4.2 engine complete with prop, generator and structures
+        W_eng = Variable('W_{eng}', 'lbf', 'engine weight')
+        W_engtot = Variable('W_{eng-tot}', 'lbf', 'Installed engine weight')
+        W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf', 'Reference engine weight')
         FuelOilFrac = Variable('FuelOilFrac',.98,'-','Fuel-oil fraction')
+        P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp', 'reference shaft power')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
         BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp', 
                               'brake specific fuel consumption') 
         RPM_max = Variable('RPM_{max}', 9000, 'rpm', 'Maximum RPM')
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.84, 'hp', 
-                                 'Max shaft power at MSL')
-        P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}',
-                [P_shaftmaxMSL.value*(1-(0.906**(1/0.15)*(v.value/h_ref.value)**0.92)) for v in h])
-        P_avn = Variable('P_{avn}', 40, 'watts', 'avionics power')
-        P_pay = Variable('P_{pay}', 10, 'watts', 'payload power')
+        P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}', 'hp', 
+                                    'Max shaft power at altitude')
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 'hp', 'Max shaft power at MSL')
+        Lfactor = VectorVariable(NSeg, 'L_factor', '-', 'Max shaft power loss factor')
+        P_avn = VectorVariable(NSeg, 'P_{avn}', [40,40,40,50,50,50,50,50,40], 'watts', 'avionics power')
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp', 'total power need including power draw from avionics')
-        eta_alternator = Variable(r'\eta_{alternator}', 0.8, '-', 'alternator efficiency')
-        m_dotfuel = VectorVariable(NSeg, 'm_{dot-fuel}', 'lb/sec', 'fuel flow rate')
-        
-        # Engine Power Relations
-        constraints.extend([P_shaftmax >= P_shafttot, 
-                            P_shafttot[iCruise] >= P_shaft[iCruise] + P_avn/eta_alternator,
-                            P_shafttot[iClimb] >= P_shaft[iClimb] + P_avn/eta_alternator,
-                            P_shafttot[iLoiter] >= P_shaft[iLoiter] + (P_avn+P_pay)/eta_alternator,
+
+        # Engine Weight Constraints
+        constraints.extend([Lfactor == 0.906**(1/0.15)*(h/h_station)**0.92, 
+                            P_shaftmax/P_shaftmaxMSL + Lfactor <= 1, 
+                            W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075, 
+                            W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078,
+                            P_shaftmax >= P_shafttot, 
+                            P_shafttot >= P_shaft + P_avn*1.25,
                             (BSFC/BSFC_min)**0.129 >= 2*.486*(RPM/RPM_max)**-0.141 + \
                                                       0.0268*(RPM/RPM_max)**9.62, 
                             (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292, 
                             RPM <= RPM_max, 
-                            P_shafttot*BSFC == m_dotfuel
+                            P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
+                            P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
+                            P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
+                            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
                             ])
+        # the P_shaftmax efficiencies are only valid at h=5000ft and h = 15000ft
 
         #----------------------------------------------------
         # Breguet Range
@@ -172,13 +177,12 @@ class GasPoweredHALE(Model):
                             sum(t[[0,1,2]]) <= t_cruise, 
                             FuelOilFrac*W_fuel/W_end >= te_exp_minus1(z_bre, 3)])
         
-
         #----------------------------------------------------
         # Aerodynamics model
 
         CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
         e = Variable('e', 0.9, '-', 'Spanwise efficiency')
-        AR = Variable('AR', 27.5, '-', 'Aspect ratio')
+        AR = Variable('AR', '-', 'Aspect ratio')
         b = Variable('b', 'ft', 'Span')
         Re = VectorVariable(NSeg, 'Re', '-', 'Reynolds number')
 
@@ -205,11 +209,24 @@ class GasPoweredHALE(Model):
             ])
 
         #----------------------------------------------------
+        # landing gear
+        #A_rearland = Variable('A_{rear-land}', 6, 'in^2',
+        #                      'rear landing gear frontal area')
+        #A_frontland = Variable('A_{front-land}', 6, 'in^2', 
+        #                       'front landing gear frontal area')
+        #CDland = Variable('C_{D-land}', 0.2, '-', 'drag coefficient landing gear')
+        #CDAland = Variable('CDA_{land}', '-', 'normalized drag coefficient landing gear')
+
+        #constraints.extend([CD >= CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
+        #                        + cl_16*CL**16 + CDAland, 
+        #                    CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S]) 
+
+        #----------------------------------------------------
         # Weight breakdown
 
         W_cent = Variable('W_{cent}', 'lbf', 'Center aircraft weight')
-        W_fuse = Variable('W_{fuse}', 6.589, 'lbf', 'fuselage weight') 
-        W_wing = Variable('W_{wing}', 12.64, 'lbf', 'Total wing structural weight')
+        W_fuse = Variable('W_{fuse}', 'lbf', 'fuselage weight') 
+        W_wing = Variable('W_{wing}', 'lbf', 'Total wing structural weight')
         W_fueltot = Variable('W_{fuel-tot}', 'lbf', 'total fuel weight')
         W_skid = Variable('W_{skid}', 3, 'lbf', 'skid weight')
         m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
@@ -321,163 +338,93 @@ class GasPoweredHALE(Model):
                             V[iCruise] >= V_wind[1]
                             #h[NCruise] >= 11800*units('ft')
                             ])
+        
+        #----------------------------------------------------
+        # Cost Model 
+        Q = Variable("Q", 1, "count", "Number produced in 5 years")
+        FTA = Variable("FTA", 1, "count", "Number of Flight Test Aircraft")
+        N_eng = Variable("N_{eng}", 10, "count",
+                    "Number of engines or Q*num of engines per aircraft")
+        R_avn = Variable("C_{avn}", 5000, "USD2012/lbf", "Avionics Cost")
 
-        objective = 1/t_station 
-        Model.__init__(self,objective,constraints, **kwargs)
+        # Constants Hourly Rates
+        R_E = Variable("R_{E}", 115, "USD2012/hr", "Enginering Hourly Rate")
+        R_T = Variable("R_{T}", 118, "USD2012/hr", "Tooling Hourly Rate")
+        R_M = Variable("R_{M}", 108, "USD2012/hr", "Manufacturing Hourly Rate")
+        R_Q = Variable("R_{Q}", 98, "USD2012/hr", "Quality Check Hourly Rate")
+
+        # Free Variableiables
+
+        # Hourly costs in hrs. Multiply by hourly work rate to get cost
+        H_E = Variable("H_{E}", "hrs",
+                  "Engineering hours of airframe and component integration")
+        # Eng Hours does not include cost of avionics or engine engineering
+        H_T = Variable("H_{T}", "hrs", "Tooling hours for production preparation")
+        # H_T also covers tooling cost through ongoing production
+        H_M = Variable("H_{M}", "hrs",
+                  "Manufacturing hours of main and subcontractors")
+        H_Q = Variable("H_{Q}", "hrs", "Quality control hours for inspection")
+
+        # Cost Variableibles
+        C_Dev = Variable("C_{Dev}", "USD2012", "Development Cost")
+        C_F = Variable("C_F", "USD2012", "Flight Test Cost to prove airworthiness")
+        C_M = Variable("C_M", "USD2012", "Materials cost of aluminum airframe")
+        C_fly = Variable("C_{fly}", "USD2012", "RDT&E Flyaway Cost")
+        C_avn = Variable("C_{avn}", "USD2012", "Cost of avionics")
+        C_plane = Variable("C_{plane}", "USD2012", "Cost per plane")
+        #Raymer suggests C_avn = 0.15*C_fly
+
+        C_eng = Variable("C_{eng}", 2000, "USD2012", "Engine Cost")
+        H_E_const = Variable("H_{E_const}", 4.86,
+                        units.hr/(units.lbf**0.777 * units.knots**0.894),
+                        "H_E power law proportionality constant")
+        H_T_const = Variable("H_{T_const}", 5.99,
+                        units.hr/(units.lbf**0.777 * units.knots**0.696),
+                        "H_T power law proportionality constant")
+        H_M_const = Variable("H_{M_const}", 7.37,
+                        units.hr/(units.lbf**0.82 *  units.knots**0.484),
+                        "H_M power law proportionality constant")
+        H_Q_const = Variable("H_{Q_const}", 0.133, "-",
+                        "H_Q power law proportionality constant")
+        C_Dev_const = Variable("C_{Dev_const}", 91.3,
+                        units.USD2012/(units.lbf**0.630 * units.knots**1.3),
+                        "C_Dev power law proportionality constant")
+        C_F_const = Variable("C_{F_const}", 2498,
+                        units.USD2012/(units.lbf**0.325 * units.knots**0.822),
+                        "C_F power law proportionality constant")
+        C_M_const = Variable("C_{M_const}", 22.1,
+                        units.USD2012/(units.lbf**0.921 * units.knots**0.621),
+                        "C_M power law proportionality constant")
+
+        constraints.extend([C_fly >= (H_E*R_E + H_T*R_T + H_M*R_M + H_Q*R_Q + C_Dev +
+                                      C_F + C_M + C_eng*N_eng + C_avn),
+                            H_E >= H_E_const*W_zfw**0.777*V[3]**0.894*Q**0.163,
+                            H_T >= H_T_const*W_zfw**0.777*V[3]**0.696*Q**0.263,
+                            H_M >= H_M_const*W_zfw**0.82*V[3]**0.484*Q**0.641,
+                            H_Q >= H_Q_const*H_E,
+                            C_Dev >= C_Dev_const*W_zfw**0.630*V[3]**1.3,
+                            C_F >= C_F_const*W_zfw**0.325*V[3]**0.822*FTA**1.21,
+                            C_M >= C_M_const*W_zfw**0.921*V[3]**0.621*Q**0.799,
+                            C_avn >= R_avn*W_zfw,
+                            C_plane == C_fly/Q
+                            ])
+
+        objective = C_fly/t_station
+        Model.__init__(self, objective, constraints)
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
-    #M.substitutions.update({M["t_{station}"]:6})
-    sol = M.solve('cvxopt') 
-    P_shaftmaxMSL = 4355; #W 
-    P_shaftmax = sol('P_{shaft-max}')
-    V = sol('V')
-    CD = sol('C_D')
-    rho = sol(r'\rho')
-    S = sol('S')*.3048**2 #m^2
-    eta_prop = sol(r'\eta_{prop}')
-    T = sol('T')
-    rhoSL = sol(r'\rho_{sl}')
-    h = sol('h_{station}')*0.3048 #m
-    wd_cnst = 0.001077/.3048
-    wd_ln = 8.845
-    eta_propLoiter = 0.7
+    sol = M.solve('mosek')
 
-    Finding maximum altitude (post-processing)
-
-    h_max = np.ones([1,5])*15000*0.3048;
-    rho_maxalt= np.zeros([1,5]);
-    V_maxalt = np.ones([1,5])*25;
-    P_shaftmaxalt = np.zeros([1,5])
-
-    for i in range(0,h_max.shape[1]):
-       while P_shaftmaxalt[0,i] == 0 or P_shaftmaxalt[0,i]*eta_propLoiter >= .5*rho_maxalt[0,i]*V_maxalt[0,i]**3.*CD[3+i]*S:
-           h_max[0,i] = h_max[0,i] + 250.
-           V_maxalt[0,i] = wd_cnst*h_max[0,i] + wd_ln
-           rho_maxalt[0,i] = (0.954*(h_max[0,i]/h)**(-0.0284))**10*rhoSL
-           P_shaftmaxalt[0,i] = P_shaftmaxMSL*(1-(0.906**(1/0.15)*(h_max[0,i]/h)**0.92))
-           
-    h_max = h_max/0.3048 # Back to feet
-    print h_max
-
-    ##print "Max velocity at TO: {:.1f~}".format(V_maxTO)
-    ##print "Max velocity at loiter: {:.1f~}".format(V_max[3])
-
-    #V_maxTO = ((P_shaftmaxMSL.value*0.5/0.5/rhoSL/S/CD[0]).to('m^3/s^3'))**(1./3.)
-    #V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m^3/s^3'))**(1./3.)
-
-    #print "Max velocity at TO: {:.1f~}".format(V_maxTO)
-    #print "Max velocity at loiter: {:.1f~}".format(V_max[3])
-
-    #----------------------------------------------
-    # post processing
-    
-    #M.substitutions.update({'MTOW': ('sweep', np.linspace(70, 150, 15))})
+    #M.substitutions.update({'MTOW':('sweep', np.linspace(100,500,15))})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    #
+
     #MTOW = sol('MTOW')
-    #t_station = sol('t_{station}')
+    #C_fly = sol('C_{fly}')
 
     #plt.close()
-    #plt.plot(MTOW, t_station)
-    #plt.xlabel('MTOW [lbf]')
-    #plt.ylabel('t_station [days]')
+    #plt.plot(MTOW, C_fly)
+    #plt.xlabel('MTOW [lbs]')
+    #plt.ylabel('Flyaway Cost [USD2012]')
     #plt.grid()
-    #plt.savefig('tvsMTOW.png')
-
-    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
-    #R = sol('R')
-    #t_station = sol('t_{station}')
-
-    #plt.close()
-    #plt.plot(R, t_station)
-    #plt.xlabel('R [nm]')
-    #plt.grid()
-    #plt.ylabel('t_station [days]')
-    #plt.axis([0,600,0,10])
-    #plt.savefig('tvsR.png')
-
-    #M.substitutions.update({'h_{cruise}': ('sweep', np.linspace(1000,15000,15))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
-    #h_cruise = sol('h_{cruise}')
-    #t_station = sol('t_{station}')
-
-    #plt.close()
-    #plt.plot(h_cruise, t_station)
-    #plt.xlabel('h_cruise [ft]')
-    #plt.grid()
-    #plt.ylabel('t_station [days]')
-    #plt.axis([1000, 15000,0,10])
-    #plt.savefig('tvsh_cruise.png')
-
-    #M.substitutions.update({'h_{station}':('sweep', np.linspace(15000,20000, 15)), r'\rho' 'h_{cruise}':5000})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
-    #h_station = sol('h_{station}')
-    #t_station = sol('t_{station}')
-
-    #plt.close()
-    #plt.plot(h_station, t_station)
-    #plt.xlabel('h_station [lbf]')
-    #plt.grid()
-    #plt.ylabel('t_station [days]')
-    #plt.savefig('tvsh_station.png')
-
-    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
-    #V_wind = sol('V_{wind}')
-    #t_station = sol('t_{station}')
-
-    #plt.close()
-    #plt.plot(V_wind, t_station)
-    #plt.xlabel('V_wind [m/s]')
-    #plt.ylabel('t_station [days]')
-    #plt.axis([0,40,0,10])
-    #plt.grid()
-    #plt.savefig('tvsV_wind.png')
-
-    #M.substitutions.update({r'\eta_{prop-loiter}':('sweep',[0.6717, 0.668, 0.6582, 0.7])})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
-    #eta_prop = sol(r'\eta_{prop-loiter}')
-    #t_station = sol('t_{station}')
-
-    #plt.close()
-    #plt.plot(eta_prop, t_station, '*')
-    #plt.xlabel('eta_prop')
-    #plt.ylabel('t_station [days]')
-    #plt.grid()
-    #plt.axis([0.64,0.72,0,10])
-    #plt.savefig('tvseta_prop.png')
-
-    #M.substitutions.update({'W_{pay}':('sweep',np.linspace(4,40,15))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
-    #W_pay = sol('W_{pay}')
-    #t_station = sol('t_{station}')
-
-    #plt.close()
-    #plt.plot(W_pay, t_station)
-    #plt.xlabel('W_pay [lbs]')
-    #plt.ylabel('t_station [days]')
-    #plt.grid()
-    #plt.axis([4,40,0,10])
-    #plt.savefig('tvsW_pay.png')
-    
-    #M.substitutions.update({'P_{pay}':('sweep',np.linspace(5,100,20))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
-    #P_pay = sol('P_{pay}')
-    #t_station = sol('t_{station}')
-
-    #plt.close()
-    #plt.plot(P_pay, t_station)
-    #plt.xlabel('P_pay [watts]')
-    #plt.ylabel('t_station [days]')
-    #plt.grid()
-    #plt.axis([5,100,0,10])
-    #plt.savefig('tvsP_pay.png')
+    #plt.savefig('MTOWvsC_fly.png')
