@@ -337,13 +337,13 @@ if __name__ == '__main__':
     S = sol('S')*.3048**2 #m^2
     eta_prop = sol(r'\eta_{prop}')
     T = sol('T')
-    rhoSL = sol(r'\rho_{sl}')
+    rhoSL = 1.225
     h = sol('h_{station}')*0.3048 #m
     wd_cnst = 0.001077/.3048
     wd_ln = 8.845
     eta_propLoiter = 0.7
 
-    Finding maximum altitude (post-processing)
+    #Finding maximum altitude (post-processing)
 
     h_max = np.ones([1,5])*15000*0.3048;
     rho_maxalt= np.zeros([1,5]);
@@ -358,7 +358,12 @@ if __name__ == '__main__':
            P_shaftmaxalt[0,i] = P_shaftmaxMSL*(1-(0.906**(1/0.15)*(h_max[0,i]/h)**0.92))
            
     h_max = h_max/0.3048 # Back to feet
+    print 'h_max'
     print h_max
+    print "V_maxalt"
+    print V_maxalt
+    print 'P_shaftmaxalt'
+    print P_shaftmaxalt
 
     ##print "Max velocity at TO: {:.1f~}".format(V_maxTO)
     ##print "Max velocity at loiter: {:.1f~}".format(V_max[3])
