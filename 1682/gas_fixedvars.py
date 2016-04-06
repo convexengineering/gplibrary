@@ -317,9 +317,8 @@ class GasPoweredHALE(Model):
 if __name__ == '__main__':
     M = GasPoweredHALE()
     #M.substitutions.update({M["t_{station}"]:6})
-    sol = M.solve('cvxopt') 
-    P_shaftmaxMSL = 4355; #W
-    sol = M.solve('cvxopt') 
+    sol = M.solve('mosek') 
+    P_shaftmaxMSL = 4355; #W 
     P_shaftmax = sol('P_{shaft-max}')
     V = sol('V')
     CD = sol('C_D')
