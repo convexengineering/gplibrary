@@ -306,19 +306,20 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # wind speed model
 
-        V_wind = VectorVariable(2, 'V_{wind}', 'm/s', 'wind speed')
-        wd_cnst = Variable('wd_{cnst}', 0.001077, 'm/s/ft', 
-                           'wind speed constant predicted by model')
-                            #0.002 is worst case, 0.0015 is mean at 45d
-        wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
-                         'linear wind speed variable')
-                       #13.009 is worst case, 8.845 is mean at 45deg
-        h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
+        V_wind = Variable('V_{wind}', 25, 'm/s', 'wind speed')
+#        V_windc = Variable('V_{wind-c}', 'm/s', 'wind speed at cruise')
+#        wd_cnst = Variable('wd_{cnst}', 0.001077, 'm/s/ft', 
+#                           'wind speed constant predicted by model')
+#                            #0.002 is worst case, 0.0015 is mean at 45d
+#        wd_ln = Variable('wd_{ln}', 8.845, 'm/s',
+#                         'linear wind speed variable')
+#                       #13.009 is worst case, 8.845 is mean at 45deg
+#        h_max = Variable('h_{max}', 20866, 'ft', 'maximum height')
 
-        constraints.extend([V_wind[0] >= wd_cnst*h_station + wd_ln,
-                            V_wind[1] >= wd_cnst*h_cruise + wd_ln,
-                            V[iLoiter] >= V_wind[0],
-                            V[iCruise] >= V_wind[1]
+        constraints.extend([#V_wind >= wd_cnst*h_station + wd_ln,
+                            #V_windc >= wd_cnst*h_cruise + wd_ln,
+                            V[iLoiter] >= V_wind,
+                            #V[iCruise] >= V_windc
                             #h[NCruise] >= 11800*units('ft')
                             ])
 
@@ -329,41 +330,41 @@ if __name__ == '__main__':
     M = GasPoweredHALE()
     #M.substitutions.update({M["t_{station}"]:6})
     sol = M.solve('cvxopt') 
-    P_shaftmaxMSL = 4355; #W 
-    P_shaftmax = sol('P_{shaft-max}')
-    V = sol('V')
-    CD = sol('C_D')
-    rho = sol(r'\rho')
-    S = sol('S')*.3048**2 #m^2
-    eta_prop = sol(r'\eta_{prop}')
-    T = sol('T')
-    rhoSL = 1.225
-    h = sol('h_{station}')*0.3048 #m
-    wd_cnst = 0.001077/.3048
-    wd_ln = 8.845
-    eta_propLoiter = 0.7
+    #P_shaftmaxMSL = 4355; #W 
+    #P_shaftmax = sol('P_{shaft-max}')
+    #V = sol('V')
+    #CD = sol('C_D')
+    #rho = sol(r'\rho')
+    #S = sol('S')*.3048**2 #m^2
+    #eta_prop = sol(r'\eta_{prop}')
+    #T = sol('T')
+    #rhoSL = 1.225
+    #h = sol('h_{station}')*0.3048 #m
+    #wd_cnst = 0.001077/.3048
+    #wd_ln = 8.845
+    #eta_propLoiter = 0.7
 
-    #Finding maximum altitude (post-processing)
+    ##Finding maximum altitude (post-processing)
 
-    h_max = np.ones([1,5])*15000*0.3048;
-    rho_maxalt= np.zeros([1,5]);
-    V_maxalt = np.ones([1,5])*25;
-    P_shaftmaxalt = np.zeros([1,5])
+    #h_max = np.ones([1,5])*15000*0.3048;
+    #rho_maxalt= np.zeros([1,5]);
+    #V_maxalt = np.ones([1,5])*25;
+    #P_shaftmaxalt = np.zeros([1,5])
 
-    for i in range(0,h_max.shape[1]):
-       while P_shaftmaxalt[0,i] == 0 or P_shaftmaxalt[0,i]*eta_propLoiter >= .5*rho_maxalt[0,i]*V_maxalt[0,i]**3.*CD[3+i]*S:
-           h_max[0,i] = h_max[0,i] + 250.
-           V_maxalt[0,i] = wd_cnst*h_max[0,i] + wd_ln
-           rho_maxalt[0,i] = (0.954*(h_max[0,i]/h)**(-0.0284))**10*rhoSL
-           P_shaftmaxalt[0,i] = P_shaftmaxMSL*(1-(0.906**(1/0.15)*(h_max[0,i]/h)**0.92))
-           
-    h_max = h_max/0.3048 # Back to feet
-    print 'h_max'
-    print h_max
-    print "V_maxalt"
-    print V_maxalt
-    print 'P_shaftmaxalt'
-    print P_shaftmaxalt
+    #for i in range(0,h_max.shape[1]):
+    #   while P_shaftmaxalt[0,i] == 0 or P_shaftmaxalt[0,i]*eta_propLoiter >= .5*rho_maxalt[0,i]*V_maxalt[0,i]**3.*CD[3+i]*S:
+    #       h_max[0,i] = h_max[0,i] + 250.
+    #       V_maxalt[0,i] = wd_cnst*h_max[0,i] + wd_ln
+    #       rho_maxalt[0,i] = (0.954*(h_max[0,i]/h)**(-0.0284))**10*rhoSL
+    #       P_shaftmaxalt[0,i] = P_shaftmaxMSL*(1-(0.906**(1/0.15)*(h_max[0,i]/h)**0.92))
+    #       
+    #h_max = h_max/0.3048 # Back to feet
+    #print 'h_max'
+    #print h_max
+    #print "V_maxalt"
+    #print V_maxalt
+    #print 'P_shaftmaxalt'
+    #print P_shaftmaxalt
 
     ##print "Max velocity at TO: {:.1f~}".format(V_maxTO)
     ##print "Max velocity at loiter: {:.1f~}".format(V_max[3])
@@ -435,6 +436,8 @@ if __name__ == '__main__':
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
     #V_wind = sol('V_{wind}')
+    #V = sol('V')
+    #V_end = V[:,-2]
     #t_station = sol('t_{station}')
 
     #plt.close()
@@ -444,7 +447,22 @@ if __name__ == '__main__':
     #plt.axis([0,40,0,10])
     #plt.grid()
     #plt.savefig('tvsV_wind.png')
+    #
+    #plt.close()
+    #plt.plot(V_wind, V[:,3], V_wind, V[:,-2])
+    #plt.xlabel('V_wing [m/s]')
+    #plt.legend(['Beginning of loiter', 'End of loiter'])
+    #plt.axis([0,40,0,40])
+    #plt.grid()
+    #plt.savefig('tvsV.png')
 
+    #plt.close()
+    #plt.plot(V_wind, V[:,3], V_wind, V[:,-2])
+    #plt.xlabel('V_wing [m/s]')
+    #plt.legend(['Beginning of loiter', 'End of loiter'])
+    #plt.axis([0,40,0,40])
+    #plt.grid()
+    #plt.savefig('tvsV.png')
     #M.substitutions.update({r'\eta_{prop-loiter}':('sweep',[0.6717, 0.668, 0.6582, 0.7])})
     #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 

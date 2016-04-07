@@ -140,7 +140,7 @@ class SolarHALE(Model):
 #inPDF: replace with atmoscnstrs.generated.tex
 
         constraints.extend([
-            h <= 20000*units.m,  # Model valid to top of troposphere
+            #h <= 20000*units.m,  # Model valid to top of troposphere
             T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
             rho <= p_sl*T_atm**(TH-1)*M_atm/R_atm/(T_sl**TH)])
@@ -150,7 +150,7 @@ class SolarHALE(Model):
 ```python
 #inPDF: replace with othervars.generated.tex
         
-        h_min = Variable('h_{min}', 70000, 'ft', 'minimum altitude')
+        h_min = Variable('h_{min}', 15000, 'ft', 'minimum altitude')
         V_wind = Variable('V_{wind}', 10, 'm/s', 'wind speed')
         
 ```
@@ -181,9 +181,10 @@ if __name__ == "__main__":
         f.write("\\begin{tabbing}\n XXXXXXXXX \\= \\kill\n")
         for var in M.varkeys:
             f.write("$%s$ : [%s] %s \\\\\n" % (var.name, var.units, var.label))
+            i += 1
         f.write("\\end{tabbing}")
     with open('slfcnstrs.generated.tex', 'w') as f:
-        f.write("$$ %s $$" % M.latex(exculded["models"]).replace("[ll]", "{ll}"))
+        f.write("$$ %s $$" % M.latex(excluded=["models"]).replace("[ll]", "{ll}"))
     with open("sol.generated.tex", "w") as f:
         f.write(sol.table(latex=True))
 ```
