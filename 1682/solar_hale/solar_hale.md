@@ -13,7 +13,9 @@ class SolarHALE(Model):
         """Setup method should return objective, list of constraints"""
         constraints = []
 ```
-# Steady level flight variables
+# Steady Level Flight
+
+We are assuming steady level flight. Specifically, the required lift is equal to the weight and the shaft power produced by the engine has to be greater than the flight power. 
 
 ```python
 #inPDF: replace with slfvars.generated.tex
@@ -23,7 +25,6 @@ class SolarHALE(Model):
         S = Variable('S', 'm^2', 'Wing reference area')
         V = Variable('V', 'm/s', 'Cruise velocity')
         W = Variable('W', 'lbf', 'Aircraft weight')
-
         eta_prop = Variable(r'\eta_{prop}', 0.7, '-', 'Propulsive efficiency')
         rho = Variable(r'\rho', 'kg/m^3')
 ```
@@ -34,7 +35,9 @@ class SolarHALE(Model):
         constraints.extend([P_shaft >= V*W*CD/CL/eta_prop,   # eta*P = D*V
                             W == 0.5*rho*V**2*CL*S])
 ```
-# Aerodynamics model
+# Aerodynamics 
+
+We assumed that it the drag was combination of non-lifting drag, wing profile drag, and induced drag. 
 
 ```python
 #inPDF: replace with aerovars.generated.tex
@@ -63,15 +66,19 @@ class SolarHALE(Model):
             Re == rho*V/mu*(S/AR)**0.5,
             ])
 ```
-# Weight model
+# Weights
+
+We assumed that the weight of the airframe, which includes the spar, wing, engines, and fuselage structural weight, is a percentage of the weight of the aircraft. The energy battery density is based on .... The avionics weight is based on required avionics for flight control, ground communication, and satellite communication.
+
+
 
 ```python
 #inPDF: replace with weightvars.generated.tex
         W_batt = Variable('W_{batt}', 'lbf', 'Battery weight')
         W_airframe = Variable('W_{airframe}', 'lbf', 'Airframe weight')
         W_solar = Variable('W_{solar}', 'lbf', 'Solar panel weight')
-        W_pay = Variable(r'W_{pay}', 4, 'lbf', 'Aircraft weight')
-
+        W_pay = Variable('W_{pay}', 4, 'lbf', 'Aircraft weight')
+        W_avionics = Variable('W_{avionics}', 4, 'lbf', 'avionics weight')
         E_batt = Variable('E_{batt}', 'J', 'Battery energy')
         rho_solar = Variable(r'\rho_{solar}', 1.2, 'kg/m^2',
                              'Solar cell area density')
@@ -87,10 +94,13 @@ class SolarHALE(Model):
         constraints.extend([W_airframe >= W*f_airframe,
                             W_batt >= E_batt/h_batt*g,
                             W_solar >= rho_solar*g*S,
-                            W >= W_pay + W_solar + W_airframe + W_batt])
+                            W >= W_pay + W_solar + W_airframe + W_batt + W_avionics])
 ```
 
-# Power model
+# Power 
+
+The value assumed for the average daytime solar irradiance, was based ona conservative estimate of .... The accessory power draw is based on the approximate power usage from the avionics and payload.  The night span is based on the worst case scenario for the 45 degree latitude at the winter solstice, assuming that if it can flight for the longest night of the year on the power charged during the day then it theoretically flight all year long. 
+
 ```python
 #inPDF: replace with powervars.generated.tex
 
@@ -120,7 +130,9 @@ class SolarHALE(Model):
                             E_batt >= P_oper*t_night/eta_discharge])
 ```
 
-# Atmosphere model
+# Atmosphere 
+
+The basic assumption here is that temperature, air density and pressure vary with altitude. 
 
 ```python
 #inPDF: replace with atmosvars.generated.tex
@@ -145,7 +157,17 @@ class SolarHALE(Model):
             # http://en.wikipedia.org/wiki/Density_of_air#Altitude
             rho <= p_sl*T_atm**(TH-1)*M_atm/R_atm/(T_sl**TH)])
 ```
-# station keeping requirement
+# Station Keeping Requirements
+
+The minimum altitude needs to be 15,000 ft in order to reach the station keeping requirement of a 100 km diameter footprint.  In order to clear air traffic the minimum altitude needs to be at least 70,000 ft.  Graph below shows the wind distributions required to station keep at both 15,000 ft and 70,000 ft. 
+
+\begin{figure}[h!]
+	\label{f:windspeeds}
+	\begin{center}
+	\includegraphics[scale = .4]{windspeeds}
+	\caption{This figure shows the wind speeds necessary to station keep at the 90\%, 95\% and the 99\% for a given altitude.  As is seen for 15,000 ft the 90\% wind speed is 25 m/s and for 70,000 ft the 90\% wind speed is 32 m/s.}
+	\end{center}
+\end{figure}
 
 ```python
 #inPDF: replace with othervars.generated.tex
@@ -181,7 +203,6 @@ if __name__ == "__main__":
         f.write("\\begin{tabbing}\n XXXXXXXXX \\= \\kill\n")
         for var in M.varkeys:
             f.write("$%s$ : [%s] %s \\\\\n" % (var.name, var.units, var.label))
-            i += 1
         f.write("\\end{tabbing}")
     with open('slfcnstrs.generated.tex', 'w') as f:
         f.write("$$ %s $$" % M.latex(excluded=["models"]).replace("[ll]", "{ll}"))
