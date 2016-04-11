@@ -347,16 +347,16 @@ if __name__ == '__main__':
     M = GasPoweredHALE()
     sol = M.solve('cvxopt')
 
-    #M.substitutions.update({'MTOW': ('sweep', np.linspace(70, 500, 15))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    #
-    #MTOW = sol('MTOW')
-    #t_station = sol('t_{station}')
+    M.substitutions.update({'MTOW': ('sweep', np.linspace(70, 500, 15))})
+    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    
+    MTOW = sol('MTOW')
+    t_station = sol('t_{station}')
 
-    #plt.close()
-    #plt.plot(MTOW, t_station)
-    #plt.xlabel('MTOW [lbf]')
-    #plt.ylabel('t_station [days]')
-    #plt.grid()
-    #plt.axis([70,500,0,15])
-    #plt.savefig('tvsMTOW.png')
+    plt.close()
+    plt.plot(MTOW, t_station)
+    plt.xlabel('MTOW [lbf]')
+    plt.ylabel('t_station [days]')
+    plt.grid()
+    plt.axis([70,500,0,15])
+    plt.savefig('tvsMTOW.png')
