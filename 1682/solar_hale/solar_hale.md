@@ -1,5 +1,23 @@
 # SOLAR HIGH ALTITUDE LONG ENDURANCE AIRCRAFT
 
+This paper is a sizing analysis done for a high altitude, long endurance solar aircraft.  The sizing was done using a convex optimization tool called, GPkit.  The optimization model was constructed using various models to describe the physics required to achieve the specified requirements. The specific requirements to which this plane was optimized are found in table 1. 
+
+\begin{table}[H]
+\begin{center}
+\label{t:battery}
+\begin{tabular}{ | c |  c | }
+    \hline
+    Requirement & Specification \\ \hline
+    Payload & 10 [lbs] 10 [Watts] \\\hline
+    Endurance & 5-40 days \\\hline
+    Availability & 90\% \\\hline
+    Latitude Coverage & 45-60 degrees \\\hline
+\end{tabular}
+\caption{Table outlining the requirements given to us by the customer.}
+\end{center}
+\end{table}
+
+
 ```python
 #inPDF: skip
 
@@ -15,7 +33,7 @@ P_shaft = Variable('P_{shaft}', 'W', 'Shaft power')
 S = Variable('S', 'm^2', 'Wing reference area')
 V = Variable('V', 'm/s', 'Cruise velocity')
 W = Variable('W', 'lbf', 'Aircraft weight')
-rho = Variable(r'\rho', 'kg/m^3')
+rho = Variable(r'\rho', 'kg/m^3', 'Density of air')
 E_batt = Variable('E_{batt}', 'J', 'Battery energy')
 h = Variable("h", "ft", "Altitude")
 g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
@@ -23,7 +41,7 @@ g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 ```
 # Steady Level Flight
 
-We are assuming steady level flight. Specifically, the required lift is equal to the weight and the shaft power produced by the engine has to be greater than the flight power. 
+We are assuming steady level flight. Specifically, the required lift must be equal to the weight.   Additionally, the shaft power produced by the engine has to be greater than the required flight power. 
 
 ```python
 #inPDF: replace with SteadyLevelFlight.vars.generated.tex
@@ -77,7 +95,7 @@ class Aero(Model):
 ```
 # Weights
 
-We assumed that the weight of the airframe, which includes the spar, wing, engines, and fuselage structural weight, is a percentage of the weight of the aircraft. The energy battery density is based on .... The avionics weight is based on required avionics for flight control, ground communication, and satellite communication.
+We assumed that the weight of the airframe, which includes the spar, wing, engines, and fuselage structural weight, is fixed at 20% of the weight of the aircraft. The energy battery density is based on the best available lithium ion battery.  The avionics weight is based on required avionics for flight control, ground communication, and satellite communication.  The solar cell area density is based off of the best available solar cell density. 
 
 
 
@@ -90,7 +108,7 @@ class Weight(Model):
         W_batt = Variable('W_{batt}', 'lbf', 'Battery weight')
         W_airframe = Variable('W_{airframe}', 'lbf', 'Airframe weight')
         W_solar = Variable('W_{solar}', 'lbf', 'Solar panel weight')
-        W_pay = Variable('W_{pay}', 4, 'lbf', 'Aircraft weight')
+        W_pay = Variable('W_{pay}', 4, 'lbf', 'Payload weight')
         W_avionics = Variable('W_{avionics}', 4, 'lbf', 'avionics weight')
         rho_solar = Variable(r'\rho_{solar}', 1.2, 'kg/m^2',
                              'Solar cell area density')
@@ -111,7 +129,7 @@ class Weight(Model):
 
 # Power 
 
-The value assumed for the average daytime solar irradiance, was based on standard solar irradiance values.   The accessory power draw is based on the approximate power usage from the avionics (15 Watts) and payload (10 Watts).  The night span is 8 hours and is based on the worst case scenario for the 45 degree latitude at the winter solstice, assuming that if it can flight for the longest night of the year on the power charged during the day then it theoretically flight all year long.  The incidence angle is included in this calculation as the $\cos{\theta}$, where $\theta$ is the incidence angle, because the cosine function is not a convex function.  The solar cell efficiency was assumed to be \%20.  
+The value assumed for the average daytime solar irradiance, was based on standard solar irradiance values.   The accessory power draw is based on the approximate power usage from the avionics (15 Watts) and payload (10 Watts).  The night span is 8 hours and is based on the worst case scenario for the 45 degree latitude at the winter solstice. The assumption is that this is the worst case scenario for a solar aircraft. Successful flight on this day will guarantee flight on any other day of the year. The incidence angle is the angle of the sun shining on the solar array. The cosine of the angle determines the amount of solar irradiance reaching the array. Because the cosine function is not convex, the value for the 45th parallel at solar noon on the winter solstice was used as a constant. Solar cell efficiency is based on the best available technology. 
 
 ```python
 #inPDF: replace with Power.vars.generated.tex
@@ -150,7 +168,7 @@ class Power(Model):
 
 # Atmosphere 
 
-The basic assumption here is that temperature, air density and pressure vary with altitude. 
+Temperature, pressure and air density variations with altitude are based off on the standard atmosphere.
 
 ```python
 #inPDF: replace with Atmosphere.vars.generated.tex
@@ -181,15 +199,17 @@ class Atmosphere(Model):
 
 # Station Keeping Requirements
 
-The minimum altitude needs to be 15,000 ft in order to reach the station keeping requirement of a 100 km diameter footprint.  In order to clear air traffic the minimum altitude needs to be at least 70,000 ft.  Graph below shows the wind distributions required to station keep at both 15,000 ft and 70,000 ft. 
+To achieve the minimum footprint of 100km, the aircraft must fly at 15,000 ft. In order to avoid diminished solar irradiance due to weather, and to avoid air traffic conflicts, the aircraft must fly at 50,000 ft or above. 
 
 \begin{figure}[h!]
 	\label{f:windspeeds}
 	\begin{center}
-	\includegraphics[scale = .5]{windspeeds}
-	\caption{This figure shows the wind speeds necessary to station keep at the 90\%, 95\% and the 99\% for a given altitude.  As is seen for 15,000 ft the 90\% wind speed is 25 m/s and for 70,000 ft the 90\% wind speed is 32 m/s.}
+	\includegraphics[scale = 0.45]{windspeeds}
+	\caption{This figure shows the wind speeds necessary to station keep at the 90\%, 95\% and the 99\% winds for a given altitude.  As can be seen, the winds at 50,000 ft are higher than those at 15,000 ft.} 
 	\end{center}
 \end{figure}
+
+Please note that the wind speed in this model was set to 10 m/s and the minimum altitude to 15,000 ft to ensure the feasibility of the optimization.  After the initial sizing, both the wind speed and minimum altitude were varied to observe its effect on the size of the aircraft.  The results of that study are shown below. 
 
 ```python
 #inPDF: replace with StationKeeping.vars.generated.tex
@@ -209,6 +229,9 @@ class StationKeeping(Model):
 ```
 
 # Objective
+
+The objective function of the optimzation was set to minimize the aircraft weight. Because our customer expressed affordability as a factor in our design we chose to minimize weight since cost scales primarily with weight. The "cost" shown is the optimized weight of the aircraft for the given constraints. 
+
 ```python
 #inPDF: skip
 
@@ -270,153 +293,152 @@ if __name__ == "__main__":
         f.write(sol.table(latex=True))
 
     # number of data points
-    N = 30
+    #N = 30
 
-    M.substitutions.update({ 'h_{batt}': ('sweep', [250,350,500])})
+    #M.substitutions.update({ 'h_{batt}': ('sweep', [250,350,500])})
 
-    # plotting at 45 degree latitude
+    ## plotting at 45 degree latitude
 
-    M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5,40,N))})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    
-    W = sol('W')
-    b = sol('b')
-    V_wind = sol('V_{wind}')
-    ind = np.nonzero(V_wind.magnitude==5.)
-    ind = ind[0]
+    #M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5,40,N))})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #
+    #W = sol('W')
+    #b = sol('b')
+    #V_wind = sol('V_{wind}')
+    #ind = np.nonzero(V_wind.magnitude==5.)
+    #ind = ind[0]
 
-    plt.close()
-    plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size])
-    plt.ylabel('wing span [ft]')
-    plt.xlabel('wind speed [m/s]')
-    plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
-    plt.grid()
-    plt.axis([5,40,0,200])
-    plt.savefig('bvsV_wind.png')
-    
-    M.substitutions.update({'V_{wind}': 10})
-    M.substitutions.update({'h': ('sweep', np.linspace(15000,50000,N))})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    
-    W = sol('W')
-    b = sol('b')
-    h = sol('h')
-    ind = np.nonzero(h.magnitude==15000.)
-    ind = ind[0]
+    #plt.close()
+    #plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size])
+    #plt.ylabel('wing span [ft]')
+    #plt.xlabel('wind speed [m/s]')
+    #plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
+    #plt.grid()
+    #plt.axis([5,40,0,200])
+    #plt.savefig('bvsV_wind.png')
+    #
+    #M.substitutions.update({'V_{wind}': 10})
+    #M.substitutions.update({'h': ('sweep', np.linspace(15000,50000,N))})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #
+    #W = sol('W')
+    #b = sol('b')
+    #h = sol('h')
+    #ind = np.nonzero(h.magnitude==15000.)
+    #ind = ind[0]
 
-    plt.close()
-    plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], h[ind[1]:ind[2]], b[ind[1]:ind[2]], h[ind[2]:h.size],  b[ind[2]:h.size])
-    plt.ylabel('wing span [ft]')
-    plt.xlabel('altitude [ft]')
-    plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
-    plt.grid()
-    plt.axis([15000,50000,0,200])
-    plt.savefig('bvsh.png')
-    
-    # plotting at 30 degree latitude
-    M.substitutions.update({r'\theta': 0.6, 't_{night}': 14})
+    #plt.close()
+    #plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], h[ind[1]:ind[2]], b[ind[1]:ind[2]], h[ind[2]:h.size],  b[ind[2]:h.size])
+    #plt.ylabel('wing span [ft]')
+    #plt.xlabel('altitude [ft]')
+    #plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
+    #plt.grid()
+    #plt.axis([15000,50000,0,200])
+    #plt.savefig('bvsh.png')
+    #
+    ## plotting at 30 degree latitude
+    #M.substitutions.update({r'\theta': 0.6, 't_{night}': 14})
 
-    M.substitutions.update({'h':15000})
-    M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5,40,N))})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    
-    W = sol('W')
-    b = sol('b')
-    V_wind = sol('V_{wind}')
-    ind = np.nonzero(V_wind.magnitude==5.)
-    ind = ind[0]
+    #M.substitutions.update({'h':15000})
+    #M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5,40,N))})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #
+    #W = sol('W')
+    #b = sol('b')
+    #V_wind = sol('V_{wind}')
+    #ind = np.nonzero(V_wind.magnitude==5.)
+    #ind = ind[0]
 
-    plt.close()
-    plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size])
-    plt.ylabel('wing span [ft]')
-    plt.xlabel('wind speed [m/s]')
-    plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
-    plt.grid()
-    plt.axis([5,40,0,200])
-    plt.savefig('bvsV_wind30.png')
-    
-    M.substitutions.update({'V_{wind}': 10})
-    M.substitutions.update({'h': ('sweep', np.linspace(15000,50000,N))})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    
-    W = sol('W')
-    b = sol('b')
-    h = sol('h')
-    ind = np.nonzero(h.magnitude==15000.)
-    ind = ind[0]
+    #plt.close()
+    #plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size])
+    #plt.ylabel('wing span [ft]')
+    #plt.xlabel('wind speed [m/s]')
+    #plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
+    #plt.grid()
+    #plt.axis([5,40,0,200])
+    #plt.savefig('bvsV_wind30.png')
+    #
+    #M.substitutions.update({'V_{wind}': 10})
+    #M.substitutions.update({'h': ('sweep', np.linspace(15000,50000,N))})
+    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    #
+    #W = sol('W')
+    #b = sol('b')
+    #h = sol('h')
+    #ind = np.nonzero(h.magnitude==15000.)
+    #ind = ind[0]
 
-    plt.close()
-    plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], h[ind[1]:ind[2]], b[ind[1]:ind[2]], h[ind[2]:h.size],  b[ind[2]:h.size])
-    plt.ylabel('wing span [ft]')
-    plt.xlabel('altitude [ft]')
-    plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
-    plt.grid()
-    plt.axis([15000,50000,0,200])
-    plt.savefig('bvsh30.png')
+    #plt.close()
+    #plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], h[ind[1]:ind[2]], b[ind[1]:ind[2]], h[ind[2]:h.size],  b[ind[2]:h.size])
+    #plt.ylabel('wing span [ft]')
+    #plt.xlabel('altitude [ft]')
+    #plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
+    #plt.grid()
+    #plt.axis([15000,50000,0,200])
+    #plt.savefig('bvsh30.png')
 ```
 
 # Results
 
-After an initial sizing was done we wanted to vary a few of values to understand how the design changed as we approached the requirements.  Each graph below was plotted for 3 battery cases shown in table~\ref{t:battery}.
+After an initial sizing was done we wanted to vary a few of values to understand how the design changed as we approached the requirements.  Each graph below was plotted for 3 battery cases shown in table 2.
 
-\begin{table}
+\begin{table}[H]
 \begin{center}
-\caption{Table showing the best battery efficiencies for lithium ion, lithium sulphur and the theoretical limit.}
 \label{t:battery}
 \begin{tabular}{ | c |  c | }
+    \hline
     Battery Efficiency & Battery Type \\ \hline
     250 $[Whr/kg]$ & Best known lithium ion battery \\\hline
     350 $[Whr/kg]$ & Best known lithium sulphur battery \\
-    & (used on the Zephry) \\\hline
-    500 $[Whr/kg]$ & Theoretical limit \\\hline
-    & (only achieved in labs) \\
+    & (used on the Zephyr) \\\hline
+    500 $[Whr/kg]$ & Theoretical limit \\
+    & (only achieved in labs) \\\hline
 \end{tabular}
+\caption{Table showing the best battery efficiencies for lithium ion, lithium sulphur and the theoretical limit.}
 \end{center}
 \end{table}
 
 # Size vs Wind Speed
 
-As explained in figure 1, wind speeds are important for this analysis as the 45 degree latitude the wind speed increase dramatically. Figure 2 shows how to reach the 90\% availability, given the wind speed, the wing span needs to be in excess of 200 ft.  Please note that this result was done assuming that we are flying at 45 degrees latitude and during the winter solstice at 15,000 ft, or the conditions that will guarantee availbility year around. 
+As explained in figure 1, wind speeds are important for this analysis because the wind affects the size of the engine and therefore battery needed to sustain flight. As shown in figure 2, in order to reach the 90th percentile winds (i.e. 90% availability), the wing span must be in excess of 200 ft.  Please note that this result was done assuming that we are flying at 45 degrees latitude and during the winter solstice at 15,000 ft. These conditions will guarantee year-round availability.  Figure 3 is shows the same plot but for 30 degree latitude. 
 
-\begin{figure}[h!]
+
+\begin{figure}[H]
 	\label{f:bvsV_wind}
 	\begin{center}
-	\includegraphics[scale = .5]{bvsV_wind}
-	\caption{This figure shows how at the 45 degree latitude, at the winter solstice, in order to maintain the 90\% availibility the plane needs to be larger than is structurally feasible.}
+	\includegraphics[scale = 0.45]{bvsV_wind}
+	\caption{This figure shows how at the 45 degree latitude, at the winter solstice, in order to overcome the 90\% windspeeds at 15,000 ft the aircraft needs to be larger than is structurally feasible.}
 	\end{center}
 \end{figure}
 
-Figure 3 is shows the same plot but for 30 degree latitude. 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\label{f:bvsV_wind30}
 	\begin{center}
-	\includegraphics[scale = .5]{bvsV_wind30}
-	\caption{This figure shows how at the 30 degree latitude, at the winter solstice, the aircraft grows considerably larger to maintain wind speed station} 
+	\includegraphics[scale = 0.45]{bvsV_wind30}
+	\caption{This figure shows how at the 30 degree latitude, at the winter solstice, in order to overcome the 90\% wind speeds at 15,000 ft the aircraft needs to be larger than is structurally feasible.}
 	\end{center}
 \end{figure}
 
 # Size vs Altitude
 
-Reaching an altitude of near 50,000 ft is desirable to: 1) reach lower winds, and 2) escape heavy jet stream.  The difficulty with going higher is mainly that the air is thinner and requires faster speeds to produce sufficient lift.  Faster speeds means larger engines, which means larger batteries and solar cell area.  Figure 4 shows the trade off in size, shown in wing span, vs altitude.  To reach the desired altitude the plane become much larger than is feasibly buildable. 
+Reaching an altitude of near 50,000 ft is desirable to: 1) reach lower winds, and 2) escape heavy jet stream.  The difficulty with going higher is mainly that the air is thinner and requires faster speeds to produce sufficient lift.  Faster speeds mean larger engines, which means larger batteries and solar cell area.  Figure 4 shows the trade off in size, shown in wing span, vs altitude.  To reach an altitude of 50,000 ft or higher the plane must become larger than is feasibly buildable. Figure 5 shows the same trade off but for the 30 degree latitude case. Please note that this study assumes no wind.  So even if it were possible to reach higher altitudes, the higher winds at that altitude would still make this design infeasible. 
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\label{f:bvsh}
 	\begin{center}
-	\includegraphics[scale = .5]{bvsh}
-	\caption{This figure shows how at the 45 degree latitude, during the winter solstice, in order to reach altitudes of 50,000 ft the plane must be larger than is structurally feasible.}
+	\includegraphics[scale = 0.45]{bvsh}
+	\caption{This figure shows how at the 45 degree latitude, during the winter solstice, in order to reach altitudes of 50,000 ft the plane must be larger than is structurally feasible. (Note: this study assumes no wind)}
 	\end{center}
 \end{figure}
 
-Figure 5 shows the same trade off but for the 30 degree latitude case. 
-
-\begin{figure}[h!]
+\begin{figure}[H]
 	\label{f:bvsh30}
 	\begin{center}
-	\includegraphics[scale = .5]{bvsh30}
-	\caption{This figure shows how at the 30 degree latitude, during the winter solstice, the trade off between gaining higher altitude and the aircraft size} 
+	\includegraphics[scale = 0.45]{bvsh30}
+	\caption{This figure shows how at the 30 degree latitude, during the winter solstice, in order to reach altitudes of 50,000 ft the plane must be larger than is structurally feasible. (Note: this study assumes no wind)}
 	\end{center}
 \end{figure}
 
 # Conclusion
-`
-Based on the sizing results done in this study we would recommend that if the customer highly values 95\% availablilty at or above the 45 degree latitude that a solar powered aircraft is not a feasible solution.  The reason being that the 45 degree latitude at the winter solstice gives too little sunlight at a poor battery efficiency angle to power the engines at a fast enough airspeed to maintain a 95\% availibility.  If the customer is willing to sacrifice the 95\% availability, only fly during certain times of the year, or lower the latitude requirement then this option could be explored further.  
+
+Based on the sizing results done in this study we believe that a solar aircraft cannot achieve the threshold requirements outlined by the customer.  Flying at the 45 parallel on the winter solstice gives insufficient sunlight at low angles to the solar array. Combined with the need to fly in windy conditions, the aircraft size grows to unbuildable dimensions. If the customer is willing to sacrifice availability by flying in slower winds at lower latitudes and limited periods of the year, a solar option could be further explored.   
