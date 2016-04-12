@@ -5,6 +5,7 @@ from gpkit.tools import te_exp_minus1
 import gpkit
 import numpy as np
 gpkit.settings['latex_modelname'] = False
+PLOT = False
 
 class GasPoweredHALE(Model):
     def __init__(self, **kwargs):
@@ -330,177 +331,175 @@ if __name__ == '__main__':
     M = GasPoweredHALE()
     #M.substitutions.update({M["t_{station}"]:6})
     sol = M.solve('cvxopt') 
-    #P_shaftmaxMSL = 4355; #W 
-    #P_shaftmax = sol('P_{shaft-max}')
-    #V = sol('V')
-    #CD = sol('C_D')
-    #rho = sol(r'\rho')
-    #S = sol('S')*.3048**2 #m^2
-    #eta_prop = sol(r'\eta_{prop}')
-    #T = sol('T')
-    #rhoSL = 1.225
-    #h = sol('h_{station}')*0.3048 #m
-    #wd_cnst = 0.001077/.3048
-    #wd_ln = 8.845
-    #eta_propLoiter = 0.7
 
-    ##Finding maximum altitude (post-processing)
+    if PLOT:
+        #P_shaftmaxMSL = 4355; #W 
+        #P_shaftmax = sol('P_{shaft-max}')
+        #V = sol('V')
+        #CD = sol('C_D')
+        #rho = sol(r'\rho')
+        #S = sol('S')*.3048**2 #m^2
+        #eta_prop = sol(r'\eta_{prop}')
+        #T = sol('T')
+        #rhoSL = 1.225
+        #h = sol('h_{station}')*0.3048 #m
+        #wd_cnst = 0.001077/.3048
+        #wd_ln = 8.845
+        #eta_propLoiter = 0.7
 
-    #h_max = np.ones([1,5])*15000*0.3048;
-    #rho_maxalt= np.zeros([1,5]);
-    #V_maxalt = np.ones([1,5])*25;
-    #P_shaftmaxalt = np.zeros([1,5])
+        ##Finding maximum altitude (post-processing)
 
-    #for i in range(0,h_max.shape[1]):
-    #   while P_shaftmaxalt[0,i] == 0 or P_shaftmaxalt[0,i]*eta_propLoiter >= .5*rho_maxalt[0,i]*V_maxalt[0,i]**3.*CD[3+i]*S:
-    #       h_max[0,i] = h_max[0,i] + 250.
-    #       V_maxalt[0,i] = wd_cnst*h_max[0,i] + wd_ln
-    #       rho_maxalt[0,i] = (0.954*(h_max[0,i]/h)**(-0.0284))**10*rhoSL
-    #       P_shaftmaxalt[0,i] = P_shaftmaxMSL*(1-(0.906**(1/0.15)*(h_max[0,i]/h)**0.92))
-    #       
-    #h_max = h_max/0.3048 # Back to feet
-    #print 'h_max'
-    #print h_max
-    #print "V_maxalt"
-    #print V_maxalt
-    #print 'P_shaftmaxalt'
-    #print P_shaftmaxalt
+        #h_max = np.ones([1,5])*15000*0.3048;
+        #rho_maxalt= np.zeros([1,5]);
+        #V_maxalt = np.ones([1,5])*25;
+        #P_shaftmaxalt = np.zeros([1,5])
 
-    ##print "Max velocity at TO: {:.1f~}".format(V_maxTO)
-    ##print "Max velocity at loiter: {:.1f~}".format(V_max[3])
+        #for i in range(0,h_max.shape[1]):
+        #   while P_shaftmaxalt[0,i] == 0 or P_shaftmaxalt[0,i]*eta_propLoiter >= .5*rho_maxalt[0,i]*V_maxalt[0,i]**3.*CD[3+i]*S:
+        #       h_max[0,i] = h_max[0,i] + 250.
+        #       V_maxalt[0,i] = wd_cnst*h_max[0,i] + wd_ln
+        #       rho_maxalt[0,i] = (0.954*(h_max[0,i]/h)**(-0.0284))**10*rhoSL
+        #       P_shaftmaxalt[0,i] = P_shaftmaxMSL*(1-(0.906**(1/0.15)*(h_max[0,i]/h)**0.92))
+        #       
+        #h_max = h_max/0.3048 # Back to feet
+        #print 'h_max'
+        #print h_max
+        #print "V_maxalt"
+        #print V_maxalt
+        #print 'P_shaftmaxalt'
+        #print P_shaftmaxalt
 
-    #V_maxTO = ((P_shaftmaxMSL.value*0.5/0.5/rhoSL/S/CD[0]).to('m^3/s^3'))**(1./3.)
-    #V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m^3/s^3'))**(1./3.)
+        ##print "Max velocity at TO: {:.1f~}".format(V_maxTO)
+        ##print "Max velocity at loiter: {:.1f~}".format(V_max[3])
 
-    #print "Max velocity at TO: {:.1f~}".format(V_maxTO)
-    #print "Max velocity at loiter: {:.1f~}".format(V_max[3])
+        #V_maxTO = ((P_shaftmaxMSL.value*0.5/0.5/rhoSL/S/CD[0]).to('m^3/s^3'))**(1./3.)
+        #V_max = ((P_shaftmax*0.7/0.5/rho/S/CD).to('m^3/s^3'))**(1./3.)
 
-    #----------------------------------------------
-    # post processing
-    
-    #M.substitutions.update({'MTOW': ('sweep', np.linspace(70, 150, 15))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    #
-    #MTOW = sol('MTOW')
-    #t_station = sol('t_{station}')
+        #print "Max velocity at TO: {:.1f~}".format(V_maxTO)
+        #print "Max velocity at loiter: {:.1f~}".format(V_max[3])
 
-    #plt.close()
-    #plt.plot(MTOW, t_station)
-    #plt.xlabel('MTOW [lbf]')
-    #plt.ylabel('t_station [days]')
-    #plt.grid()
-    #plt.savefig('tvsMTOW.png')
+        #----------------------------------------------
+        # post processing
+        
+        #M.substitutions.update({'MTOW': ('sweep', np.linspace(70, 150, 15))})
+        #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        #
+        #MTOW = sol('MTOW')
+        #t_station = sol('t_{station}')
 
-    #M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        #plt.close()
+        #plt.plot(MTOW, t_station)
+        #plt.xlabel('MTOW [lbf]')
+        #plt.ylabel('t_station [days]')
+        #plt.grid()
+        #plt.savefig('tvsMTOW.png')
 
-    #R = sol('R')
-    #t_station = sol('t_{station}')
+        M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15))})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #plt.close()
-    #plt.plot(R, t_station)
-    #plt.xlabel('R [nm]')
-    #plt.grid()
-    #plt.ylabel('t_station [days]')
-    #plt.axis([0,600,0,10])
-    #plt.savefig('tvsR.png')
+        R = sol('R')
+        t_station = sol('t_{station}')
 
-    #M.substitutions.update({'h_{cruise}': ('sweep', np.linspace(1000,15000,15))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        plt.close()
+        plt.plot(R, t_station)
+        plt.xlabel('R [nm]')
+        plt.grid()
+        plt.ylabel('t_station [days]')
+        plt.axis([0,600,0,10])
+        plt.savefig('tvsR.png')
 
-    #h_cruise = sol('h_{cruise}')
-    #t_station = sol('t_{station}')
+        #M.substitutions.update({'h_{cruise}': ('sweep', np.linspace(1000,15000,15))})
+        #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #plt.close()
-    #plt.plot(h_cruise, t_station)
-    #plt.xlabel('h_cruise [ft]')
-    #plt.grid()
-    #plt.ylabel('t_station [days]')
-    #plt.axis([1000, 15000,0,10])
-    #plt.savefig('tvsh_cruise.png')
+        #h_cruise = sol('h_{cruise}')
+        #t_station = sol('t_{station}')
 
-    #M.substitutions.update({'h_{station}':('sweep', np.linspace(15000,20000, 15)), r'\rho' 'h_{cruise}':5000})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        #plt.close()
+        #plt.plot(h_cruise, t_station)
+        #plt.xlabel('h_cruise [ft]')
+        #plt.grid()
+        #plt.ylabel('t_station [days]')
+        #plt.axis([1000, 15000,0,10])
+        #plt.savefig('tvsh_cruise.png')
 
-    #h_station = sol('h_{station}')
-    #t_station = sol('t_{station}')
+        #M.substitutions.update({'h_{station}':('sweep', np.linspace(15000,20000, 15)), r'\rho' 'h_{cruise}':5000})
+        #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #plt.close()
-    #plt.plot(h_station, t_station)
-    #plt.xlabel('h_station [lbf]')
-    #plt.grid()
-    #plt.ylabel('t_station [days]')
-    #plt.savefig('tvsh_station.png')
+        #h_station = sol('h_{station}')
+        #t_station = sol('t_{station}')
 
-    #M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        #plt.close()
+        #plt.plot(h_station, t_station)
+        #plt.xlabel('h_station [lbf]')
+        #plt.grid()
+        #plt.ylabel('t_station [days]')
+        #plt.savefig('tvsh_station.png')
 
-    #V_wind = sol('V_{wind}')
-    #V = sol('V')
-    #V_end = V[:,-2]
-    #t_station = sol('t_{station}')
+        M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)),
+                                'R': 200})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #plt.close()
-    #plt.plot(V_wind, t_station)
-    #plt.xlabel('V_wind [m/s]')
-    #plt.ylabel('t_station [days]')
-    #plt.axis([0,40,0,10])
-    #plt.grid()
-    #plt.savefig('tvsV_wind.png')
-    #
-    #plt.close()
-    #plt.plot(V_wind, V[:,3], V_wind, V[:,-2])
-    #plt.xlabel('V_wing [m/s]')
-    #plt.legend(['Beginning of loiter', 'End of loiter'])
-    #plt.axis([0,40,0,40])
-    #plt.grid()
-    #plt.savefig('tvsV.png')
+        V_wind = sol('V_{wind}')
+        V = sol('V')
+        V_end = V[:,-2]
+        t_station = sol('t_{station}')
 
-    #plt.close()
-    #plt.plot(V_wind, V[:,3], V_wind, V[:,-2])
-    #plt.xlabel('V_wing [m/s]')
-    #plt.legend(['Beginning of loiter', 'End of loiter'])
-    #plt.axis([0,40,0,40])
-    #plt.grid()
-    #plt.savefig('tvsV.png')
-    #M.substitutions.update({r'\eta_{prop-loiter}':('sweep',[0.6717, 0.668, 0.6582, 0.7])})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        plt.close()
+        plt.plot(V_wind, t_station)
+        plt.xlabel('V_wind [m/s]')
+        plt.ylabel('t_station [days]')
+        plt.axis([0,40,0,10])
+        plt.grid()
+        plt.savefig('tvsV_wind.png')
+        
+        plt.close()
+        plt.plot(V_wind, V[:,3], V_wind, V[:,-2])
+        plt.xlabel('V_wing [m/s]')
+        plt.legend(['Beginning of loiter', 'End of loiter'])
+        plt.axis([0,40,0,40])
+        plt.grid()
+        plt.savefig('tvsV.png')
+        M.substitutions.update({r'\eta_{prop-loiter}':('sweep',[0.6717, 0.668, 0.6582, 0.7]),
+                                "V_{wind}": 25})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #eta_prop = sol(r'\eta_{prop-loiter}')
-    #t_station = sol('t_{station}')
+        eta_prop = sol(r'\eta_{prop-loiter}')
+        t_station = sol('t_{station}')
 
-    #plt.close()
-    #plt.plot(eta_prop, t_station, '*')
-    #plt.xlabel('eta_prop')
-    #plt.ylabel('t_station [days]')
-    #plt.grid()
-    #plt.axis([0.64,0.72,0,10])
-    #plt.savefig('tvseta_prop.png')
+        plt.close()
+        plt.plot(eta_prop, t_station, '*')
+        plt.xlabel('eta_prop')
+        plt.ylabel('t_station [days]')
+        plt.grid()
+        plt.axis([0.64,0.72,0,10])
+        plt.savefig('tvseta_prop.png')
 
-    #M.substitutions.update({'W_{pay}':('sweep',np.linspace(4,40,15))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        M.substitutions.update({'W_{pay}':('sweep',np.linspace(4,40,15)),
+                                r'\eta_{prop-loiter}': 0.7})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #W_pay = sol('W_{pay}')
-    #t_station = sol('t_{station}')
+        W_pay = sol('W_{pay}')
+        t_station = sol('t_{station}')
 
-    #plt.close()
-    #plt.plot(W_pay, t_station)
-    #plt.xlabel('W_pay [lbs]')
-    #plt.ylabel('t_station [days]')
-    #plt.grid()
-    #plt.axis([4,40,0,10])
-    #plt.savefig('tvsW_pay.png')
-    
-    #M.substitutions.update({'P_{pay}':('sweep',np.linspace(5,100,20))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        plt.close()
+        plt.plot(W_pay, t_station)
+        plt.xlabel('W_pay [lbs]')
+        plt.ylabel('t_station [days]')
+        plt.grid()
+        plt.axis([4,40,0,10])
+        plt.savefig('tvsW_pay.png')
 
-    #P_pay = sol('P_{pay}')
-    #t_station = sol('t_{station}')
+        M.substitutions.update({'P_{pay}':('sweep',np.linspace(5,100,20)),
+                                "W_{pay}": 10})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    #plt.close()
-    #plt.plot(P_pay, t_station)
-    #plt.xlabel('P_pay [watts]')
-    #plt.ylabel('t_station [days]')
-    #plt.grid()
-    #plt.axis([5,100,0,10])
-    #plt.savefig('tvsP_pay.png')
+        P_pay = sol('P_{pay}')
+        t_station = sol('t_{station}')
+
+        plt.close()
+        plt.plot(P_pay, t_station)
+        plt.xlabel('P_pay [watts]')
+        plt.ylabel('t_station [days]')
+        plt.grid()
+        plt.axis([5,100,0,10])
+        plt.savefig('tvsP_pay.png')
