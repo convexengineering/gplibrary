@@ -392,7 +392,7 @@ if __name__ == '__main__':
         #plt.xlabel('MTOW [lbf]')
         #plt.ylabel('t_station [days]')
         #plt.grid()
-        #plt.savefig('tvsMTOW.png')
+        #plt.savefig('tvsMTOW.pdf')
 
         M.substitutions.update({'R':('sweep', np.linspace(100, 600, 15))})
         sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
@@ -406,7 +406,7 @@ if __name__ == '__main__':
         plt.grid()
         plt.ylabel('t_station [days]')
         plt.axis([0,600,0,10])
-        plt.savefig('tvsR.png')
+        plt.savefig('tvsR.pdf')
 
         #M.substitutions.update({'h_{cruise}': ('sweep', np.linspace(1000,15000,15))})
         #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
@@ -420,7 +420,7 @@ if __name__ == '__main__':
         #plt.grid()
         #plt.ylabel('t_station [days]')
         #plt.axis([1000, 15000,0,10])
-        #plt.savefig('tvsh_cruise.png')
+        #plt.savefig('tvsh_cruise.pdf')
 
         #M.substitutions.update({'h_{station}':('sweep', np.linspace(15000,20000, 15)), r'\rho' 'h_{cruise}':5000})
         #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
@@ -433,7 +433,7 @@ if __name__ == '__main__':
         #plt.xlabel('h_station [lbf]')
         #plt.grid()
         #plt.ylabel('t_station [days]')
-        #plt.savefig('tvsh_station.png')
+        #plt.savefig('tvsh_station.pdf')
 
         M.substitutions.update({'V_{wind}':('sweep', np.linspace(1, 40, 40)),
                                 'R': 200})
@@ -450,7 +450,7 @@ if __name__ == '__main__':
         plt.ylabel('t_station [days]')
         plt.axis([0,40,0,10])
         plt.grid()
-        plt.savefig('tvsV_wind.png')
+        plt.savefig('tvsV_wind.pdf')
         
         plt.close()
         plt.plot(V_wind, V[:,3], V_wind, V[:,-2])
@@ -458,7 +458,7 @@ if __name__ == '__main__':
         plt.legend(['Beginning of loiter', 'End of loiter'])
         plt.axis([0,40,0,40])
         plt.grid()
-        plt.savefig('tvsV.png')
+        plt.savefig('tvsV.pdf')
         M.substitutions.update({r'\eta_{prop-loiter}':('sweep',[0.6717, 0.668, 0.6582, 0.7]),
                                 "V_{wind}": 25})
         sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
@@ -472,7 +472,7 @@ if __name__ == '__main__':
         plt.ylabel('t_station [days]')
         plt.grid()
         plt.axis([0.64,0.72,0,10])
-        plt.savefig('tvseta_prop.png')
+        plt.savefig('tvseta_prop.pdf')
 
         M.substitutions.update({'W_{pay}':('sweep',np.linspace(4,40,15)),
                                 r'\eta_{prop-loiter}': 0.7})
@@ -487,7 +487,7 @@ if __name__ == '__main__':
         plt.ylabel('t_station [days]')
         plt.grid()
         plt.axis([4,40,0,10])
-        plt.savefig('tvsW_pay.png')
+        plt.savefig('tvsW_pay.pdf')
 
         M.substitutions.update({'P_{pay}':('sweep',np.linspace(5,100,20)),
                                 "W_{pay}": 10})
@@ -502,4 +502,4 @@ if __name__ == '__main__':
         plt.ylabel('t_station [days]')
         plt.grid()
         plt.axis([5,100,0,10])
-        plt.savefig('tvsP_pay.png')
+        plt.savefig('tvsP_pay.pdf')
