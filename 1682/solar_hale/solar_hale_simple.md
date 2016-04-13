@@ -230,9 +230,12 @@ if __name__ == "__main__":
         plt.rcParams['lines.linewidth']=2
         plt.rcParams['font.size']=13
         plt.rcParams
-        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], label='batt: 250 [Whr/kg]') 
-        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], label = 'batt: 350 [Whr/kg]')
-        curve3, = plt.plot(V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size], label='batt: 500 [Whr/kg]')
+        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], 
+                           label='batt: 250 [Whr/kg]') 
+        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], 
+                           label = 'batt: 350 [Whr/kg]')
+        curve3, = plt.plot(V_wind[ind[2]:V_wind.size], b[ind[2]:V_wind.size], 
+                           label='batt: 500 [Whr/kg]')
         curve4, = plt.plot([25,25], [0,200], '--', color='r', label='90% wind speed')
         plt.ylabel('wing span [ft]')
         plt.xlabel('wind speed on station [m/s]')
@@ -255,9 +258,12 @@ if __name__ == "__main__":
         plt.rcParams['lines.linewidth']=2
         plt.rcParams['font.size']=13
         plt.rcParams
-        curve1, = plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], label='batt: 250 [Whr/kg]') 
-        curve2, = plt.plot(h[ind[1]:ind[2]], b[ind[1]:ind[2]], label = 'batt: 350 [Whr/kg]')
-        curve3, = plt.plot(h[ind[2]:h.size],  b[ind[2]:h.size], label='batt: 500 [Whr/kg]')
+        curve1, = plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], 
+                           label='batt: 250 [Whr/kg]') 
+        curve2, = plt.plot(h[ind[1]:ind[2]], b[ind[1]:ind[2]], 
+                           label = 'batt: 350 [Whr/kg]')
+        curve3, = plt.plot(h[ind[2]:h.size],  b[ind[2]:h.size], 
+                           label='batt: 500 [Whr/kg]')
         plt.ylabel('wing span [ft]')
         plt.xlabel('wind speed on station [m/s]')
         plt.legend(handles = [curve1, curve2, curve3], loc =2), 
@@ -282,10 +288,14 @@ if __name__ == "__main__":
         plt.rcParams['lines.linewidth']=2
         plt.rcParams['font.size']=13
         plt.rcParams
-        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], label='batt: 250 [Whr/kg]') 
-        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], label = 'batt: 350 [Whr/kg]')
-        curve3, = plt.plot(V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size], label='batt: 500 [Whr/kg]')
-        curve4, = plt.plot([25,25], [0,200], '--', color='r', label='90% wind speed')
+        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], 
+                           label='batt: 250 [Whr/kg]') 
+        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], 
+                           label = 'batt: 350 [Whr/kg]')
+        curve3, = plt.plot(V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size], 
+                           label='batt: 500 [Whr/kg]')
+        curve4, = plt.plot([25,25], [0,200], '--', color='r', 
+                            label='90% wind speed')
         plt.ylabel('wing span [ft]')
         plt.xlabel('wind speed on station [m/s]')
         plt.legend(handles = [curve1, curve2, curve3, curve4], loc =2), 
@@ -307,9 +317,12 @@ if __name__ == "__main__":
         plt.rcParams['lines.linewidth']=2
         plt.rcParams['font.size']=13
         plt.rcParams
-        curve1, = plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], label='batt: 250 [Whr/kg]') 
-        curve2, = plt.plot(h[ind[1]:ind[2]], b[ind[1]:ind[2]], label = 'batt: 350 [Whr/kg]')
-        curve3, = plt.plot(h[ind[2]:h.size],  b[ind[2]:h.size], label='batt: 500 [Whr/kg]')
+        curve1, = plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], 
+                           label='batt: 250 [Whr/kg]') 
+        curve2, = plt.plot(h[ind[1]:ind[2]], b[ind[1]:ind[2]], 
+                           label = 'batt: 350 [Whr/kg]')
+        curve3, = plt.plot(h[ind[2]:h.size],  b[ind[2]:h.size], 
+                           label='batt: 500 [Whr/kg]')
         plt.ylabel('wing span [ft]')
         plt.xlabel('wind speed on station [m/s]')
         plt.legend(handles = [curve1, curve2, curve3], loc =2), 

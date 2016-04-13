@@ -27,6 +27,8 @@ from gpkit import LinkedConstraintSet
 import numpy as np
 import matplotlib.pyplot as plt
         
+PLOT = False 
+
 CD = Variable('C_D', '-', 'Drag coefficient')
 CL = Variable('C_L', '-', 'Lift coefficient')
 P_shaft = Variable('P_{shaft}', 'W', 'Shaft power')
@@ -292,90 +294,127 @@ if __name__ == "__main__":
     with open("sol.generated.tex", "w") as f:
         f.write(sol.table(latex=True))
 
-    # number of data points
-    #N = 30
+    if PLOT:
 
-    #M.substitutions.update({ 'h_{batt}': ('sweep', [250,350,500])})
+        # number of data points
+        N = 30
 
-    ## plotting at 45 degree latitude
+        M.substitutions.update({ 'h_{batt}': ('sweep', [250,350,500])})
 
-    #M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5,40,N))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    #
-    #W = sol('W')
-    #b = sol('b')
-    #V_wind = sol('V_{wind}')
-    #ind = np.nonzero(V_wind.magnitude==5.)
-    #ind = ind[0]
+        # plotting at 45 degree latitude
 
-    #plt.close()
-    #plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size])
-    #plt.ylabel('wing span [ft]')
-    #plt.xlabel('wind speed [m/s]')
-    #plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
-    #plt.grid()
-    #plt.axis([5,40,0,200])
-    #plt.savefig('bvsV_wind.png')
-    #
-    #M.substitutions.update({'V_{wind}': 10})
-    #M.substitutions.update({'h': ('sweep', np.linspace(15000,50000,N))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    #
-    #W = sol('W')
-    #b = sol('b')
-    #h = sol('h')
-    #ind = np.nonzero(h.magnitude==15000.)
-    #ind = ind[0]
+        M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5,40,N))})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        
+        W = sol('W')
+        b = sol('b')
+        V_wind = sol('V_{wind}')
+        ind = np.nonzero(V_wind.magnitude==5.)
+        ind = ind[0]
 
-    #plt.close()
-    #plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], h[ind[1]:ind[2]], b[ind[1]:ind[2]], h[ind[2]:h.size],  b[ind[2]:h.size])
-    #plt.ylabel('wing span [ft]')
-    #plt.xlabel('altitude [ft]')
-    #plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
-    #plt.grid()
-    #plt.axis([15000,50000,0,200])
-    #plt.savefig('bvsh.png')
-    #
-    ## plotting at 30 degree latitude
-    #M.substitutions.update({r'\theta': 0.6, 't_{night}': 14})
+        plt.close()
+        plt.rcParams['lines.linewidth']=2
+        plt.rcParams['font.size']=13
+        plt.rcParams
+        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], 
+                           label='batt: 250 [Whr/kg]') 
+        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], 
+                           label = 'batt: 350 [Whr/kg]')
+        curve3, = plt.plot(V_wind[ind[2]:V_wind.size], b[ind[2]:V_wind.size], 
+                           label='batt: 500 [Whr/kg]')
+        curve4, = plt.plot([25,25], [0,200], '--', color='r', label='90% wind speed')
+        plt.ylabel('wing span [ft]')
+        plt.xlabel('wind speed on station [m/s]')
+        plt.legend(handles = [curve1, curve2, curve3, curve4], loc =4), 
+        plt.grid()
+        plt.axis([5,40,0,200])
+        plt.savefig('bvsV_wind.pdf')
+        
+        M.substitutions.update({'V_{wind}': 10})
+        M.substitutions.update({'h': ('sweep', np.linspace(15000,50000,N))})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        
+        W = sol('W')
+        b = sol('b')
+        h = sol('h')
+        ind = np.nonzero(h.magnitude==15000.)
+        ind = ind[0]
 
-    #M.substitutions.update({'h':15000})
-    #M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5,40,N))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    #
-    #W = sol('W')
-    #b = sol('b')
-    #V_wind = sol('V_{wind}')
-    #ind = np.nonzero(V_wind.magnitude==5.)
-    #ind = ind[0]
+        plt.close()
+        plt.rcParams['lines.linewidth']=2
+        plt.rcParams['font.size']=13
+        plt.rcParams
+        curve1, = plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], 
+                           label='batt: 250 [Whr/kg]') 
+        curve2, = plt.plot(h[ind[1]:ind[2]], b[ind[1]:ind[2]], 
+                           label = 'batt: 350 [Whr/kg]')
+        curve3, = plt.plot(h[ind[2]:h.size],  b[ind[2]:h.size], 
+                           label='batt: 500 [Whr/kg]')
+        plt.ylabel('wing span [ft]')
+        plt.xlabel('wind speed on station [m/s]')
+        plt.legend(handles = [curve1, curve2, curve3], loc =2), 
+        plt.grid()
+        plt.axis([15000,50000,0,200])
+        plt.savefig('bvsh.pdf')
+        
+        # plotting at 30 degree latitude
+        M.substitutions.update({r'\theta': 0.6, 't_{night}': 14})
 
-    #plt.close()
-    #plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size])
-    #plt.ylabel('wing span [ft]')
-    #plt.xlabel('wind speed [m/s]')
-    #plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
-    #plt.grid()
-    #plt.axis([5,40,0,200])
-    #plt.savefig('bvsV_wind30.png')
-    #
-    #M.substitutions.update({'V_{wind}': 10})
-    #M.substitutions.update({'h': ('sweep', np.linspace(15000,50000,N))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-    #
-    #W = sol('W')
-    #b = sol('b')
-    #h = sol('h')
-    #ind = np.nonzero(h.magnitude==15000.)
-    #ind = ind[0]
+        M.substitutions.update({'h':15000})
+        M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5,40,N))})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        
+        W = sol('W')
+        b = sol('b')
+        V_wind = sol('V_{wind}')
+        ind = np.nonzero(V_wind.magnitude==5.)
+        ind = ind[0]
 
-    #plt.close()
-    #plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], h[ind[1]:ind[2]], b[ind[1]:ind[2]], h[ind[2]:h.size],  b[ind[2]:h.size])
-    #plt.ylabel('wing span [ft]')
-    #plt.xlabel('altitude [ft]')
-    #plt.legend(['h_batt = 250', 'h_batt = 350', 'h_batt = 500']), 
-    #plt.grid()
-    #plt.axis([15000,50000,0,200])
-    #plt.savefig('bvsh30.png')
+        plt.close()
+        plt.rcParams['lines.linewidth']=2
+        plt.rcParams['font.size']=13
+        plt.rcParams
+        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], 
+                           label='batt: 250 [Whr/kg]') 
+        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], 
+                           label = 'batt: 350 [Whr/kg]')
+        curve3, = plt.plot(V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size], 
+                           label='batt: 500 [Whr/kg]')
+        curve4, = plt.plot([25,25], [0,200], '--', color='r', 
+                            label='90% wind speed')
+        plt.ylabel('wing span [ft]')
+        plt.xlabel('wind speed on station [m/s]')
+        plt.legend(handles = [curve1, curve2, curve3, curve4], loc =2), 
+        plt.grid()
+        plt.axis([5,40,0,200])
+        plt.savefig('bvsV_wind30.pdf')
+        
+        M.substitutions.update({'V_{wind}': 10})
+        M.substitutions.update({'h': ('sweep', np.linspace(15000,50000,N))})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        
+        W = sol('W')
+        b = sol('b')
+        h = sol('h')
+        ind = np.nonzero(h.magnitude==15000.)
+        ind = ind[0]
+
+        plt.close()
+        plt.rcParams['lines.linewidth']=2
+        plt.rcParams['font.size']=13
+        plt.rcParams
+        curve1, = plt.plot(h[ind[0]:ind[1]], b[ind[0]:ind[1]], 
+                           label='batt: 250 [Whr/kg]') 
+        curve2, = plt.plot(h[ind[1]:ind[2]], b[ind[1]:ind[2]], 
+                           label = 'batt: 350 [Whr/kg]')
+        curve3, = plt.plot(h[ind[2]:h.size],  b[ind[2]:h.size], 
+                           label='batt: 500 [Whr/kg]')
+        plt.ylabel('wing span [ft]')
+        plt.xlabel('wind speed on station [m/s]')
+        plt.legend(handles = [curve1, curve2, curve3], loc =2), 
+        plt.grid()
+        plt.axis([15000,50000,0,200])
+        plt.savefig('bvsh30.pdf')
 ```
 
 # Results
