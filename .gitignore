@@ -78,3 +78,13 @@ test_reports_nounits/
 *.aux
 *.log
 *.synctex.gz
+
+# md files support files
+*.generated.tex
+*.tex.md
+*.md.py
+*.sh
+
+# generated graphs
+*.pdf
+*.png
