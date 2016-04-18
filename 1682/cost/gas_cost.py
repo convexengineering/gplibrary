@@ -6,6 +6,11 @@ from gpkit.tools import te_exp_minus1
 import gpkit
 gpkit.settings['latex_modelname'] = False
 
+plotMTOW = False
+plotPayload = False
+plotQ = False
+plotT = True
+
 class GasPoweredHALE(Model):
     '''
     Model built for a medium altitude aircraft (15,000 ft)
@@ -128,6 +133,8 @@ class GasPoweredHALE(Model):
                                   'propulsive efficiency in loiter')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
+        P_shaftmaxV = Variable('P_{shaft-maxV}', 'hp', 'Max shaft power at max V')
+        V_max = Variable('V_{max}', 'm/s', 'max velocity')
 
         # Climb model
         # Currently climb rate is being optimized to reduce fuel consumption.
@@ -135,6 +142,7 @@ class GasPoweredHALE(Model):
 
         constraints.extend([
             P_shaft == T*V/eta_prop,
+            P_shaftmaxV == V_max*W_zfw/10/eta_propLoiter,
             T >= 0.5*rho*V**2*CD*S,
             T[iClimb] >= (0.5*rho[iClimb]*V[iClimb]**2*CD[iClimb]*S +
                           W_begin[iClimb]*h_dot/V[iClimb]),
@@ -174,6 +182,8 @@ class GasPoweredHALE(Model):
                                     'total power, including avionics')
         eta_alternator = Variable(r'\eta_{alternator}', 0.8, '-',
                                   'alternator efficiency')
+        P_shafttotmaxV = Variable('P_{shaft-tot-maxV}', 'hp', 
+                                  'total shaft power at max velocity')
 
         # Engine Weight Constraints
         constraints.extend([
@@ -193,7 +203,8 @@ class GasPoweredHALE(Model):
             P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
             P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
             P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
-            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481
+            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481,
+            P_shaftmaxV == P_shaftmaxMSL,
             ])
 
         #----------------------------------------------------
@@ -417,6 +428,8 @@ class GasPoweredHALE(Model):
         C_M = Variable('C_M', 'USD2012',
                        'Materials cost of aluminum airframe')
         C_avn = Variable('C_{avn}', 'USD2012', 'Cost of avionics')
+        C_fly = Variable('C_{fly}', 'USD2012', 'Flyaway cost')
+        C_plane = Variable('C_{plane}', 'USD2012', 'cost per plane')
         #Raymer suggests C_avn = 0.15*C_fly
 
         C_eng = Variable('C_{eng}', 24000, 'USD2012', 'Engine Cost')
@@ -442,144 +455,143 @@ class GasPoweredHALE(Model):
                         'C_M power law proportionality constant')
 
         constraints.extend([
-            H_E == H_E_const*W_zfw**0.777*V[1]**0.894*Q**0.163,
-            H_T == H_T_const*W_zfw**0.777*V[1]**0.696*Q**0.263,
-            H_M == H_M_const*W_zfw**0.82*V[1]**0.484*Q**0.641,
+            C_fly >= (H_E*R_E + H_T*R_T + H_M*R_M + H_Q*R_Q + C_Dev + C_F + C_M +
+                     C_eng*N_eng + C_avn),
+            C_plane == C_fly/Q,
+            H_E == H_E_const*W_zfw**0.777*V_max**0.894*Q**0.163,
+            H_T == H_T_const*W_zfw**0.777*V_max**0.696*Q**0.263,
+            H_M == H_M_const*W_zfw**0.82*V_max**0.484*Q**0.641,
             H_Q == H_Q_const*H_E,
-            C_Dev == C_Dev_const*W_zfw**0.630*V[1]**1.3,
-            C_F == C_F_const*W_zfw**0.325*V[1]**0.822*FTA**1.21,
-            C_M == C_M_const*W_zfw**0.921*V[1]**0.621*Q**0.799,
+            C_Dev == C_Dev_const*W_zfw**0.630*V_max**1.3,
+            C_F == C_F_const*W_zfw**0.325*V_max**0.822*FTA**1.21,
+            C_M == C_M_const*W_zfw**0.921*V_max**0.621*Q**0.799,
             C_avn == R_avn*W_zfw,
             N_eng == Q*2
             ])
 
-        objective = 1/t_station
+        objective = 1/t_station + C_fly*units('1/USD2012/days')
         Model.__init__(self, objective, constraints)
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
     sol = M.solve('mosek')
 
-    M.substitutions.update({'MTOW':('sweep', np.linspace(100, 500, 15))})
-    sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    if plotMTOW:
+        M.substitutions.update({'MTOW':('sweep', np.linspace(100, 500, 50))})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    MTOW = sol('MTOW')
-    Q = sol('Q')
-    C_eng = 24000*units('USD2012')
-    N_eng = sol('N_{eng}')
-    C_Dev = sol('C_{Dev}')
-    C_M = sol('C_M')
-    C_F = sol('C_F')
-    R_E = 115*units('USD2012/hr')
-    R_T = 118*units('USD2012/hr')
-    R_M = 108*units('USD2012/hr')
-    R_Q = 98 *units('USD2012/hr')
-    H_E = sol('H_E')
-    H_T = sol('H_T')
-    H_Q = sol('H_Q')
-    H_M = sol('H_M')
-    C_avn = sol('C_{avn}')
-    dol_million = 1e6*units('USD2012')
-    W_zfw = sol('W_{zfw}')
-    W_engtot = sol('W_{eng-tot}')
-    P_shafttot = sol('P_{shaft-tot}')
-    P_shaftmax = sol('P_{shaft-max}')
-    P_shaftmaxMSL = sol('P_{shaft-maxMSL}')
-    P_shaft = sol('P_{shaft}')[:, 0]
-    Vloiter = sol('V')[:, 3]
-    Vcruise = sol('V')[:, 1]
-    t_station = sol('t_{station}')
-    C_fly = H_E*R_E + H_T*R_T + H_M*R_M + H_Q*R_Q + C_Dev + C_F + C_M + C_eng*            N_eng + C_avn,
-    C_plane = C_fly[0]/10
+        MTOW = sol('MTOW')
+        C_fly = sol('C_{fly}')
+        C_plane = sol('C_{plane}')
+        t_station = sol('t_{station}')
+        
+        plt.close()
+        plt.plot(MTOW, C_fly/1e6)
+        plt.title('Aircraft Weight vs Flyaway Cost')
+        plt.xlabel('Mass Take Off Weight [lbs]')
+        plt.ylabel('Flyaway Cost [Millions of $]')
+        plt.axis([100,500,0,15])
+        plt.grid()
+        plt.savefig('MTOWvsC_fly.pdf')
+        
+        plt.close()
+        plt.plot(MTOW, C_plane/1e6)
+        plt.title('Aircraft Weight vs Cost per Plane')
+        plt.xlabel('Mass Take Off Weight [lbs]')
+        plt.ylabel('Cost per plane [Millions of $]')
+        plt.axis([100,500,0,1])
+        plt.grid()
+        plt.savefig('MTOWvsC_plane.pdf')
+        
+        plt.close()
+        plt.plot(MTOW, t_station)
+        plt.xlabel('MTOW [lbs]')
+        plt.ylabel('time on station [days]')
+        plt.grid()
+        plt.savefig('MTOWvst_station.pdf')
 
-    plt.close()
-    plt.plot(MTOW, C_fly[0]/1e6)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('Flyaway Cost [Millions of $]')
-    plt.grid()
-    plt.savefig('MTOWvsC_fly.png')
+    if plotPayload:
 
-    plt.close()
-    plt.plot(MTOW, Vcruise)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('Vcruise [m/s]')
-    plt.grid()
-    plt.savefig('MTOWvsVcruise.png')
+        M.substitutions.update({'t_{station}': 6})
+        M.cost = M["MTOW"] + M["C_{fly}"]*units('lbf/USD2012')
+        M.substitutions.update({'W_{pay}':('sweep', np.linspace(5, 40, 30))})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    plt.close()
-    plt.plot(MTOW, t_station)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('t_station [m/s]')
-    plt.grid()
-    plt.savefig('MTOWvst_station.png')
+        W_pay = sol('W_{pay}')
+        C_fly = sol('C_{fly}')
+        C_plane = sol('C_{plane}')
+        
+        plt.close()
+        plt.plot(W_pay, C_fly/1e6)
+        plt.title('Payload Weight vs Flyaway Cost')
+        plt.xlabel('Payload Weight [lbs]')
+        plt.ylabel('Flyaway Cost [Millions of $]')
+        plt.axis([5,40,0,15])
+        plt.grid()
+        plt.savefig('W_payvsC_fly.pdf')
+        
+        plt.close()
+        plt.plot(W_pay, C_plane/1e6)
+        plt.title('Payload Weight vs Cost per Plane')
+        plt.xlabel('Payload weight [lbs]')
+        plt.ylabel('Cost per plane [Millions of $]')
+        plt.axis([5,40,0,1])
+        plt.grid()
+        plt.savefig('W_payvsC_plane.pdf')
 
-    plt.close()
-    plt.plot(MTOW, Vloiter)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('Vloiter [m/s]')
-    plt.grid()
-    plt.savefig('MTOWvsVloiter.png')
+    if plotQ:
 
-    plt.close()
-    plt.plot(MTOW, P_shaft)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('Pshaft [hp]')
-    plt.grid()
-    plt.savefig('MTOWvsP_shaft.png')
+        M.substitutions.update({'t_{station}': 6})
+        M.cost = M["MTOW"] + M["C_{fly}"]*units('lbf/USD2012')
+        M.substitutions.update({'Q':('sweep', np.linspace(1, 50, 50))})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    plt.close()
-    plt.plot(MTOW, P_shaftmax)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('Pshaft [hp]')
-    plt.grid()
-    plt.savefig('MTOWvsP_shaftmax.png')
+        Q = sol('Q')
+        C_fly = sol('C_{fly}')
+        C_plane = sol('C_{plane}')
+        
+        plt.close()
+        plt.plot(Q, C_fly/1e6)
+        plt.title('Number of Aircraft vs Flyaway Cost')
+        plt.xlabel('Number of Aircraft')
+        plt.ylabel('Flyaway Cost [Millions of $]')
+        plt.axis([1,20,0,15])
+        plt.grid()
+        plt.savefig('QvsC_fly.pdf')
+        
+        plt.close()
+        plt.plot(Q, C_plane/1e6)
+        plt.title('Number of Aircraft vs Cost per Plane')
+        plt.xlabel('Number of Aircraft')
+        plt.ylabel('Cost per plane [Millions of $]')
+        plt.axis([1,20,0,5])
+        plt.grid()
+        plt.savefig('QvsC_plane.pdf')
+    
+    if plotT:
 
-    plt.close()
-    plt.plot(MTOW, P_shafttot, '*', MTOW, P_shaftmaxMSL, '-')
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('Pshaft [hp]')
-    plt.grid()
-    plt.savefig('MTOWvsP_shafttot.png')
+        M.cost = M["MTOW"] + M["C_{fly}"]*units('lbf/USD2012')
+        M.substitutions.update({'t_{station}':('sweep', np.linspace(0.05, 10, 30))})
+        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
-    plt.close()
-    plt.plot(MTOW, W_engtot)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('engine weight [lbs]')
-    plt.grid()
-    plt.savefig('MTOWvsw_engtot.png')
-
-    plt.close()
-    plt.plot(MTOW, W_zfw)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('Dry Weight')
-    plt.grid()
-    plt.savefig('MTOWvsW_zfw.png')
-
-    plt.close()
-    plt.plot(MTOW, C_M, MTOW, C_F, MTOW, C_Dev, MTOW, C_avn)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('Cost [Millions of $]')
-    plt.legend(['C_M', 'C_F', 'C_Dev', 'C_avn'])
-    plt.grid()
-    plt.savefig('MTOWvsC_breakown.png')
-
-    plt.close()
-    plt.plot(MTOW, H_M, MTOW, H_E, MTOW, H_Q, MTOW, H_T)
-    plt.xlabel('MTOW [lbs]')
-    plt.ylabel('Time [hours]')
-    plt.legend(['H_M', 'H_E', 'H_Q', 'H_T'])
-    plt.grid()
-    plt.savefig('MTOWvsH_breakown.png')
-
-    #M.substitutions.update({'W_{pay}':('sweep', np.linspace(1, 40, 15))})
-    #sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
-    #C_plane = sol('C_{plane}')
-    #W_pay = sol('W_{pay}')
-
-    #plt.close()
-    #plt.plot(W_pay, C_plane)
-    #plt.xlabel('W_pay [lbs]')
-    #plt.ylabel('C_plane [$]')
-    #plt.grid()
-    #plt.savefig('W_payvsC_plane.png')
+        t_station = sol('t_{station}')
+        C_fly = sol('C_{fly}')
+        C_plane = sol('C_{plane}')
+        
+        plt.close()
+        plt.plot(t_station, C_fly/1e6)
+        plt.title('Time on Station vs Flyaway Cost')
+        plt.xlabel('Time on Station [days]')
+        plt.ylabel('Flyaway Cost [Millions of $]')
+        plt.axis([0,10,0,15])
+        plt.grid()
+        plt.savefig('t_stationvsC_fly.pdf')
+        
+        plt.close()
+        plt.plot(t_station, C_plane/1e6)
+        plt.title('Time on Station vs Cost per Plane')
+        plt.xlabel('Time on Station [days]')
+        plt.ylabel('Cost per plane [Millions of $]')
+        plt.axis([0,10,0,1])
+        plt.grid()
+        plt.savefig('t_stationvsC_plane.pdf')
