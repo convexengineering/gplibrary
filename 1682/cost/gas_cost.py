@@ -3,8 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units
 from gpkit.tools import te_exp_minus1
+from gpkit.interactive import plotting
 import gpkit
 gpkit.settings['latex_modelname'] = False
+#plt.rc('font', plt.rc('font', family='serif') 
+#plt.rc('font', serif='Times New Roman')
 
 plotMTOW = False
 plotPayload = False
@@ -211,7 +214,7 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
-        t_station = Variable('t_{station}', 'days', 'time on station')
+        t_station = Variable('t_{station}', 6, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         R_cruise = Variable('R_{cruise}', 180, 'nautical_miles',
                             'range to station during climb')
@@ -469,12 +472,16 @@ class GasPoweredHALE(Model):
             N_eng == Q*2
             ])
 
-        objective = 1/t_station + C_fly*units('1/USD2012/days')
+        objective = C_fly
         Model.__init__(self, objective, constraints)
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
     sol = M.solve('mosek')
+
+    plt.rcParams.update({'font.size':16})
+    plt.rc('font', family='serif') 
+    plt.rc('font', serif='Times New Roman')
 
     if plotMTOW:
         M.substitutions.update({'MTOW':('sweep', np.linspace(100, 500, 50))})
@@ -496,6 +503,7 @@ if __name__ == '__main__':
         
         plt.close()
         plt.plot(MTOW, C_plane/1e6)
+        #plt.rcParams.update({'font.size':16})
         plt.title('Aircraft Weight vs Cost per Plane')
         plt.xlabel('Mass Take Off Weight [lbs]')
         plt.ylabel('Cost per plane [Millions of $]')
@@ -505,6 +513,7 @@ if __name__ == '__main__':
         
         plt.close()
         plt.plot(MTOW, t_station)
+        #plt.rcParams.update({'font.size':16})
         plt.xlabel('MTOW [lbs]')
         plt.ylabel('time on station [days]')
         plt.grid()
@@ -514,14 +523,15 @@ if __name__ == '__main__':
 
         M.substitutions.update({'t_{station}': 6})
         M.cost = M["MTOW"] + M["C_{fly}"]*units('lbf/USD2012')
-        M.substitutions.update({'W_{pay}':('sweep', np.linspace(5, 40, 30))})
+        M.substitutions.update({'W_{pay}':('sweep', np.linspace(5, 40, 10))})
         sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
+    
         W_pay = sol('W_{pay}')
         C_fly = sol('C_{fly}')
         C_plane = sol('C_{plane}')
         
         plt.close()
+        plt.rcParams.update({'font.size':16})
         plt.plot(W_pay, C_fly/1e6)
         plt.title('Payload Weight vs Flyaway Cost')
         plt.xlabel('Payload Weight [lbs]')
@@ -531,6 +541,7 @@ if __name__ == '__main__':
         plt.savefig('W_payvsC_fly.pdf')
         
         plt.close()
+        plt.rcParams.update({'font.size':16})
         plt.plot(W_pay, C_plane/1e6)
         plt.title('Payload Weight vs Cost per Plane')
         plt.xlabel('Payload weight [lbs]')
@@ -551,6 +562,7 @@ if __name__ == '__main__':
         C_plane = sol('C_{plane}')
         
         plt.close()
+        plt.rcParams.update({'font.size':16})
         plt.plot(Q, C_fly/1e6)
         plt.title('Number of Aircraft vs Flyaway Cost')
         plt.xlabel('Number of Aircraft')
@@ -560,6 +572,7 @@ if __name__ == '__main__':
         plt.savefig('QvsC_fly.pdf')
         
         plt.close()
+        plt.rcParams.update({'font.size':16})
         plt.plot(Q, C_plane/1e6)
         plt.title('Number of Aircraft vs Cost per Plane')
         plt.xlabel('Number of Aircraft')
@@ -570,7 +583,6 @@ if __name__ == '__main__':
     
     if plotT:
 
-        M.cost = M["MTOW"] + M["C_{fly}"]*units('lbf/USD2012')
         M.substitutions.update({'t_{station}':('sweep', np.linspace(0.05, 10, 30))})
         sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
@@ -579,6 +591,7 @@ if __name__ == '__main__':
         C_plane = sol('C_{plane}')
         
         plt.close()
+        plt.rcParams.update({'font.size':16})
         plt.plot(t_station, C_fly/1e6)
         plt.title('Time on Station vs Flyaway Cost')
         plt.xlabel('Time on Station [days]')
@@ -588,6 +601,7 @@ if __name__ == '__main__':
         plt.savefig('t_stationvsC_fly.pdf')
         
         plt.close()
+        plt.rcParams.update({'font.size':16})
         plt.plot(t_station, C_plane/1e6)
         plt.title('Time on Station vs Cost per Plane')
         plt.xlabel('Time on Station [days]')
