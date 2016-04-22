@@ -27,11 +27,11 @@ class GasPoweredHALE(Model):
         # altitude constraints
         h_station = Variable('h_{station}', 15000, 'ft',
                              'minimum altitude at station')
-        h_cruise = Variable('h_{cruise}', 5000, 'ft', 
+        h_cruise = Variable('h_{cruise}', 5000, 'ft',
                             'minimum cruise altitude')
         h = np.array([h_cruise]*2 + [h_station]*6 + [h_cruise])
-        deltah = Variable(r'\delta_h', h_station.value-h_cruise.value, 'ft',
-                          'delta height') 
+        deltah = Variable('\\delta_h', h_station.value-h_cruise.value, 'ft',
+                          'delta height')
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         h_dot = VectorVariable(NClimb, 'h_{dot}', 'ft/min', 'Climb rate')
         h_dotmin = Variable('h_{dot-min}', 100, 'ft/min',
@@ -44,7 +44,7 @@ class GasPoweredHALE(Model):
 
         #----------------------------------------------------
         # Atmosphere model
-        gamma = Variable(r'\gamma', 1.4, '-', 'Heat capacity ratio of air')
+        gamma = Variable('\\gamma', 1.4, '-', 'Heat capacity ratio of air')
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
         p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
         L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
@@ -54,13 +54,13 @@ class GasPoweredHALE(Model):
                 'Air temperature', args=[T_sl, L_atm, h])
         a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s',
                                'Speed of sound at altitude')
-        mu_atm = VectorVariable(NSeg,r'\mu', 'N*s/m^2', 'Dynamic viscosity')
-        mu_sl = Variable(r'\mu_{sl}', 1.789*10**-5, 'N*s/m^2',
+        mu_atm = VectorVariable(NSeg,'\\mu', 'N*s/m^2', 'Dynamic viscosity')
+        mu_sl = Variable('\\mu_{sl}', 1.789*10**-5, 'N*s/m^2',
                          'Dynamic viscosity at sea level')
         R_spec = Variable('R_{spec}', 287.058, 'J/kg/K',
                           'Specific gas constant of air')
         h_ref = Variable('h_{ref}', 15000, 'ft', 'ref altitude')
-        rho = VectorVariable(NSeg, r'\rho', 'kg/m^3', 'air density')
+        rho = VectorVariable(NSeg, '\\rho', 'kg/m^3', 'air density')
 
         # Atmospheric variation with altitude (valid from 0-7km of altitude)
         constraints.extend([
@@ -105,13 +105,13 @@ class GasPoweredHALE(Model):
         CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
         V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
         S = Variable('S', 'ft^2', 'wing area')
-        eta_prop = VectorVariable(NSeg, r'\eta_{prop}', '-',
+        eta_prop = VectorVariable(NSeg, '\\eta_{prop}', '-',
                                   'propulsive efficiency')
-        eta_propCruise = Variable(r'\eta_{prop-cruise}', 0.6, '-',
+        eta_propCruise = Variable('\\eta_{prop-cruise}', 0.6, '-',
                                   'propulsive efficiency in cruise')
-        eta_propClimb = Variable(r'\eta_{prop-climb}', 0.5, '-',
+        eta_propClimb = Variable('\\eta_{prop-climb}', 0.5, '-',
                                  'propulsive efficiency in climb')
-        eta_propLoiter = Variable(r'\eta_{prop-loiter}', 0.7, '-',
+        eta_propLoiter = Variable('\\eta_{prop-loiter}', 0.7, '-',
                                   'propulsive efficiency in loiter')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
@@ -136,11 +136,11 @@ class GasPoweredHALE(Model):
         #----------------------------------------------------
         # Engine Model (DF35)
 
-        W_eng = Variable('W_{eng}', 'lbf', 'engine weight')
-        W_engtot = Variable('W_{eng-tot}', 'lbf', 'Installed engine weight')
+        W_engtot = Variable('W_{eng-tot}', 7.1, 'lbf',
+                            'Installed engine weight')
         W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf',
                             'Reference engine weight')
-        FuelOilFrac = Variable('FuelOilFrac',.98,'-','Fuel-oil fraction')
+        FuelOilFrac = Variable('FuelOilFrac', .98, '-', 'Fuel-oil fraction')
         P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp',
                               'reference shaft power')
         BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
@@ -148,30 +148,28 @@ class GasPoweredHALE(Model):
                               'brake specific fuel consumption')
         RPM_max = Variable('RPM_{max}', 9000, 'rpm', 'Maximum RPM')
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 'hp',
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.84, 'hp',
                                  'Max shaft power at MSL')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}',
-                                    #lambda P_shaftmaxMSL, h_ref, h:
-                                    #P_shaftmaxMSL*(1-0.5178*(h/h_ref)**0.92),
-                                    'hp', 'Max shaft power at altitude')
-                                    #args=[P_shaftmaxMSL, h_ref, h])
-        Lfactor = VectorVariable(NSeg, 'L_factor', '-',
-                                 'Max shaft power loss factor')
+                                    lambda P_shaftmaxMSL, h_ref, h:
+                                    P_shaftmaxMSL*(1-0.5178*(h/h_ref)**0.92),
+                                    'hp', 'Max shaft power at altitude',
+                                    args=[P_shaftmaxMSL, h_ref, h])
+        #Lfactor = VectorVariable(NSeg, 'L_factor', '-',
+        #                         'Max shaft power loss factor')
         P_avn = Variable('P_{avn}', 40, 'watts', 'avionics power')
         P_pay = Variable('P_{pay}', 10, 'watts', 'payload power')
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp',
                 'total power need including power draw from avionics')
         m_dotfuel = VectorVariable(NSeg, 'm_{dot-fuel}', 'lb/sec',
                                    'fuel flow rate')
-        eta_alternator = Variable(r'\eta_{alternator}', 0.8, '-',
+        eta_alternator = Variable('\\eta_{alternator}', 0.8, '-',
                                   'alternator efficiency')
 
         # Engine Weight Constraints
         constraints.extend([
-            Lfactor == 0.906**(1/0.15)*(h/h_station)**0.92,
-            P_shaftmax/P_shaftmaxMSL + Lfactor <= 1,
-            W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075,
-            W_engtot >= 2.572*W_eng**0.922*units('lbf')**0.078,
+            #Lfactor == 0.906**(1/0.15)*(h/h_station)**0.92,
+            #P_shaftmax/P_shaftmaxMSL + Lfactor <= 1,
             P_shaftmax >= P_shafttot,
             P_shafttot[iCruise] >= P_shaft[iCruise] + P_avn/eta_alternator,
             P_shafttot[iClimb] >= P_shaft[iClimb] + P_avn/eta_alternator,
@@ -278,11 +276,11 @@ class GasPoweredHALE(Model):
         # Structural model
 
         # Structural parameters
-        rho_skin = Variable(r'\rho_{skin}', 0.1, 'g/cm^2',
+        rho_skin = Variable('\\rho_{skin}', 0.1, 'g/cm^2',
                             'Wing Skin Density')
-        rho_cap = Variable(r'\rho_{cap}', 1.76, 'g/cm^3', 'Density of CF cap')
+        rho_cap = Variable('\\rho_{cap}', 1.76, 'g/cm^3', 'Density of CF cap')
         E_cap = Variable('E_{cap}', 2e7, 'psi', 'Youngs modulus of CF cap')
-        sigma_cap = Variable(r'\sigma_{cap}', 475e6, 'Pa', 'Cap stress')
+        sigma_cap = Variable('\\sigma_{cap}', 475e6, 'Pa', 'Cap stress')
 
         # Structural lengths
         h_spar = Variable('h_{spar}', 'm', 'Spar height')
@@ -293,10 +291,10 @@ class GasPoweredHALE(Model):
         #assumes straight, untapered wing
 
         # Structural ratios
-        tau = Variable(r'\tau', 0.12, '-', 'Airfoil thickness ratio')
+        tau = Variable('\\tau', 0.12, '-', 'Airfoil thickness ratio')
         #find better number
         LoverA = Variable('LoverA', 'lbf/ft^2', 'Wing loading')
-        lambda_c = Variable(r'\lambda_c', '-', 'Taper ratio')
+        lambda_c = Variable('\\lambda_c', '-', 'Taper ratio')
 
         # Structural areas
         A_capcent = Variable('A_{capcent}', 'm**2', 'Cap area at center')
@@ -313,8 +311,8 @@ class GasPoweredHALE(Model):
         N_Max = Variable('N_{Max}', 5, '-', 'Load factor')
         #load rating for max number of g's
         P_cap = Variable('P_{cap}', 'N', 'Cap load')
-        delta_tip = Variable(r'\delta_{tip}', 'ft', 'Tip deflection')
-        delta_tip_max = Variable(r'\delta_{tip-max}', 0.2, '-',
+        delta_tip = Variable('\\delta_{tip}', 'ft', 'Tip deflection')
+        delta_tip_max = Variable('\\delta_{tip-max}', 0.2, '-',
                                  'max tip deflection ratio')
 
         constraints.extend([m_skin >= rho_skin*S*2,
@@ -335,7 +333,7 @@ class GasPoweredHALE(Model):
         # Fuselage model
 
         # Constants
-        rho_fuel = Variable(r'\rho_{fuel}', 6.01, 'lbf/gallon',
+        rho_fuel = Variable('\\rho_{fuel}', 6.01, 'lbf/gallon',
                             'density of 100LL')
 
         # Non-dimensional variables
