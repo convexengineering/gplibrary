@@ -244,8 +244,8 @@ class GasPoweredHALE(Model):
         #                   'normalized drag coefficient landing gear')
 
         #constraints.extend([
-        #    CD >= (CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR)
-        #           + cl_16*CL**16 + CDAland),
+        #    CD >= (CDfuse + 2*Cf*Kwing + CL**2/(pi*e*AR) + cl_16*CL**16 +
+        #           CDAland),
         #    CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S
         #    ])
 
@@ -260,17 +260,19 @@ class GasPoweredHALE(Model):
         m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
         m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
         m_skin = Variable('m_{skin}', 'kg', 'Skin mass')
-        m_tail = Variable('m_{tail}', 1*1.5, 'kg', 'tail mass')
-        m_rib = Variable('m_{rib}', 1.2*1.5, 'kg','rib mass')
+        m_tail = Variable('m_{tail}', 1.587, 'kg', 'tail mass')
+        m_rib = Variable('m_{rib}', 1.36, 'kg','rib mass')
+        W_fueltank = Variable('W_{fuel-tank}', 4, 'lbf', 'fuel tank weight')
 
-        constraints.extend([W_wing >= m_skin*g + 1.2*m_cap*g,
-                            W_fuse >= m_fuse*g + m_rib*g,
-                            W_fueltot >= W_fuel.sum(),
-                            W_cent >= (W_fueltot + W_pay + W_engtot + W_fuse
-                                       + W_avionics + W_skid),
-                            W_zfw >= (W_pay + W_engtot + W_fuse + W_wing +
-                                      m_tail*g + W_avionics + W_skid)
-                           ])
+        constraints.extend([
+            W_wing >= m_skin*g + 1.2*m_cap*g,
+            W_fuse >= m_fuse*g + m_rib*g,
+            W_fueltot >= W_fuel.sum(),
+            W_cent >= (W_fueltot + W_pay + W_engtot + W_fuse + W_avionics +
+                       W_skid + W_fueltank),
+            W_zfw >= (W_pay + W_engtot + W_fuse + W_wing + m_tail*g +
+                      W_avionics + W_skid + W_fueltank)
+            ])
 
         #----------------------------------------------------
         # Structural model
