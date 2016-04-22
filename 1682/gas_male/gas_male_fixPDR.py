@@ -24,7 +24,7 @@ class GasPoweredHALE(Model):
 
         #----------------------------------------------------
         # altitude constraints
-        h_station = Variable('h_{station}', 15000, 'ft', 'minimum altitude at station')
+        h_station = Variable('h_{station}', 21000, 'ft', 'minimum altitude at station')
         h_cruise = Variable('h_{cruise}', 5000, 'ft', 'minimum cruise altitude')
         h = VectorVariable(NSeg, 'h', 
                 [h_cruise.value,h_cruise.value,h_station.value,h_station.value,h_station.value,
@@ -330,7 +330,7 @@ class GasPoweredHALE(Model):
 if __name__ == '__main__':
     M = GasPoweredHALE()
     #M.substitutions.update({M["t_{station}"]:6})
-    sol = M.solve('cvxopt') 
+    sol = M.solve('mosek') 
 
     if PLOT:
         #P_shaftmaxMSL = 4355; #W 
