@@ -5,8 +5,11 @@ from gpkit.tools import te_exp_minus1
 import gpkit
 import numpy as np
 gpkit.settings['latex_modelname'] = False
+plt.rc('font', family='serif') 
+plt.rc('font', serif='Times New Roman')
+plt.rcParams.update({'font.size':19})
 
-PLOT = False
+PLOT = True
 
 class GasPoweredHALE(Model):
     def __init__(self, **kwargs):
@@ -50,8 +53,10 @@ class GasPoweredHALE(Model):
         L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
         T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
         T_atm = VectorVariable(NSeg, 'T_{atm}',
-                lambda T_sl, L_atm, h: T_sl - L_atm*h, 'K',
-                'Air temperature', args=[T_sl, L_atm, h])
+                [T_sl.value - L_atm.value*v.value for v in h], 'K', 'Air temperature')
+        #T_atm = VectorVariable(NSeg, 'T_{atm}',
+        #        lambda T_sl, L_atm, h: T_sl - L_atm*h, 'K',
+        #        'Air temperature', args=[T_sl, L_atm, h])
         a_atm = VectorVariable(NSeg, 'a_{atm}', 'm/s',
                                'Speed of sound at altitude')
         mu_atm = VectorVariable(NSeg,r'\mu', 'N*s/m^2', 'Dynamic viscosity')
@@ -181,6 +186,12 @@ class GasPoweredHALE(Model):
                                        0.0268*(RPM/RPM_max)**9.62),
             (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292,
             RPM <= RPM_max,
+            P_shaftmax[iCruise] >= P_shaftmaxMSL*.81,
+            P_shaftmax[iClimb[0]] >= P_shaftmaxMSL*.81,
+            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329, #value at 20kft
+            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329, #value at 20kft
+            P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.481,
+            P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.481,
             ])
 
         #----------------------------------------------------
@@ -394,8 +405,9 @@ if __name__ == '__main__':
 
         plt.close()
         plt.plot(MTOW, t_station)
-        plt.xlabel('MTOW [lbf]')
-        plt.ylabel('t_station [days]')
+        plt.title('Mass Take-off Weight vs Endurance')
+        plt.xlabel('Mass Take-off Weight [lbf]')
+        plt.ylabel('Time on Station [days]')
         plt.grid()
-        plt.axis([70, 500, 0, 15])
+        plt.axis([70, 500, 0, 10])
         plt.savefig('tvsMTOW.png')
