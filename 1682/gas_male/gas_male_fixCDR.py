@@ -17,7 +17,7 @@ class GasPoweredHALE(Model):
     def __init__(self, h_station=15000, **kwargs):
 
         # define number of segments
-        NSeg = 9 # number of flight segments
+        NSeg = 20  # number of flight segments
         NCruise = 2 # number of cruise segments
         NClimb = 2 # number of climb segments
         NLoiter = NSeg - NCruise - NClimb # number of loiter segments
@@ -34,7 +34,7 @@ class GasPoweredHALE(Model):
                              'minimum altitude at station')
         h_cruise = Variable('h_{cruise}', 5000, 'ft',
                             'minimum cruise altitude')
-        h = np.array([h_cruise]*2 + [h_station]*6 + [h_cruise])
+        h = np.array([h_cruise]*NCruise + [h_station]*(NLoiter+1) + [h_cruise])
         deltah = Variable('\\delta_h', h_station.value-h_cruise.value, 'ft',
                           'delta height')
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
@@ -146,7 +146,7 @@ class GasPoweredHALE(Model):
         R_prop = Variable('R_{prop}', 10, 'in', 'propellor radius')
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         Re_prop = VectorVariable(NSeg, 'Re_{prop}', '-', 'propellor Reynolds number')
-        Re_ref = Variable('Re_{ref}', 3e5, '-', 'Reference Re for cdp')
+        Re_propref = Variable(NSeg, 'Re_{prop-ref}', 1e5, '-', 'reference prop Reynolds number')
         eta_v = VectorVariable(NSeg, '\\eta_v', '-', 'viscous efficiency')
         eta_ref = Variable('\\eta_{ref}', 0.1, '-', 'reference viscous loss at Re_ref')
         eta_i = VectorVariable(NSeg, '\\eta_i', '-', 'Froude efficiency')
@@ -160,7 +160,7 @@ class GasPoweredHALE(Model):
                             #W75**2 <= V**2 + (RPM*R_prop*0.75)**2,
                             W75**2 <= (RPM*R_prop*0.75)**2,
                             Re_prop <= rho*W75*c75/mu_atm,
-                            1 >= eta_v + eta_ref*(Re_prop/Re_ref)**-0.4,
+                            1 >= eta_v + eta_ref*(Re_prop/Re_propref)**-0.4,
                             J == V/RPM/R_prop,
                             eta_i*(1 + Tc1**0.5)*(1 + 5*J**2) <= 2,
                             eta_prop <= eta_i*eta_v
@@ -246,6 +246,7 @@ class GasPoweredHALE(Model):
         l_cent = Variable('l_{cent}', 'ft', 'center fuselage length')
         Refuse = VectorVariable(NSeg, 'Re_{fuse}', '-',
                                 'fuselage Reynolds number')
+        Re_ref = Variable('Re_{ref}', 3e5, '-', 'Reference Re for cdp')
         cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
 
         constraints.extend([
