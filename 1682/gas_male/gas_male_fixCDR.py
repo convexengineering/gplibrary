@@ -9,8 +9,8 @@ plt.rc('font', family='serif')
 plt.rc('font', serif='Times New Roman')
 plt.rcParams.update({'font.size':19})
 
-PLOT = False
-fixed = False
+PLOT = True
+fixed = True
 wind = False
 
 class GasPoweredHALE(Model):
@@ -70,7 +70,7 @@ class GasPoweredHALE(Model):
         # Atmospheric variation with altitude (valid from 0-7km of altitude)
         constraints.extend([
             rho == p_sl*T_atm**(5.257-1)/R_spec/(T_sl**5.257),
-            (mu_atm/mu_sl)**0.1 == 0.991*(h/h_station)**(-0.00529)
+            (mu_atm/mu_sl)**0.1 == 0.991*(h/h_ref)**(-0.00529)
             ])
 
         #----------------------------------------------------
@@ -142,13 +142,13 @@ class GasPoweredHALE(Model):
         # Propulsive efficiency model
 
         W75 = VectorVariable(NSeg, 'W_{75}', 'm/s', 'speed at the 0.75 blade radius')
-        c75 = Variable('c_{75}', 0.5, 'in', 'blade chord at 0.75 blad radius')
+        c75 = Variable('c_{75}', 3, 'cm', 'blade chord at 0.75 blad radius')
         R_prop = Variable('R_{prop}', 10, 'in', 'propellor radius')
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
         Re_prop = VectorVariable(NSeg, 'Re_{prop}', '-', 'propellor Reynolds number')
-        Re_propref = Variable(NSeg, 'Re_{prop-ref}', 1e5, '-', 'reference prop Reynolds number')
+        Re_propref = Variable('Re_{prop-ref}', 1.4e5, '-', 'reference prop Reynolds number')
         eta_v = VectorVariable(NSeg, '\\eta_v', '-', 'viscous efficiency')
-        eta_ref = Variable('\\eta_{ref}', 0.1, '-', 'reference viscous loss at Re_ref')
+        eta_ref = Variable('\\eta_{ref}', 0.08, '-', 'reference viscous loss at Re_ref')
         eta_i = VectorVariable(NSeg, '\\eta_i', '-', 'Froude efficiency')
         Tc = VectorVariable(NSeg, 'T_c', '-', 'Thrust Coefficient')
         J = VectorVariable(NSeg, 'J', '-', 'advance ratio')
@@ -205,7 +205,7 @@ class GasPoweredHALE(Model):
                                     (P_avn+P_pay)/eta_alternator),
             (BSFC/BSFC_min)**0.129 >= (2*.486*(RPM/RPM_max)**-0.141 +
                                        0.0268*(RPM/RPM_max)**9.62),
-            (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292,
+            (P_shafttot/P_shaftmaxMSL)**0.1 == 0.999*(RPM/RPM_max)**0.292,
             RPM <= RPM_max,
             ])
 
