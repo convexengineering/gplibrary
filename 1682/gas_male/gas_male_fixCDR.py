@@ -383,7 +383,7 @@ class GasPoweredHALE(Model):
 
 if __name__ == '__main__':
     M = GasPoweredHALE()
-    sol = M.solve('mosek')
+    sol = M.solve('cvxopt')
 
     if PLOT:
         M.substitutions.update({'MTOW': ('sweep', np.linspace(70, 500, 15))})
