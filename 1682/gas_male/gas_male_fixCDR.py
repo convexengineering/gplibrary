@@ -17,7 +17,7 @@ class GasPoweredHALE(Model):
     def __init__(self, h_station=15000, **kwargs):
 
         # define number of segments
-        NSeg = 20  # number of flight segments
+        NSeg = 9  # number of flight segments
         NCruise = 2 # number of cruise segments
         NClimb = 2 # number of climb segments
         NLoiter = NSeg - NCruise - NClimb # number of loiter segments
@@ -173,14 +173,14 @@ class GasPoweredHALE(Model):
                             'Installed engine weight')
         W_engref = Variable('W_{eng-ref}', 4.4107, 'lbf',
                             'Reference engine weight')
-        FuelOilFrac = Variable('FuelOilFrac', .98, '-', 'Fuel-oil fraction')
+        FuelOilFrac = Variable('FuelOilFrac', 0.98, '-', 'Fuel-oil fraction')
         P_shaftref = Variable('P_{shaft-ref}', 2.295, 'hp',
                               'reference shaft power')
-        BSFC_min = Variable('BSFC_{min}', 0.32, 'kg/kW/hr', 'Minimum BSFC')
+        BSFC_min = Variable('BSFC_{min}', 0.3162, 'kg/kW/hr', 'Minimum BSFC')
         BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp',
                               'brake specific fuel consumption')
-        RPM_max = Variable('RPM_{max}', 9000, 'rpm', 'Maximum RPM')
-        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.84, 'hp',
+        RPM_max = Variable('RPM_{max}', 7698, 'rpm', 'Maximum RPM')
+        P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.17, 'hp',
                                  'Max shaft power at MSL')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}',
                                     [P_shaftmaxMSL.value*(1-(0.906**(1/0.15)*(v.value/h_ref.value)**0.92)) for v in h],
@@ -203,10 +203,14 @@ class GasPoweredHALE(Model):
             P_shafttot[iClimb] >= P_shaft[iClimb] + P_avn/eta_alternator,
             P_shafttot[iLoiter] >= (P_shaft[iLoiter] +
                                     (P_avn+P_pay)/eta_alternator),
-            (BSFC/BSFC_min)**0.129 >= (2*.486*(RPM/RPM_max)**-0.141 +
-                                       0.0268*(RPM/RPM_max)**9.62),
-            (P_shafttot/P_shaftmaxMSL)**0.1 == 0.999*(RPM/RPM_max)**0.292,
+            (BSFC/BSFC_min)**35.7 >= (2.29*(RPM/RPM_max)**8.02 +
+                                       0.00114*(RPM/RPM_max)**-38.3),
+            (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.294,
+            #(BSFC/BSFC_min)**0.129 >= (2*.486*(RPM/RPM_max)**-0.141 +
+            #                           0.0268*(RPM/RPM_max)**9.62),
+            #(P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292,
             RPM <= RPM_max,
+            P_shafttot*BSFC == m_dotfuel
             ])
 
         #----------------------------------------------------
@@ -428,15 +432,15 @@ if __name__ == '__main__':
         Sfuse_fix = sol('S_{fuse}').magnitude
         b_fix = sol('b').magnitude
         lfuse_fix = sol('l_{fuse}').magnitude
-        Volfuse_fix = sol('Vol_{fuel}').magnitude
+        Volfuse_fix = sol('Vol_{fuse}').magnitude
         hspar_fix = sol('h_{spar}').magnitude
 
         M.substitutions.update({'S': S_fix})
-        M.substitutions.update({'S_{fuse}': Sfuse_fix})
+        #M.substitutions.update({'S_{fuse}': Sfuse_fix})
         M.substitutions.update({'b': b_fix})
-        M.substitutions.update({'l_{fuse}': lfuse_fix})
-        M.substitutions.update({'Vol_{fuel}': Volfuse_fix})
-        M.substitutions.update({'h_{spar}': hspar_fix})
+        #M.substitutions.update({'l_{fuse}': lfuse_fix})
+        M.substitutions.update({'Vol_{fuse}': Volfuse_fix+0.0001})
+        #M.substitutions.update({'h_{spar}': hspar_fix})
         sol = M.solve('mosek', verbosity=0)
 
     if PLOT:
@@ -459,7 +463,7 @@ if __name__ == '__main__':
             plt.ylabel('Time on Station [days]')
             plt.grid()
             plt.axis([5, 40, 0, 10])
-            plt.savefig('tvsV_wind.png')
+            plt.savefig('tvsV_wind.pdf')
 
         else:
 
@@ -476,29 +480,48 @@ if __name__ == '__main__':
             plt.ylabel('Time on Station [days]')
             plt.grid()
             plt.axis([5, 40, 0, 10])
-            plt.savefig('tvsW_pay.png')
+            plt.savefig('tvsW_pay.pdf')
 
             # plot for h vs h_station
-            h_station = np.linspace(14000, 22000, 10)
+            h_station = np.linspace(14000, 26000, 20)
             t_station = []
             rho = []
             mu = []
             a = []
+            MTOW = []
+            P_shafttot = []
+            m_dotfuel = []
+            P_shaftmax = []
+            RPM = []
+            eta_prop = []
+            BSFC = []
+            CD = []
+            V = []
+
             for h in h_station:
                 M = GasPoweredHALE(h)
                 M.substitutions.update({'S': S_fix})
-                M.substitutions.update({'S_{fuse}': Sfuse_fix})
+                #M.substitutions.update({'S_{fuse}': Sfuse_fix})
                 M.substitutions.update({'b': b_fix})
-                M.substitutions.update({'l_{fuse}': lfuse_fix})
-                M.substitutions.update({'Vol_{fuel}': Volfuse_fix})
-                M.substitutions.update({'h_{spar}': hspar_fix})
+                #M.substitutions.update({'l_{fuse}': lfuse_fix})
+                M.substitutions.update({'Vol_{fuse}': Volfuse_fix})
+                #M.substitutions.update({'h_{spar}': hspar_fix})
                 del M.substitutions["t_{station}"]
                 M.cost = 1/M["t_{station}"]
                 sol = M.solve('mosek', verbosity=0)
                 t_station.append(sol('t_{station}').magnitude)
                 rho.append(sol('\\rho')[3].magnitude)
                 mu.append(sol('\\mu')[3].magnitude)
+                MTOW.append(sol('MTOW').magnitude)
+                P_shafttot.append(sol('P_{shaft-tot}').magnitude)
                 a.append(np.sqrt(sol('T_{atm}')[3].magnitude*1.4*286))
+                m_dotfuel.append(sol('m_{dot-fuel}').magnitude)
+                P_shaftmax.append(sol('P_{shaft-max}').magnitude)
+                RPM.append(sol('RPM').magnitude)
+                eta_prop.append(sol('\\eta_{prop}').magnitude)
+                BSFC.append(sol('BSFC').magnitude)
+                CD.append(sol('C_D').magnitude)
+                V.append(sol('V').magnitude)
 
             plt.close()
             plt.plot(h_station, t_station)
@@ -507,4 +530,76 @@ if __name__ == '__main__':
             plt.ylabel('Time on Station [days]')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 10])
-            plt.savefig('tvsh_station.png')
+            plt.savefig('tvsh_station.pdf')
+            
+            plt.close()
+            plt.plot(h_station, MTOW)
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('MTOW [lbs]')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0, 200])
+            plt.savefig('MTOWvsh_station.pdf')
+            
+            plt.close()
+            plt.plot(h_station, P_shafttot)
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('P_shafttot [hp]')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0, 5])
+            plt.savefig('P_shafttotvsh_station.pdf')
+            
+            plt.close()
+            plt.plot(h_station, m_dotfuel)
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('m_dotfuel [lb/sec]')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0, 0.0002])
+            plt.savefig('m_dotfuelvsh_station.pdf')
+            
+            plt.close()
+            plt.plot(h_station, P_shaftmax)
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('P_shaftmax [hp]')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0, 5])
+            plt.savefig('P_shaftmaxvsh_station.pdf')
+            
+            plt.close()
+            plt.plot(h_station, BSFC)
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('BSFC [kg/kW/hr]')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0, 1.5])
+            plt.savefig('BSFCvsh_station.pdf')
+            
+            plt.close()
+            plt.plot(h_station, eta_prop)
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('eta_prop')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0.7, 0.8])
+            plt.savefig('eta_propvsh_station.pdf')
+            
+            plt.close()
+            plt.plot(h_station, RPM)
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('RPM')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0, 9000])
+            plt.savefig('RPMvsh_station.pdf')
+            
+            plt.close()
+            plt.plot(h_station, CD)
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('CD')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0, 0.2])
+            plt.savefig('CDvsh_station.pdf')
+            
+            plt.close()
+            plt.plot(h_station, V)
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('V')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0, 30])
+            plt.savefig('Vvsh_station.pdf')
