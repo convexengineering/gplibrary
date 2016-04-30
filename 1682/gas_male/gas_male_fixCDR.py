@@ -425,7 +425,7 @@ class GasPoweredHALE(Model):
 if __name__ == '__main__':
 
     M = GasPoweredHALE()
-    sol = M.solve('mosek')
+    sol = M.solve('cvxopt')
 
     if fixed:
         S_fix = sol('S').magnitude

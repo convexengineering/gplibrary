@@ -205,7 +205,7 @@ class GasPoweredHALE(Model):
             Cffuse >= 0.455/Refuse**0.3, 
             ])
 
-        #----------------------------------------------------
+        #---------------------quit()-------------------------------
         # Weight breakdown
 
         W_cent = Variable('W_{cent}', 'lbf', 'Center aircraft weight')
