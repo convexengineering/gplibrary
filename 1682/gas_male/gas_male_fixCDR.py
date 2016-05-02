@@ -154,17 +154,20 @@ class GasPoweredHALE(Model):
         J = VectorVariable(NSeg, 'J', '-', 'advance ratio')
         Tc1 = VectorVariable(NSeg, 'T_{c-1}', '-', 'Tc plus 1')
 
-        constraints.extend([Tc == T/0.5/rho/V**2/np.pi/R_prop**2,
-                            Tc1 >= Tc + 1,
-                            # leaving out V**2 term to be conseravtive
-                            #W75**2 <= V**2 + (RPM*R_prop*0.75)**2,
-                            W75**2 <= (RPM*R_prop*0.75)**2,
-                            Re_prop <= rho*W75*c75/mu_atm,
-                            1 >= eta_v + eta_ref*(Re_prop/Re_propref)**-0.4,
-                            J == V/RPM/R_prop,
-                            eta_i*(1 + Tc1**0.5)*(1 + 5*J**2) <= 2,
-                            eta_prop <= eta_i*eta_v
-                           ])
+        # constraints.extend([Tc == T/0.5/rho/V**2/np.pi/R_prop**2,
+        #                     Tc1 >= Tc + 1,
+        #                     # leaving out V**2 term to be conseravtive
+        #                     #W75**2 <= V**2 + (RPM*R_prop*0.75)**2,
+        #                     W75**2 <= (RPM*R_prop*0.75)**2,
+        #                     Re_prop <= rho*W75*c75/mu_atm,
+        #                     1 >= eta_v + eta_ref*(Re_prop/Re_propref)**-0.4,
+        #                     J == V/RPM/R_prop,
+        #                     eta_i*(1 + Tc1**0.5)*(1 + 5*J**2) <= 2,
+        #                     eta_prop <= eta_i*eta_v
+        #                    ])
+        constraints.extend([
+            eta_prop == [0.502, 0.684, 0.567, 0.647, 0.647, 0.647, 0.647, 0.647, 0.684]
+            ])
 
         #----------------------------------------------------
         # Engine Model (DF35)
