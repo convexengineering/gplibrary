@@ -18,7 +18,7 @@ wind = False
 mission = False
 
 class GasPoweredHALE(Model):
-    def __init__(self, h_station=15000, **kwargs):
+    def __init__(self, h_station=15000, NLoiter=20, NClimb1=10, NClimb2=10, NCruise1=5, NCruise2=5,**kwargs):
 
         # define number of segments
         NLoiter = 20
@@ -77,13 +77,13 @@ class GasPoweredHALE(Model):
             curh = Variable('curh', currenth, 'ft')
             h = np.append(h, curh)
 
-        #h = VectorVariable(NSeg, 'h', 'ft', 'altitude')
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         h_dot = VectorVariable(NClimb, 'h_{dot}', 'ft/min', 'Climb rate')
         h_dotmin = Variable('h_{dot-min}', 100, 'ft/min',
                             'minimum necessary climb rate')
 
         constraints.extend([
+            # unsure if this is the corret way to do this
             t[iClimb1]*h_dot[iClimb1] >= h_cruise/NClimb1,
             t[iClimb2]*h_dot[iClimb1[-1]+1:len(h_dot)] >= deltah/NClimb2,
             h_dot >= h_dotmin,
@@ -465,39 +465,59 @@ class GasPoweredHALE(Model):
         Model.__init__(self,objective,constraints, **kwargs)
 
 if __name__ == '__main__':
+        
+    NLoiter = 20
+    NClimb1 = 10
+    NClimb2 = 10
+    NCruise1 = 5
+    NCruise2 = 5
+    NClimb = NClimb1 + NClimb2
+    NCruise = NCruise1 + NCruise2
+    NSeg = NLoiter + NClimb + NCruise
+    mStart = 0
+    mEndClimb = NClimb1
+    mEndCruise = NClimb1 + NCruise1
+    mEndClimb2 = NClimb1 + NCruise1 + NClimb2
+    mEndLoiter = NSeg - NCruise2
+    mEnd = NSeg
+    iClimb1 = range(0, mEndClimb)
+    iClimb2 = range(mEndCruise, mEndClimb2)
+    iClimb = range(0, mEndClimb) + range(mEndCruise, mEndClimb2)
+    iCruise = range(mEndClimb, mEndCruise) + range(mEndLoiter, mEnd)
+    iCruise1 = range(mEndClimb, mEndCruise)
+    iCruise2 = range(mEndLoiter, mEnd)
+    iLoiter = range(mEndClimb2, mEndLoiter) 
+    t = np.linspace(0,NSeg-1,NSeg)
 
-    M = GasPoweredHALE()
+    M = GasPoweredHALE(NLoiter=NLoiter, NClimb1=NClimb1, NClimb2=NClimb2, NCruise1=NCruise1, NCruise2=NCruise2)
     sol = M.solve('mosek')
 
+    if fixed:
+        S_fix = sol('S').magnitude
+        Sfuse_fix = sol('S_{fuse}').magnitude
+        b_fix = sol('b').magnitude
+        lfuse_fix = sol('l_{fuse}').magnitude
+        Volfuse_fix = sol('Vol_{fuse}').magnitude
+        hspar_fix = sol('h_{spar}').magnitude
+        Volfuel_fix = sol('Vol_{fuel}').magnitude
+
+        M.substitutions.update({'S': S_fix})
+        #M.substitutions.update({'S_{fuse}': Sfuse_fix})
+        M.substitutions.update({'b': b_fix})
+        #M.substitutions.update({'l_{fuse}': lfuse_fix})
+        M.substitutions.update({'Vol_{fuse}': Volfuse_fix+0.0001})
+        M.substitutions.update({'Vol_{fuel}': Volfuel_fix+0.0001})
+        #M.substitutions.update({'h_{spar}': hspar_fix})
+        sol = M.solve('mosek', verbosity=0)
+
     if mission:
-        NLoiter = 20
-        NClimb1 = 10
-        NClimb2 = 10
-        NCruise1 = 5
-        NCruise2 = 5
-        NClimb = NClimb1 + NClimb2
-        NCruise = NCruise1 + NCruise2
-        NSeg = NLoiter + NClimb + NCruise
-        mStart = 0
-        mEndClimb = NClimb1
-        mEndCruise = NClimb1 + NCruise1
-        mEndClimb2 = NClimb1 + NCruise1 + NClimb2
-        mEndLoiter = NSeg - NCruise2
-        mEnd = NSeg
-        iClimb1 = range(0, mEndClimb)
-        iClimb2 = range(mEndCruise, mEndClimb2)
-        iClimb = range(0, mEndClimb) + range(mEndCruise, mEndClimb2)
-        iCruise = range(mEndClimb, mEndCruise) + range(mEndLoiter, mEnd)
-        iCruise1 = range(mEndClimb, mEndCruise)
-        iCruise2 = range(mEndLoiter, mEnd)
-        iLoiter = range(mEndClimb2, mEndLoiter) 
-        t = np.linspace(0,NSeg-1,NSeg)
         eta_prop = sol('\\eta_{prop}')
         BSFC = sol('BSFC')
         P_shaftmax = sol('P_{shaft-max}')
         P_shafttot = sol('P_{shaft-tot}')
         RPM = sol('RPM')
         V = sol('V')
+        W_end = sol('W_{end}')
 
         plt.close()
         fig, ax = plt.subplots()
@@ -518,7 +538,7 @@ if __name__ == '__main__':
         ax.plot([mEndCruise,mEndCruise], [ymin, ymax], '--', color='r')
         ax.plot([mEndClimb2,mEndClimb2], [ymin, ymax], '--', color='r')
         ax.plot([mEndLoiter,mEndLoiter], [ymin, ymax], '--', color='r')
-        plt.savefig('eta_propvsmission.pdf')
+        plt.savefig('eta_propvsmission.png')
 
         plt.close()
         fig, ax = plt.subplots()
@@ -539,7 +559,7 @@ if __name__ == '__main__':
         ax.plot([mEndCruise,mEndCruise], [ymin, ymax], '--', color='r')
         ax.plot([mEndClimb2,mEndClimb2], [ymin, ymax], '--', color='r')
         ax.plot([mEndLoiter,mEndLoiter], [ymin, ymax], '--', color='r')
-        plt.savefig('BSFCvsmission.pdf')
+        plt.savefig('BSFCvsmission.png')
 
         plt.close()
         fig, ax = plt.subplots()
@@ -560,7 +580,7 @@ if __name__ == '__main__':
         ax.plot([mEndCruise,mEndCruise], [ymin, ymax], '--', color='r')
         ax.plot([mEndClimb2,mEndClimb2], [ymin, ymax], '--', color='r')
         ax.plot([mEndLoiter,mEndLoiter], [ymin, ymax], '--', color='r')
-        plt.savefig('P_shaftmaxvsmission.pdf')
+        plt.savefig('P_shaftmaxvsmission.png')
 
         plt.close()
         fig, ax = plt.subplots()
@@ -581,7 +601,7 @@ if __name__ == '__main__':
         ax.plot([mEndCruise,mEndCruise], [ymin, ymax], '--', color='r')
         ax.plot([mEndClimb2,mEndClimb2], [ymin, ymax], '--', color='r')
         ax.plot([mEndLoiter,mEndLoiter], [ymin, ymax], '--', color='r')
-        plt.savefig('P_shafttotvsmission.pdf')
+        plt.savefig('P_shafttotvsmission.png')
 
         plt.close()
         fig, ax = plt.subplots()
@@ -602,8 +622,29 @@ if __name__ == '__main__':
         ax.plot([mEndCruise,mEndCruise], [ymin, ymax], '--', color='r')
         ax.plot([mEndClimb2,mEndClimb2], [ymin, ymax], '--', color='r')
         ax.plot([mEndLoiter,mEndLoiter], [ymin, ymax], '--', color='r')
-        plt.savefig('RPMvsmission.pdf')
+        plt.savefig('RPMvsmission.png')
 
+        plt.close()
+        fig, ax = plt.subplots()
+        line, = ax.plot(t, W_end)
+        ax.xaxis.set_ticks(np.arange(0,NSeg-1,1))
+        labels = [item.get_text() for item in ax.get_xticklabels()]
+        labels[mStart + np.round(NClimb1/2)] = 'Climb'
+        labels[mEndClimb + np.round(NCruise1/2)] = 'Cruise'
+        labels[mEndCruise + np.round(NClimb2/2)] = 'Climb'
+        labels[mEndClimb2 + np.round(NLoiter/2)] = 'Loiter'
+        labels[mEndLoiter + np.round(NCruise2/2)] = 'Cruise'
+        ax.set_xticklabels(labels)
+        ymin, ymax = 0, 150 
+        ax.set_ylim([ymin, ymax])
+        ax.set_ylabel('Aircraft Weight')
+        ax.grid()
+        ax.plot([mEndClimb,mEndClimb], [ymin, ymax], '--', color='r')
+        ax.plot([mEndCruise,mEndCruise], [ymin, ymax], '--', color='r')
+        ax.plot([mEndClimb2,mEndClimb2], [ymin, ymax], '--', color='r')
+        ax.plot([mEndLoiter,mEndLoiter], [ymin, ymax], '--', color='r')
+        plt.savefig('Wvsmission.png')
+        
         plt.close()
         fig, ax = plt.subplots()
         line, = ax.plot(t, V)
@@ -623,24 +664,7 @@ if __name__ == '__main__':
         ax.plot([mEndCruise,mEndCruise], [ymin, ymax], '--', color='r')
         ax.plot([mEndClimb2,mEndClimb2], [ymin, ymax], '--', color='r')
         ax.plot([mEndLoiter,mEndLoiter], [ymin, ymax], '--', color='r')
-        plt.savefig('Vvsmission.pdf')
-
-
-    if fixed:
-        S_fix = sol('S').magnitude
-        Sfuse_fix = sol('S_{fuse}').magnitude
-        b_fix = sol('b').magnitude
-        lfuse_fix = sol('l_{fuse}').magnitude
-        Volfuse_fix = sol('Vol_{fuse}').magnitude
-        hspar_fix = sol('h_{spar}').magnitude
-
-        M.substitutions.update({'S': S_fix})
-        #M.substitutions.update({'S_{fuse}': Sfuse_fix})
-        M.substitutions.update({'b': b_fix})
-        #M.substitutions.update({'l_{fuse}': lfuse_fix})
-        M.substitutions.update({'Vol_{fuse}': Volfuse_fix+0.0001})
-        #M.substitutions.update({'h_{spar}': hspar_fix})
-        sol = M.solve('mosek', verbosity=0)
+        plt.savefig('Vvsmission.png')
 
     if PLOT:
         
@@ -657,12 +681,13 @@ if __name__ == '__main__':
 
             plt.close()
             plt.plot(V_wind, t_station)
+            plt.plot([20,20], [0,10], '--', color='r')
             plt.title('Wind Speed vs Endurnace')
             plt.xlabel('Wind Speed on Station [m/s]')
             plt.ylabel('Time on Station [days]')
             plt.grid()
             plt.axis([5, 40, 0, 10])
-            plt.savefig('tvsV_wind.pdf')
+            plt.savefig('tvsV_wind.png')
 
         else:
 
@@ -679,7 +704,7 @@ if __name__ == '__main__':
             plt.ylabel('Time on Station [days]')
             plt.grid()
             plt.axis([5, 40, 0, 10])
-            plt.savefig('tvsW_pay.pdf')
+            plt.savefig('tvsW_pay.png')
 
             # plot for h vs h_station
             h_station = np.linspace(14000, 24000, 20)
@@ -696,6 +721,7 @@ if __name__ == '__main__':
             BSFC = []
             CD = []
             V = []
+            W_fueltot = []
 
             for h in h_station:
                 M = GasPoweredHALE(h)
@@ -721,6 +747,7 @@ if __name__ == '__main__':
                 BSFC.append(sol('BSFC').magnitude)
                 CD.append(sol('C_D').magnitude)
                 V.append(sol('V').magnitude)
+                W_fueltot.append(sol('W_{fuel-tot}').magnitude)
 
             plt.close()
             plt.plot(h_station, t_station)
@@ -729,7 +756,16 @@ if __name__ == '__main__':
             plt.ylabel('Time on Station [days]')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 10])
-            plt.savefig('tvsh_station.pdf')
+            plt.savefig('tvsh_station.png')
+            
+            plt.close()
+            plt.plot(h_station, W_fueltot)
+            plt.title('Altitude vs Fuel Weight')
+            plt.xlabel('Altitude at Station [ft]')
+            plt.ylabel('Fuel Weight [lbs]')
+            plt.grid()
+            plt.axis([min(h_station), max(h_station), 0, 100])
+            plt.savefig('W_fuelvsh_station.png')
             
             plt.close()
             plt.plot(h_station, MTOW)
@@ -737,7 +773,7 @@ if __name__ == '__main__':
             plt.ylabel('MTOW [lbs]')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 200])
-            plt.savefig('MTOWvsh_station.pdf')
+            plt.savefig('MTOWvsh_station.png')
             
             plt.close()
             plt.plot(h_station, P_shafttot)
@@ -745,7 +781,7 @@ if __name__ == '__main__':
             plt.ylabel('P_shafttot [hp]')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 5])
-            plt.savefig('P_shafttotvsh_station.pdf')
+            plt.savefig('P_shafttotvsh_station.png')
             
             plt.close()
             plt.plot(h_station, m_dotfuel)
@@ -753,7 +789,7 @@ if __name__ == '__main__':
             plt.ylabel('m_dotfuel [lb/sec]')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 0.0002])
-            plt.savefig('m_dotfuelvsh_station.pdf')
+            plt.savefig('m_dotfuelvsh_station.png')
             
             plt.close()
             plt.plot(h_station, P_shaftmax)
@@ -761,7 +797,7 @@ if __name__ == '__main__':
             plt.ylabel('P_shaftmax [hp]')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 5])
-            plt.savefig('P_shaftmaxvsh_station.pdf')
+            plt.savefig('P_shaftmaxvsh_station.png')
             
             plt.close()
             plt.plot(h_station, BSFC)
@@ -769,7 +805,7 @@ if __name__ == '__main__':
             plt.ylabel('BSFC [kg/kW/hr]')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 1.5])
-            plt.savefig('BSFCvsh_station.pdf')
+            plt.savefig('BSFCvsh_station.png')
             
             plt.close()
             plt.plot(h_station, eta_prop)
@@ -777,7 +813,7 @@ if __name__ == '__main__':
             plt.ylabel('eta_prop')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0.7, 0.8])
-            plt.savefig('eta_propvsh_station.pdf')
+            plt.savefig('eta_propvsh_station.png')
             
             plt.close()
             plt.plot(h_station, RPM)
@@ -785,7 +821,7 @@ if __name__ == '__main__':
             plt.ylabel('RPM')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 9000])
-            plt.savefig('RPMvsh_station.pdf')
+            plt.savefig('RPMvsh_station.png')
             
             plt.close()
             plt.plot(h_station, CD)
@@ -793,7 +829,7 @@ if __name__ == '__main__':
             plt.ylabel('CD')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 0.2])
-            plt.savefig('CDvsh_station.pdf')
+            plt.savefig('CDvsh_station.png')
             
             plt.close()
             plt.plot(h_station, V)
@@ -801,4 +837,4 @@ if __name__ == '__main__':
             plt.ylabel('V')
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 30])
-            plt.savefig('Vvsh_station.pdf')
+            plt.savefig('Vvsh_station.png')

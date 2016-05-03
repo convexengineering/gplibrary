@@ -428,7 +428,7 @@ class GasPoweredHALE(Model):
 if __name__ == '__main__':
 
     M = GasPoweredHALE()
-    sol = M.solve('cvxopt')
+    sol = M.solve('mosek')
 
     if fixed:
         S_fix = sol('S').magnitude
@@ -486,7 +486,7 @@ if __name__ == '__main__':
             plt.savefig('tvsW_pay.pdf')
 
             # plot for h vs h_station
-            h_station = np.linspace(14000, 26000, 20)
+            h_station = np.linspace(14000, 23000, 20)
             t_station = []
             rho = []
             mu = []
