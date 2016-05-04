@@ -449,7 +449,7 @@ if __name__ == '__main__':
 
     if PLOT:
         
-        del M.substitutions["t_{station}"]
+        #del M.substitutions["t_{station}"]
         M.cost = 1/M["t_{station}"]
         
         if wind:
@@ -471,6 +471,7 @@ if __name__ == '__main__':
 
         if payloadPower:
 
+            M.substitutions.update({'MTOW': np.array(151)})
             M.substitutions.update({'P_{pay}': ('sweep', np.linspace(10, 200, 15))})
             sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
