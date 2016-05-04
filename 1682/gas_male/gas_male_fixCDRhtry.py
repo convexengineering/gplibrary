@@ -6,6 +6,7 @@ import gpkit
 import numpy as np
 import plotly.plotly as py
 import plotly.tools as tls
+import pandas as pd
 import pdb
 gpkit.settings['latex_modelname'] = False
 plt.rc('font', family='serif') 
@@ -16,6 +17,9 @@ PLOT = True
 fixed = True
 wind = False
 mission = False
+W_pay = True
+P_pay = False
+altitude = False
 
 class GasPoweredHALE(Model):
     def __init__(self, h_station=15000, NLoiter=20, NClimb1=10, NClimb2=10, NCruise1=5, NCruise2=5,**kwargs):
@@ -673,39 +677,66 @@ if __name__ == '__main__':
         
         if wind:
 
-            M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5, 40, 15))})
+            M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5, 25, 20))})
             sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
             V_wind = sol('V_{wind}')
             t_station = sol('t_{station}')
 
+
             plt.close()
             plt.plot(V_wind, t_station)
             plt.plot([20,20], [0,10], '--', color='r')
-            plt.title('Wind Speed vs Endurnace')
+            plt.title('Endurance vs Wind Speed')
             plt.xlabel('Wind Speed on Station [m/s]')
             plt.ylabel('Time on Station [days]')
             plt.grid()
             plt.axis([5, 40, 0, 10])
             plt.savefig('tvsV_wind.png')
 
-        else:
+        if P_pay:
 
-            M.substitutions.update({'W_{pay}': ('sweep', np.linspace(5, 40, 15))})
+            M.substitutions.update({'P_{pay}': ('sweep', np.linspace(5, 200, 40))})
+            sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+
+            P_pay = sol('P_{pay}')
+            t_station = sol('t_{station}')
+            
+
+            plt.close()
+            plt.plot(P_pay, t_station)
+            plt.title('Endurance vs Payload Power')
+            plt.xlabel('Payload Power [Watts]')
+            plt.ylabel('Time on Station [days]')
+            plt.grid()
+            plt.axis([5, 200, 0, 10])
+            plt.savefig('tvsP_pay.png')
+
+        if W_pay:
+
+            M.substitutions.update({'W_{pay}': ('sweep', np.linspace(5, 20, 16))})
             sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
             W_pay = sol('W_{pay}')
             t_station = sol('t_{station}')
 
+            df = pd.read_csv('trimDrag.csv')
+            df = df.dropna()
+            CD10 = df['CD_interp'][df['W_pay_interp']==10]
+            CD_norm = np.array(df['CD_interp'])/np.array(CD10)
+            t_station = t_station/CD_norm
+            
+
             plt.close()
             plt.plot(W_pay, t_station)
-            plt.title('Payload Weight vs Endurnace')
+            plt.title('Endurance vs Payload Weight')
             plt.xlabel('Payload Weight [lbs]')
             plt.ylabel('Time on Station [days]')
             plt.grid()
-            plt.axis([5, 40, 0, 10])
+            plt.axis([5, 20, 0, 10])
             plt.savefig('tvsW_pay.png')
 
+        if altitude:
             # plot for h vs h_station
             h_station = np.linspace(14000, 24000, 20)
             t_station = []
@@ -751,7 +782,7 @@ if __name__ == '__main__':
 
             plt.close()
             plt.plot(h_station, t_station)
-            plt.title('Altitude vs Endurance')
+            plt.title('Endurance vs Altitude')
             plt.xlabel('Altitude at Station [ft]')
             plt.ylabel('Time on Station [days]')
             plt.grid()
@@ -760,7 +791,7 @@ if __name__ == '__main__':
             
             plt.close()
             plt.plot(h_station, W_fueltot)
-            plt.title('Altitude vs Fuel Weight')
+            plt.title('Fuel Weight vs Altitude')
             plt.xlabel('Altitude at Station [ft]')
             plt.ylabel('Fuel Weight [lbs]')
             plt.grid()
