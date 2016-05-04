@@ -12,6 +12,7 @@ plt.rcParams.update({'font.size':19})
 PLOT = True
 fixed = True
 wind = False
+payloadPower = True
 
 class GasPoweredHALE(Model):
     def __init__(self, h_station=15000, **kwargs):
@@ -468,6 +469,23 @@ if __name__ == '__main__':
             plt.axis([5, 40, 0, 10])
             plt.savefig('tvsV_wind.pdf')
 
+        if payloadPower:
+
+            M.substitutions.update({'P_{pay}': ('sweep', np.linspace(10, 200, 15))})
+            sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+
+            P_pay = sol('P_{pay}')
+            t_station = sol('t_{station}')
+
+            plt.close()
+            plt.plot(P_pay, t_station)
+            plt.title('Endurance vs. Mean Payload Power')
+            plt.xlabel('Mean Payload Power [W]')
+            plt.ylabel('Time on Station [days]')
+            plt.grid()
+            plt.axis([10, 200, 0, 8])
+            plt.savefig('tvsP_pay.pdf')
+
         else:
 
             M.substitutions.update({'W_{pay}': ('sweep', np.linspace(5, 40, 15))})
@@ -606,3 +624,5 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 30])
             plt.savefig('Vvsh_station.pdf')
+
+
