@@ -13,13 +13,13 @@ plt.rc('font', family='serif')
 plt.rc('font', serif='Times New Roman')
 plt.rcParams.update({'font.size':19})
 
-PLOT = False
+PLOT = True
 fixed = True
-wind = False
+wind = True
 mission = False
 W_pay = False
 P_pay = False
-altitude = False
+altitude = True
 
 class GasPoweredHALE(Model):
     def __init__(self, h_station=15000, NLoiter=20, NClimb1=10, NClimb2=10, NCruise1=5, NCruise2=5,**kwargs):
@@ -263,7 +263,7 @@ class GasPoweredHALE(Model):
         # Breguet Range
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
-        t_station = Variable('t_{station}', 6, 'days', 'time on station')
+        t_station = Variable('t_{station}',6, 'days', 'time on station')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         R_cruise = Variable('R_{cruise}', 180, 'nautical_miles',
                             'range to station during climb')
@@ -505,11 +505,11 @@ if __name__ == '__main__':
         hspar_fix = sol('h_{spar}').magnitude
         Volfuel_fix = sol('Vol_{fuel}').magnitude
 
-        wind = True
+        #wind = True
         M = GasPoweredHALE(NLoiter=NLoiter, NClimb1=NClimb1, NClimb2=NClimb2, NCruise1=NCruise1, NCruise2=NCruise2)
 
         M.substitutions.update({'S': S_fix})
-        M.substitutions.update({'V_{wind}': 5})
+        #M.substitutions.update({'V_{wind}': 5})
         #M.substitutions.update({'S_{fuse}': Sfuse_fix})
         M.substitutions.update({'b': b_fix})
         #M.substitutions.update({'l_{fuse}': lfuse_fix})
@@ -723,8 +723,8 @@ if __name__ == '__main__':
         if P_pay:
 
             M.substitutions.update({'P_{pay}': ('sweep', np.linspace(5, 200, 20))})
+            M.substitutions.update({'MTOW' : np.array(151)})
             sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
             P_pay = sol('P_{pay}')
             t_station = sol('t_{station}')
             
@@ -740,9 +740,12 @@ if __name__ == '__main__':
 
         if W_pay:
 
-            M.substitutions.update({'W_{pay}': ('sweep', np.linspace(8, 18, 11))})
+            M.substitutions.update({'MTOW': ('sweep', np.linspace(8+140, 18+140, 11))})
+            #M.substitutions.update({'W_{pay}': ('sweep', np.linspace(8, 18, 11))})
             sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-            W_pay = sol('W_{pay}')
+            MTOW = sol('MTOW').magnitude
+            W_pay = MTOW - np.multiply(np.ones([11]),140)
+            #W_pay = sol('W_{pay}')
             t_station = sol('t_{station}')
             df = pd.read_csv('trimDrag.csv')
             df = df.dropna()
@@ -762,7 +765,7 @@ if __name__ == '__main__':
 
         if altitude:
             # plot for h vs h_station
-            h_station = np.linspace(14000, 24000, 20)
+            h_station = np.linspace(14000, 22000, 20)
             t_station = []
             rho = []
             mu = []
@@ -784,9 +787,10 @@ if __name__ == '__main__':
                 #M.substitutions.update({'S_{fuse}': Sfuse_fix})
                 M.substitutions.update({'b': b_fix})
                 #M.substitutions.update({'l_{fuse}': lfuse_fix})
-                M.substitutions.update({'Vol_{fuse}': Volfuse_fix})
+                M.substitutions.update({'Vol_{fuse}' : Volfuse_fix+0.0001})
+                M.substitutions.update({'Vol_{fuel}' : Volfuel_fix+0.0001})
                 #M.substitutions.update({'h_{spar}': hspar_fix})
-                del M.substitutions["t_{station}"]
+                #del M.substitutions["t_{station}"]
                 M.cost = 1/M["t_{station}"]
                 sol = M.solve('mosek', verbosity=0)
                 t_station.append(sol('t_{station}').magnitude)
