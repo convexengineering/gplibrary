@@ -672,7 +672,7 @@ if __name__ == '__main__':
 
     if PLOT:
         
-        del M.substitutions["t_{station}"]
+        #del M.substitutions["t_{station}"]
         M.cost = 1/M["t_{station}"]
         
         if wind:
@@ -696,7 +696,7 @@ if __name__ == '__main__':
 
         if P_pay:
 
-            M.substitutions.update({'P_{pay}': ('sweep', np.linspace(5, 200, 40))})
+            M.substitutions.update({'P_{pay}': ('sweep', np.linspace(5, 200, 20))})
             sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
 
             P_pay = sol('P_{pay}')
@@ -714,12 +714,10 @@ if __name__ == '__main__':
 
         if W_pay:
 
-            M.substitutions.update({'W_{pay}': ('sweep', np.linspace(5, 20, 16))})
+            M.substitutions.update({'W_{pay}': ('sweep', np.linspace(8, 18, 11))})
             sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-
             W_pay = sol('W_{pay}')
             t_station = sol('t_{station}')
-
             df = pd.read_csv('trimDrag.csv')
             df = df.dropna()
             CD10 = df['CD_interp'][df['W_pay_interp']==10]
@@ -733,7 +731,7 @@ if __name__ == '__main__':
             plt.xlabel('Payload Weight [lbs]')
             plt.ylabel('Time on Station [days]')
             plt.grid()
-            plt.axis([5, 20, 0, 10])
+            plt.axis([8, 18, 0, 10])
             plt.savefig('tvsW_pay.png')
 
         if altitude:
