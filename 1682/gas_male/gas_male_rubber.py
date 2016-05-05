@@ -405,8 +405,8 @@ if __name__ == '__main__':
 
         plt.close()
         plt.plot(MTOW, t_station)
-        plt.title('Mass Take-off Weight vs Endurance')
-        plt.xlabel('Mass Take-off Weight [lbf]')
+        plt.title('Max Take-off Weight vs Endurance')
+        plt.xlabel('Max Take-off Weight [lbf]')
         plt.ylabel('Time on Station [days]')
         plt.grid()
         plt.axis([70, 500, 0, 10])
