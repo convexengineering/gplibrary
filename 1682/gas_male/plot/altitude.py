@@ -2,13 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from gasmale import GasPoweredMALE
 
-plt.rc('font', family='serif') 
+plt.rc('font', family='serif')
 plt.rc('font', serif='Times New Roman')
 plt.rcParams.update({'font.size':19})
+plt.rcParams.update({'lines.linewidth':2})
 
-def altitude(M): 
+def altitude(M):
     # plot for h vs h_station
-    h_station = np.linspace(14000, 22000, 20)
+    h_station = np.linspace(14000, 24000, 20)
     t_station = []
     rho = []
     mu = []
@@ -24,6 +25,16 @@ def altitude(M):
     V = []
     W_fueltot = []
 
+    sol = M.solve('mosek')
+
+    S_fix = sol('S').magnitude
+    Sfuse_fix = sol('S_{fuse}').magnitude
+    b_fix = sol('b').magnitude
+    lfuse_fix = sol('l_{fuse}').magnitude
+    Volfuse_fix = sol('Vol_{fuse}').magnitude
+    hspar_fix = sol('h_{spar}').magnitude
+    Volfuel_fix = sol('Vol_{fuel}').magnitude
+
     for h in h_station:
         M = GasPoweredMALE(h)
         M.substitutions.update({'S': S_fix})
@@ -33,7 +44,7 @@ def altitude(M):
         M.substitutions.update({'Vol_{fuse}' : Volfuse_fix+0.0001})
         M.substitutions.update({'Vol_{fuel}' : Volfuel_fix+0.0001})
         #M.substitutions.update({'h_{spar}': hspar_fix})
-        #del M.substitutions["t_{station}"]
+        del M.substitutions["t_{station}"]
         M.cost = 1/M["t_{station}"]
         sol = M.solve('mosek', verbosity=0)
         t_station.append(sol('t_{station}').magnitude)
@@ -54,90 +65,90 @@ def altitude(M):
 
     plt.close()
     plt.plot(h_station, t_station)
-    plt.title('Endurance vs Altitude')
+    plt.plot([19000,19000],[0,10],'--r')
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('Time on Station [days]')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 10])
-    plt.savefig('tvsh_station.png')
-    
+    plt.savefig('tvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, W_fueltot)
-    plt.title('Fuel Weight vs Altitude')
+    plt.plot([19000,19000],[0,100],'--r')
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('Fuel Weight [lbs]')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 100])
-    plt.savefig('W_fuelvsh_station.png')
-    
+    plt.savefig('W_fuelvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, MTOW)
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('MTOW [lbs]')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 200])
-    plt.savefig('MTOWvsh_station.png')
-    
+    plt.savefig('MTOWvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, P_shafttot)
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('P_shafttot [hp]')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 5])
-    plt.savefig('P_shafttotvsh_station.png')
-    
+    plt.savefig('P_shafttotvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, m_dotfuel)
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('m_dotfuel [lb/sec]')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 0.0002])
-    plt.savefig('m_dotfuelvsh_station.png')
-    
+    plt.savefig('m_dotfuelvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, P_shaftmax)
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('P_shaftmax [hp]')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 5])
-    plt.savefig('P_shaftmaxvsh_station.png')
-    
+    plt.savefig('P_shaftmaxvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, BSFC)
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('BSFC [kg/kW/hr]')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 1.5])
-    plt.savefig('BSFCvsh_station.png')
-    
+    plt.savefig('BSFCvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, eta_prop)
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('eta_prop')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0.7, 0.8])
-    plt.savefig('eta_propvsh_station.png')
-    
+    plt.savefig('eta_propvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, RPM)
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('RPM')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 9000])
-    plt.savefig('RPMvsh_station.png')
-    
+    plt.savefig('RPMvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, CD)
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('CD')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 0.2])
-    plt.savefig('CDvsh_station.png')
-    
+    plt.savefig('CDvsh_station.pdf')
+
     plt.close()
     plt.plot(h_station, V)
     plt.xlabel('Altitude at Station [ft]')
     plt.ylabel('V')
     plt.grid()
     plt.axis([min(h_station), max(h_station), 0, 30])
-    plt.savefig('Vvsh_station.png')
+    plt.savefig('Vvsh_station.pdf')

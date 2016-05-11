@@ -8,10 +8,10 @@ fixed = True
 fixedPLOTS = False
 missionPLOTS = False
 wind = False
-W_pay = True
+W_pay = False
 P_pay = False
-altitude = False
-    
+altitude = True
+
 NLoiter = 20
 NClimb1, NClimb2 = 10, 10
 NCruise1, NCruise2 = 5, 5
@@ -30,7 +30,7 @@ iClimb = range(0, mEndClimb) + range(mEndCruise, mEndClimb2)
 iCruise = range(mEndClimb, mEndCruise) + range(mEndLoiter, mEnd)
 iCruise1 = range(mEndClimb, mEndCruise)
 iCruise2 = range(mEndLoiter, mEnd)
-iLoiter = range(mEndClimb2, mEndLoiter) 
+iLoiter = range(mEndClimb2, mEndLoiter)
 t = np.linspace(0,NSeg-1,NSeg)
 
 M = GasPoweredMALE(NLoiter=NLoiter, NClimb1=NClimb1, NClimb2=NClimb2, NCruise1=NCruise1, NCruise2=NCruise2, wind=wind)
@@ -71,7 +71,7 @@ numplots = sum([wind, P_pay, W_pay, altitude])
 if numplots > 1:
     raise ValueError("more than one is true, but there can only be one!")
 elif numplots == 1:
-    if "t_{station}" in M.substitutions: 
+    if "t_{station}" in M.substitutions:
         del M.substitutions["t_{station}"]
     M.cost = 1/M["t_{station}"]
     if wind:

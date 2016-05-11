@@ -4,10 +4,11 @@ from gpkit import VectorVariable, Variable, Model, units
 from gpkit.tools import te_exp_minus1
 
 pi = np.pi
+wind = False
 
 
 class GasPoweredMALE(Model):
-    def __init__(self, h_station=15000, NLoiter=20, NClimb1=10, NClimb2=10, 
+    def __init__(self, h_station=15000, NLoiter=20, NClimb1=10, NClimb2=10,
                        NCruise1=5, NCruise2=5, wind=False, **kwargs):
 
         # define number of segments
@@ -31,7 +32,7 @@ class GasPoweredMALE(Model):
         iCruise = range(mEndClimb, mEndCruise) + range(mEndLoiter, mEnd)
         iCruise1 = range(mEndClimb, mEndCruise)
         iCruise2 = range(mEndLoiter, mEnd)
-        iLoiter = range(mEndClimb2, mEndLoiter) 
+        iLoiter = range(mEndClimb2, mEndLoiter)
 
         constraints = []
 
