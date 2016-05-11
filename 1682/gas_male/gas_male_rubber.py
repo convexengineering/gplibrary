@@ -5,9 +5,10 @@ from gpkit.tools import te_exp_minus1
 import gpkit
 import numpy as np
 gpkit.settings['latex_modelname'] = False
-plt.rc('font', family='serif') 
+plt.rc('font', family='serif')
 plt.rc('font', serif='Times New Roman')
 plt.rcParams.update({'font.size':19})
+plt.rcParams.update({'lines.linewidth':2})
 
 PLOT = True
 
@@ -30,11 +31,11 @@ class GasPoweredHALE(Model):
         # altitude constraints
         h_station = Variable('h_{station}', 15000, 'ft',
                              'minimum altitude at station')
-        h_cruise = Variable('h_{cruise}', 5000, 'ft', 
+        h_cruise = Variable('h_{cruise}', 5000, 'ft',
                             'minimum cruise altitude')
         h = np.array([h_cruise]*2 + [h_station]*6 + [h_cruise])
         deltah = Variable(r'\delta_h', h_station.value-h_cruise.value, 'ft',
-                          'delta height') 
+                          'delta height')
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         h_dot = VectorVariable(NClimb, 'h_{dot}', 'ft/min', 'Climb rate')
         h_dotmin = Variable('h_{dot-min}', 100, 'ft/min',
@@ -404,10 +405,11 @@ if __name__ == '__main__':
         t_station = sol('t_{station}')
 
         plt.close()
-        plt.plot(MTOW, t_station)
-        plt.title('Max Take-off Weight vs Endurance')
+        plt.plot([140],[6], 'or', markersize=10)
+        plt.plot(MTOW, t_station, 'b')
         plt.xlabel('Max Take-off Weight [lbf]')
         plt.ylabel('Time on Station [days]')
         plt.grid()
+        plt.legend(['Design Point'], loc=4, numpoints=1)
         plt.axis([70, 500, 0, 10])
-        plt.savefig('tvsMTOW.png')
+        plt.savefig('tvsMTOW.pdf')
