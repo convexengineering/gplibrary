@@ -5,7 +5,7 @@ make model.pdf
 ```
 in this directory.
 
-\section{Example Model}
+# Example Model
 
 This example model minimizes $x + 1/x$ subject to the constraint
 $$x \ge x_{min}.$$
@@ -18,8 +18,7 @@ The full GP, derived from the Python implementation of the model, is
 from simple_gp import SimpleGP
 m = SimpleGP()
 with open("gp.generated.tex", "w") as f:
-    f.write(m._repr_latex_())
-# TODO wish model name didn't get printed in the above
+    f.write("$%s$" % m.latex(excluded=["models", "units"]))
 ```
 
 Sweeping over $x_{min}$ shows the relationship between $x$ and $x_{min}$.
@@ -28,7 +27,6 @@ Sweeping over $x_{min}$ shows the relationship between $x$ and $x_{min}$.
 import numpy as np
 import matplotlib.pyplot as plt
 xmin = np.linspace(0.01, 3, 30)
-# TODO changing 0.01 to 0 above results in an error -- suspected GPkit bug
 m.substitutions.update({"x_{min}": ("sweep", xmin)})
 sol = m.solve(verbosity=0)
 plt.plot(sol["variables"]["x_{min}"], sol["cost"])
