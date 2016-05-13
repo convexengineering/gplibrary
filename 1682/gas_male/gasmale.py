@@ -258,7 +258,7 @@ class GasPoweredMALE(Model):
         constraints.extend([
             z_bre >= P_shafttot*t*BSFC*g/W_end,
             R_cruise/NCruise1 <= V[iCruise1]*t[iCruise1],
-            R <= V[iCruise2]*t[iCruise2],
+            R/NCruise2 <= V[iCruise2]*t[iCruise2],
             t[iLoiter] >= t_station/NLoiter,
             sum(t[iCruise+iClimb]) <= t_cruise,
             FuelOilFrac*W_fuel/W_end >= te_exp_minus1(z_bre, 3)

@@ -3,14 +3,14 @@ import numpy as np
 from gasmale import GasPoweredMALE
 import plot
 
-fixed = True
+fixed = False
 # PLOTS #
 fixedPLOTS = False
 missionPLOTS = False
 wind = False
 W_pay = False
 P_pay = False
-altitude = True
+altitude = False
 
 NLoiter = 20
 NClimb1, NClimb2 = 10, 10
