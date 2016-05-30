@@ -6,6 +6,7 @@ from gpkit.tools import te_exp_minus1
 
 #TODO
 #make discretization lists for the breguet parmeter
+#incorporate the atmosphere model
 
 class CommericalAircraft(Model):
     def __init__(self):
@@ -16,7 +17,7 @@ class CommericalAircraft(Model):
         Nclimb2 = 0
         Ncruise1 = 0
         Ncruiseclimb = 0
-        Ncruise2 = 2
+        Ncruise2 = 3
         Ndecent = 0
         Nlanding = 0
         #segments below here that start with res --> fuel reserves
@@ -64,23 +65,24 @@ class CommericalAircraft(Model):
         t = VectorVariable(Nseg, 't', 'min', 'flight time in minutes')
 
         #altitude
-        hft = VectorVariable(Nseg, 'hft', 'feet', 'Altitude')
-        h = VectorVariable(Nseg, 'h', 'm', 'Altitude')
+        hft = VectorVariable(Nseg, 'hft', 'feet', 'Altitude [feet]')
+        h = VectorVariable(Nseg, 'h', 'm', 'Altitude [meters]')
 
         #Range
 
         #HOW TO HANDLE NM
         
         Rng = VectorVariable(Nseg, 'range', 'miles', 'Segment Range')
-        ReqRng = Variable('ReqRng', 'miles', 'Required Mission Range')
+        ReqRng = Variable('ReqRng', 3000, 'miles', 'Required Mission Range')
 
         #aircraft weights
         W_e = Variable('W_{e}', 'lbf', 'Empty Weight of Aircraft')
-        W_start = VectorVariable(Nseg, 'W_{f}', 'lbf', 'Segment Start Weight')
+        W_start = VectorVariable(Nseg, 'W_{start}', 'lbf', 'Segment Start Weight')
+        W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'lbf', 'Segment Fuel Weight')
         W_ftotal = Variable('W_{f_{total}}', 'lbf', 'Total Fuel Weight')
         W_end = VectorVariable(Nseg, 'W_{end}', 'lbf', 'Segment End Weight')
         W_payload = Variable('W_{payload}', 'lbf', 'Aircraft Payload Weight')
-        W_total = Variable('W_{mf}', 'lbf', 'Total Aircraft Weight')
+        W_total = Variable('W_{total}', 'lbf', 'Total Aircraft Weight')
 
         #aero
         LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
@@ -109,23 +111,45 @@ class CommericalAircraft(Model):
         z_bre = VectorVariable(Ncruise1+Ncruise2, 'z_{bre}', '-', 'Breguet Parameter')
 
         #engine
-        TSFC = VectorVariable(Nseg, 'TSFC', 0.6/3600, 'lbm/hr/lbf', 'Thrust Specific Fuel Consumption')
+        TSFC = VectorVariable(Nseg, 'TSFC', 'lbm/hr/lbf', 'Thrust Specific Fuel Consumption')
         
         constraints = []
 
         #---------------------------------------
         #basic constraint definitions
         constraints.extend([
-            #constraint on the aircraft meeting the required range
-            Rng[Nseg-1] >= ReqRng,
             #convert m to ft
             hft == h,
             #constraints on the various weights
             W_e + W_payload + W_ftotal <= W_total,
             W_start[0] == W_total,
-            W_e + W_payload <= W_end[Nseg-1] 
+            W_e + W_payload <= W_end[Nseg-1],
+            W_ftotal >= sum(W_fuel),
+            
+
+            #substitute these values later
+            W_e == 90000,
+            W_payload == 50000
             ])
 
+        #constrain the segment weights in a loop
+        for i in range(1, Nseg):
+            print i
+            constraints.extend([
+                W_start[i] == W_end[i-1]
+                ])
+        for i in range(0,Nseg):
+            constraints.extend([
+                W_start[i] >= W_end[i] + W_fuel[i]
+                ])
+        #CONSIDER THIS FOR ONLY THE CRUISE SEGMENTS, DISCRETIZE OTHERS IN TIME?
+            
+        #constraint on the aircraft meeting the required range
+        for i in range(0, Nseg):
+            constraints.extend([
+                 Rng[i] >= (i+1) * ReqRng/Nseg
+                ])
+               
         #---------------------------------------
         #takeoff
 
@@ -157,9 +181,14 @@ class CommericalAircraft(Model):
             #constrain the climb rate by holding altitude constant
             hft[icruise2] == 35000,
             #taylor series expansion to get the weight term
-            W_start[icruise2]/W_end[icruise2] >=  te_exp_minus1(z_bre[icruise2], nterm=3),
+            W_fuel[icruise2]/W_end[icruise2] >=  te_exp_minus1(z_bre[icruise2], nterm=3),
             #breguet range eqn
-            Rng[icruise2] <= z_bre[icruise2]*LD*V/(TSFC*g)
+            Rng[icruise2] <= z_bre[icruise2]*LD*V/(TSFC*g),
+
+            #substitue these values later
+            TSFC[icruise2] == 1.4,
+            LD[icruise2] == 10,
+            V[icruise2] == 420
             ])
 
         #---------------------------------------
@@ -170,7 +199,7 @@ class CommericalAircraft(Model):
 
 
         #objective is to minimize the total required fuel weight
-        objective = 1/W_ftotal
+        objective =  W_total
 
         m = Model(objective, constraints)
 
