@@ -1,7 +1,11 @@
 """Standard tube and wing commercial aircraft sizing"""
 from numpy import pi
 import numpy as np
-from gpkit import Variable, Model, units
+from gpkit import VectorVariable, Variable, Model, units
+from gpkit.tools import te_exp_minus1
+
+#TODO
+#make discretization lists for the breguet parmeter
 
 class CommericalAircraft(Model):
     def __init__(self):
@@ -12,7 +16,7 @@ class CommericalAircraft(Model):
         Nclimb2 = 0
         Ncruise1 = 0
         Ncruiseclimb = 0
-        Ncruise2 = 50
+        Ncruise2 = 2
         Ndecent = 0
         Nlanding = 0
         #segments below here that start with res --> fuel reserves
@@ -31,23 +35,23 @@ class CommericalAircraft(Model):
         #create index lists for the vector variables
 
         #full flight profile
-##        itakeoff = np.linspace(0, Ntakeoff - 1, Ntakeoff)
-##        iclimb1 = np.linspace(Ntakeoff, itakeoff[len(itakeoff)-1]+Nclimb1, Nclimb1)
-##        itrans = np.linspace(iclimb1[len(iclimb1)-1] + 1, Ntrans + iclimb1[len(iclimb1)-1], Ntrans)
-##        iclimb2 = np.linspace(itrans[len(itrans)-1] + 1, Nclimb2 + itrans[len(itrans)-1], Nclimb2)
-##        icruise1 = np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise1 + iclimb2[len(iclimb2)-1], Ncruise1)
-##        icruiseclimb = np.linspace(icruise1[len(icruise1)-1] + 1, Ncruiseclimb + icruise1[len(icruise1)-1], Ncruiseclimb)
-##        icruise2 = np.linspace(icruiseclimb[len(icruiseclimb)-1] + 1, Ncruise2 + icruiseclimb[len(icruiseclimb)-1], Ncruise2)
-##        idecent = np.linspace(icruise2[len(icruise2)-1] + 1, Ndecent + icruise2[len(icruise2)-1], Ndecent)
-##        ilanding = np.linspace(idecent[len(idecent)-1] + 1, Nlanding + idecent[len(idecent)-1], Nlanding)
-##        iresclimb = np.linspace(ilanding[len(ilanding)-1] + 1, Nresclimb + ilanding[len(ilanding)-1], Nresclimb)
-##        iresdecent = np.linspace(iresclimb[len(iresclimb)-1] + 1, Nresdecent + iresclimb[len(iresclimb)-1], Nresdecent)
-##        ireslanding = np.linspace(iresdecent[len(iresdecent)-1] + 1, Nreslanding + iresdecent[len(iresdecent)-1], Nreslanding)
-##        ireshold = np.linspace(ireslanding[len(ireslanding)-1] + 1, Nreshold + ireslanding[len(ireslanding)-1], Nresdecent)
+##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
+##        iclimb1 = map(int, np.linspace(Ntakeoff, itakeoff[len(itakeoff)-1]+Nclimb1, Nclimb1))
+##        itrans = map(int, np.linspace(iclimb1[len(iclimb1)-1] + 1, Ntrans + iclimb1[len(iclimb1)-1], Ntrans))
+##        iclimb2 = map(int, np.linspace(itrans[len(itrans)-1] + 1, Nclimb2 + itrans[len(itrans)-1], Nclimb2))
+##        icruise1 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise1 + iclimb2[len(iclimb2)-1], Ncruise1))
+##        icruiseclimb = map(int, np.linspace(icruise1[len(icruise1)-1] + 1, Ncruiseclimb + icruise1[len(icruise1)-1], Ncruiseclimb))
+##        icruise2 = map(int, np.linspace(icruiseclimb[len(icruiseclimb)-1] + 1, Ncruise2 + icruiseclimb[len(icruiseclimb)-1], Ncruise2))
+##        idecent = map(int, np.linspace(icruise2[len(icruise2)-1] + 1, Ndecent + icruise2[len(icruise2)-1], Ndecent))
+##        ilanding = map(int, np.linspace(idecent[len(idecent)-1] + 1, Nlanding + idecent[len(idecent)-1], Nlanding))
+##        iresclimb = map(int, np.linspace(ilanding[len(ilanding)-1] + 1, Nresclimb + ilanding[len(ilanding)-1], Nresclimb))
+##        iresdecent = map(int, np.linspace(iresclimb[len(iresclimb)-1] + 1, Nresdecent + iresclimb[len(iresclimb)-1], Nresdecent))
+##        ireslanding = map(int, np.linspace(iresdecent[len(iresdecent)-1] + 1, Nreslanding + iresdecent[len(iresdecent)-1], Nreslanding))
+##        ireshold = map(int, np.linspace(ireslanding[len(ireslanding)-1] + 1, Nreshold + ireslanding[len(ireslanding)-1], Nresdecent))
 
         #partial flight profile for use in development
-        icruise2 = np.linspace(0, Ncruise2 -1, Ncruise2)
-
+        icruise2 = map(int, np.linspace(0, Ncruise2 - 1, Ncruise2))
+        
         #---------------------------------------
         #Variable definitions
         
@@ -56,23 +60,31 @@ class CommericalAircraft(Model):
         gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
         R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
 
+        #time
+        t = VectorVariable(Nseg, 't', 'min', 'flight time in minutes')
+
         #altitude
         hft = VectorVariable(Nseg, 'hft', 'feet', 'Altitude')
         h = VectorVariable(Nseg, 'h', 'm', 'Altitude')
 
         #Range
-        Rng = VectorVariable(Nseg, 'range', 'natucical_miles', 'Range')
-        ReqRng = Variable('ReqRng', 'nautical_miles', 'Required Mission Range')
+
+        #HOW TO HANDLE NM
+        
+        Rng = VectorVariable(Nseg, 'range', 'miles', 'Segment Range')
+        ReqRng = Variable('ReqRng', 'miles', 'Required Mission Range')
 
         #aircraft weights
         W_e = Variable('W_{e}', 'lbf', 'Empty Weight of Aircraft')
-        W_f = VectorVariable(Nseg, 'W_{f}', 'lbf', 'Weight of Fuel in Aircraft')
-        W_p = Variable('W_{p}', 'lbf', 'Aircraft Payload Weight')
-        W_mf = Variable('W_{mf}', 'lbf', 'Aricraft Weight Minus Fuel Weight')
+        W_start = VectorVariable(Nseg, 'W_{f}', 'lbf', 'Segment Start Weight')
+        W_ftotal = Variable('W_{f_{total}}', 'lbf', 'Total Fuel Weight')
+        W_end = VectorVariable(Nseg, 'W_{end}', 'lbf', 'Segment End Weight')
+        W_payload = Variable('W_{payload}', 'lbf', 'Aircraft Payload Weight')
+        W_total = Variable('W_{mf}', 'lbf', 'Total Aircraft Weight')
 
         #aero
         LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
-        LDmax = Variable('\\frac{L}{D}_{max}', 15, 'Maximum Lift to Drag')
+        LDmax = Variable('\\frac{L}{D}_{max}', 15, '-', 'Maximum Lift to Drag')
 
         #CHECK VALUE OF CD0, k, AND K UNITS
         
@@ -95,16 +107,23 @@ class CommericalAircraft(Model):
 
         #breguet parameter
         z_bre = VectorVariable(Ncruise1+Ncruise2, 'z_{bre}', '-', 'Breguet Parameter')
+
+        #engine
+        TSFC = VectorVariable(Nseg, 'TSFC', 0.6/3600, 'lbm/hr/lbf', 'Thrust Specific Fuel Consumption')
         
         constraints = []
 
         #---------------------------------------
         #basic constraint definitions
         constraints.extend([
-            #constraint on the aircraft weight minus fuel
-            W_mf >= W_e + W_p
             #constraint on the aircraft meeting the required range
-            Rng[] >= ReqRng
+            Rng[Nseg-1] >= ReqRng,
+            #convert m to ft
+            hft == h,
+            #constraints on the various weights
+            W_e + W_payload + W_ftotal <= W_total,
+            W_start[0] == W_total,
+            W_e + W_payload <= W_end[Nseg-1] 
             ])
 
         #---------------------------------------
@@ -135,16 +154,13 @@ class CommericalAircraft(Model):
         #Breguet Range discretized to model the cruise
 
         constraints.extend([
-            RC[] = 0,
-            theta[] = 0,
-            Rng[] <= ReqRng,
+            #constrain the climb rate by holding altitude constant
+            hft[icruise2] == 35000,
             #taylor series expansion to get the weight term
-            W_f[]/W_f[] >=  te_exp_minus1(z_bre, nterm=3),
+            W_start[icruise2]/W_end[icruise2] >=  te_exp_minus1(z_bre[icruise2], nterm=3),
             #breguet range eqn
-            R <= z_bre*LD*V/(TSFC*g),
-            Rng[] + R <= Rng[],
-            
-            )]
+            Rng[icruise2] <= z_bre[icruise2]*LD*V/(TSFC*g)
+            ])
 
         #---------------------------------------
         #decent
@@ -153,8 +169,8 @@ class CommericalAircraft(Model):
         #landing
 
 
-        #objective is to minimize the required fuel weight
-        objective = 1/W_f
+        #objective is to minimize the total required fuel weight
+        objective = 1/W_ftotal
 
         m = Model(objective, constraints)
 
