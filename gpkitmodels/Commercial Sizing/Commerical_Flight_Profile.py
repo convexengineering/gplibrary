@@ -7,7 +7,7 @@ from getatm import get_atmosphere, get_T, get_rho, get_mu
 from get_sum import get_hft, get_cruiserng
 
 #TODO
-#make discretization lists for the breguet parmeter
+#fix that damn rank error
 
 class CommericalAircraft(Model):
     """
@@ -194,11 +194,19 @@ class CommericalAircraft(Model):
             #solve a sub to determine altitude in order to keep model gp compatible
             hft[iclimb1] == hint1[iclimb1],
             dhft[iclimb1] == tmin[iclimb1] * RC[iclimb1],
+            hft[iclimb1] == tmin[iclimb1],
             #compute the distance traveled for each segment
 
             #ASSUMES SMALL ANGLES HERE AND IN THETA COMPUTATION, FIX THIS LATER --------------------------------------------------------
             
-            RngClimb[iclimb1] == thours[iclimb1]*V[iclimb1]
+            RngClimb[iclimb1] == thours[iclimb1]*V[iclimb1],
+
+            #compute fuel burn from TSFC
+            W_fuel[iclimb1] == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
+
+
+            #sub these later
+            TSFC[iclimb1] == 1.6
             ])
         
         print len(tmin[iclimb1]*RC[iclimb1])
