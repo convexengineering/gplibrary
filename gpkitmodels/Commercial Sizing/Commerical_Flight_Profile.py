@@ -1,5 +1,6 @@
 """Standard tube and wing commercial aircraft sizing"""
 from numpy import pi
+import gpkit
 import numpy as np
 from gpkit import VectorVariable, Variable, Model, units
 from gpkit.tools import te_exp_minus1
@@ -7,7 +8,10 @@ from getatm import get_atmosphere, get_T, get_rho, get_mu
 from get_sum import get_hft, get_cruiserng
 
 #TODO
-#fix that damn rank error
+
+"""
+the error is almost certianly due to the fact I haven't set an initial altitude....I guess it should be 1500'
+"""
 
 class CommericalAircraft(Model):
     """
@@ -22,7 +26,7 @@ class CommericalAircraft(Model):
         Nclimb2 = 0
         Ncruise1 = 0
         Ncruiseclimb = 0
-        Ncruise2 = 3
+        Ncruise2 = 0
         Ndecent = 0
         Nlanding = 0
         #segments below here that start with res --> fuel reserves
@@ -88,9 +92,9 @@ class CommericalAircraft(Model):
         #HOW TO HANDLE NM
         
         RngClimb = VectorVariable(Nclimb, 'RngClimb', 'miles', 'Segment Range During Climb')
-        RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCCruise', 'miles', 'Segment Range During Cruise')
-        ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
-        ReqRng = Variable('ReqRng', 3000, 'miles', 'Required Mission Range')
+    #    RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCCruise', 'miles', 'Segment Range During Cruise')
+    #    ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
+        ReqRng = Variable('ReqRng', 30, 'miles', 'Required Mission Range')
 
         #aircraft weights
         W_e = Variable('W_{e}', 'lbf', 'Empty Weight of Aircraft')
@@ -107,14 +111,14 @@ class CommericalAircraft(Model):
 
         #CHECK VALUE OF CD0, k, AND K UNITS
         
-        Cd0 = Variable('C_{d_0}', .012, '-', 'Aircraft Cd0')
-        K = Variable('K', 1, '-', 'K for Parametric Drag Model')
+        Cd0 = Variable('C_{d_0}', .025, '-', 'Aircraft Cd0')
+        K = Variable('K', .9, '-', 'K for Parametric Drag Model')
 
         #aircraft geometry
 
         #CHECK THE VALUE OF S
         
-        S = Variable('S', 120, 'm^2', 'Wing Planform Area')
+        S = Variable('S', 124.58, 'm^2', 'Wing Planform Area')
 
         #velocitites and mach numbers
         V = VectorVariable(Nseg, 'V', 'knots', 'Aircraft Flight Speed')
@@ -130,133 +134,152 @@ class CommericalAircraft(Model):
 
         #engine
         TSFC = VectorVariable(Nseg, 'TSFC', 'lbm/hr/lbf', 'Thrust Specific Fuel Consumption')
+
+        s = Variable('s', '-', 'Feasability Analysis')
+        s2 = Variable('s2', '-', 'Feasability Analysis')
+
+        with gpkit.SignomialsEnabled():
         
-        constraints = []
+            constraints = []
 
-        #---------------------------------------
-        #basic constraint definitions, apply to the entire flight
-        alt10k = Variable('alt10k', 10000, 'feet', 'Altitude where 250kt Speed Limit Stops')
-        cruiseRng = Variable('cruiseRng', get_cruiserng, 'miles', 'Crusie Range Needed', args=[ReqRng, RngClimb])
-
-        constraints.extend([
-            #speed of sound
-            a == (gamma * R * T)**.5,
-            #convert m to ft
-            hft == h,
-            #convert min to hours
-            tmin == thours,
-            #constraints on the various weights
-            W_e + W_payload + W_ftotal <= W_total,
-            W_start[0] == W_total,
-            W_e + W_payload <= W_end[Nseg-1],
-            W_ftotal >= sum(W_fuel),
-            #altitude at end of climb segment 1...constraint comes from 250kt speed limit below 10,000'
-            hft[Ntakeoff + Nclimb1 - 1] <= alt10k,
-
-            #WON'T BE TIGHT NEED TO FIX
+            #---------------------------------------
+            #basic constraint definitions, apply to the entire flight
+            alt10k = Variable('alt10k', 10000, 'feet', 'Altitude where 250kt Speed Limit Stops')
+            alt1k = Variable('alt1k', 1500, 'feet', 'Altitude where Climb Profile Starts')
+            cruiseRng = Variable('cruiseRng', get_cruiserng, 'miles', 'Crusie Range Needed', args=[ReqRng, RngClimb])
             
-            #range constraint
-            ReqRngCruise == cruiseRng,
-
-            #substitute these values later
-            W_e == 90000,
-            W_payload == 50000
-            ])
-
-        #constrain the segment weights in a loop
-        for i in range(1, Nseg):
             constraints.extend([
-                W_start[i] == W_end[i-1]
-                ])
-        for i in range(0,Nseg):
-            constraints.extend([
-                W_start[i] >= W_end[i] + W_fuel[i]
-                ])
-        
-        #---------------------------------------
-        #takeoff
+                #speed of sound
+                a  == (gamma * R * T)**.5,
+                T>=1*units('K'),
+                #convert m to ft
+                hft  == h,
+                #convert min to hours
+                tmin  == thours ,
+                #constraints on the various weights
+                W_e + W_payload + W_ftotal <= W_total,
+                W_start[0]  == W_total,
+                W_e + W_payload <= W_end[Nseg-1],
+                W_ftotal   >= sum(W_fuel),
+                #altitude at end of climb segment 1...constraint comes from 250kt speed limit below 10,000'
+                hft[Ntakeoff + Nclimb1 - 1] <= alt10k,
+                hft[0] == alt1k,
+                
+                #range constraint
+         #       ReqRngCruise   == cruiseRng,
 
-        #--------------------------------------
-        #Climb #1 (sub 10K subject to 250KTS speed limit)
-        climbspeed = Variable('climbspeed', 250, 'kts', 'Speed Limit Under 10,000 ft')
-        thrust = Variable('thrust', 49140, 'lbf', 'Engine Thrust')
-        hint1 = VectorVariable(Nclimb1, 'hint1', get_hft, 'feet', 'Simply Integrated Height Variable', args=[dhft])
-        #cos_te = VectorVariable(Nclimb1, 'cos_te', get_te, '-', 'Cosine Taylor Expansion', args=[theta])
-        constraints.extend([
-            #set the velocity limits
-            V[iclimb1] <= climbspeed,
-            V[iclimb1] >= Vstall,
-            #climb rate constraints
-            RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
-            W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1],
-            #make the small angle approximation and compute theta
-            theta[iclimb1]*V[iclimb1] == RC[iclimb1],
-            #solve a sub to determine altitude in order to keep model gp compatible
-            hft[iclimb1] == hint1[iclimb1],
-            dhft[iclimb1] == tmin[iclimb1] * RC[iclimb1],
-            hft[iclimb1] == tmin[iclimb1],
-            #compute the distance traveled for each segment
+                #substitute these values later
+                W_e  == 90000*units('lbf'),
+                W_payload  == 50000*units('lbf'),
 
-            #ASSUMES SMALL ANGLES HERE AND IN THETA COMPUTATION, FIX THIS LATER --------------------------------------------------------
+                W_ftotal>=W_e
+                ])
+
+            #constrain the segment weights in a loop
+            for i in range(1, Nseg):
+                constraints.extend([
+                    W_start[i]   == W_end[i-1] 
+                    ])
+            for i in range(0,Nseg):
+                constraints.extend([
+                    W_start[i]   >= W_end[i] + W_fuel[i]
+                    ])
             
-            RngClimb[iclimb1] == thours[iclimb1]*V[iclimb1],
+            #---------------------------------------
+            #takeoff
 
-            #compute fuel burn from TSFC
-            W_fuel[iclimb1] == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
-
-
-            #sub these later
-            TSFC[iclimb1] == 1.6
-            ])
-        
-        print len(tmin[iclimb1]*RC[iclimb1])
-        print len(dhft[iclimb1])
-        #--------------------------------------
-        #transition between climb 1 and 2 if desired
-
-        #--------------------------------------
-        #Climb #2 (over 10K, no speed limit)
-
-        #--------------------------------------
-        #cruise #1
-        #Breguet Range discretized to model the cruise
-        
-
-        #---------------------------------------
-        #cruise climb/decent...might switch altitude in cruise
-
-        #---------------------------------------
-        #cruise #2
-        #Breguet Range discretized to model the cruise
-
-        constraints.extend([
-            #constrain the climb rate by holding altitude constant
-            hft[icruise2] == 35000,
-            #taylor series expansion to get the weight term
-            W_fuel[icruise2]/W_end[icruise2] >=  te_exp_minus1(z_bre[izbre], nterm=3),
-            #breguet range eqn
-            RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2]*g),
-            #time
-            thours[icruise2]*V[icruise2] == RngCruise[izbre],
-
-
-            #substitue these values later
-            TSFC[icruise2] == 1.4,
-            LD[icruise2] == 10,
-            V[icruise2] == 420
-            ])
-        
-        #constraint on the aircraft meeting the required range
-        for i in range(min(izbre), max(izbre)+1):
-            constraints.extend([
-                 RngCruise[i] >= (i+1) * ReqRngCruise/Nseg
-                ])
+            #--------------------------------------
+            #Climb #1 (sub 10K subject to 250KTS speed limit)
+            climbspeed = Variable('climbspeed', 250, 'kts', 'Speed Limit Under 10,000 ft')
+            thrust = Variable('thrust', 49140, 'lbf', 'Engine Thrust')
+           
+            #cos_te = VectorVariable(Nclimb1, 'cos_te', get_te, '-', 'Cosine Taylor Expansion', args=[theta])
+            
+            constraints.extend([            
+                #set the velocity limits
+                V[iclimb1] <= climbspeed,
+                V[iclimb1]   >= Vstall,
+                #climb rate constraints
+                RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
+                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1],
+                #make the small angle approximation and compute theta
+                theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
                
-        #---------------------------------------
-        #decent
+                dhft[iclimb1]  == tmin[iclimb1] * RC[iclimb1],
+                #compute the distance traveled for each segment
 
-        #----------------------------------------
-        #landing
+                #ASSUMES SMALL ANGLES HERE AND IN THETA COMPUTATION, FIX THIS LATER --------------------------------------------------------
+
+        #        hft==8000,
+                
+                RngClimb[iclimb1]  == thours[iclimb1]*V[iclimb1],
+
+                RngClimb[Nseg-1] >= ReqRng,
+
+                #compute fuel burn from TSFC
+                W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
+
+
+                #sub these later
+                TSFC[iclimb1]  == 1.6*units('lbm/lbf/hr')
+                ])
+            
+            for i in range(0, Nclimb1):
+                if i==0:
+                    constraints.extend([
+                        hft[i]==1500*units('ft')
+                        ])
+                else:
+                     constraints.extend([
+                        hft[i] <= hft[i-1]+dhft[i]
+                        ])
+            
+            #--------------------------------------
+            #transition between climb 1 and 2 if desired
+
+            #--------------------------------------
+            #Climb #2 (over 10K, no speed limit)
+
+            #--------------------------------------
+            #cruise #1
+            #Breguet Range discretized to model the cruise
+            
+
+            #---------------------------------------
+            #cruise climb/decent...might switch altitude in cruise
+
+            #---------------------------------------
+            #cruise #2
+            #Breguet Range discretized to model the cruise
+
+            """constraints.extend([
+                #constrain the climb rate by holding altitude constant
+                hft[icruise2]  == 35000  ,
+                #taylor series expansion to get the weight term
+                W_fuel[icruise2]/W_end[icruise2]   >=  te_exp_minus1(z_bre[izbre], nterm=3),
+                #breguet range eqn
+                RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2]*g)  ,
+                #time
+                thours[icruise2]*V[icruise2]  == RngCruise[izbre]  ,
+
+
+                #substitue these values later
+                TSFC[icruise2]  == 1.4*units('lbm/lbf/hr'),
+                LD[icruise2]  == 10,
+                V[icruise2]  == 420*units('kts')
+                ])
+            
+            #constraint on the aircraft meeting the required range
+            for i in range(min(izbre), max(izbre)+1):
+                constraints.extend([
+                     RngCruise[i]   >= (i+1) * ReqRngCruise/Nseg
+                    ])"""
+                   
+            #---------------------------------------
+            #decent
+
+            #----------------------------------------
+            #landing
 
 
         #objective is to minimize the total required fuel weight, accomplished my minimizing the total weight
@@ -264,7 +287,7 @@ class CommericalAircraft(Model):
 
         m = Model(objective, constraints)
 
-        sol = m.solve()
+        sol = m.localsolve()
 
 if __name__ == '__main__':
     CommericalAircraft()
