@@ -1,10 +1,9 @@
 import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
-from gpkit.constraints.set import ConstraintSet
 from gpkit.small_scripts import mag
 
-class FanAndLPC(ConstraintSet):
+class FanAndLPC(Model):
     """
     Free Stream, Fan, and LPC Calcs for the Engine Model
     """
@@ -113,9 +112,9 @@ class FanAndLPC(ConstraintSet):
             Tt3 == Tt25 * pihc ** (.3221),
             ht3 == Cpair * Tt3
             ]
-        ConstraintSet.__init__(self, constraints, **kwargs)
+         Model.__init__(self, None, constraints, **kwargs)
 
-class CombustorCooling(ConstraintSet):
+class CombustorCooling(Model):
     """
     class to represent the engine's combustor and perform calculations
     on engine cooling bleed flow...cooling flow is currently not implemented
@@ -157,9 +156,9 @@ class CombustorCooling(ConstraintSet):
             Pt41 == Pt4,
             ht41 == ht4
             ]
-        ConstraintSet.__init__(self, constraints, **kwargs)
+         Model.__init__(self, None, constraints, **kwargs)
 
-class Turbine(ConstraintSet):
+class Turbine(Model):
     """
     classs to represent the engine's turbine
     """
@@ -193,7 +192,7 @@ class Turbine(ConstraintSet):
         
         #turbine nozzle exit states
         Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
-        Tt5 = Variable('T_{t_5}', 'J', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
+        Tt5 = Variable('T_{t_5}', 'K', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
         ht5 = Variable('h_{t_5}', 'J', 'Stagnation Enthalpy at the Turbine Nozzle Exit (5)')
 
         #pressure ratios
@@ -218,12 +217,12 @@ class Turbine(ConstraintSet):
                 #HPT shafter power balance
 
                 #SIGNOMIAL
-                (1+f)*(ht41-ht45) == ht3 - ht25,    #B.161
+                (1+f)*(ht41-ht45) <= ht3 - ht25,    #B.161
 
                 #LPT shaft power balance
 
                 #SIGNOMIAL  
-                (1+f)*(ht49 - ht45) == -((ht25-ht18)+alpha*(ht21 - ht2)), #B.165
+                (1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2)), #B.165
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
@@ -240,9 +239,9 @@ class Turbine(ConstraintSet):
                 Tt5 == Tt49,    #B.168
                 ht5 == ht49     #B.169
                 ]
-        ConstraintSet.__init__(self, constraints, **kwargs)
+         Model.__init__(self, None, constraints, **kwargs)
 
-class ExhaustAndThrust(ConstraintSet):
+class ExhaustAndThrust(Model):
     """
     Class to calculate the exhaust quantities as well as
     the overall engine thrust and on design TSFC & ISP
@@ -329,7 +328,7 @@ class ExhaustAndThrust(ConstraintSet):
                 F6/mCore + u0 <= (1+f)*u6,      #B.189
 
                 #SIGNOMIAL
-                F == F6 + F8,
+                F <= F6 + F8,
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -339,9 +338,9 @@ class ExhaustAndThrust(ConstraintSet):
                 #TSFC
                 TSFC == 1/Isp                   #B.193
                 ]
-        ConstraintSet.__init__(self, constraints, **kwargs)
+         Model.__init__(self, None, constraints, **kwargs)
         
-class OnDesignSizing(ConstraintSet):
+class OnDesignSizing(Model):
     """
     class to perform the on design sizing of the engine.
     Nozzle areas are calcualted in post processing due to dependence on
@@ -431,6 +430,7 @@ class OnDesignSizing(ConstraintSet):
             M8 == u8/((Cpair*Rair/(781*units('J/kg/K')))**.5),
             M6 == u6/((Cpt*Rt/(781*units('J/kg/K')))**.5),
             ]
+        Model.__init__(self, None, constraints, **kwargs)
 
 class NozzleSizing(Model):
     """
