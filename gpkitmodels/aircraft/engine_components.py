@@ -450,7 +450,7 @@ class OnDesignSizing(Model):
             M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
             M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
             ]
-        Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, M6, constraints, **kwargs)
 
 class NozzleSizing(Model):
     """

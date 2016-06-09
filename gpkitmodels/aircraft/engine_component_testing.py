@@ -70,17 +70,10 @@ if __name__ == "__main__":
     design = OnDesignSizing()
     design.substitutions.update({
         'a_0': fansol('a_0'),
-        'u_0': fansol('u_0'),
-        'T_0': 216.5,   #36K feet
-        'P_0': 22.8,    #36K feet
-        'M_0': 0.8,
-        'alpha': 10,
         'alphap1': 11,
-        'M_{4a}': 1,    #choked turbines
         'F_D': 121436.45, #737 max thrust in N
         'M_2': .4,
         'M_{2.5}': .5,
-        'm_{core}': 40,
         'u_8': 600,
         'u_6': 625,
         'T_{t_2}': fansol('T_{t_2}'),
