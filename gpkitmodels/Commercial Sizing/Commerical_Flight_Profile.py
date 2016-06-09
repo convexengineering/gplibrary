@@ -22,7 +22,7 @@ class CommericalAircraft(Model):
         Nclimb2 = 3
         Ncruise1 = 0
         Ncruiseclimb = 0
-        Ncruise2 = 0
+        Ncruise2 = 3
         Ndecent = 0
         Nlanding = 0
         #segments below here that start with res --> fuel reserves
@@ -58,7 +58,7 @@ class CommericalAircraft(Model):
         #partial flight profile for use during development
         iclimb1 = map(int, np.linspace(0, Nclimb1 - 1, Nclimb1))
         iclimb2 = map(int, np.linspace(iclimb1[len(iclimb1)-1] + 1, Nclimb2 + iclimb1[len(iclimb1)-1], Nclimb2))
-        #icruise2 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise2 + iclimb2[len(iclimb2)-1], Ncruise2))
+        icruise2 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise2 + iclimb2[len(iclimb2)-1], Ncruise2))
 
         izbre = map(int, np.linspace(0, Ncruise2 - 1, Ncruise2))
         
@@ -87,8 +87,8 @@ class CommericalAircraft(Model):
 
         #Range  
         RngClimb = VectorVariable(Nclimb, 'RngClimb', 'miles', 'Segment Range During Climb')
-    #    RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCCruise', 'miles', 'Segment Range During Cruise')
-    #    ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
+        RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCCruise', 'miles', 'Segment Range During Cruise')
+        ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
         ReqRng = Variable('ReqRng', 300, 'miles', 'Required Mission Range')
 
         #aircraft weights
@@ -162,8 +162,9 @@ class CommericalAircraft(Model):
                 #altitude at end of climb segment 1...constraint comes from 250kt speed limit below 10,000'
                 hft[Ntakeoff + Nclimb1 - 1] <= alt10k,
                 
-                #range constraint
-         #       ReqRngCruise   == cruiseRng,
+                #range constraints
+                sum(RngClimb) + sum(RngCruise) >= ReqRng,
+                ReqRngCruise   <= sum(RngCruise),
 
                 #substitute these values later
                 W_e  == 90000*units('lbf'),
@@ -251,8 +252,6 @@ class CommericalAircraft(Model):
                 #takes into account two terms of a cosine expansion
                 RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2],
 
-                sum(RngClimb) >= ReqRng,
-
                 #compute fuel burn from TSFC
                 W_fuel[iclimb2]  == g * TSFC[iclimb2] * thours[iclimb2] * thrust,
 
@@ -273,9 +272,9 @@ class CommericalAircraft(Model):
             #cruise #2
             #Breguet Range discretized to model the cruise
 
-            """constraints.extend([
+            constraints.extend([
                 #constrain the climb rate by holding altitude constant
-                hft[icruise2]  == 35000,
+                hft[icruise2]  == 35000*units('ft'),
                 
                 #taylor series expansion to get the weight term
                 W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3),
@@ -291,13 +290,13 @@ class CommericalAircraft(Model):
                 TSFC[icruise2]  == 1.4*units('lbm/lbf/hr'),
                 LD[icruise2]  == 10,
                 V[icruise2]  == 420*units('kts')
-                ])"""
+                ])
             
             #constraint on the aircraft meeting the required range
-            """for i in range(min(izbre), max(izbre)+1):
+            for i in range(min(izbre), max(izbre)+1):
                 constraints.extend([
                      RngCruise[i]   >= (i+1) * ReqRngCruise/Nseg
-                    ])"""
+                    ])
                    
             #---------------------------------------
             #decent
