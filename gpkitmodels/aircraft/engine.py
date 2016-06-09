@@ -31,6 +31,52 @@ class Engine(Model):
     """
 
     def __init__(self, **kwargs):
+        #set up the overeall model for an on design solve
+        lpc = FanAndLPC()
+        combustor = CombustorCooling()
+        turbine = Turbine()
+        thrust = ExhaustAndThrust()
+        size = OnDesignSizing()
+
+        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
+
+        self.submodels = [lpc, combustor, turbine, thrust, size]
+
+        #print [self.submodels, constraints]
+            
+        with SignomialsEnabled():
+
+            lc = LinkedConstraintSet([self.submodels])
+
+            substitutions = {
+            'T_0': 216.5,   #36K feet
+            'P_0': 22.8,    #36K feet
+            'M_0': 0.8,
+            'T_{t_4}': 1400,
+            '\pi_f': 1.5,
+            '\pi_{lc}': 3,
+            '\pi_{hc}': 10,
+            '\pi_{tn}': 1,
+            '\pi_{d}': 1,
+            '\pi_{b}': 1,
+            '\pi_{fn}': 1,
+            'alpha': 10,
+            'alphap1': 11,
+            'M_{4a}': 1,    #choked turbines
+            'F_D': 121436.45, #737 max thrust in N
+            'M_2': .4,
+            'M_{2.5}': .5
+            }
+
+            #temporary objective is to minimize the core mass flux
+            objective = mCore
+            Model.__init__(self, objective, lc, substitutions)
+
+if __name__ == "__main__":
+    engine = Engine()
+    sol = engine.localsolve()
+            
+
                 #physical constants
         #Fix the R values
 ##        Rair = Variable('R_{air}', 287, 'J/kg/K', 'R for Air')
@@ -105,53 +151,5 @@ class Engine(Model):
 ##        Fd = Variable('F_D', 'N', 'Design Thrust')
 ##        M2 = Variable('M_2', '-', 'Fan Face/LPC Face Axial Mach Number')
 ##        M25 = Variable('M_{2.5}', '-', 'HPC Face Axial Mach Number')
-
-        #set up the overeall model for an on design solve
-        lpc = FanAndLPC()
-        combustor = CombustorCooling()
-        turbine = Turbine()
-        thrust = ExhaustAndThrust()
-        size = OnDesignSizing()
-
-        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-
-        self.submodels = [lpc, combustor, turbine, thrust, size]
-
-        constraints = []
-            
-        with SignomialsEnabled():
-
-            lc = LinkedConstraintSet([self.submodels, constraints])
-
-            substitutions = {
-            'T_0': 216.5,   #36K feet
-            'P_0': 22.8,    #36K feet
-            'M_0': 0.8,
-            'T_{t_4}': 1400,
-            '\pi_f': 1.5,
-            '\pi_{lc}': 3,
-            '\pi_{hc}': 10,
-            '\pi_{tn}': 1,
-            '\pi_{d}': 1,
-            '\pi_{b}': 1,
-            '\pi_{fn}': 1,
-            'alpha': 10,
-            'alphap1': 11,
-            'M_{4a}': 1,    #choked turbines
-            'F_D': 121436.45, #737 max thrust in N
-            'M_2': .4,
-            'M_{2.5}': .5 
-            }
-
-            #temporary objective is to minimize the fan size
-            objective = mCore
-            Model.__init__(self, objective, lc, **kwargs)
-
-if __name__ == "__main__":
-    engine = Engine()
-    sol = engine.localsolve()
-            
-
-
 
 

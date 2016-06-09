@@ -2,6 +2,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.small_scripts import mag
+from gpkit.constraints.tight import TightConstraintSet as TCS
 
 class FanAndLPC(Model):
     """
@@ -25,37 +26,37 @@ class FanAndLPC(Model):
         u0 = Variable('U_0', 'm/s', 'Free Stream Speed')
         Pt0 = Variable('P_{t_0}', 'kPa', 'Free Stream Stagnation Pressure')
         Tt0 = Variable('T_{t_0}', 'K', 'Free Stream Stagnation Temperature')
-        ht0 = Variable('h_{t_0}', 'J', 'Free Stream Stagnation Enthalpy')
+        ht0 = Variable('h_{t_0}', 'J/kg', 'Free Stream Stagnation Enthalpy')
 
         #new vars for the diffuser exit
         Pt18 = Variable('P_{t_1.8}', 'kPa', 'Stagnation Pressure at the Diffuser Exit (1.8)')
         Tt18 = Variable('T_{t_1.8}', 'K', 'Stagnation Temperature at the Diffuser Exit (1.8)')
-        ht18 = Variable('h_{t_1.8}', 'J', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
+        ht18 = Variable('h_{t_1.8}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
         
         #new vars for the fan inlet
         Pt2 = Variable('P_{t_2}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2)')
         Tt2 = Variable('T_{t_2}', 'K', 'Stagnation Temperature at the Fan Inlet (2)')
-        ht2 = Variable('h_{t_2}', 'J', 'Stagnation Enthalpy at the Fan Inlet (2)')
+        ht2 = Variable('h_{t_2}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2)')
 
         #new vars for the fan exit (station 2.1)
         Pt21 = Variable('P_{t_2.1}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2.1)')
         Tt21 = Variable('T_{t_2.1}', 'K', 'Stagnation Temperature at the Fan Inlet (2.1)')
-        ht21 = Variable('h_{t_2.1}', 'J', 'Stagnation Enthalpy at the Fan Inlet (2.1)')
+        ht21 = Variable('h_{t_2.1}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2.1)')
 
         #new vars for the LPC exit (station 2.5)
         Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
         Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
-        ht25 = Variable('h_{t_2.5}', 'J', 'Stagnation Enthalpy at the LPC Exit (2.5)')
+        ht25 = Variable('h_{t_2.5}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
 
         #HPC exit state variables (station 3)
         Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
         Tt3 = Variable('T_{t_3}', 'K', 'Stagnation Temperature at the HPC Exit (3)')
-        ht3 = Variable('h_{t_3}', 'J', 'Stagnation Enthalpy at the HPC Exit (3)')
+        ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
 
         #new vars for the fan nozzle exit (station 7)
         Pt7 = Variable('P_{t_7}', 'kPa', 'Stagnation Pressure at the Fan Nozzle Exit (7)')
         Tt7 = Variable('T_{t_7}', 'K', 'Stagnation Temperature at the Fan Nozzle Exit (7)')
-        ht7 = Variable('h_{t_7}', 'J', 'Stagnation Enthalpy at the Fan Nozzle Exit (7)')
+        ht7 = Variable('h_{t_7}', 'J/kg', 'Stagnation Enthalpy at the Fan Nozzle Exit (7)')
         
         #fan efficiency variable
         etaFan = Variable('\eta_{fan}', 0.9,'-', 'Fan Polytropic Efficiency')
@@ -112,7 +113,7 @@ class FanAndLPC(Model):
             Tt3 == Tt25 * pihc ** (.3221),
             ht3 == Cpair * Tt3
             ]
-         Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, ht3, constraints, **kwargs)
 
 class CombustorCooling(Model):
     """
@@ -127,36 +128,44 @@ class CombustorCooling(Model):
         
         #HPC exit state variables (station 3)
         Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
+        ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
         
         #combustor exit state variables..recall Tt4 is already set in Engine class
         Pt4 = Variable('P_{t_4}', 'kPa', 'Stagnation Pressure at the Combustor Exit (4)')
-        ht4 = Variable('h_{t_4}', 'J', 'Stagnation Enthalpy at the Combustor Exit (4)')
-        Tt4 = Variable('T_{t4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')
+        ht4 = Variable('h_{t_4}', 'J/kg', 'Stagnation Enthalpy at the Combustor Exit (4)')
+        Tt4 = Variable('T_{t_4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')
 
         #Turbine inlet state variables (station 4.1)
-        Pt41 = Variable('P_{t_4}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
-        Tt41 = Variable('T_{t_4}', 'J', 'Stagnation Temperature at the Turbine Inlet (4.1)')
-        ht41 = Variable('h_{t_4}', 'J', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
+        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
+        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+        ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
 
         #burner pressure ratio
         pib = Variable('\pi_{b}', '-', 'Burner Pressure Ratio')
 
         #flow faction f
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
+
+        #heat of combustion of jet fuel
+        hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypertextbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
+
+        with SignomialsEnabled():
         
-        constraints = [
-            #flow through combustor
-            Pt4 == pib * Pt3,   #B.145
-            ht4 == Cpc * Tt4,
+            constraints = [
+                #flow through combustor
+                Pt4 == pib * Pt3,   #B.145
+                ht4 == Cpc * Tt4,
 
-            #fuel flow fraction f
-
-            #flow at turbine inlet
-            Tt41 == Tt4,
-            Pt41 == Pt4,
-            ht41 == ht4
-            ]
-         Model.__init__(self, None, constraints, **kwargs)
+                #fuel flow fraction f
+                f*hf >= ht4 - ht3,
+                
+                #flow at turbine inlet
+                Tt41 == Tt4,
+                Pt41 == Pt4,
+                ht41 == ht4
+                ]
+            
+        Model.__init__(self, f, constraints, **kwargs)
 
 class Turbine(Model):
     """
@@ -168,32 +177,31 @@ class Turbine(Model):
         Cpt =Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
         
         #new variables
-        ht45 = Variable('h_{t_4.5}', 'J', 'Stagnation Enthalpy at the HPT Exit (4.5)')
+        ht45 = Variable('h_{t_4.5}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (4.5)')
         Pt45 = Variable('P_{t_4.5}', 'kPa', 'Stagnation Pressure at the HPT Exit (4.5)')
         Tt45 = Variable('T_{t_4.5}', 'K', 'Stagnation Temperature at the HPT Exit (4.5)')
 
         #enthalpies used in shaft power balances
-        ht18 = Variable('h_{t_1.8}', 'J', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
-        ht2 = Variable('h_{t_2}', 'J', 'Stagnation Enthalpy at the Fan Inlet (2)')
-        ht21 = Variable('h_{t_2.1}', 'J', 'Stagnation Enthalpy at the Fan Inlet (2.1)')
-        ht25 = Variable('h_{t_2.5}', 'J', 'Stagnation Enthalpy at the LPC Exit (2.5)')
-        ht3 = Variable('h_{t_3}', 'J', 'Stagnation Enthalpy at the HPC Exit (3)')
-        ht41 = Variable('h_{t_4}', 'J', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
+        ht18 = Variable('h_{t_1.8}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
+        ht2 = Variable('h_{t_2}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2)')
+        ht21 = Variable('h_{t_2.1}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2.1)')
+        ht25 = Variable('h_{t_2.5}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
+        ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
 
         #Turbine inlet state variables (station 4.1)
-        Pt41 = Variable('P_{t_4}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
-        Tt41 = Variable('T_{t_4}', 'J', 'Stagnation Temperature at the Turbine Inlet (4.1)')
-        ht41 = Variable('h_{t_4}', 'J', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
+        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
+        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+        ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
 
         #HPT rxit states
-        Pt49 = Variable('P_{t_49}', 'kPa', 'Stagnation Pressure at the HPTExit (49)')
-        Tt49 = Variable('T_{t_49}', 'J', 'Stagnation Temperature at the HPT Exit (49)')
-        ht49 = Variable('h_{t_49}', 'J', 'Stagnation Enthalpy at the HPT Exit (49)')
+        Pt49 = Variable('P_{t_4.9}', 'kPa', 'Stagnation Pressure at the HPTExit (49)')
+        Tt49 = Variable('T_{t_4.9}', 'K', 'Stagnation Temperature at the HPT Exit (49)')
+        ht49 = Variable('h_{t_4.9}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (49)')
         
         #turbine nozzle exit states
         Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
         Tt5 = Variable('T_{t_5}', 'K', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
-        ht5 = Variable('h_{t_5}', 'J', 'Stagnation Enthalpy at the Turbine Nozzle Exit (5)')
+        ht5 = Variable('h_{t_5}', 'J/kg', 'Stagnation Enthalpy at the Turbine Nozzle Exit (5)')
 
         #pressure ratios
         pihpt = Variable('\pi_{HPT}', '-', 'HPT Pressure Ratio')
@@ -217,13 +225,14 @@ class Turbine(Model):
                 #HPT shafter power balance
 
                 #SIGNOMIAL
-                (1+f)*(ht41-ht45) <= ht3 - ht25,    #B.161
+                #TCS([(1+f)*(ht41-ht45) <= (ht3 - ht25)]),    #B.161
 
                 #LPT shaft power balance
 
                 #SIGNOMIAL  
-                (1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2)), #B.165
+                TCS([(1+f)*(ht49 - ht45) >= -((ht25-ht18)+alpha*(ht21 - ht2))]), #B.165
 
+                
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
                 pihpt == (Tt45/Tt41)**(3.889),
@@ -239,7 +248,7 @@ class Turbine(Model):
                 Tt5 == Tt49,    #B.168
                 ht5 == ht49     #B.169
                 ]
-         Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, Tt5, constraints, **kwargs)
 
 class ExhaustAndThrust(Model):
     """
@@ -338,7 +347,7 @@ class ExhaustAndThrust(Model):
                 #TSFC
                 TSFC == 1/Isp                   #B.193
                 ]
-         Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, None, constraints, **kwargs)
         
 class OnDesignSizing(Model):
     """
