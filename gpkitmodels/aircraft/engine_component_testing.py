@@ -15,7 +15,7 @@ if __name__ == "__main__":
             '\pi_{d}': 1,
             '\pi_{fn}': 1
             })
-    fansol = fan.solve(verbosity = 1)
+    fansol = fan.solve(verbosity = 0)
 
     combustor = CombustorCooling()
     combustor.substitutions.update({

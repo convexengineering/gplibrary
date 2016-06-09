@@ -157,7 +157,7 @@ class CombustorCooling(Model):
                 ht4 == Cpc * Tt4,
 
                 #fuel flow fraction f
-                TCS([f*hf >= ht4 - ht3]),
+                f*hf >= ht4 - ht3,
                 
                 #flow at turbine inlet
                 Tt41 == Tt4,
@@ -355,7 +355,7 @@ class ExhaustAndThrust(Model):
                 #TSFC
                 TSFC == 1/Isp                   #B.193
                 ]
-        Model.__init__(self, 1/F, constraints, **kwargs)
+        Model.__init__(self, TSFC, constraints, **kwargs)
         
 class OnDesignSizing(Model):
     """

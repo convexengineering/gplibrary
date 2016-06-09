@@ -34,13 +34,11 @@ class Engine(Model):
         #set up the overeall model for an on design solve
         lpc = FanAndLPC()
         combustor = CombustorCooling()
-        """turbine = Turbine()
+        turbine = Turbine()
         thrust = ExhaustAndThrust()
-        size = OnDesignSizing()"""
+        size = OnDesignSizing()
 
-        self.submodels = [lpc, combustor]#, turbine, thrust, size]
-
-        #print [self.submodels, constraints]
+        self.submodels = [lpc, combustor, turbine, thrust, size]
             
         with SignomialsEnabled():
 
@@ -56,20 +54,20 @@ class Engine(Model):
             '\pi_{hc}': 10,
             '\pi_{d}': 1,
             '\pi_{fn}': 1,
-##            '\pi_{tn}': 1,
+            '\pi_{tn}': 1,
             '\pi_{b}': 1,
-##            'alpha': 10,
-##            'alphap1': 11,
-##            'M_{4a}': 1,    #choked turbines
-##            'F_D': 121436.45, #737 max thrust in N
-##            'M_2': .4,
-##            'M_{2.5}': .5,
-##            'hold_{2}': 1.032,
-##            'hold_{2.5}': 1.05
+            'alpha': 10,
+            'alphap1': 11,
+            'M_{4a}': 1,    #choked turbines
+            'F_D': 121436.45, #737 max thrust in N
+            'M_2': .4,
+            'M_{2.5}': .5,
+            'hold_{2}': 1.032,
+            'hold_{2.5}': 1.05
             }
 
             #temporary objective is to minimize the core mass flux 
-            Model.__init__(self, combustor.cost, lc, substitutions)
+            Model.__init__(self, thrust.cost, lc, substitutions)
 
 if __name__ == "__main__":
     engine = Engine()
