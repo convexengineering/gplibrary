@@ -225,7 +225,7 @@ class Turbine(Model):
                 #HPT shafter power balance
 
                 #SIGNOMIAL
-                #TCS([(1+f)*(ht41-ht45) <= (ht3 - ht25)]),    #B.161
+                (1+f)*(ht41-ht45) <= ht3 - ht25,    #B.161
 
                 #LPT shaft power balance
 
@@ -248,7 +248,7 @@ class Turbine(Model):
                 Tt5 == Tt49,    #B.168
                 ht5 == ht49     #B.169
                 ]
-        Model.__init__(self, Tt5, constraints, **kwargs)
+        Model.__init__(self, Tt45, constraints, **kwargs)
 
 class ExhaustAndThrust(Model):
     """
