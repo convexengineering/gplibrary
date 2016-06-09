@@ -15,7 +15,7 @@ if __name__ == "__main__":
             '\pi_{d}': 1,
             '\pi_{fn}': 1
             })
-    fansol = fan.solve(verbosity = 0)
+    fansol = fan.solve(verbosity = 1)
 
     combustor = CombustorCooling()
     combustor.substitutions.update({
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 ##        'P_{t_2.5}': fansol('P_{t_2.5}'),
 ##        'F_{sp}': 1,
 ##        'hold_{2}': 1.032,
-##        'hold_{2.5}': 1.05,
+##        'hold_{2.5}': 1.05
 ##        })
 ##
 ##    designsol = design.solve()

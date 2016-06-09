@@ -34,13 +34,11 @@ class Engine(Model):
         #set up the overeall model for an on design solve
         lpc = FanAndLPC()
         combustor = CombustorCooling()
-        turbine = Turbine()
+        """turbine = Turbine()
         thrust = ExhaustAndThrust()
-        size = OnDesignSizing()
+        size = OnDesignSizing()"""
 
-        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-
-        self.submodels = [lpc, combustor, turbine, thrust, size]
+        self.submodels = [lpc, combustor]#, turbine, thrust, size]
 
         #print [self.submodels, constraints]
             
@@ -56,27 +54,26 @@ class Engine(Model):
             '\pi_f': 1.5,
             '\pi_{lc}': 3,
             '\pi_{hc}': 10,
-            '\pi_{tn}': 1,
             '\pi_{d}': 1,
-            '\pi_{b}': 1,
             '\pi_{fn}': 1,
-            'alpha': 10,
-            'alphap1': 11,
-            'M_{4a}': 1,    #choked turbines
-            'F_D': 121436.45, #737 max thrust in N
-            'M_2': .4,
-            'M_{2.5}': .5,
-            'hold_{2}': ,
-            'hold_{2.5}': ,
+##            '\pi_{tn}': 1,
+            '\pi_{b}': 1,
+##            'alpha': 10,
+##            'alphap1': 11,
+##            'M_{4a}': 1,    #choked turbines
+##            'F_D': 121436.45, #737 max thrust in N
+##            'M_2': .4,
+##            'M_{2.5}': .5,
+##            'hold_{2}': 1.032,
+##            'hold_{2.5}': 1.05
             }
 
-            #temporary objective is to minimize the core mass flux
-            objective = mCore
-            Model.__init__(self, objective, lc, substitutions)
+            #temporary objective is to minimize the core mass flux 
+            Model.__init__(self, combustor.cost, lc, substitutions)
 
 if __name__ == "__main__":
     engine = Engine()
-    sol = engine.localsolve()
+    sol = engine.localsolve(verbosity = 4, kktsolver="ldl")
             
 
                 #physical constants
