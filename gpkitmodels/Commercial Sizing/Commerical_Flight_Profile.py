@@ -166,6 +166,9 @@ class CommericalAircraft(Model):
                 sum(RngClimb) + sum(RngCruise) >= ReqRng,
                 ReqRngCruise   <= sum(RngCruise),
 
+                #altitude matching constraints
+                hft[icruise2]==hft[Nclimb-1],
+
                 #substitute these values later
                 W_e  == 90000*units('lbf'),
                 W_payload  == 50000*units('lbf'),
