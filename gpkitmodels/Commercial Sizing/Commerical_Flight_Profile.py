@@ -2,9 +2,12 @@
 from numpy import pi
 import gpkit
 import numpy as np
-from gpkit import VectorVariable, Variable, Model, units
+from gpkit import VectorVariable, Variable, Model, units, LinkedConstraintSet
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
+import matplotlib.pyplot as plt
+from atmosphere import Troposphere, Tropopause
+
 #TODO
 
 class CommericalAircraft(Model):
@@ -77,9 +80,9 @@ class CommericalAircraft(Model):
 
         #air properties
         a = VectorVariable(Nseg, 'a', 'm/s', 'Speed of Sound')
-        rho = VectorVariable(Nseg, 'rho', 'kg/m^3', 'Air Density', args=[h])
-        #mu = VectorVariable(Nseg, 'mu', get_mu, 'kg/m/s', 'Air Kinematic Viscosity', args=[h])
-        T = VectorVariable(Nseg, 'T', 273,'K', 'Air Temperature', args=[h])
+        rho = VectorVariable(Nseg, '\rho', 'kg/m^3', 'Air Density')
+        mu = VectorVariable(Nseg, '\mu', 'kg/m/s', 'Air Kinematic Viscosity')
+        T = VectorVariable(Nseg, 'T', 'K', 'Air Temperature')
 
         #time
         tmin = VectorVariable(Nseg, 'tmin', 'min', 'Flight Time in Minutes')
@@ -128,10 +131,10 @@ class CommericalAircraft(Model):
         z_bre = VectorVariable(Nseg, 'z_{bre}', '-', 'Breguet Parameter')
 
         #engine
-        TSFC = VectorVariable(Nseg, 'TSFC', 'lbm/hr/lbf', 'Thrust Specific Fuel Consumption')
+        TSFC = VectorVariable(Nseg, 'TSFC', 'lb/hr/lbf', 'Thrust Specific Fuel Consumption')
 
         #currently sets the value of TSFC, just a place holder
-        c1 = Variable('c1', 2, 'lbm/lbf/hr', 'Constant')
+        c1 = Variable('c1', 2, 'lb/lbf/hr', 'Constant')
 
         with gpkit.SignomialsEnabled():
         
@@ -290,7 +293,7 @@ class CommericalAircraft(Model):
 
 
                 #substitue these values later
-                TSFC[icruise2]  == 1.4*units('lbm/lbf/hr'),
+                TSFC[icruise2]  == 1.4*units('lb/lbf/hr'),
                 LD[icruise2]  == 10,
                 V[icruise2]  == 420*units('kts')
                 ])
@@ -315,7 +318,11 @@ class CommericalAircraft(Model):
 
         sol = m.localsolve(verbosity=4)
 
-        print sol('hft')
+        plt.plot(np.cumsum(sol('tmin')), sol('hft'))
+        plt.title('Altitude vs Time')
+        plt.ylabel('Altitude [ft]')
+        plt.xlabel('Time [min]')
+        plt.show()
 
 if __name__ == '__main__':
     CommericalAircraft()
