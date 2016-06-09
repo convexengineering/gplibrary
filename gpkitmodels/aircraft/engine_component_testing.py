@@ -25,32 +25,30 @@ if __name__ == "__main__":
         'P_{t_3}': fansol('P_{t_3}')
         })
     combsol = combustor.localsolve(verbosity = 0)
-##    print combsol('h_{t_4.1}')-(fansol('h_{t_3}')-fansol('h_{t_2.5}'))/(1+combsol('f'))
-##    print combsol('h_{t_4.1}')
-##    print (fansol('h_{t_2.5}')-fansol('h_{t_1.8}')+10*(fansol('h_{t_2.1}')-fansol('h_{t_2}')))
+    print ["constraint1", combsol('h_{t_4.1}')-(fansol('h_{t_3}')-fansol('h_{t_2.5}'))/(1+combsol('f'))]
+    print combsol('h_{t_4.1}')
+    print ["constraint 2 RHS",-(fansol('h_{t_2.5}')-fansol('h_{t_1.8}')+10*(fansol('h_{t_2.1}')-fansol('h_{t_2}')))]
+    print combsol('P_{t_4.1}')
+    print combsol('f')
+    print combsol('T_{t_4.1}')
     
-##    turbine = Turbine()
-##    turbine.substitutions.update({
-##        'alpha': 10,
-##        'h_{t_3}': fansol('h_{t_3}'),
-##        'h_{t_2.5}': fansol('h_{t_2.5}'),
-##        'h_{t_1.8}': fansol('h_{t_1.8}'),
-##        'h_{t_2.1}': fansol('h_{t_2.1}'),
-##        'h_{t_2}': fansol('h_{t_2}'),
-##        'h_{t_4.1}': combsol('h_{t_4.1}'),
-##        'P_{t_4.1}': combsol('P_{t_4.1}'),
-##        '\pi_{tn}': 1,
-##        'h_{t_4.5}': 1093420.94025,
-##        'f': combsol('f'),
-##        'T_{t_4.1}': combsol('T_{t_4.1}')
-##        })
-##    turbinesol = turbine.solve()
-##    #turbinesol = turbine.localsolve(kktsolver="ldl",verbosity = 1)
-    print fansol('a_0')
-    print fansol('u_0')
-    print fansol('P_{t_7}')
-    print fansol('T_{t_7}')
-    print fansol('h_{t_7}')
+    turbine = Turbine()
+    turbine.substitutions.update({
+        'alpha': 10,
+        'h_{t_3}': fansol('h_{t_3}'),
+        'h_{t_2.5}': fansol('h_{t_2.5}'),
+        'h_{t_1.8}': fansol('h_{t_1.8}'),
+        'h_{t_2.1}': fansol('h_{t_2.1}'),
+        'h_{t_2}': fansol('h_{t_2}'),
+        'h_{t_4.1}': combsol('h_{t_4.1}'),
+        'P_{t_4.1}': combsol('P_{t_4.1}'),
+        '\pi_{tn}': 1,
+        #'h_{t_4.5}': 1093420.94025,
+        'f': combsol('f'),
+        'T_{t_4.1}': combsol('T_{t_4.1}')
+        })
+    #turbinesol = turbine.solve()
+    turbinesol = turbine.solve(verbosity = 4)
     
     exhaust = ExhaustAndThrust()
     exhaust.substitutions.update({

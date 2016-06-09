@@ -230,7 +230,7 @@ class Turbine(Model):
                 #LPT shaft power balance
 
                 #SIGNOMIAL  
-                TCS([(1+f)*(ht49 - ht45) >= -((ht25-ht18)+alpha*(ht21 - ht2))]), #B.165
+                TCS([(1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2))]), #B.165
 
                 
                 #HPT Exit states (station 4.5)
@@ -248,7 +248,7 @@ class Turbine(Model):
                 Tt5 == Tt49,    #B.168
                 ht5 == ht49     #B.169
                 ]
-        Model.__init__(self, Tt45, constraints, **kwargs)
+        Model.__init__(self, 1/Tt45, constraints, **kwargs)
 
 class ExhaustAndThrust(Model):
     """
