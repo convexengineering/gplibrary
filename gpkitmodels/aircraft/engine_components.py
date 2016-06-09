@@ -327,7 +327,7 @@ class ExhaustAndThrust(Model):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpair * T8,
-                u8**2 + 2*h8 <= 2*ht8,
+                #u8**2 + 2*h8 <= 2*ht8,
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpair * Tt8,
                 
@@ -336,26 +336,26 @@ class ExhaustAndThrust(Model):
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
                 (P6/Pt6)**(.2857) == T6/Tt6,
-                u6**2 + 2*h6 <= 2*ht6,
+                #u6**2 + 2*h6 <= 2*ht6,
                 h6 == Cpt * T6,
                 ht6 == Cpt * Tt6,
 
                 #overall thrust values
-                F8/(alpha * mCore) + u0 <= u8,  #B.188
-                F6/mCore + u0 <= (1+f)*u6,      #B.189
-
-                #SIGNOMIAL
-                F <= F6 + F8,
-
-                Fsp == F/((alphap1)*mCore*a0),   #B.191
-
-                #ISP
-                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
-
-                #TSFC
-                TSFC == 1/Isp                   #B.193
+##                F8/(alpha * mCore) + u0 <= u8,  #B.188
+##                F6/mCore + u0 <= (1+f)*u6,      #B.189
+##
+##                #SIGNOMIAL
+##                F <= F6 + F8,
+##
+##                Fsp == F/((alphap1)*mCore*a0),   #B.191
+##
+##                #ISP
+##                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
+##
+##                #TSFC
+##                TSFC == 1/Isp                   #B.193
                 ]
-        Model.__init__(self, 1/F, constraints, **kwargs)
+        Model.__init__(self, P8, constraints, **kwargs)
         
 class OnDesignSizing(Model):
     """
@@ -390,8 +390,8 @@ class OnDesignSizing(Model):
         u25 = Variable('u_{2.5}', 'm/s', 'Air Speed at HPC Face')
         A25 = Variable('A_{2.5}', 'm^2', 'HPC Area')
         Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
-        ht25 = Variable('h_{t_2.5}', 'J', 'Stagnation Enthalpy at the LPC Exit (2.5)')
-        h25 = Variable('h_{2.5}', 'J', 'Static Enthalpy at the LPC Exit (2.5)')
+        ht25 = Variable('h_{t_2.5}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
+        h25 = Variable('h_{2.5}', 'J/kg', 'Static Enthalpy at the LPC Exit (2.5)')
 
         #mach numbers
         M8 = Variable('M_8', '-', 'Fan Exhaust Mach Number')
@@ -406,21 +406,24 @@ class OnDesignSizing(Model):
         M25 = Variable('M_{2.5}', '-', 'HPC Face Axial Mach Number')
 
         #thrust variables
-        Fsp = Variable('F_{sp}', 'N/kg', 'Specific Net Thrust')
+        Fsp = Variable('F_{sp}', '-', 'Specific Net Thrust')
 
         #BPR
         alphap1 = Variable('alphap1', '-', '1 plus BPR')
 
         Pt2 = Variable('P_{t_2}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2)')
         Tt2 = Variable('T_{t_2}', 'K', 'Stagnation Temperature at the Fan Inlet (2)')
-        ht2 = Variable('h_{t_2}', 'J', 'Stagnation Enthalpy at the Fan Inlet (2)')
+        ht2 = Variable('h_{t_2}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2)')
         T2 = Variable('T_{2}', 'K', 'Static Temperature at the Fan Inlet (2)')
-        h2 = Variable('h_{2}', 'J', 'Static Enthalpy at the Fan Inlet (2)')
+        h2 = Variable('h_{2}', 'J/kg', 'Static Enthalpy at the Fan Inlet (2)')
 
         #exhaust speeds
         u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
         u8 = Variable('u_8', 'm/s', 'Fan Exhaust Velocity')
 
+        #exhaust temperatures
+        T6 = Variable('T_{6}', 'K', 'Core Exhaust Static Temperature (6)')
+        T8 = Variable('T_{8}', 'K', 'Fan Exhaust Sttic Temperature (8)')
         
         constraints = [
             #mass flow sizing
@@ -444,8 +447,8 @@ class OnDesignSizing(Model):
             A25 == (alphap1)*mCore/(rho25*u25),     #B.203
 
             #mach nubmers for post processing of the data
-            M8 == u8/((Cpair*Rair/(781*units('J/kg/K')))**.5),
-            M6 == u6/((Cpt*Rt/(781*units('J/kg/K')))**.5),
+            M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
+            M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
             ]
         Model.__init__(self, None, constraints, **kwargs)
 
