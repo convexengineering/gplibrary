@@ -315,5 +315,7 @@ class CommericalAircraft(Model):
 
         sol = m.localsolve(verbosity=4)
 
+        print sol('hft')
+
 if __name__ == '__main__':
     CommericalAircraft()
