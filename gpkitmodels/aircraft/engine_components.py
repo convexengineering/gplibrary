@@ -248,7 +248,7 @@ class Turbine(Model):
                 Tt5 == Tt49,    #B.168
                 ht5 == ht49     #B.169
                 ]
-        Model.__init__(self, 1/Tt45, constraints, **kwargs)
+        Model.__init__(self, 1/ht5, constraints, **kwargs)
 
 class ExhaustAndThrust(Model):
     """
@@ -450,7 +450,9 @@ class OnDesignSizing(Model):
             M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
             M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
             ]
-        Model.__init__(self, A25, constraints, **kwargs)
+        #objective is None because all constraints are equality so feasability region is a
+        #single point which likely will not solve
+        Model.__init__(self, None, constraints, **kwargs)
 
 class NozzleSizing(Model):
     """

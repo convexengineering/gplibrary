@@ -70,28 +70,30 @@ if __name__ == "__main__":
         'f': .016
         })
 
-    exhaustsol = exhaust.localsolve(verbosity = 4)
+    exhaustsol = exhaust.localsolve(verbosity = 0)
 
-    design = OnDesignSizing()
-    design.substitutions.update({
-        'a_0': fansol('a_0'),
-        'alphap1': 11,
-        'F_D': 121436.45, #737 max thrust in N
-        'M_2': .4,
-        'M_{2.5}': .5,
-        'u_8': 600,
-        'u_6': 625,
-        'T_{t_2}': fansol('T_{t_2}'),
-        'T_6': 700,
-        'T_8': 500,
-        'T_{t_2.5}': fansol('T_{t_2.5}'),
-        'P_{t_2}': fansol('P_{t_2}'),
-        'P_{t_2.5}': fansol('P_{t_2.5}'),
-        'F_{sp}': 100,
-        'hold_{2}': 1.032,
-        'hold_{2.5}': 1.05,
-        })
-
-    designsol = design.solve()
+    #below won't solve because the model is all equality constraints
+    #so feasible region is a single point
+##    design = OnDesignSizing()
+##    design.substitutions.update({
+##        'a_0': fansol('a_0'),
+##        'alphap1': 11,
+##        'F_D': 121436.45, #737 max thrust in N
+##        'M_2': .4,
+##        'M_{2.5}': .5,
+##        'u_8': 600,
+##        'u_6': 625,
+##        'T_{t_2}': fansol('T_{t_2}'),
+##        'T_6': 700,
+##        'T_8': 500,
+##        'T_{t_2.5}': fansol('T_{t_2.5}'),
+##        'P_{t_2}': fansol('P_{t_2}'),
+##        'P_{t_2.5}': fansol('P_{t_2.5}'),
+##        'F_{sp}': 1,
+##        'hold_{2}': 1.032,
+##        'hold_{2.5}': 1.05,
+##        })
+##
+##    designsol = design.solve()
 
     
