@@ -23,7 +23,7 @@ class FanAndLPC(Model):
         
         #new Vars for free stream
         a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
-        u0 = Variable('U_0', 'm/s', 'Free Stream Speed')
+        u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
         Pt0 = Variable('P_{t_0}', 'kPa', 'Free Stream Stagnation Pressure')
         Tt0 = Variable('T_{t_0}', 'K', 'Free Stream Stagnation Temperature')
         ht0 = Variable('h_{t_0}', 'J/kg', 'Free Stream Stagnation Enthalpy')
@@ -225,7 +225,7 @@ class Turbine(Model):
                 #HPT shafter power balance
 
                 #SIGNOMIAL
-                (1+f)*(ht41-ht45) <= ht3 - ht25,    #B.161
+                #TCS([(1+f)*(ht41-ht45) >= ht3 - ht25]),    #B.161
 
                 #LPT shaft power balance
 
@@ -258,14 +258,20 @@ class ExhaustAndThrust(Model):
     def __init__(self, **kwargs):
         
         a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
-        u0 = Variable('U_0', 'm/s', 'Free Stream Speed')
+        u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
+        
         #external atmosphere properties
         P0 = Variable('P_0', 'kPa', 'Free Stream Stagnation Pressure')
+        
         #gas properties
         Cpt =Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
         gammaT = Variable('gamma_{T}', 1.4, '-', 'Specific Heat Ratio for Gas in Turbine')
+        gammaAir = Variable('gamma_{air}', 1.4, '-', 'Specific Heat Ratio for Air')
+        Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
+        
         #gravity
-        g = Variable('g', 9.81, 'm/s/s', 'Gravitational Acceleration')
+        g = Variable('g', 9.81, 'm/(s^2)', 'Gravitational Acceleration')
+        
         #fan exhaust variables
         P8 = Variable('P_8', 'kPa', 'Fan Exhaust Static Pressure')
         Pt8 = Variable('P_{t_8}', 'kPa', 'Fan Exhaust Stagnation Pressure')
@@ -296,9 +302,9 @@ class ExhaustAndThrust(Model):
         F8 = Variable('F_8', 'N', 'Fan Thrust')
         F6 = Variable('F_6', 'N', 'Core Thrust')
         F = Variable('F', 'N', 'Total Thrust')
-        Fsp = Variable('F_{sp}', 'N/kg', 'Specific Net Thrust')
-        Isp = Variable('I_{sp}', '1/s', 'Specific Impulse')
-        TSFC = Variable('TSFC', 'kg/hr/N', 'Thrust Specific Fuel Consumption')
+        Fsp = Variable('F_{sp}', '-', 'Specific Net Thrust')
+        Isp = Variable('I_{sp}', 's', 'Specific Impulse')
+        TSFC = Variable('TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
 
         #exhaust speeds
         u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
@@ -320,9 +326,10 @@ class ExhaustAndThrust(Model):
                 Pt8 == Pt7, #B.179
                 Tt8 == Tt7, #B.180
                 P8 == P0,
-                h8 == Cpt * T8,
+                h8 == Cpair * T8,
                 u8**2 + 2*h8 <= 2*ht8,
                 (P8/Pt8)**(.2857) == T8/Tt8,
+                ht8 == Cpair * Tt8,
                 
                 #core exhaust
                 P6 == P0,   #B.4.11 intro
@@ -331,6 +338,7 @@ class ExhaustAndThrust(Model):
                 (P6/Pt6)**(.2857) == T6/Tt6,
                 u6**2 + 2*h6 <= 2*ht6,
                 h6 == Cpt * T6,
+                ht6 == Cpt * Tt6,
 
                 #overall thrust values
                 F8/(alpha * mCore) + u0 <= u8,  #B.188
@@ -347,7 +355,7 @@ class ExhaustAndThrust(Model):
                 #TSFC
                 TSFC == 1/Isp                   #B.193
                 ]
-        Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, 1/F, constraints, **kwargs)
         
 class OnDesignSizing(Model):
     """
