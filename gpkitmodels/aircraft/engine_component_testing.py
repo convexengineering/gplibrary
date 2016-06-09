@@ -25,9 +25,9 @@ if __name__ == "__main__":
         'P_{t_3}': fansol('P_{t_3}')
         })
     combsol = combustor.localsolve(verbosity = 0)
-    print combsol('h_{t_4.1}')-(fansol('h_{t_3}')-fansol('h_{t_2.5}'))/(1+combsol('f'))
-    print combsol('h_{t_4.1}')
-    print (fansol('h_{t_2.5}')-fansol('h_{t_1.8}')+10*(fansol('h_{t_2.1}')-fansol('h_{t_2}')))
+##    print combsol('h_{t_4.1}')-(fansol('h_{t_3}')-fansol('h_{t_2.5}'))/(1+combsol('f'))
+##    print combsol('h_{t_4.1}')
+##    print (fansol('h_{t_2.5}')-fansol('h_{t_1.8}')+10*(fansol('h_{t_2.1}')-fansol('h_{t_2}')))
     
 ##    turbine = Turbine()
 ##    turbine.substitutions.update({
@@ -46,26 +46,33 @@ if __name__ == "__main__":
 ##        })
 ##    turbinesol = turbine.solve()
 ##    #turbinesol = turbine.localsolve(kktsolver="ldl",verbosity = 1)
+    print fansol('a_0')
+    print fansol('u_0')
+    print fansol('P_{t_7}')
+    print fansol('T_{t_7}')
+    print fansol('h_{t_7}')
+    
+    exhaust = ExhaustAndThrust()
+    exhaust.substitutions.update({
+        'a_0': fansol('a_0'),
+        'u_0': fansol('u_0'),
+        'T_0': 216.5,   #36K feet
+        'P_0': 22.8,    #36K feet
+        'M_0': 0.8,
+        'alpha': 10,
+        'alphap1': 11,
+        'M_{4a}': 1,    #choked turbines
+        'P_{t_7}': fansol('P_{t_7}'),
+        'T_{t_7}': fansol('T_{t_7}'),
+        'h_{t_7}': fansol('h_{t_7}'),
+        'P_{t_5}': 1006.5,
+        'T_{t_5}': 836.53,
+        'h_{t_5}': 893420.94025,
+        'm_{core}': 40,
+        'f': .016
+        })
 
-##    exhaust = ExhaustAndThrust()
-##    exhaust.substitutions.update({
-##        'a_0': fansol('a_0'),
-##        'u_0': fansol('u_0'),
-##        'T_0': 216.5,   #36K feet
-##        'P_0': 22.8,    #36K feet
-##        'M_0': 0.8,
-##        'alpha': 10,
-##        'alphap1': 11,
-##        'M_{4a}': 1,    #choked turbines
-##        'P_{t_7}': fansol('P_{t_7}'),
-##        'T_{t_7}': fansol('T_{t_7}'),
-##        'h_{t_7}': fansol('h_{t_7}'),
-##        'P_{t_5}': 2026.5,
-##        'T_{t_5}': 836.53,
-##        'h_{t_5}': 893420.94025
-##        })
-##
-##    exhaustsol = exhaust.solve()
+    exhaustsol = exhaust.localsolve(verbosity = 4)
 
     design = OnDesignSizing()
     design.substitutions.update({
@@ -79,7 +86,12 @@ if __name__ == "__main__":
         'T_{t_2}': fansol('T_{t_2}'),
         'T_6': 700,
         'T_8': 500,
-        'T_{t_2.5}': fansol('T_{t_2.5}')
+        'T_{t_2.5}': fansol('T_{t_2.5}'),
+        'P_{t_2}': fansol('P_{t_2}'),
+        'P_{t_2.5}': fansol('P_{t_2.5}'),
+        'F_{sp}': 100,
+        'hold_{2}': 1.032,
+        'hold_{2.5}': 1.05,
         })
 
     designsol = design.solve()

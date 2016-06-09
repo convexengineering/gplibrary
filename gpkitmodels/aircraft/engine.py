@@ -65,7 +65,9 @@ class Engine(Model):
             'M_{4a}': 1,    #choked turbines
             'F_D': 121436.45, #737 max thrust in N
             'M_2': .4,
-            'M_{2.5}': .5
+            'M_{2.5}': .5,
+            'hold_{2}': ,
+            'hold_{2.5}': ,
             }
 
             #temporary objective is to minimize the core mass flux

@@ -225,7 +225,7 @@ class Turbine(Model):
                 #HPT shafter power balance
 
                 #SIGNOMIAL
-                #TCS([(1+f)*(ht41-ht45) >= ht3 - ht25]),    #B.161
+                TCS([(1+f)*(ht41-ht45) >= ht3 - ht25]),    #B.161
 
                 #LPT shaft power balance
 
@@ -327,7 +327,7 @@ class ExhaustAndThrust(Model):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpair * T8,
-                #u8**2 + 2*h8 <= 2*ht8,
+                u8**2 + 2*h8 <= 2*ht8,
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpair * Tt8,
                 
@@ -336,26 +336,26 @@ class ExhaustAndThrust(Model):
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
                 (P6/Pt6)**(.2857) == T6/Tt6,
-                #u6**2 + 2*h6 <= 2*ht6,
+                u6**2 + 2*h6 <= 2*ht6,
                 h6 == Cpt * T6,
                 ht6 == Cpt * Tt6,
 
                 #overall thrust values
-##                F8/(alpha * mCore) + u0 <= u8,  #B.188
-##                F6/mCore + u0 <= (1+f)*u6,      #B.189
-##
-##                #SIGNOMIAL
-##                F <= F6 + F8,
-##
-##                Fsp == F/((alphap1)*mCore*a0),   #B.191
-##
-##                #ISP
-##                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
-##
-##                #TSFC
-##                TSFC == 1/Isp                   #B.193
+                F8/(alpha * mCore) + u0 <= u8,  #B.188
+                F6/mCore + u0 <= (1+f)*u6,      #B.189
+
+                #SIGNOMIAL
+                F <= F6 + F8,
+
+                Fsp == F/((alphap1)*mCore*a0),   #B.191
+
+                #ISP
+                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
+
+                #TSFC
+                TSFC == 1/Isp                   #B.193
                 ]
-        Model.__init__(self, P8, constraints, **kwargs)
+        Model.__init__(self, 1/F, constraints, **kwargs)
         
 class OnDesignSizing(Model):
     """
@@ -440,7 +440,7 @@ class OnDesignSizing(Model):
 
             #HPC area
             P25 == Pt25*(hold25)**(-3.5),
-            T2 == Tt25 * hold25**-1,
+            T25 == Tt25 * hold25**-1,
             h25 == Cpair * T25,
             rho25 == P25/(Rair*T25),
             u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
@@ -450,7 +450,7 @@ class OnDesignSizing(Model):
             M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
             M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
             ]
-        Model.__init__(self, M6, constraints, **kwargs)
+        Model.__init__(self, A25, constraints, **kwargs)
 
 class NozzleSizing(Model):
     """
