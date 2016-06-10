@@ -83,7 +83,7 @@ class FanAndLPC(Model):
             Tt0 == T0 / (c1) ** (-1),             #https://www.grc.nasa.gov/www/k-12/airplane/isentrop.html
             ht0 == Cpair * Tt0,
 
-            #diffuser exit stagnation calues (station 1.8)
+            #diffuser exit stagnation values (station 1.8)
             Pt18 == pid * Pt0,  #B.113
             Tt18 == Tt0,        #B.114
             ht18 == ht0,        #B.115

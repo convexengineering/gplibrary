@@ -72,7 +72,6 @@ class Engine(Model):
 if __name__ == "__main__":
     engine = Engine()
     sol = engine.localsolve(verbosity = 4, kktsolver="ldl")
-            
 
                 #physical constants
         #Fix the R values
