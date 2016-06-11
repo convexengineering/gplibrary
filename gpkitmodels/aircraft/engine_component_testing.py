@@ -1,7 +1,7 @@
 from gpkit import Model, Variable, SignomialsEnabled
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, CompressorMap
 
 if __name__ == "__main__":
     fan = FanAndLPC()
@@ -32,23 +32,23 @@ if __name__ == "__main__":
     print combsol('f')
     print combsol('T_{t_4.1}')
     
-    turbine = Turbine()
-    turbine.substitutions.update({
-        'alpha': 10,
-        'h_{t_3}': fansol('h_{t_3}'),
-        'h_{t_2.5}': fansol('h_{t_2.5}'),
-        'h_{t_1.8}': fansol('h_{t_1.8}'),
-        'h_{t_2.1}': fansol('h_{t_2.1}'),
-        'h_{t_2}': fansol('h_{t_2}'),
-        'h_{t_4.1}': combsol('h_{t_4.1}'),
-        'P_{t_4.1}': combsol('P_{t_4.1}'),
-        '\pi_{tn}': 1,
-        #'h_{t_4.5}': 1093420.94025,
-        'f': combsol('f'),
-        'T_{t_4.1}': combsol('T_{t_4.1}')
-        })
-    #turbinesol = turbine.solve()
-    turbinesol = turbine.solve(verbosity = 4)
+##    turbine = Turbine()
+##    turbine.substitutions.update({
+##        'alpha': 10,
+##        'h_{t_3}': fansol('h_{t_3}'),
+##        'h_{t_2.5}': fansol('h_{t_2.5}'),
+##        'h_{t_1.8}': fansol('h_{t_1.8}'),
+##        'h_{t_2.1}': fansol('h_{t_2.1}'),
+##        'h_{t_2}': fansol('h_{t_2}'),
+##        'h_{t_4.1}': combsol('h_{t_4.1}'),
+##        'P_{t_4.1}': combsol('P_{t_4.1}'),
+##        '\pi_{tn}': 1,
+##        #'h_{t_4.5}': 1093420.94025,
+##        'f': combsol('f'),
+##        'T_{t_4.1}': combsol('T_{t_4.1}')
+##        })
+##    #turbinesol = turbine.solve()
+##    turbinesol = turbine.solve(verbosity = 0)
     
     exhaust = ExhaustAndThrust()
     exhaust.substitutions.update({
@@ -96,4 +96,16 @@ if __name__ == "__main__":
 ##
 ##    designsol = design.solve()
 
+    #creating a compressor map model for a HPC
+    compmap = CompressorMap(1)
+    compmap.substitutions.update({
+        'T_{tref}': 1000,
+        'mdot': 38,
+        'm_D': 40,
+        'P_{tref}': 22,
+        '\pi_D': 20,
+        'N_{{bar}_D}': 1,
+        'eta_{{pol}_D}': 0.9
+        })
+    compmap.localsolve(verbosity = 4)
     

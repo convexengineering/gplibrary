@@ -3,6 +3,7 @@ from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.small_scripts import mag
 from gpkit.constraints.tight import TightConstraintSet as TCS
+from gpkit.tools import te_exp_minus1
 
 class FanAndLPC(Model):
     """
@@ -424,6 +425,13 @@ class OnDesignSizing(Model):
         #exhaust temperatures
         T6 = Variable('T_{6}', 'K', 'Core Exhaust Static Temperature (6)')
         T8 = Variable('T_{8}', 'K', 'Fan Exhaust Sttic Temperature (8)')
+
+        #exhaust static pressures to be used later
+        P7 = Variable('P_{7}', 'kPa', 'Fan Exhaust Static Pressure (7)')
+        P5 = Variable('P_{5}', 'kPa', 'Core Exhaust Static Pressure (5)')
+
+        #ambient static pressure
+        P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
         
         constraints = [
             #mass flow sizing
@@ -449,25 +457,109 @@ class OnDesignSizing(Model):
             #mach nubmers for post processing of the data
             M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
             M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
+
+            #core satic pressure constraints
+            P7 == P0,
+            P5 == P0
             ]
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
         Model.__init__(self, None, constraints, **kwargs)
 
-class NozzleSizing(Model):
+class CompressorMap(Model):
     """
-    class for post processing of solution data, computes the nozzle sizes
+    Implentation of TASOPT compressor map model. Map is claibrated with exponents from
+    tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 fan and compressor.
+    Map is used for off-design calculations.
 
-    Input: solution array from engine on design solve
-    Output: Nozzle Sizes
+    Input arg determines if the map is used for a fan or HPC (i.e. determines which
+    table, B.1 or B.2, exponent values are used from). arg == 0 yeilds a fan, arg ==1
+    yields a HPC.
     """
-    def __init__(self, sol):
-        self.sizing(self, sol)
+    def __init__(self, arg, **kwargs):
+        #define variables to be substituted for
+        #Temperature Variables
+        Tt = Variable('T_t', 'K', 'Face Stagnation Temperature (Station 2 or 2.5)')
+        Ttref = Variable('T_{tref}', 'K', 'Reference Stagnation Temperature')
 
-    def sizing(self, sol):
-        #first size the fan nozzle
+        #Mass Flow Variables
+        mbar = Variable('m_{bar}', 'kg/s', 'Corrected Mass Flow')
+        mdot = Variable('m_{dot}', 'kg/s', 'Mass Flow')
+        mtild = Variable('m_{tild}', '-', 'Normalized Mass Flow')
+        mD = Variable('m_D', 'kg/s', 'On-Design Mass Flow')
 
-        #size the core nozzle
+        #Pressure Variables
+        Pt = Variable('P_t', 'kPa', 'Face Stagnation Pressure (Station 2 or 2.5)')
+        Ptref = Variable('P_{tref}', 'kPa', 'Reference Stagnation Pressure')
 
-        #return the two sizes
-        return A6, A8
+        #pressure ratio variables
+        ptild = Variable('p_{tild}', '-', 'Normalized Pressure Ratio')
+        pi = Variable('\pi', '-', 'Pressure Ratio')
+        piD = Variable('\pi_D', '-', 'On-Design Pressure Ratio')
+        
+        #Speed Variables
+        Nbar = Variable('N_{bar}', '-', 'Corrected Compressor/Fan Speed')
+        N = Variable('N', '-', 'Compressor/Fan Speed')
+        Ntild = Variable('N_{tild}', '-', 'Normalized Speed')
+        NbarD = Variable('N_{{bar}_D}', '-', 'On-Design Corrected Speed')
+
+        #Spine Paramterization Variables
+        mtilds = Variable('Mm_{{tild}_s}', '-', 'Spine Parameterization Variable')
+        ptilds = Variable('p_{{tild}_s}', '-', 'Spine Parameterization Variable')
+
+        #te_exp_minus1 variable for B.287
+        z = Variable('z', '-', 'Taylor Expanded Variable to Replace Log Term')
+
+        #polytropic efficiecny
+        etaPol = Variable('\eta_{pol}', '-', 'Component Off Design Polytropic Efficiency')
+        etaPolD = Variable('\eta_{{pol}_D}', '-', 'Component On Design Polytropic Efficiency')
+        with SignomialsEnabled():
+            constraints = [
+                #define N bar
+                Nbar == N/((Tt/Ttref)**.5), #B.279
+
+                #define mbar
+                mbar == mdot*((Tt/Ttref)**.5)/(Pt/Ptref),    #B.280
+
+                #define ptild
+                #SIGNOMIAL
+                ptild * (piD-1) >= (pi-1),    #B.281
+
+                #define mtild
+                mtild == mbar/mD,   #B.282
+
+                #define N tild
+                Ntild == Nbar/NbarD,    #B.283
+
+                #constrain the "knee" shape of the map
+                ((mtilds-mtild)/.03) >= te_exp_minus1(z, nterm=3),  #B.286
+                ptild - ptilds >= 2*Ntild*.03*z,    #B.286
+                ]
+            
+            #add the constraints for a fan
+            if arg==0:
+                constraints.append([
+                    #spine parameterization
+                    mtilds == Nbar**.85,    #B.284
+                    ptilds == mtilds ** 3,   #B.285
+                    
+                    #compute the polytropic efficiency
+                    etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
+                    ])
+            #add the constraints for a HPC
+            if arg == 1:
+                constraints.append([
+                    #spine paramterization
+                    mtilds == Nbar**.5, #B.284
+                    ptilds == mtilds ** 1.5, #B.285
+                    
+                    #compute the polytropic efficiency
+                    etaPol <= etaPolD*(1-15*(ptild/mtild-mtild)**3-((mtild/.8)-1)**4)
+                    ])
+            #objective is to maximize component efficiency
+            Model.__init__(self, 1/etaPol, constraints, **kwargs)
+
+
+
+
+        
