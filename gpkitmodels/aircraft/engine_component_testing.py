@@ -97,14 +97,18 @@ if __name__ == "__main__":
 ##    designsol = design.solve()
 
     #creating a compressor map model for a HPC
-    compmap = CompressorMap(1)
+    compmap = CompressorMap(0)
     compmap.substitutions.update({
         'T_{tref}': 1000,
+        'T_t': 1250,
         'mdot': 38,
         'm_D': 40,
         'P_{tref}': 22,
+        'P_t': 25,
         '\pi_D': 20,
+        '\pi': 21,
         'N_{{bar}_D}': 1,
+        'N': 12,
         'eta_{{pol}_D}': 0.9
         })
     compmap.localsolve(verbosity = 4)

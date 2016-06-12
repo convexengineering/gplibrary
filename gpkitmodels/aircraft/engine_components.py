@@ -523,7 +523,7 @@ class CompressorMap(Model):
 
                 #define ptild
                 #SIGNOMIAL
-                ptild * (piD-1) >= (pi-1),    #B.281
+                ptild * (piD-1) <= (pi-1),    #B.281
 
                 #define mtild
                 mtild == mbar/mD,   #B.282
@@ -532,7 +532,7 @@ class CompressorMap(Model):
                 Ntild == Nbar/NbarD,    #B.283
 
                 #constrain the "knee" shape of the map
-                ((mtilds-mtild)/.03) >= te_exp_minus1(z, nterm=3),  #B.286
+                ((mtilds-mtild)/.03) <= te_exp_minus1(z, nterm=3),  #B.286
                 ptild - ptilds >= 2*Ntild*.03*z,    #B.286
                 ]
             
