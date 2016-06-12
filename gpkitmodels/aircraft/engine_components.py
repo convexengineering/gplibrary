@@ -523,7 +523,7 @@ class CompressorMap(Model):
 
                 #define ptild
                 #SIGNOMIAL
-                ptild * (piD-1) <= (pi-1),    #B.281
+                TCS([ptild * (piD-1) >= (pi-1)]),    #B.281
 
                 #define mtild
                 mtild == mbar/mD,   #B.282
@@ -532,8 +532,8 @@ class CompressorMap(Model):
                 Ntild == Nbar/NbarD,    #B.283
 
                 #constrain the "knee" shape of the map
-                ((mtilds-mtild)/.03) <= te_exp_minus1(z, nterm=3),  #B.286
-                ptild - ptilds >= 2*Ntild*.03*z,    #B.286
+                TCS([((mtilds-mtild)/.03) >= te_exp_minus1(z, nterm=3)]),  #B.286
+                TCS([ptild <= 2*Ntild*.03*z + ptilds]),    #B.286
                 ]
             
             #add the constraints for a fan
@@ -544,7 +544,7 @@ class CompressorMap(Model):
                     ptilds == mtilds ** 3,   #B.285
                     
                     #compute the polytropic efficiency
-                    etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
+                    #etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
                     ])
             #add the constraints for a HPC
             if arg == 1:
@@ -554,10 +554,10 @@ class CompressorMap(Model):
                     ptilds == mtilds ** 1.5, #B.285
                     
                     #compute the polytropic efficiency
-                    etaPol <= etaPolD*(1-15*(ptild/mtild-mtild)**3-((mtild/.8)-1)**4)
+                    #etaPol <= etaPolD*(1-15*(ptild/mtild-mtild)**3-((mtild/.8)-1)**4)
                     ])
             #objective is to maximize component efficiency
-            Model.__init__(self, 1/etaPol, constraints, **kwargs)
+            Model.__init__(self, 1/z, constraints, **kwargs)
 
 
 
