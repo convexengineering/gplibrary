@@ -431,39 +431,78 @@ class OnDesignSizing(Model):
 
         #ambient static pressure
         P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
+
+        #component speeds
+        #design spool speeds arbitrarily set to 1 since only ratio are considered
+        NlcD = Variable('N_{lcD}', 1, '-', 'LPC Design Spool Speed')    #B.221
+        NhcD =Variable('N_{hcD}', 1, '-', 'HPC Design Spool Speed') #B.222
+
+        #design normalized component speeds
+        NbarlcD = Variable()
+        NbarhcD = Variable()
         
-        constraints = [
-            #mass flow sizing
-            mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
+        #design corrected mass flow
+        mhtD =Variable('m_{htD}', 'kg/s', 'Design HPT Corrected Mass Flow (see B.225)')
+        mltD = Variable('m_{ltD}', 'kg/s', 'Design LPT Corrected Mass Flow (see B.226)')
 
-            #component area sizing
-            #fan area
-            P2 == Pt2*(hold2)**(-3.5),
-            T2 == Tt2 * hold2**-1,
-            h2 == Cpair * T2,
-            rho2 == P2/(Rair * T2),  #B.196
-            u2 == M2*(Cpair*Rair*T2/(781*units('J/kg/K')))**.5,  #B.197
-            A2 == (alphap1)*mCore/(rho2*u2),     #B.198
+        #reference states
+        Tref = Variable('T_{ref}', 'K', 'Reference Temperature for Normalization')
+        Pref = Variable('P_{ref}', 'kPa', 'Reference Pressure for Normalization')
 
-            #HPC area
-            P25 == Pt25*(hold25)**(-3.5),
-            T25 == Tt25 * hold25**-1,
-            h25 == Cpair * T25,
-            rho25 == P25/(Rair*T25),
-            u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
-            A25 == (alphap1)*mCore/(rho25*u25),     #B.203
+        #fuel air ratio
+        f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
+        
+        #other states components needs to be linked to
+        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
+        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+        Pt45 = Variable('P_{t_4.5}', 'kPa', 'Stagnation Pressure at the HPT Exit (4.5)')
+        Tt45 = Variable('T_{t_4.5}', 'K', 'Stagnation Temperature at the HPT Exit (4.5)')
+        Tt18 = Variable('T_{t_1.8}', 'K', 'Stagnation Temperature at the Diffuser Exit (1.8)')
+        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
 
-            #mach nubmers for post processing of the data
-            M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
-            M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
+        with SignomialsEnabled():
+            constraints = [
+                #mass flow sizing
+                mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
 
-            #core satic pressure constraints
-            P7 == P0,
-            P5 == P0
-            ]
+                #component area sizing
+                #fan area
+                P2 == Pt2*(hold2)**(-3.5),
+                T2 == Tt2 * hold2**-1,
+                h2 == Cpair * T2,
+                rho2 == P2/(Rair * T2),  #B.196
+                u2 == M2*(Cpair*Rair*T2/(781*units('J/kg/K')))**.5,  #B.197
+                A2 == (alphap1)*mCore/(rho2*u2),     #B.198
+
+                #HPC area
+                P25 == Pt25*(hold25)**(-3.5),
+                T25 == Tt25 * hold25**-1,
+                h25 == Cpair * T25,
+                rho25 == P25/(Rair*T25),
+                u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
+                A25 == (alphap1)*mCore/(rho25*u25),     #B.203
+
+                #mach nubmers for post processing of the data
+                M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
+                M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
+
+                #core satic pressure constraints
+                P7 == P0,
+                P5 == P0,
+
+                #THESE LINES CAUSE ENGINE TO NOT SOLVE
+##                #compute the normalized speeds
+##                NbarlcD == NlcD/(Tt18/Tref)**.5,
+##                NbarhcD == NhcD/(Tt25/Tref)**.5,
+##
+##                #compute the normalized mass flow
+##                mltD <= (1+f)*mCore*((Tt41/Tref)**.5)/(Pt41/Pref),
+##                mhtD <= (1+f)*mCore*((Tt45/Tref)**.5)/(Pt45/Pref)
+               
+                ]
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
-        Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, NbarlcD, constraints, **kwargs)
 
 class CompressorMap(Model):
     """
@@ -656,14 +695,21 @@ class OffDesign(Model):
         ht49 = Variable('h_{t_4.9}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (4.9)')
 
         #reference states
-        Tref = Variable('T_{t_ref}', 'K', 'Reference Temperature for Normalization')
-        Pref = Variable('P_{t_ref}', 'kPa', 'Reference Pressure for Normalization')
+        Tref = Variable('T_{ref}', 'K', 'Reference Temperature for Normalization')
+        Pref = Variable('P_{ref}', 'kPa', 'Reference Pressure for Normalization')
 
         #new best idea is to run this twice and if mach numbers go over 1 pass in a different argument and re run the case
         
         
         with SignomialsEnabled():
             constraints = [
+                #compute the normalized speeds
+                NbarlcD == NlcD/(Tt18/Tref)**.5,
+                NbarhcD == NhcD/(Tt25/Tref)**.5,
+
+                #compute the normalized mass flow
+                mltD <= (1+f)*mCore*((Tt41/Tref)**.5)/(Pt41/Pref),
+                mhtD <= (1+f)*mCore*((Tt45/Tref)**.5)/(Pt45/Pref)
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
 
@@ -702,6 +748,6 @@ class OffDesign(Model):
         Model.__init__(self, Tt4, constraints, **kwargs)
 
 
-
+LOOKS LIKE THE REFERENCE VALUES ARE ACTUALLY FROM STATION 2.5.....?????
 
         
