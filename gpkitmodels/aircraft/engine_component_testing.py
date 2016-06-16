@@ -1,7 +1,7 @@
 from gpkit import Model, Variable, SignomialsEnabled
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, CompressorMap
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, CompressorMap, OffDesign
 
 if __name__ == "__main__":
     fan = FanAndLPC()
@@ -25,12 +25,12 @@ if __name__ == "__main__":
         'P_{t_3}': fansol('P_{t_3}')
         })
     combsol = combustor.localsolve(verbosity = 0)
-    print ["constraint1", combsol('h_{t_4.1}')-(fansol('h_{t_3}')-fansol('h_{t_2.5}'))/(1+combsol('f'))]
-    print combsol('h_{t_4.1}')
-    print ["constraint 2 RHS",-(fansol('h_{t_2.5}')-fansol('h_{t_1.8}')+10*(fansol('h_{t_2.1}')-fansol('h_{t_2}')))]
-    print combsol('P_{t_4.1}')
-    print combsol('f')
-    print combsol('T_{t_4.1}')
+##    print ["constraint1", combsol('h_{t_4.1}')-(fansol('h_{t_3}')-fansol('h_{t_2.5}'))/(1+combsol('f'))]
+##    print combsol('h_{t_4.1}')
+##    print ["constraint 2 RHS",-(fansol('h_{t_2.5}')-fansol('h_{t_1.8}')+10*(fansol('h_{t_2.1}')-fansol('h_{t_2}')))]
+##    print combsol('P_{t_4.1}')
+##    print combsol('f')
+##    print combsol('T_{t_4.1}')
     
 ##    turbine = Turbine()
 ##    turbine.substitutions.update({
@@ -97,19 +97,45 @@ if __name__ == "__main__":
 ##    designsol = design.solve()
 
     #creating a compressor map model for a HPC
-    compmap = CompressorMap(0)
-    compmap.substitutions.update({
-        'T_{tref}': 1000,
-        'T_t': 1250,
-        'mdot': 38,
-        'm_D': 40,
-        'P_{tref}': 22,
-        'P_t': 25,
-        '\pi_D': 20,
-        '\pi': 21,
-        'N_{{bar}_D}': 1,
-        'N': 12,
-        'eta_{{pol}_D}': 0.9
+##    compmap = CompressorMap(0)
+##    compmap.substitutions.update({
+##        'T_{tref}': 1000,
+##        'T_t': 1250,
+##        'mdot': 38,
+##        'm_D': 40,
+##        'P_{tref}': 22,
+##        'P_t': 25,
+##        '\pi_D': 20,
+##        '\pi': 21,
+##        'N_{{bar}_D}': 1,
+##        'N': 12,
+##        'eta_{{pol}_D}': 0.9
+##        })
+##    compmap.localsolve(verbosity = 4)
+
+    #run the off design model
+    offdesign = OffDesign()
+    offdesign.substitutions.update({
+        'G_f': 1,
+        'N_1': 1,
+        'P_0': 20,
+        'f': .016,
+        'P_{t_1.9}}': 100,
+        'T_{t_1.9}': 273,
+        'P_{t_2.5}': 500,
+        'T_{t_2.5}': 500,
+        'P_{t_4.1}': 1000,
+        'T_{t_4.1}': 1400,
+        'P_{t_4.5}': 600,
+        'T_{t_4.5}': 1000,
+        'P_{t_4.9}': 200,
+        'T_{7}': 300,
+        'T_{5}': 600,
+        'h_{t_5}': 1087*750,
+        'h_{t_7}': 1087*450,
+        'T_{t_{4spec}}': 1400,
+        '\pi_{tn}': 1
         })
-    compmap.localsolve(verbosity = 4)
+
+    offdesign.localsolve(verbosity = 4)
     
