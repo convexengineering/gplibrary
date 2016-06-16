@@ -668,10 +668,10 @@ class OffDesign(Model):
                 Nf*Gf == N1,
 
                 #residual 2 HPT mass flow
-                mhtD == (1+f)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5,
+                mhtD <= (1+f)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5,
 
                 #residual 3 LPT mass flow
-                (1+f)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 == mltD,
+                (1+f)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 >= mltD,
                 
                 #residual 4
                 #I think all those Ttref values are the actual on design values
@@ -688,7 +688,7 @@ class OffDesign(Model):
                 u5**2 +2*h5 <= 2*ht5,
                 rho5 == P5/(Rt*T5),
                 M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
-                (1+f)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5,
+                (1+f)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 <= rho5*A5*u5,
                 
                 #residual 6 LPC/HPC mass flow constraint
                 mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
