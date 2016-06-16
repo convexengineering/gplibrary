@@ -477,7 +477,6 @@ class CompressorMap(Model):
     yields a HPC.
     """
     def __init__(self, arg, **kwargs):
-        #define variables to be substituted for
         #Temperature Variables
         Tt = Variable('T_t', 'K', 'Face Stagnation Temperature (Station 2 or 2.5)')
         Ttref = Variable('T_{tref}', 'K', 'Reference Stagnation Temperature')
@@ -544,7 +543,7 @@ class CompressorMap(Model):
                     ptilds == mtilds ** 3,   #B.285
                     
                     #compute the polytropic efficiency
-                    #etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
+                    etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
                     ])
             #add the constraints for a HPC
             if arg == 1:
@@ -558,6 +557,36 @@ class CompressorMap(Model):
                     ])
             #objective is to maximize component efficiency
             Model.__init__(self, 1/z, constraints, **kwargs)
+
+class OffDesign(Model):
+    """
+    Class to implement off design performance of a turbofan. Simply equates the residuals
+    from section B.6 of TASOPT. The constraints inside this model should be linked with the
+    constraints in the compressor map model, as well as within the individual component models.
+
+    Note that a turbine map is not needed, instead the turbine is assumed to be choked.
+    """
+    def __init__(self):
+        #define all the variables
+
+        with SignomialsEnabled():
+            constraints = [
+                #residual 1
+
+                #residual 2
+
+                #residual 3
+
+                #residual 4
+
+                #residual 5
+
+                #residual 6
+
+                #residual 7
+
+                #residual 8
+                ]
 
 
 
