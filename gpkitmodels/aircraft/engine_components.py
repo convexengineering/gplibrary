@@ -185,7 +185,7 @@ class Turbine(Model):
         #enthalpies used in shaft power balances
         ht18 = Variable('h_{t_1.8}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
         ht2 = Variable('h_{t_2}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2)')
-        ht21 = Variable('h_{t_2.1}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2.1)')
+        ht21 = Variable('Variable('T_{t_4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')h_{t_2.1}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2.1)')
         ht25 = Variable('h_{t_2.5}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
         ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
 
@@ -194,7 +194,7 @@ class Turbine(Model):
         Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
         ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
 
-        #HPT rxit states
+        #HPT exit states
         Pt49 = Variable('P_{t_4.9}', 'kPa', 'Stagnation Pressure at the HPTExit (49)')
         Tt49 = Variable('T_{t_4.9}', 'K', 'Stagnation Temperature at the HPT Exit (49)')
         ht49 = Variable('h_{t_4.9}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (49)')
@@ -232,7 +232,6 @@ class Turbine(Model):
 
                 #SIGNOMIAL  
                 (1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2)), #B.165
-
                 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
@@ -568,24 +567,108 @@ class OffDesign(Model):
     """
     def __init__(self):
         #define all the variables
+        #gas properties
+        Cpt = Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
+        Rt = Variable('R_t', 287, 'J/kg/K', 'R for the Turbine Gas')
 
+        #free stream static pressure
+        P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
+        
+        #speeds
+        Nf = Variable('N_f', '-', 'Fan Speed')
+        N1 = Variable('N_1', '-', 'N1 Speed')
+
+        #gear ratio, set to 1 if no gearing present
+        Gf = Variable('G_f', '', 'Gear Ratio')
+
+        #fuel air ratio
+        f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
+
+        #turbine inlet states
+        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
+        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+
+        #LPC exit states
+        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
+        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
+
+        #mass flows
+        mlc = Variable('m_{lc}', 'kg/s', 'LPT Mass Flow')
+        mhc =  Variable('m_{hc}', 'kg/s', 'HPC Mass Flow')
+        mhtD = Variable('m_{htD}', 'kg/s', 'Design HPT Mass Flow')
+        mltD = Variable('m_{ltD}', 'kg/s', 'Design LPT Mass Flow')
+
+        #HPT exit states
+        Pt45 = Variable('P_{t_4.5}', 'kPa', 'Stagnation Pressure at the HPT Exit (4.5)')
+        Tt45 = Variable('T_{t_4.5}', 'K', 'Stagnation Temperature at the HPT Exit (4.5)')
+
+        #fan exhuast states
+        P7 = Variable('P_{7}', 'kPa', 'Fan Exhaust Static Pressure (7)')
+        h7 = Variable('h_{7}', 'J/kg', 'Static Enthalpy at the Fan Nozzle Exit (7)')
+        u7 = Variable('u_7', 'm/s', 'Station 7 Exhaust Velocity')
+        M7 = Variable('M_7', '-', 'Station 7 Mach Number')
+        rho7 = Variable('\rho_7', 'kg/m^3', 'Air Static Density at Fam Exhaust Exit (7)')
+        Pt7 = Variable('P_{t_7}', 'kPa', 'Stagnation Pressure at the Fan Nozzle Exit (7)')
+        Tt7 = Variable('T_{t_7}', 'K', 'Stagnation Temperature at the Fan Nozzle Exit (7)')
+        ht7 = Variable('h_{t_7}', 'J/kg', 'Stagnation Enthalpy at the Fan Nozzle Exit (7)')
+
+        #core exhaust states
+        P5 = Variable('P_{5}', 'kPa', 'Core Exhaust Static Pressure (5)')
+        T5 = Variable('T_{5}', 'K', 'Static Temperature at the Turbine Nozzle Exit (5)')
+        P5 = Variable('P_{5}', 'kPa', 'Static Pressure at the Turbine Nozzle Exit (5)')
+        h5 = Variable('h_{5}', 'J/kg', 'Static Enthalpy at the Turbine Nozzle Exit (5)')
+        M5 = Variable('M_5', '-', 'Station 5 Mach Number')
+        u5 = Variable('u_5', 'm/s', 'Station 5 Exhaust Velocity')
+        rho5 = Variable('\rho_5', 'kg/m^3', 'Air Static Density at Core Exhaust Exit (5)')
+        ht5 = Variable('h_{t_5}', 'J/kg', 'Stagnation Enthalpy at the Turbine Nozzle Exit (5)')
+        Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
+        Tt5 = Variable('T_{t_5}', 'K', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
+
+        #nozzle areas
+        #this value needs to be subbed in from the post computation on the on design case
+        A5 = Variable('A_5', 'm^2', 'Core Exhaust Nozzle Area')
+
+        #burner exit temperatures (station 4)
+        Tt4 = Variable('T_{t_4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')
+        Tt4spec = Variable('T_{t_{4spec}}', 'K', 'Specified Combustor Exit (Station 4) Stagnation Temperature')
+
+        #pressure ratios
+        pitn = Variable('\pi_{tn}', '-', 'Turbine Nozzle Pressure Ratio')
+        
+        #HPT exit states
+        Pt49 = Variable('P_{t_4.9}', 'kPa', 'Stagnation Pressure at the HPTExit (49)')
+        Tt49 = Variable('T_{t_4.9}', 'K', 'Stagnation Temperature at the HPT Exit (49)')
+        ht49 = Variable('h_{t_4.9}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (49)')
+
+        #new best idea is to run this twice and if mach numbers go over 1 pass in a different argument and re run the case
+        
+        
         with SignomialsEnabled():
             constraints = [
-                #residual 1
+                #residual 1 Fan/LPC speed
+                Nf*Gf == N1,
 
-                #residual 2
+                #residual 2 HPT mass flow
+                mhtD == (1+f)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5,
 
-                #residual 3
-
+                #residual 3 LPT mass flow
+                (1+f)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 == mltD,
+                
                 #residual 4
-
-                #residual 5
-
-                #residual 6
-
-                #residual 7
-
-                #residual 8
+                #I think all those Ttref values are the actual on design values
+                
+                
+                #residual 5 core nozzle mass flow
+                
+                
+                #residual 6 LPC/HPC mass flow constraint
+                mlc*
+                
+                #residual 7, constrain the burner exit temperature
+                Tt4 == Tt4spec,  #B.265
+                
+                #residual 8, constrain the core exit total pressure
+                Pt49*pitn == Pt5 #B.269
                 ]
 
 
