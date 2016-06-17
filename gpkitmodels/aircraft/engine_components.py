@@ -565,20 +565,20 @@ class CompressorMap(Model):
                 Ntild == Nbar/NbarD,    #B.283
 
                 #constrain the "knee" shape of the map
-                TCS([((mtilds-mtild)/.03) <= te_exp_minus1(z, nterm=3)]),  #B.286
-##                TCS([ptild <= 2*Ntild*.03*z + ptilds]),    #B.286
+                TCS([((mtilds-mtild)/.03) >= te_exp_minus1(z, nterm=3)]),  #B.286
+                TCS([ptild <= 2*Ntild*.03*z + ptilds]),    #B.286
                 ]
             
             #add the constraints for a fan
-##            if arg==0:
-##                constraints.append([
-##                    #spine parameterization
-##                    mtilds == Nbar**.85,    #B.284
-##                    ptilds == mtilds ** 3,   #B.285
-##                    
-##                    #compute the polytropic efficiency
-##                    etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
-##                    ])
+            if arg==0:
+                constraints.append([
+                    #spine parameterization
+                    mtilds == Nbar**.85,    #B.284
+                    ptilds == mtilds ** 3,   #B.285
+                    
+                    #compute the polytropic efficiency
+                    etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
+                    ])
                 
             #add the constraints for a HPC
             if arg == 1:
@@ -591,7 +591,7 @@ class CompressorMap(Model):
                     etaPol <= etaPolD*(1-15*(ptild/mtild-mtild)**3-((mtild/.8)-1)**4)
                     ])
             #objective is to maximize component efficiency
-            Model.__init__(self, mbar, constraints, **kwargs)
+            Model.__init__(self, 1/etaPol, constraints, **kwargs)
 
 class OffDesign(Model):
     """

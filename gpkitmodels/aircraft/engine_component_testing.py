@@ -117,9 +117,9 @@ if __name__ == "__main__":
         '\pi': 21,
         'N_{{bar}_D}': 1,
         'N': 12,
-        'eta_{{pol}_D}': 0.9
+        '\eta_{{pol}_D}': 0.9
         })
-    compmap.solve(kktsolver="ldl", verbosity = 4)
+    compmap.localsolve(kktsolver="ldl", verbosity = 4)
 
 ##    #run the off design model
 ##    engineOnD = EngineOnDesign()

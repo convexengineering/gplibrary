@@ -3,7 +3,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap
 
 #TODO
 #figure out how to compute f
@@ -12,7 +12,7 @@ from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndTh
 #get realisitc R and Cp values for the different engine sections
 #verify the values of all constants...and fix where differnces of constants are hard coded
 
-class Engine(Model):
+class EngineOnDesign(Model):
     """
     Engine Sizing
 
@@ -79,7 +79,73 @@ class Engine(Model):
         #return the two sizes
         print actual
 
+class EngineOffDesign(Model):
+    """
+    Engine Sizing for off design operation
+
+    References:
+    1. TASOPT Volume 2: Appendicies dated 31 March 2010
+    (comments B.### refer to eqn numbers in TASOPT Appendix
+    section B)
+    2. Flight Vehicle Aerodynamics (Prof Drela's 16.110 text book)
+    3. https://www.grc.nasa.gov/www/k-12/airplane/isentrop.html
+    4. Prof Barret's Spring 2015 16.50 Notes
+
+    All engine station definitions correltate to TASOPT figure B.1
+
+    Fan efficiency is taken from TASOPT table B.1
+    Compressor efficiency is taken from TASOPT table B.2
+
+    Off design model takes fan pressure ratio, LPC pressure ratio,
+    HPC pressure ratio, fan corrected mass flow, LPC corrected mass flow,
+    HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
+    """
+
+    def __init__(self, sol, **kwargs):
+        lpc = FanAndLPC()
+        combustor = CombustorCooling()
+        turbine = Turbine()
+        thrust = ExhaustAndThrust()
+        size = OffDesign()
+
+        self.submodels = [lpc, combustor, turbine, thrust, size]
+            
+        with SignomialsEnabled():
+
+            lc = LinkedConstraintSet([self.submodels])
+
+            #NEED TO PASS IN THOSE AREAS
+
+            substitutions = {
+            'T_0': sol('T_0'),   #36K feet
+            'P_0': sol('P_0'),    #36K feet
+            'M_0': sol('M_0'),
+            '\pi_{d}': sol('\pi_{d}'),
+            '\pi_{fn}': sol('\pi_{fn}'),
+            '\pi_{tn}': sol('\pi_{tn}'),
+            '\pi_{b}': sol('\pi_{b}'),
+            'alpha': sol('alpha'),
+            'alphap1': sol('alphap1'),
+            'M_{4a}': 1,    #choked turbines
+            'F_D': sol('F_D'), #737 max thrust in N
+            'M_2': sol('M_2'),
+            'M_{2.5}': sol('M_{2.5}'),
+            'hold_{2}': sol('hold_{2}'),
+            'hold_{2.5}': sol('hold_{2.5}')
+            }
+
+            
+        #temporary objective is to minimize the core mass flux 
+        Model.__init__(self, thrust.cost, lc, substitutions)
+
+            
 if __name__ == "__main__":
-    engine = Engine()
-    sol = engine.localsolve(verbosity = 4, kktsolver="ldl")
-    engine.sizing(sol)
+    engineOnD = EngineOnDesign()
+    
+    solOn = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
+    
+    engineOffD = EngineOffDesign(solOn)
+    
+    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+    
+    engineOnD.sizing(solOn)
