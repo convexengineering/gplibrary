@@ -2,6 +2,7 @@ from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, CompressorMap, OffDesign
+from engine import EngineOnDesign
 
 if __name__ == "__main__":
     fan = FanAndLPC()
@@ -74,34 +75,34 @@ if __name__ == "__main__":
 
     #below won't solve because the model is all equality constraints
     #so feasible region is a single point
-    design = OnDesignSizing()
-    design.substitutions.update({
-        'a_0': fansol('a_0'),
-        'alphap1': 11,
-        'F_D': 121436.45, #737 max thrust in N
-        'M_2': .4,
-        'M_{2.5}': .5,
-        'u_8': 600,
-        'u_6': 625,
-        'T_{t_2}': fansol('T_{t_2}'),
-        'T_6': 700,
-        'T_8': 500,
-        'T_{t_2.5}': fansol('T_{t_2.5}'),
-        'P_{t_2}': fansol('P_{t_2}'),
-        'P_{t_2.5}': fansol('P_{t_2.5}'),
-        'F_{sp}': 1,
-        'hold_{2}': 1.032,
-        'hold_{2.5}': 1.05,
-        'T_{t_4.1}': combsol('T_{t_4.1}'),
-        'T_{t_4.5}': combsol('T_{t_4.1}')-200*units('K'),
-        'P_{t_4.5}': combsol('P_{t_4.1}')/3,
-        'P_{t_4.1}': combsol('P_{t_4.1}'),
-        'P_{ref}': 22,
-        'T_{ref}': 290,
-        'f': .016
-        })
+##    design = OnDesignSizing()
+##    design.substitutions.update({
+##        'a_0': fansol('a_0'),
+##        'alphap1': 11,
+##        'F_D': 121436.45, #737 max thrust in N
+##        'M_2': .4,
+##        'M_{2.5}': .5,
+##        'u_8': 600,
+##        'u_6': 625,
+##        'T_{t_2}': fansol('T_{t_2}'),
+##        'T_6': 700,
+##        'T_8': 500,
+##        'T_{t_2.5}': fansol('T_{t_2.5}'),
+##        'P_{t_2}': fansol('P_{t_2}'),
+##        'P_{t_2.5}': fansol('P_{t_2.5}'),
+##        'F_{sp}': 1,
+##        'hold_{2}': 1.032,
+##        'hold_{2.5}': 1.05,
+##        'T_{t_4.1}': combsol('T_{t_4.1}'),
+##        'T_{t_4.5}': combsol('T_{t_4.1}')-200*units('K'),
+##        'P_{t_4.5}': combsol('P_{t_4.1}')/3,
+##        'P_{t_4.1}': combsol('P_{t_4.1}'),
+##        'P_{ref}': 22,
+##        'T_{ref}': 290,
+##        'f': .016
+##        })
 
-    designsol = design.solve(verbosity = 4)
+##    designsol = design.solve(verbosity = 4)
 
     #creating a compressor map model for a HPC
 ##    compmap = CompressorMap(0)
@@ -119,36 +120,84 @@ if __name__ == "__main__":
 ##        'eta_{{pol}_D}': 0.9
 ##        })
 ##    compmap.localsolve(verbosity = 4)
+##
+##    #run the off design model
+    engineOnD = EngineOnDesign()
+    
+    sol = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
 
-    #run the off design model
+    test = {'T_0': sol('T_0'), 'P_0': sol('P_0'),
+            'M_0': sol('M_0'),
+            '\pi_{d}': sol('\pi_{d}'),
+            '\pi_{fn}': sol('\pi_{fn}'),
+            '\pi_{tn}': sol('\pi_{tn}'),
+            '\pi_{b}': sol('\pi_{b}'),
+            'alpha': sol('alpha'),
+            'alphap1': sol('alphap1'),
+            'M_{4a}': 1,    
+            'F_D': sol('F_D'), 
+            'M_2': sol('M_2'),
+            'M_{2.5}': sol('M_{2.5}'),
+            'hold_{2}': sol('hold_{2}'),
+            'hold_{2.5}': sol('hold_{2.5}'),
+            'A_7': 3,
+            'P_{t_4.1}': sol('P_{t_4.1}'),
+            'P_{t_4.5}': sol('P_{t_4.5}'),
+            'T_{t_4.1}': sol('T_{t_4.1}'),
+            'T_{t_2.5}': sol('T_{t_2.5}'),
+            'T_{t_4.5}': sol('T_{t_4.5}'),
+            'h_{t_7}': sol('h_{t_7}'),
+            'h_{t_5}': sol('h_{t_5}'),
+            'T_{t_1.8}': sol('T_{t_1.8}'),
+            'T_{ref}': 1000,
+            'P_{ref}': 22,
+            'm_{htd}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.1}')/1000)**.5)/(sol('P_{t_4.1}')/22),
+            'm_{ltd}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/1000)**.5)/(sol('P_{t_4.5}')/22),
+            'f': sol('f'),
+            'P_{t_2.5}': sol('P_{t_2.5}'),
+            'P_{t_2.5}': sol('P_{t_2.5}'),
+            'P_{t_2}': sol('P_{t_2}'),
+            'T_{t_2}': sol('T_{t_2}'),
+            'P_{t_1.8}': sol('P_{t_1.8}'),
+            'T_{t_2.5}': sol('T_{t_2.5}'),}
+    
+    print '\n'
+    print test
+    print '\n'
+    print (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.1}')/(1000*units('K')))**.5)/(sol('P_{t_4.1}')/(22*units('kPa')))
+    
     offdesign = OffDesign()
     offdesign.substitutions.update({
-        'G_f': 1,
-        'N_1': 1,
-        'P_0': 20,
-        'f': .016,
-        'P_{t_1.9}}': 100,
-        'T_{t_1.9}': 273,
-        'P_{t_2.5}': 500,
-        'T_{t_2.5}': 500,
-        'P_{t_4.1}': 1000,
-        'T_{t_4.1}': 1400,
-        'P_{t_4.5}': 600,
-        'T_{t_4.5}': 1000,
-        'P_{t_4.9}': 200,
-        'T_{7}': 300,
-        'T_{5}': 600,
-        'h_{t_5}': 1087*750,
-        'h_{t_7}': 1087*450,
-        'T_{t_{4spec}}': 1400,
-        '\pi_{tn}': 1,
-        'A_5': .8,
-        'A_7': 1,
-        'm_{htD}': 40,
-        'm_{ltD}': 40,
+        'T_0': sol('T_0'),   #36K feet
+        'P_0': sol('P_0'),    #36K feet
+        'M_0': sol('M_0'),
+        '\pi_{tn}': sol('\pi_{tn}'),
+        'A_5': 1,
+        'A_7': 3,
+        'P_{t_4.1}': sol('P_{t_4.1}'),
+        'P_{t_2.5}': sol('P_{t_2.5}'),
+        'P_{t_4.5}': sol('P_{t_4.5}'),
+        'T_{t_4.1}': sol('T_{t_4.1}'),
+        'T_{t_4.5}': sol('T_{t_4.5}'),
+        'h_{t_7}': sol('h_{t_7}'),
+        'h_{t_5}': sol('h_{t_5}'),
+        'P_{t_5}': sol('P_{t_5}'),
+        'T_{t_1.8}': sol('T_{t_1.8}'),
+        'P_{t_1.8}': sol('P_{t_1.8}'),
         'T_{ref}': 1000,
-        'P_{ref}': 22
+        'P_{ref}': 22,
+        'm_{htD}': 2.2917277822,
+        'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
+        'f': sol('f'),
+        'N_1': 1,
+        'G_f': 1,
+        'T_{t_2.5}': sol('T_{t_2.5}'),
+        'T_7': 200,
+        'T_5': 500,
+        'P_{t_2}': sol('P_{t_2}'),
+        'T_{t_2}': sol('T_{t_2}'),
+        'T_{t_{4spec}}': 1400
         })
 
-    offdesign.solve(verbosity = 4)
+    offdesign.solve(kktsolver="ldl", verbosity = 4)
     

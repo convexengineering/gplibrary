@@ -436,10 +436,6 @@ class OnDesignSizing(Model):
         #design spool speeds arbitrarily set to 1 since only ratio are considered
         NlcD = Variable('N_{lcD}', 1, '-', 'LPC Design Spool Speed')    #B.221
         NhcD =Variable('N_{hcD}', 1, '-', 'HPC Design Spool Speed') #B.222
-
-        #design normalized component speeds
-        NbarlcD = Variable()
-        NbarhcD = Variable()
         
         #design corrected mass flow
         mhtD =Variable('m_{htD}', 'kg/s', 'Design HPT Corrected Mass Flow (see B.225)')
@@ -502,7 +498,7 @@ class OnDesignSizing(Model):
                 ]
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
-        Model.__init__(self, NbarlcD, constraints, **kwargs)
+        Model.__init__(self, None, constraints, **kwargs)
 
 class CompressorMap(Model):
     """
@@ -517,7 +513,7 @@ class CompressorMap(Model):
     def __init__(self, arg, **kwargs):
         #Temperature Variables
         Tt = Variable('T_t', 'K', 'Face Stagnation Temperature (Station 2 or 2.5)')
-        Ttref = Variable('T_{tref}', 'K', 'Reference Stagnation Temperature')
+        Tref = Variable('T_{tref}', 'K', 'Reference Stagnation Temperature')
 
         #Mass Flow Variables
         mbar = Variable('m_{bar}', 'kg/s', 'Corrected Mass Flow')
@@ -527,7 +523,7 @@ class CompressorMap(Model):
 
         #Pressure Variables
         Pt = Variable('P_t', 'kPa', 'Face Stagnation Pressure (Station 2 or 2.5)')
-        Ptref = Variable('P_{tref}', 'kPa', 'Reference Stagnation Pressure')
+        Pref = Variable('P_{tref}', 'kPa', 'Reference Stagnation Pressure')
 
         #pressure ratio variables
         ptild = Variable('p_{tild}', '-', 'Normalized Pressure Ratio')
@@ -553,10 +549,10 @@ class CompressorMap(Model):
         with SignomialsEnabled():
             constraints = [
                 #define N bar
-                Nbar == N/((Tt/Ttref)**.5), #B.279
+                Nbar == N/((Tt/Tref)**.5), #B.279
 
                 #define mbar
-                mbar == mdot*((Tt/Ttref)**.5)/(Pt/Ptref),    #B.280
+                mbar == mdot*((Tt/Tref)**.5)/(Pt/Pref),    #B.280
 
                 #define ptild
                 #SIGNOMIAL
@@ -569,7 +565,7 @@ class CompressorMap(Model):
                 Ntild == Nbar/NbarD,    #B.283
 
                 #constrain the "knee" shape of the map
-                TCS([((mtilds-mtild)/.03) >= te_exp_minus1(z, nterm=3)]),  #B.286
+                TCS([((mtilds-mtild)/.03) <= te_exp_minus1(z, nterm=3)]),  #B.286
                 TCS([ptild <= 2*Ntild*.03*z + ptilds]),    #B.286
                 ]
             
@@ -618,6 +614,13 @@ class OffDesign(Model):
         #speeds
         Nf = Variable('N_f', '-', 'Fan Speed')
         N1 = Variable('N_1', '-', 'LPC Speed')
+
+        NlcD = Variable('N_{lcD}', 1, '-', 'LPC Design Spool Speed')    #B.221
+        NhcD =Variable('N_{hcD}', 1, '-', 'HPC Design Spool Speed') #B.222
+        
+        #design normalized component speeds
+        NbarlcD = Variable('N_{barlc_D}', '-', 'Normalized LPC Design Speed')
+        NbarhcD = Variable('N_{barhc_D}', '-', 'Normalized HPC Design Speed')
 
         #gear ratio, set to 1 if no gearing present
         Gf = Variable('G_f', '', 'Gear Ratio Between Fan and LPC')
@@ -706,18 +709,15 @@ class OffDesign(Model):
                 #compute the normalized speeds
                 NbarlcD == NlcD/(Tt18/Tref)**.5,
                 NbarhcD == NhcD/(Tt25/Tref)**.5,
-
-                #compute the normalized mass flow
-                mltD <= (1+f)*mCore*((Tt41/Tref)**.5)/(Pt41/Pref),
-                mhtD <= (1+f)*mCore*((Tt45/Tref)**.5)/(Pt45/Pref)
+                
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
-
+#(1.0167)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5
                 #residual 2 HPT mass flow
-                mhtD <= (1+f)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5,
+                mhtD >= (1+f)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5,
 
                 #residual 3 LPT mass flow
-                (1+f)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 >= mltD,
+                (1+f)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 <= mltD,
                 
                 #residual 4
                 #I think all those Ttref values are the actual on design values
@@ -745,9 +745,4 @@ class OffDesign(Model):
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5 #B.269
                 ]
-        Model.__init__(self, Tt4, constraints, **kwargs)
-
-
-LOOKS LIKE THE REFERENCE VALUES ARE ACTUALLY FROM STATION 2.5.....?????
-
-        
+        Model.__init__(self, 1/mhc, constraints, **kwargs)        
