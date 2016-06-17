@@ -537,7 +537,7 @@ class CompressorMap(Model):
         NbarD = Variable('N_{{bar}_D}', '-', 'On-Design Corrected Speed')
 
         #Spine Paramterization Variables
-        mtilds = Variable('Mm_{{tild}_s}', '-', 'Spine Parameterization Variable')
+        mtilds = Variable('m_{{tild}_s}', '-', 'Spine Parameterization Variable')
         ptilds = Variable('p_{{tild}_s}', '-', 'Spine Parameterization Variable')
 
         #te_exp_minus1 variable for B.287
@@ -577,7 +577,7 @@ class CompressorMap(Model):
                     ptilds == mtilds ** 3,   #B.285
                     
                     #compute the polytropic efficiency
-                    etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
+                    TCS([etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)])
                     ])
                 
             #add the constraints for a HPC
@@ -715,15 +715,15 @@ class OffDesign(Model):
                 Nf*Gf == N1,
 #(1.0167)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5
                 #residual 2 HPT mass flow
-                mhtD >= (1+f)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5,
+                TCS([mhtD >= (1+f)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
 
                 #residual 3 LPT mass flow
-                (1+f)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 <= mltD,
+                TCS([(1+f)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 <= mltD]),
                 
                 #residual 4
                 #I think all those Ttref values are the actual on design values
                 P7 == P0,
-                u7**2 +2*h7 <= 2*ht7,
+                TCS([u7**2 +2*h7 <= 2*ht7]),
                 h7 == Cpair*T7,
                 rho7 == P7/(Rt*T7),
                 M7 == u7/((T7*Cpair*Rair/(781*units('J/kg/K')))**.5),
@@ -732,7 +732,7 @@ class OffDesign(Model):
                 #residual 5 core nozzle mass flow
                 P5 == P0,
                 h5 == Cpt*T5,
-                u5**2 +2*h5 <= 2*ht5,
+                TCS([u5**2 +2*h5 <= 2*ht5]),
                 rho5 == P5/(Rt*T5),
                 M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
                 (1+f)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 <= rho5*A5*u5,
