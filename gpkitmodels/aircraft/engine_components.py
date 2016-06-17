@@ -513,7 +513,7 @@ class CompressorMap(Model):
     def __init__(self, arg, **kwargs):
         #Temperature Variables
         Tt = Variable('T_t', 'K', 'Face Stagnation Temperature (Station 2 or 2.5)')
-        Tref = Variable('T_{tref}', 'K', 'Reference Stagnation Temperature')
+        Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
 
         #Mass Flow Variables
         mbar = Variable('m_{bar}', 'kg/s', 'Corrected Mass Flow')
@@ -523,7 +523,7 @@ class CompressorMap(Model):
 
         #Pressure Variables
         Pt = Variable('P_t', 'kPa', 'Face Stagnation Pressure (Station 2 or 2.5)')
-        Pref = Variable('P_{tref}', 'kPa', 'Reference Stagnation Pressure')
+        Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
 
         #pressure ratio variables
         ptild = Variable('p_{tild}', '-', 'Normalized Pressure Ratio')
@@ -566,19 +566,20 @@ class CompressorMap(Model):
 
                 #constrain the "knee" shape of the map
                 TCS([((mtilds-mtild)/.03) <= te_exp_minus1(z, nterm=3)]),  #B.286
-                TCS([ptild <= 2*Ntild*.03*z + ptilds]),    #B.286
+##                TCS([ptild <= 2*Ntild*.03*z + ptilds]),    #B.286
                 ]
             
             #add the constraints for a fan
-            if arg==0:
-                constraints.append([
-                    #spine parameterization
-                    mtilds == Nbar**.85,    #B.284
-                    ptilds == mtilds ** 3,   #B.285
-                    
-                    #compute the polytropic efficiency
-                    etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
-                    ])
+##            if arg==0:
+##                constraints.append([
+##                    #spine parameterization
+##                    mtilds == Nbar**.85,    #B.284
+##                    ptilds == mtilds ** 3,   #B.285
+##                    
+##                    #compute the polytropic efficiency
+##                    etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)
+##                    ])
+                
             #add the constraints for a HPC
             if arg == 1:
                 constraints.append([
@@ -587,10 +588,10 @@ class CompressorMap(Model):
                     ptilds == mtilds ** 1.5, #B.285
                     
                     #compute the polytropic efficiency
-                    #etaPol <= etaPolD*(1-15*(ptild/mtild-mtild)**3-((mtild/.8)-1)**4)
+                    etaPol <= etaPolD*(1-15*(ptild/mtild-mtild)**3-((mtild/.8)-1)**4)
                     ])
             #objective is to maximize component efficiency
-            Model.__init__(self, 1/z, constraints, **kwargs)
+            Model.__init__(self, mbar, constraints, **kwargs)
 
 class OffDesign(Model):
     """
