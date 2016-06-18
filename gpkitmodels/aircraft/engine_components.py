@@ -577,7 +577,7 @@ class CompressorMap(Model):
                     ptilds == mtilds ** 3,   #B.285
                     
                     #compute the polytropic efficiency
-                    TCS([etaPol <= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)])
+                    TCS([etaPol >= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)])
                     ])
                 
             #add the constraints for a HPC
@@ -591,7 +591,7 @@ class CompressorMap(Model):
                     etaPol <= etaPolD*(1-15*(ptild/mtild-mtild)**3-((mtild/.8)-1)**4)
                     ])
             #objective is to maximize component efficiency
-            Model.__init__(self, 1/etaPol, constraints, **kwargs)
+            Model.__init__(self, etaPol, constraints, **kwargs)
 
 class OffDesign(Model):
     """
@@ -713,7 +713,7 @@ class OffDesign(Model):
                 
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
-#(1.0167)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5
+
                 #residual 2 HPT mass flow
                 TCS([mhtD >= (1+f)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
 

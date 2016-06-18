@@ -1,6 +1,6 @@
 #Implements the TASOPT engine model, currently disregards BLI
 import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled
+from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap
@@ -106,15 +106,13 @@ class EngineOffDesign(Model):
         combustor = CombustorCooling()
         turbine = Turbine()
         thrust = ExhaustAndThrust()
-        size = OffDesign()
+        offD = OffDesign()
 
-        self.submodels = [lpc, combustor, turbine, thrust, size]
+        self.submodels = [lpc, combustor, turbine, thrust, offD]
             
         with SignomialsEnabled():
 
             lc = LinkedConstraintSet([self.submodels])
-
-            #NEED TO PASS IN THOSE AREAS
 
             substitutions = {
             'T_0': sol('T_0'),   #36K feet
@@ -131,12 +129,40 @@ class EngineOffDesign(Model):
             'M_2': sol('M_2'),
             'M_{2.5}': sol('M_{2.5}'),
             'hold_{2}': sol('hold_{2}'),
-            'hold_{2.5}': sol('hold_{2.5}')
-            }
+            'hold_{2.5}': sol('hold_{2.5}'),
+            'A_5': 1,
+            'A_7': 3,
+            'N_1': 1,
+            'G_f': 1,
+            'm_{htD}': 2.2917277822,
+            'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
+            'T_{t_{4spec}}': 1400,
+            'T_7': 200,
+            'T_5': 500,
+            'T_{ref}': 1000,
+            'P_{ref}': 22,
 
-            
-        #temporary objective is to minimize the core mass flux 
-        Model.__init__(self, thrust.cost, lc, substitutions)
+            'T_0': 216.5,   #36K feet
+            'P_0': 22.8,    #36K feet
+            'M_0': 0.8,
+            '\pi_f': 1.5,
+            '\pi_{lc}': 3,
+            '\pi_{hc}': 10,
+            '\pi_{d}': 1,
+            '\pi_{fn}': 1,
+            '\pi_{tn}': 1,
+            '\pi_{b}': 1,
+            'alpha': 10,
+            'alphap1': 11,
+            'M_{4a}': 1,    #choked turbines
+            'F_D': 121436.45, #737 max thrust in N
+            'M_2': .4,
+            'M_{2.5}': .5,
+            'hold_{2}': 1.032,
+            'hold_{2.5}': 1.05
+            }
+ 
+        Model.__init__(self, offD.cost, lc, substitutions)
 
             
 if __name__ == "__main__":

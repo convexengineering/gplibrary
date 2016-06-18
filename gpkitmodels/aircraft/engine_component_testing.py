@@ -105,99 +105,59 @@ if __name__ == "__main__":
 ##    designsol = design.solve(verbosity = 4)
 
     #creating a compressor map model for a HPC
-    compmap = CompressorMap(0)
-    compmap.substitutions.update({
-        'T_{ref}': 1000,
-        'T_t': 1250,
-        'm_{dot}': 38,
-        'm_D': 40,
-        'P_{ref}': 22,
-        'P_t': 25,
-        '\pi_D': 20,
-        '\pi': 21,
-        'N_{{bar}_D}': 1,
-        'N': 12,
-        '\eta_{{pol}_D}': 0.9
-        })
-    compmap.localsolve(kktsolver="ldl", verbosity = 4)
-
-##    #run the off design model
-##    engineOnD = EngineOnDesign()
-##    
-##    sol = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
-##
-##    test = {'T_0': sol('T_0'), 'P_0': sol('P_0'),
-##            'M_0': sol('M_0'),
-##            '\pi_{d}': sol('\pi_{d}'),
-##            '\pi_{fn}': sol('\pi_{fn}'),
-##            '\pi_{tn}': sol('\pi_{tn}'),
-##            '\pi_{b}': sol('\pi_{b}'),
-##            'alpha': sol('alpha'),
-##            'alphap1': sol('alphap1'),
-##            'M_{4a}': 1,    
-##            'F_D': sol('F_D'), 
-##            'M_2': sol('M_2'),
-##            'M_{2.5}': sol('M_{2.5}'),
-##            'hold_{2}': sol('hold_{2}'),
-##            'hold_{2.5}': sol('hold_{2.5}'),
-##            'A_7': 3,
-##            'P_{t_4.1}': sol('P_{t_4.1}'),
-##            'P_{t_4.5}': sol('P_{t_4.5}'),
-##            'T_{t_4.1}': sol('T_{t_4.1}'),
-##            'T_{t_2.5}': sol('T_{t_2.5}'),
-##            'T_{t_4.5}': sol('T_{t_4.5}'),
-##            'h_{t_7}': sol('h_{t_7}'),
-##            'h_{t_5}': sol('h_{t_5}'),
-##            'T_{t_1.8}': sol('T_{t_1.8}'),
-##            'T_{ref}': 1000,
-##            'P_{ref}': 22,
-##            'm_{htd}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.1}')/1000)**.5)/(sol('P_{t_4.1}')/22),
-##            'm_{ltd}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/1000)**.5)/(sol('P_{t_4.5}')/22),
-##            'f': sol('f'),
-##            'P_{t_2.5}': sol('P_{t_2.5}'),
-##            'P_{t_2.5}': sol('P_{t_2.5}'),
-##            'P_{t_2}': sol('P_{t_2}'),
-##            'T_{t_2}': sol('T_{t_2}'),
-##            'P_{t_1.8}': sol('P_{t_1.8}'),
-##            'T_{t_2.5}': sol('T_{t_2.5}'),}
-##    
-##    print '\n'
-##    print test
-##    print '\n'
-##    print (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.1}')/(1000*units('K')))**.5)/(sol('P_{t_4.1}')/(22*units('kPa')))
-##    
-##    offdesign = OffDesign()
-##    offdesign.substitutions.update({
-##        'T_0': sol('T_0'),   #36K feet
-##        'P_0': sol('P_0'),    #36K feet
-##        'M_0': sol('M_0'),
-##        '\pi_{tn}': sol('\pi_{tn}'),
-##        'A_5': 1,
-##        'A_7': 3,
-##        'P_{t_4.1}': sol('P_{t_4.1}'),
-##        'P_{t_2.5}': sol('P_{t_2.5}'),
-##        'P_{t_4.5}': sol('P_{t_4.5}'),
-##        'T_{t_4.1}': sol('T_{t_4.1}'),
-##        'T_{t_4.5}': sol('T_{t_4.5}'),
-##        'h_{t_7}': sol('h_{t_7}'),
-##        'h_{t_5}': sol('h_{t_5}'),
-##        'P_{t_5}': sol('P_{t_5}'),
-##        'T_{t_1.8}': sol('T_{t_1.8}'),
-##        'P_{t_1.8}': sol('P_{t_1.8}'),
+##    compmap = CompressorMap(0)
+##    compmap.substitutions.update({
 ##        'T_{ref}': 1000,
+##        'T_t': 1250,
+##        'm_{dot}': 38,
+##        'm_D': 40,
 ##        'P_{ref}': 22,
-##        'm_{htD}': 2.2917277822,
-##        'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
-##        'f': sol('f'),
-##        'N_1': 1,
-##        'G_f': 1,
-##        'T_{t_2.5}': sol('T_{t_2.5}'),
-##        'T_7': 200,
-##        'T_5': 500,
-##        'P_{t_2}': sol('P_{t_2}'),
-##        'T_{t_2}': sol('T_{t_2}'),
-##        'T_{t_{4spec}}': 1400
+##        'P_t': 25,
+##        '\pi_D': 20,
+##        '\pi': 21,
+##        'N_{{bar}_D}': 1,
+##        'N': 12,
+##        '\eta_{{pol}_D}': 0.9
 ##        })
-##
-##    offdesign.solve(kktsolver="ldl", verbosity = 4)
+##    compmap.localsolve(kktsolver="ldl", verbosity = 4)
+
+    #run the off design model
+    engineOnD = EngineOnDesign()
     
+    sol = engineOnD.localsolve(verbosity = 0, kktsolver="ldl")
+    
+    offdesign = OffDesign()
+    offdesign.substitutions.update({
+        'T_0': sol('T_0'),   #36K feet
+        'P_0': sol('P_0'),    #36K feet
+        'M_0': sol('M_0'),
+        '\pi_{tn}': sol('\pi_{tn}'),
+        'A_5': 1,
+        'A_7': 3,
+        'P_{t_4.1}': sol('P_{t_4.1}'),
+        'P_{t_2.5}': sol('P_{t_2.5}'),
+        'P_{t_4.5}': sol('P_{t_4.5}'),
+        'T_{t_4.1}': sol('T_{t_4.1}'),
+        'T_{t_4.5}': sol('T_{t_4.5}'),
+        'h_{t_7}': sol('h_{t_7}'),
+        'h_{t_5}': sol('h_{t_5}'),
+        'P_{t_5}': sol('P_{t_5}'),
+        'T_{t_1.8}': sol('T_{t_1.8}'),
+        'P_{t_1.8}': sol('P_{t_1.8}'),
+        'T_{ref}': 1000,
+        'P_{ref}': 22,
+        'm_{htD}': 2.2917277822,
+        'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
+        'f': sol('f'),
+        'N_1': 1,
+        'G_f': 1,
+        'T_{t_2.5}': sol('T_{t_2.5}'),
+        'T_7': 200,
+        'T_5': 500,
+        'P_{t_2}': sol('P_{t_2}'),
+        'T_{t_2}': sol('T_{t_2}'),
+        'T_{t_{4spec}}': 1400
+        })
+
+    sol = offdesign.solve(verbosity = 0)
+    print sol.table()
