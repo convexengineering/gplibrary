@@ -692,11 +692,15 @@ class OffDesign(Model):
         Tref = Variable('T_{ref}', 'K', 'Reference Temperature for Normalization')
         Pref = Variable('P_{ref}', 'kPa', 'Reference Pressure for Normalization')
 
+        fp1 = Variable('fp1', '-', 'f + 1')
+
         #new best idea is to run this twice and if mach numbers go over 1 pass in a different argument and re run the case
         
         
         with SignomialsEnabled():
             constraints = [
+                fp1<=f+1,
+                
                 #compute the normalized speeds
                 NbarlcD == NlcD/(Tt18/Tref)**.5,
                 NbarhcD == NhcD/(Tt25/Tref)**.5,
@@ -705,10 +709,10 @@ class OffDesign(Model):
                 Nf*Gf == N1,
 
                 #residual 2 HPT mass flow
-                TCS([mhtD >= (1+f)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
+                TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
 
                 #residual 3 LPT mass flow
-                TCS([(1+f)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 <= mltD]),
+                TCS([(fp1)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 == mltD]),
                 
                 #residual 4
                 #I think all those Ttref values are the actual on design values
@@ -725,7 +729,7 @@ class OffDesign(Model):
                 TCS([u5**2 +2*h5 <= 2*ht5]),
                 rho5 == P5/(Rt*T5),
                 M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
-                (1+f)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 <= rho5*A5*u5,
+                TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
                 
                 #residual 6 LPC/HPC mass flow constraint
                 mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
