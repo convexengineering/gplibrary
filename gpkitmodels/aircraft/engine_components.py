@@ -485,16 +485,6 @@ class OnDesignSizing(Model):
                 #core satic pressure constraints
                 P7 == P0,
                 P5 == P0,
-
-                #THESE LINES CAUSE ENGINE TO NOT SOLVE
-##                #compute the normalized speeds
-##                NbarlcD == NlcD/(Tt18/Tref)**.5,
-##                NbarhcD == NhcD/(Tt25/Tref)**.5,
-##
-##                #compute the normalized mass flow
-##                mltD <= (1+f)*mCore*((Tt41/Tref)**.5)/(Pt41/Pref),
-##                mhtD <= (1+f)*mCore*((Tt45/Tref)**.5)/(Pt45/Pref)
-               
                 ]
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
@@ -746,4 +736,4 @@ class OffDesign(Model):
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5 #B.269
                 ]
-        Model.__init__(self, 1/mhc, constraints, **kwargs)        
+        Model.__init__(self, mhtD, constraints, **kwargs)        

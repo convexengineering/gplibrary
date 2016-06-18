@@ -108,59 +108,45 @@ class EngineOffDesign(Model):
         thrust = ExhaustAndThrust()
         offD = OffDesign()
 
-        self.submodels = [lpc, combustor, turbine, thrust, offD]
+        self.submodels = [ turbine, offD]
             
         with SignomialsEnabled():
 
             lc = LinkedConstraintSet([self.submodels])
 
             substitutions = {
-            'T_0': sol('T_0'),   #36K feet
-            'P_0': sol('P_0'),    #36K feet
-            'M_0': sol('M_0'),
-            '\pi_{d}': sol('\pi_{d}'),
-            '\pi_{fn}': sol('\pi_{fn}'),
-            '\pi_{tn}': sol('\pi_{tn}'),
-            '\pi_{b}': sol('\pi_{b}'),
-            'alpha': sol('alpha'),
-            'alphap1': sol('alphap1'),
-            'M_{4a}': 1,    #choked turbines
-            'F_D': sol('F_D'), #737 max thrust in N
-            'M_2': sol('M_2'),
-            'M_{2.5}': sol('M_{2.5}'),
-            'hold_{2}': sol('hold_{2}'),
-            'hold_{2.5}': sol('hold_{2.5}'),
-            'A_5': 1,
-            'A_7': 3,
-            'N_1': 1,
-            'G_f': 1,
-            'm_{htD}': 2.2917277822,
-            'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
-            'T_{t_{4spec}}': 1400,
-            'T_7': 200,
-            'T_5': 500,
-            'T_{ref}': 1000,
-            'P_{ref}': 22,
-
-            'T_0': 216.5,   #36K feet
-            'P_0': 22.8,    #36K feet
-            'M_0': 0.8,
-            '\pi_f': 1.5,
-            '\pi_{lc}': 3,
-            '\pi_{hc}': 10,
-            '\pi_{d}': 1,
-            '\pi_{fn}': 1,
-            '\pi_{tn}': 1,
-            '\pi_{b}': 1,
-            'alpha': 10,
-            'alphap1': 11,
-            'M_{4a}': 1,    #choked turbines
-            'F_D': 121436.45, #737 max thrust in N
-            'M_2': .4,
-            'M_{2.5}': .5,
-            'hold_{2}': 1.032,
-            'hold_{2.5}': 1.05
+                'T_0': sol('T_0'),   #36K feet
+                'P_0': sol('P_0'),    #36K feet
+                'M_0': sol('M_0'),
+                '\pi_{tn}': sol('\pi_{tn}'),
+                'A_5': 1,
+                'A_7': 3,
+                'P_{t_4.1}': sol('P_{t_4.1}'),
+                'P_{t_2.5}': sol('P_{t_2.5}'),
+                'T_{t_4.1}': sol('T_{t_4.1}'),
+                'h_{t_7}': sol('h_{t_7}'),
+                'T_{t_1.8}': sol('T_{t_1.8}'),
+                'P_{t_1.8}': sol('P_{t_1.8}'),
+                'T_{ref}': 1000,
+                'P_{ref}': 22,
+                'm_{htD}': 2.2917277822,
+                'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
+                'f': sol('f'),
+                'N_1': 1,
+                'G_f': 1,
+                'T_{t_2.5}': sol('T_{t_2.5}'),
+                'T_7': 200,
+                'T_5': 500,
+                'P_{t_2}': sol('P_{t_2}'),
+                'T_{t_2}': sol('T_{t_2}'),
+                'T_{t_{4spec}}': 1450,
+                'h_{t_3}': sol('h_{t_3}'),
+                'h_{t_2.1}': sol('h_{t_2.1}'),
+                'h_{t_1.8}': sol('h_{t_1.8}'),
+                'h_{t_2}': sol('h_{t_2}'),
+                'h_{t_4.1}': sol('h_{t_4.1}'),
             }
+
  
         Model.__init__(self, offD.cost, lc, substitutions)
 

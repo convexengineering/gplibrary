@@ -156,8 +156,8 @@ if __name__ == "__main__":
         'T_5': 500,
         'P_{t_2}': sol('P_{t_2}'),
         'T_{t_2}': sol('T_{t_2}'),
-        'T_{t_{4spec}}': 1400
+        'T_{t_{4spec}}': 1450
         })
 
-    sol = offdesign.solve(verbosity = 0)
+    sol = offdesign.solve(verbosity = 4)
     print sol.table()
