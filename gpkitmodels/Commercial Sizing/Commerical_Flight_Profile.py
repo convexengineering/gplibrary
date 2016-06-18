@@ -77,7 +77,7 @@ thours = VectorVariable(Nseg, 'thr', 'hour', 'Flight Time in Hours')
 RngClimb = VectorVariable(Nclimb, 'RngClimb', 'miles', 'Segment Range During Climb')
 RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCCruise', 'miles', 'Segment Range During Cruise')
 ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
-ReqRng = Variable('ReqRng', 300, 'miles', 'Required Mission Range')
+ReqRng = Variable('ReqRng', 3000, 'miles', 'Required Mission Range')
 
 #aircraft weights
 W_e = Variable('W_{e}', 'lbf', 'Empty Weight of Aircraft')
@@ -118,7 +118,7 @@ TSFC = VectorVariable(Nseg, 'TSFC', 'lb/hr/lbf', 'Thrust Specific Fuel Consumpti
 c1 = Variable('c1', 2, 'lb/lbf/hr', 'Constant')
 
 #thrust
-thrust = Variable('thrust', 40000, 'lbf', 'Engine Thrust')
+thrust = Variable('thrust', 87000, 'N', 'Engine Thrust')
 
 class CommericalMissionConstraints(Model):
     """
@@ -144,17 +144,17 @@ class CommericalMissionConstraints(Model):
                 tmin  == thours ,
                 
                 #constraints on the various weights
-                W_e + W_payload + W_ftotal <= W_total,
+                TCS([W_e + W_payload + W_ftotal <= W_total]),
                 W_start[0]  == W_total,
-                W_e + W_payload <= W_end[Nseg-1],
-                W_ftotal   >= sum(W_fuel),
+                TCS([W_e + W_payload <= W_end[Nseg-1]]),
+                TCS([W_ftotal   >= sum(W_fuel)]),
                 
                 #altitude at end of climb segment 1...constraint comes from 250kt speed limit below 10,000'
-                hft[Ntakeoff + Nclimb1 - 1] <= alt10k,
+                hft[Ntakeoff + Nclimb1 - 1] == alt10k,
                 
                 #range constraints
-                sum(RngClimb) + sum(RngCruise) >= ReqRng,
-                ReqRngCruise   >= sum(RngCruise),
+                TCS([sum(RngClimb) + sum(RngCruise) >= ReqRng]),
+                TCS([ReqRngCruise   >= sum(RngCruise)]),
 
                 #altitude matching constraints
                 hft[icruise2]==hft[Nclimb-1],
@@ -167,7 +167,7 @@ class CommericalMissionConstraints(Model):
                     ])
             for i in range(0,Nseg):
                 constraints.extend([
-                    W_start[i] >= W_end[i] + W_fuel[i]
+                    TCS([W_start[i] >= W_end[i] + W_fuel[i]])
                     ])
         Model.__init__(self, W_total, constraints, **kwargs)
         
@@ -192,8 +192,8 @@ class Climb1(Model):
                 V[iclimb1] >= Vstall,
                 
                 #climb rate constraints
-                RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
-                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] >= V[iclimb1] * thrust / W_start[iclimb1],
+                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
+                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] >= V[iclimb1] * thrust / W_start[iclimb1]]),
                 
                 #make the small angle approximation and compute theta
                 theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
@@ -202,7 +202,7 @@ class Climb1(Model):
                 #compute the distance traveled for each segment
 
                 #takes into account two terms of a cosine expansion
-                RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1],
+                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
                 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
@@ -211,11 +211,11 @@ class Climb1(Model):
             for i in range(0, Nclimb):
                 if i==0:
                     constraints.extend([
-                        hft[i] <= 1500*units('ft')+dhft[i]
+                        TCS([hft[i] <= 1500*units('ft')+dhft[i]])
                         ])
                 else:
                      constraints.extend([
-                        hft[i] <= hft[i-1]+dhft[i]
+                        TCS([hft[i] <= hft[i-1]+dhft[i]])
                         ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -240,8 +240,8 @@ class Climb2(Model):
                 V[iclimb2] >= Vstall,
                 
                 #climb rate constraints
-                RC[iclimb2] + 0.5 * (V[iclimb2]**3) * rho[iclimb2] * S / W_start[iclimb2] * Cd0 +
-                W_start[iclimb2] / S * 2 * K / rho[iclimb2] / V[iclimb2] >= V[iclimb2] * thrust / W_start[iclimb2],
+                TCS([RC[iclimb2] + 0.5 * (V[iclimb2]**3) * rho[iclimb2] * S / W_start[iclimb2] * Cd0 +
+                W_start[iclimb2] / S * 2 * K / rho[iclimb2] / V[iclimb2] >= V[iclimb2] * thrust / W_start[iclimb2]]),
                 
                 #make the small angle approximation and compute theta
                 theta[iclimb2]*V[iclimb2]  == RC[iclimb2],
@@ -250,7 +250,7 @@ class Climb2(Model):
                 #compute the distance traveled for each segment
 
                 #takes into account two terms of a cosine expansion
-                RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2],
+                TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb2]  == g * TSFC[iclimb2] * thours[iclimb2] * thrust,
@@ -281,10 +281,10 @@ class Cruise2(Model):
                 hft[icruise2]  == 35000*units('ft'),
                 
                 #taylor series expansion to get the weight term
-                W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3),
+                TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
                 
                 #breguet range eqn
-                RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2]*g),
+                TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2]*g)]),
                 
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
@@ -293,7 +293,7 @@ class Cruise2(Model):
             #constraint on the aircraft meeting the required range
             for i in range(min(izbre), max(izbre)+1):
                 constraints.extend([
-                     RngCruise[i]   >= (i+1) * ReqRngCruise/Nseg
+                     TCS([RngCruise[i]   >= (i+1) * ReqRngCruise/Nseg])
                     ])
                 
             constraints.extend([
@@ -305,8 +305,8 @@ class Cruise2(Model):
                 rho[iclimb2] == 1.225*units('kg/m^3'),
                 TSFC[iclimb1]  == c1,
                 rho[iclimb1] == 1.225*units('kg/m^3'),
-                W_e  == 90000*units('lbf'),
-                W_payload == 40000*units('lbf'),
+                W_e  == 40000*units('N'),
+                W_payload == 400000*units('N'),
                 T ==273*units('K'),
                 ])
         Model.__init__(self, None, constraints, **kwargs)
@@ -345,13 +345,7 @@ if __name__ == '__main__':
     plt.ylabel('Altitude [ft]')
     plt.xlabel('Time [min]')
     plt.show()
-
-
-
-
-
-
-
+    
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
 ##        iclimb1 = map(int, np.linspace(Ntakeoff, itakeoff[len(itakeoff)-1]+Nclimb1, Nclimb1))
