@@ -193,7 +193,7 @@ class Climb1(Model):
                 
                 #climb rate constraints
                 TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
-                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] >= V[iclimb1] * thrust / W_start[iclimb1]]),
+                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
                 
                 #make the small angle approximation and compute theta
                 theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
@@ -241,7 +241,7 @@ class Climb2(Model):
                 
                 #climb rate constraints
                 TCS([RC[iclimb2] + 0.5 * (V[iclimb2]**3) * rho[iclimb2] * S / W_start[iclimb2] * Cd0 +
-                W_start[iclimb2] / S * 2 * K / rho[iclimb2] / V[iclimb2] >= V[iclimb2] * thrust / W_start[iclimb2]]),
+                W_start[iclimb2] / S * 2 * K / rho[iclimb2] / V[iclimb2] <= V[iclimb2] * thrust / W_start[iclimb2]]),
                 
                 #make the small angle approximation and compute theta
                 theta[iclimb2]*V[iclimb2]  == RC[iclimb2],
@@ -333,8 +333,6 @@ class CommercialAircraft(Model):
         lc = LinkedConstraintSet([self.submodels])
 
         Model.__init__(self, cmc.cost, lc, **kwargs)
-
-
     
 if __name__ == '__main__':
     m = CommercialAircraft()
