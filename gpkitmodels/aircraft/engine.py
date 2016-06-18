@@ -108,7 +108,7 @@ class EngineOffDesign(Model):
         thrust = ExhaustAndThrust()
         offD = OffDesign()
 
-        self.submodels = [ turbine, offD]
+        self.submodels = [combustor, turbine, offD]
             
         with SignomialsEnabled():
 
@@ -119,11 +119,11 @@ class EngineOffDesign(Model):
                 'P_0': sol('P_0'),    #36K feet
                 'M_0': sol('M_0'),
                 '\pi_{tn}': sol('\pi_{tn}'),
+                '\pi_{b}': sol('\pi_{b}'),
                 'A_5': 1,
                 'A_7': 3,
-                'P_{t_4.1}': sol('P_{t_4.1}'),
                 'P_{t_2.5}': sol('P_{t_2.5}'),
-                'T_{t_4.1}': sol('T_{t_4.1}'),
+                'P_{t_3}': sol('P_{t_3}'),
                 'h_{t_7}': sol('h_{t_7}'),
                 'T_{t_1.8}': sol('T_{t_1.8}'),
                 'P_{t_1.8}': sol('P_{t_1.8}'),
@@ -131,7 +131,6 @@ class EngineOffDesign(Model):
                 'P_{ref}': 22,
                 'm_{htD}': 2.2917277822,
                 'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
-                'f': sol('f'),
                 'N_1': 1,
                 'G_f': 1,
                 'T_{t_2.5}': sol('T_{t_2.5}'),
@@ -144,7 +143,6 @@ class EngineOffDesign(Model):
                 'h_{t_2.1}': sol('h_{t_2.1}'),
                 'h_{t_1.8}': sol('h_{t_1.8}'),
                 'h_{t_2}': sol('h_{t_2}'),
-                'h_{t_4.1}': sol('h_{t_4.1}'),
             }
 
  
