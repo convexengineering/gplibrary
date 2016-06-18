@@ -8,6 +8,13 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
 from atmosphere import Troposphere, Tropopause
 
+"""
+minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
+we are minimizing the fuel weight
+
+Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
+"""
+
 #TODO
 
 #-----------------------------------------------------------
@@ -110,14 +117,14 @@ TSFC = VectorVariable(Nseg, 'TSFC', 'lb/hr/lbf', 'Thrust Specific Fuel Consumpti
 #currently sets the value of TSFC, just a place holder
 c1 = Variable('c1', 2, 'lb/lbf/hr', 'Constant')
 
-class CommericalAircraft(Model):
-    """
-    minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
-    we are minimizing the fuel weight
+#thrust
+thrust = Variable('thrust', 40000, 'lbf', 'Engine Thrust')
 
-    Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
+class CommericalMissionConstraints(Model):
     """
-    def __init__(self):        
+    class that is general constraints that apply across the mission
+    """
+    def __init__(self, **kwargs):        
         with gpkit.SignomialsEnabled():
         
             constraints = []
@@ -129,7 +136,6 @@ class CommericalAircraft(Model):
             constraints.extend([
                 #speed of sound
                 a  == (gamma * R * T)**.5,
-                T ==273*units('K'),
                 
                 #convert m to ft
                 hft  == h,
@@ -148,7 +154,7 @@ class CommericalAircraft(Model):
                 
                 #range constraints
                 sum(RngClimb) + sum(RngCruise) >= ReqRng,
-                ReqRngCruise   <= sum(RngCruise),
+                ReqRngCruise   >= sum(RngCruise),
 
                 #altitude matching constraints
                 hft[icruise2]==hft[Nclimb-1],
@@ -163,15 +169,23 @@ class CommericalAircraft(Model):
                 constraints.extend([
                     W_start[i] >= W_end[i] + W_fuel[i]
                     ])
-            
-            #---------------------------------------
-            #takeoff
+        Model.__init__(self, W_total, constraints, **kwargs)
+        
+#---------------------------------------
+#takeoff
 
-            #--------------------------------------
-            #Climb #1 (sub 10K subject to 250KTS speed limit)
-            climbspeed = Variable('climbspeed', 250, 'kts', 'Speed Limit Under 10,000 ft')
-            thrust = Variable('thrust', 40000, 'lbf', 'Engine Thrust')
-            
+class Climb1(Model):
+    """
+    class to model the climb portion of a flight, applies to all climbs below
+    10,000'
+    """
+    def __init__(self,**kwargs):
+        #Climb #1 (sub 10K subject to 250KTS speed limit)
+        climbspeed = Variable('climbspeed', 250, 'kts', 'Speed Limit Under 10,000 ft')
+
+        constraints = []
+
+        with gpkit.SignomialsEnabled():
             constraints.extend([            
                 #set the velocity limits
                 V[iclimb1] <= climbspeed,
@@ -203,12 +217,21 @@ class CommericalAircraft(Model):
                      constraints.extend([
                         hft[i] <= hft[i-1]+dhft[i]
                         ])
-            
-            #--------------------------------------
-            #transition between climb 1 and 2 if desired
+        Model.__init__(self, None, constraints, **kwargs)
+        
+#--------------------------------------
+#transition between climb 1 and 2 if desired
 
-            #--------------------------------------
-            #Climb #2 (over 10K, no speed limit)
+            
+class Climb2(Model):
+    """
+    class to model the climb portion above 10,000'
+    """
+    def __init__(self, **kwargs):
+        constraints = []
+
+        with gpkit.SignomialsEnabled():
+        
             constraints.extend([            
                 #set the velocity limits
 
@@ -232,19 +255,27 @@ class CommericalAircraft(Model):
                 #compute fuel burn from TSFC
                 W_fuel[iclimb2]  == g * TSFC[iclimb2] * thours[iclimb2] * thrust,
                 ])
-                     
-            #--------------------------------------
-            #cruise #1
-            #Breguet Range discretized to model the cruise
-            
+        Model.__init__(self, None, constraints, **kwargs)
+        
+#--------------------------------------
+#cruise #1
+#Breguet Range discretized to model the cruise
 
-            #---------------------------------------
-            #cruise climb/decent...might switch altitude in cruise
 
-            #---------------------------------------
-            #cruise #2
-            #Breguet Range discretized to model the cruise
+#---------------------------------------
+#cruise climb/decent...might switch altitude in cruise
 
+class Cruise2(Model):
+    """
+    class to model the second cruise portion of a flight (if the flight is
+    long enough to mandate two cruise portions)
+
+    Model is based off of a discretized Breguet Range equation
+    """
+    def __init__(self, **kwargs):
+        constraints = []
+
+        with gpkit.SignomialsEnabled():
             constraints.extend([
                 #constrain the climb rate by holding altitude constant
                 hft[icruise2]  == 35000*units('ft'),
@@ -275,30 +306,45 @@ class CommericalAircraft(Model):
                 TSFC[iclimb1]  == c1,
                 rho[iclimb1] == 1.225*units('kg/m^3'),
                 W_e  == 90000*units('lbf'),
+                W_payload == 40000*units('lbf'),
+                T ==273*units('K'),
                 ])
-            #---------------------------------------
-            #decent
-
-            #----------------------------------------
-            #landing
-
+        Model.__init__(self, None, constraints, **kwargs)
         
-        #objective is to minimize the total required fuel weight, accomplished my minimizing the total weight
-        objective =  W_total
+#---------------------------------------
+#decent
 
-        m = Model(objective, constraints)
+#----------------------------------------
+#landing
 
-        sol = m.localsolve(kktsolver = "ldl", verbosity=4)
+class CommercialAircraft(Model):
+    """
+    class to link all models needed to simulate a commercial flight
+    """
+    def __init__(self, **kwargs):
+        #define all the submodels
+        cmc = CommericalMissionConstraints()
+        climb1 = Climb1()
+        climb2 = Climb2()
+        c2 = Cruise2()
 
-        plt.plot(np.cumsum(sol('tmin')), sol('hft'))
-        plt.title('Altitude vs Time')
-        plt.ylabel('Altitude [ft]')
-        plt.xlabel('Time [min]')
-        plt.show()
+        self.submodels = [cmc, climb1, climb2, c2]
 
+        lc = LinkedConstraintSet([self.submodels])
+
+        Model.__init__(self, cmc.cost, lc, **kwargs)
+
+
+    
 if __name__ == '__main__':
-    CommericalAircraft()
-
+    m = CommercialAircraft()
+    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+    
+    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
+    plt.title('Altitude vs Time')
+    plt.ylabel('Altitude [ft]')
+    plt.xlabel('Time [min]')
+    plt.show()
 
 
 
