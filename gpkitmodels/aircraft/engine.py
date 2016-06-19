@@ -6,14 +6,13 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap
 
 #TODO
-#figure out how to compute f
 #determine the three different Cp, gamma, and R values to be used
-#implement the constraints on the nozzle sizing
 #get realisitc R and Cp values for the different engine sections
 #verify the values of all constants...and fix where differnces of constants are hard coded
 #implement the varying constraints in the off design case for M5 and M7 being greater than or less than 1
 #look into T7 and T5
 #figure out Tref and Pref and make them the right value in the sizing post processing
+#replace the gammaAirs with gammaTs in post processing for nozzle at station 5
 
 class EngineOnDesign(Model):
     """
@@ -154,12 +153,12 @@ class EngineOffDesign(Model):
                 'M_0': sol('M_0'),
                 '\pi_{tn}': sol('\pi_{tn}'),
                 '\pi_{b}': sol('\pi_{b}'),
-                'A_5': 1,
-                'A_7': 3,
+                'A_5': A5,
+                'A_7': A7,
                 'T_{ref}': 1000,
                 'P_{ref}': 22,
-                'm_{htD}': 2.2917277822,
-                'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
+                'm_{htD}': mhtD,
+                'm_{ltD}': mltD,
                 'N_1': 1,
                 'G_f': 1,
                 'T_7': 200,

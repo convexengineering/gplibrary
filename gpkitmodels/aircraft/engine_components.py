@@ -598,7 +598,9 @@ class OffDesign(Model):
         Rt = Variable('R_t', 287, 'J/kg/K', 'R for the Turbine Gas')
         Rair = Variable('R_{air}', 287, 'J/kg/K', 'R for Air')
         Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
-
+        gammaAir = Variable('gamma_{air}', 1.4, '-', 'Specific Heat Ratio for Air')
+        gammaT = Variable('gamma_{T}', 1.4, '-', 'Specific Heat Ratio for Gas in Turbine')
+        
         #free stream static pressure
         P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
         
@@ -713,6 +715,7 @@ class OffDesign(Model):
                 #residual 4
                 #I think all those Ttref values are the actual on design values
                 P7 == P0,
+                (P7/Pt7) == (T7/Tt7)**(3.5),
                 TCS([u7**2 +2*h7 <= 2*ht7]),
                 h7 == Cpair*T7,
                 rho7 == P7/(Rt*T7),
@@ -722,6 +725,7 @@ class OffDesign(Model):
                 #residual 5 core nozzle mass flow
                 P5 == P0,
                 h5 == Cpt*T5,
+                (P5/Pt5) == (T5/Tt5)**(3.5),
                 TCS([u5**2 +2*h5 <= 2*ht5]),
                 rho5 == P5/(Rt*T5),
                 M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
