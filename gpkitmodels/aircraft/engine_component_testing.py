@@ -124,7 +124,9 @@ if __name__ == "__main__":
     #run the off design model
     engineOnD = EngineOnDesign()
     
-    sol = engineOnD.localsolve(verbosity = 0, kktsolver="ldl")
+    sol = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
+
+    mhtD, mltD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(sol)
     
     offdesign = OffDesign()
     offdesign.substitutions.update({
@@ -146,8 +148,8 @@ if __name__ == "__main__":
         'P_{t_1.8}': sol('P_{t_1.8}'),
         'T_{ref}': 1000,
         'P_{ref}': 22,
-        'm_{htD}': 2.2917277822,
-        'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
+        'm_{htD}': mhtD,
+        'm_{ltD}': mltD,
         'f': sol('f'),
         'N_1': 1,
         'G_f': 1,
@@ -156,7 +158,7 @@ if __name__ == "__main__":
         'T_5': 500,
         'P_{t_2}': sol('P_{t_2}'),
         'T_{t_2}': sol('T_{t_2}'),
-        'T_{t_{4spec}}': 1450
+        'T_{t_{4spec}}': 1450,
         })
 
     sol = offdesign.solve(verbosity = 4)

@@ -11,6 +11,9 @@ from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndTh
 #implement the constraints on the nozzle sizing
 #get realisitc R and Cp values for the different engine sections
 #verify the values of all constants...and fix where differnces of constants are hard coded
+#implement the varying constraints in the off design case for M5 and M7 being greater than or less than 1
+#look into T7 and T5
+#figure out Tref and Pref and make them the right value in the sizing post processing
 
 class EngineOnDesign(Model):
     """
@@ -71,13 +74,44 @@ class EngineOnDesign(Model):
             
 
     def sizing(self, sol):
+        #find the design normalized speeds and mass flow
+        mhtD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.1}')/(1000*units('K')))**.5)/(sol('P_{t_4.1}')/(22*units('kPa'))) #B.225
+        mltD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))) #B.226
+        #noting that 
+        NlpcD = 1/(sol('T_{t_1.8}')/1000)**.5    #B.223
+        NhpcD = 1/(sol('T_{t_2.5}')/1000)**.5    #B.224
+
         #first size the fan nozzle
         if sol('M_8') >= 1:
-           M7 = (sol('P_7')/sol('P_{t_7}')**((sol('gamma_{air}')-1)/(-sol('gamma_{air}')))-1)*2/(sol('gamma_{air}')-1)
-        #size the core nozzle
-
-        #return the two sizes
-        print actual
+            M7 = 1
+            P7 = sol('P_{t_7}')*(1+.5*(sol('gamma_{air}')-1))**(-sol('gamma_{air}')/(sol('gamma_{air}')-1))
+            T7 = sol('T_{t_7}')*(1+.5*(sol('gamma_{air}')-1))**-1
+        else:
+            P7 = sol('P_0')
+            T7 = sol('T_{t_7}')*(P5/sol('P_{t_7}'))**((sol('gamma_{air}')-1)/sol('gamma_{air}'))
+            
+        h7 = sol('Cp_{air}')*T7    
+        #compute the fan stream velocity and nozzle area
+        u7 = (2*(sol('h_{t_7}')-h7)**.5)
+        rho7 = P7/(sol('R_t')*T7)
+        A7 = sol('m_{core}')/(rho7*u7)
+        
+        #core nozzle area calcualtion
+        if sol('M_6') >=1:
+            M5 = 1
+            P5 = sol('P_{t_5}')*(1+.5*(sol('gamma_{air}')-1))**(-sol('gamma_{air}')/(sol('gamma_{air}')-1))
+            T5 = sol('T_{t_5}')*(1+.5*(sol('gamma_{air}')-1))**-1  
+        else:
+            P5 = sol('P_0')
+            T5 = sol('T_{t_5}')*(P5/sol('P_{t_5}'))**((sol('gamma_{air}')-1)/sol('gamma_{air}'))
+            
+        h5 = sol('Cp_{air}')*T5
+        #compute the core stream velocity and nozzle area    
+        u5 = (2*(sol('h_{t_5}')-h5)**.5)
+        rho5 = P5/(sol('R_t')*T5)
+        A5 = sol('m_{core}')/(rho5*u5)
+        
+        return mhtD, mltD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
     """
@@ -101,14 +135,14 @@ class EngineOffDesign(Model):
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
 
-    def __init__(self, sol, **kwargs):
+    def __init__(self, sol, mhtD, mltD, NlpcD, NhpcD, A5, A7, **kwargs):
         lpc = FanAndLPC()
         combustor = CombustorCooling()
         turbine = Turbine()
         thrust = ExhaustAndThrust()
         offD = OffDesign()
 
-        self.submodels = [combustor, turbine, offD]
+        self.submodels = [lpc, combustor, turbine, offD]
             
         with SignomialsEnabled():
 
@@ -122,27 +156,15 @@ class EngineOffDesign(Model):
                 '\pi_{b}': sol('\pi_{b}'),
                 'A_5': 1,
                 'A_7': 3,
-                'P_{t_2.5}': sol('P_{t_2.5}'),
-                'P_{t_3}': sol('P_{t_3}'),
-                'h_{t_7}': sol('h_{t_7}'),
-                'T_{t_1.8}': sol('T_{t_1.8}'),
-                'P_{t_1.8}': sol('P_{t_1.8}'),
                 'T_{ref}': 1000,
                 'P_{ref}': 22,
                 'm_{htD}': 2.2917277822,
                 'm_{ltD}': (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))),
                 'N_1': 1,
                 'G_f': 1,
-                'T_{t_2.5}': sol('T_{t_2.5}'),
                 'T_7': 200,
                 'T_5': 500,
-                'P_{t_2}': sol('P_{t_2}'),
-                'T_{t_2}': sol('T_{t_2}'),
                 'T_{t_{4spec}}': 1450,
-                'h_{t_3}': sol('h_{t_3}'),
-                'h_{t_2.1}': sol('h_{t_2.1}'),
-                'h_{t_1.8}': sol('h_{t_1.8}'),
-                'h_{t_2}': sol('h_{t_2}'),
             }
 
  
@@ -154,7 +176,9 @@ if __name__ == "__main__":
     
     solOn = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
     
-    engineOffD = EngineOffDesign(solOn)
+    mhtD, mltD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
+    
+    engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
     
     solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
     

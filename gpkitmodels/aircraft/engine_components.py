@@ -701,10 +701,6 @@ class OffDesign(Model):
             constraints = [
                 fp1<=f+1,
                 
-                #compute the normalized speeds
-                NbarlcD == NlcD/(Tt18/Tref)**.5,
-                NbarhcD == NhcD/(Tt25/Tref)**.5,
-                
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
 
