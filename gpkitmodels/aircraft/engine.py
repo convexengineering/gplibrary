@@ -3,7 +3,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap, ExhaustAndThrustTEST
 
 #TODO
 #determine the three different Cp, gamma, and R values to be used
@@ -13,6 +13,8 @@ from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndTh
 #look into T7 and T5
 #figure out Tref and Pref and make them the right value in the sizing post processing
 #replace the gammaAirs with gammaTs in post processing for nozzle at station 5
+
+#FIX THIS DAMN MASS FLOW THING FOR THE OFFDESIGN CASE
 
 class EngineOnDesign(Model):
     """
@@ -138,10 +140,10 @@ class EngineOffDesign(Model):
         lpc = FanAndLPC()
         combustor = CombustorCooling()
         turbine = Turbine()
-        thrust = ExhaustAndThrust()
+        thrust = ExhaustAndThrustTEST()
         offD = OffDesign()
 
-        self.submodels = [lpc, combustor, turbine, offD]
+        self.submodels = [lpc, combustor, turbine, thrust, offD]
             
         with SignomialsEnabled():
 
@@ -161,13 +163,11 @@ class EngineOffDesign(Model):
                 'm_{ltD}': mltD,
                 'N_1': 1,
                 'G_f': 1,
-                'T_7': 200,
-                'T_5': 500,
                 'T_{t_{4spec}}': 1450,
             }
 
  
-        Model.__init__(self, offD.cost, lc, substitutions)
+        Model.__init__(self, thrust.cost, lc, substitutions)
 
             
 if __name__ == "__main__":
