@@ -449,9 +449,6 @@ class ExhaustAndThrustTEST(Model):
 
                 #mass flow
 #--------------------------------------------------------------LOOK RIGHT HERE THIS THE PROBLEM CODE----------------------
-                
-                mCore == F/(Fsp*a0*(alphap1)),  #B.194
-
                 #overall thrust values
                 TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
                 TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
@@ -460,14 +457,14 @@ class ExhaustAndThrustTEST(Model):
                 TCS([F <= F6 + F8]),
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
-##
-##                #ISP
-##                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
-##
-##                #TSFC
-##                TSFC == 1/Isp                   #B.193
+
+                #ISP
+                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
+
+                #TSFC
+                TSFC == 1/Isp                   #B.193
                 ]
-        Model.__init__(self, 1/F, constraints, **kwargs)
+        Model.__init__(self, TSFC, constraints, **kwargs)
         
 class OnDesignSizing(Model):
     """
@@ -808,6 +805,9 @@ class OffDesign(Model):
 
         fp1 = Variable('fp1', '-', 'f + 1')
 
+        #core mass flow
+        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
+
         #new best idea is to run this twice and if mach numbers go over 1 pass in a different argument and re run the case
         
         
@@ -842,6 +842,9 @@ class OffDesign(Model):
                 rho5 == P5/(Rt*T5),
                 M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
                 TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
+
+                #compute core mass flux
+                mCore == rho5 * A5 * u5,
                 
                 #residual 6 LPC/HPC mass flow constraint
                 mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,

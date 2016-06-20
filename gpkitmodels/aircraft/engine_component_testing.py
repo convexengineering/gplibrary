@@ -134,8 +134,8 @@ if __name__ == "__main__":
         'P_0': sol('P_0'),    #36K feet
         'M_0': sol('M_0'),
         '\pi_{tn}': sol('\pi_{tn}'),
-        'A_5': 1,
-        'A_7': 3,
+        'A_5': A5,
+        'A_7': A7,
         'P_{t_4.1}': sol('P_{t_4.1}'),
         'P_{t_2.5}': sol('P_{t_2.5}'),
         'P_{t_4.5}': sol('P_{t_4.5}'),
@@ -161,5 +161,5 @@ if __name__ == "__main__":
         'T_{t_{4spec}}': 1450,
         })
 
-    sol = offdesign.solve(verbosity = 4)
+    sol = offdesign.solve(kktsolve = "ldl", verbosity = 4, solver = 'mosek')
     print sol.table()

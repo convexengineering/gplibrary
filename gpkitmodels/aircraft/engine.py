@@ -155,6 +155,8 @@ class EngineOffDesign(Model):
                 'M_0': sol('M_0'),
                 '\pi_{tn}': sol('\pi_{tn}'),
                 '\pi_{b}': sol('\pi_{b}'),
+                '\pi_{d}': sol('\pi_{d}'),
+                '\pi_{fn}': sol('\pi_{fn}'),
                 'A_5': A5,
                 'A_7': A7,
                 'T_{ref}': 1000,
