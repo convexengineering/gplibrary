@@ -165,7 +165,8 @@ class EngineOffDesign(Model):
                 'm_{ltD}': mltD,
                 'N_1': 1,
                 'G_f': 1,
-                'T_{t_{4spec}}': 1450,
+                #'T_{t_{4spec}}': 1450,
+                'F_{spec}': 120000,
             }
 
  
@@ -175,12 +176,10 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-    solOn = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
+    solOn = engineOnD.localsolve(verbosity = 4, kktsolver="ldl")
     
-    mhtD, mltD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
-    
-    engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
-    
-    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
-    
-    engineOnD.sizing(solOn)
+##    mhtD, mltD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
+##    
+##    engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
+##    
+##    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")

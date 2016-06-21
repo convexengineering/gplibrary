@@ -40,9 +40,9 @@ class FanAndLPC(Model):
         ht2 = Variable('h_{t_2}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2)')
 
         #new vars for the fan exit (station 2.1)
-        Pt21 = Variable('P_{t_2.1}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2.1)')
-        Tt21 = Variable('T_{t_2.1}', 'K', 'Stagnation Temperature at the Fan Inlet (2.1)')
-        ht21 = Variable('h_{t_2.1}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2.1)')
+        Pt21 = Variable('P_{t_2.1}', 'kPa', 'Stagnation Pressure at the Fan Exit (2.1)')
+        Tt21 = Variable('T_{t_2.1}', 'K', 'Stagnation Temperature at the Fan Exit (2.1)')
+        ht21 = Variable('h_{t_2.1}', 'J/kg', 'Stagnation Enthalpy at the Fan Exit (2.1)')
 
         #new vars for the LPC exit (station 2.5)
         Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
@@ -565,36 +565,35 @@ class OnDesignSizing(Model):
         Tt18 = Variable('T_{t_1.8}', 'K', 'Stagnation Temperature at the Diffuser Exit (1.8)')
         Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
 
-        with SignomialsEnabled():
-            constraints = [
-                #mass flow sizing
-                mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
+        constraints = [
+            #mass flow sizing
+            mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
 
-                #component area sizing
-                #fan area
-                P2 == Pt2*(hold2)**(-3.5),
-                T2 == Tt2 * hold2**-1,
-                h2 == Cpair * T2,
-                rho2 == P2/(Rair * T2),  #B.196
-                u2 == M2*(Cpair*Rair*T2/(781*units('J/kg/K')))**.5,  #B.197
-                A2 == (alphap1)*mCore/(rho2*u2),     #B.198
+            #component area sizing
+            #fan area
+            P2 == Pt2*(hold2)**(-3.5),
+            T2 == Tt2 * hold2**-1,
+            h2 == Cpair * T2,
+            rho2 == P2/(Rair * T2),  #B.196
+            u2 == M2*(Cpair*Rair*T2/(781*units('J/kg/K')))**.5,  #B.197
+            A2 == (alphap1)*mCore/(rho2*u2),     #B.198
 
-                #HPC area
-                P25 == Pt25*(hold25)**(-3.5),
-                T25 == Tt25 * hold25**-1,
-                h25 == Cpair * T25,
-                rho25 == P25/(Rair*T25),
-                u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
-                A25 == (alphap1)*mCore/(rho25*u25),     #B.203
+            #HPC area
+            P25 == Pt25*(hold25)**(-3.5),
+            T25 == Tt25 * hold25**-1,
+            h25 == Cpair * T25,
+            rho25 == P25/(Rair*T25),
+            u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
+            A25 == (alphap1)*mCore/(rho25*u25),     #B.203
 
-                #mach nubmers for post processing of the data
-                M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
-                M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
+            #mach nubmers for post processing of the data
+            M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
+            M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
 
-                #core satic pressure constraints
-                P7 == P0,
-                P5 == P0,
-                ]
+            #core satic pressure constraints
+            P7 == P0,
+            P5 == P0,
+            ]
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
         Model.__init__(self, None, constraints, **kwargs)
@@ -808,6 +807,10 @@ class OffDesign(Model):
         #core mass flow
         mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
 
+        #variables for the thrust constraint
+        Fspec = Variable('F_{spec}', 'N', 'Specified Total Thrust')
+        F = Variable('F', 'N', 'Total Thrust')
+
         #new best idea is to run this twice and if mach numbers go over 1 pass in a different argument and re run the case
         
         
@@ -849,8 +852,11 @@ class OffDesign(Model):
                 #residual 6 LPC/HPC mass flow constraint
                 mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
                 
-                #residual 7, constrain the burner exit temperature
-                Tt4 == Tt4spec,  #B.265
+                #residual 7
+                #option #1 constrain the burner exit temperature
+                #Tt4 == Tt4spec,  #B.265
+                #option #2, constrain the engine's thrust
+                F == Fspec,
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5 #B.269
