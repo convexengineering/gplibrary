@@ -214,18 +214,18 @@ class Climb1(Model):
                 #climb rate constraints
 #                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
 ##                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
-                
+                RC[iclimb1]==5000*units('ft/min'),
                 #make the small angle approximation and compute theta
-##                theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
+                theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
                
-##                dhft[iclimb1]  == tmin[iclimb1] * RC[iclimb1],
+                dhft[iclimb1]  == tmin[iclimb1] * RC[iclimb1],
                 #compute the distance traveled for each segment
 
                 #takes into account two terms of a cosine expansion
 ##                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
                 TCS([RngClimb[iclimb1]  == thours[iclimb1]*V[iclimb1]]),
                 
-                RngClimb[iclimb1]  == 150*units('miles'),
+                #RngClimb[iclimb1]  == 150*units('miles'),
                 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
@@ -234,19 +234,19 @@ class Climb1(Model):
                 #subsitute later
                 TSFC[iclimb1]  == c1,
                 rho[iclimb1] == 1.225*units('kg/m^3'),
-                hft[iclimb1]==10000*units('ft'),
+                #hft[iclimb1]==10000*units('ft'),
                 T[iclimb1] == 273 * units('K')
                 ])
             
-##            for i in range(0, Nclimb):
-##                if i==0:
-##                    constraints.extend([
-##                        TCS([hft[i] <= 1500*units('ft')+dhft[i]])
-##                        ])
-##                else:
-##                     constraints.extend([
-##                        TCS([hft[i] <= hft[i-1]+dhft[i]])
-##                        ])
+            for i in range(0, Nclimb):
+                if i==0:
+                    constraints.extend([
+                        TCS([hft[i] <= 1500*units('ft')+dhft[i]])
+                        ])
+                else:
+                     constraints.extend([
+                        TCS([hft[i] <= hft[i-1]+dhft[i]])
+                        ])
         Model.__init__(self, None, constraints, **kwargs)
         
 #--------------------------------------
