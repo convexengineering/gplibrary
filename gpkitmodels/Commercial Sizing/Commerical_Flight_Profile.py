@@ -22,12 +22,12 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 #-----------------------------------------------------------
 #defining the number of segments
 Ntakeoff = 0
-Nclimb1 = 3
+Nclimb1 = 2
 Ntrans = 0
-Nclimb2 = 3
+Nclimb2 = 0
 Ncruise1 = 0
 Ncruiseclimb = 0
-Ncruise2 = 3
+Ncruise2 = 0
 Ndecent = 0
 Nlanding = 0
 
@@ -48,8 +48,15 @@ Nseg = Nclimb + Ncruise + Nres + Ntakeoff + Ntrans + Ndecent + Nlanding
 
 #partial flight profile for use during development
 iclimb1 = map(int, np.linspace(0, Nclimb1 - 1, Nclimb1))
-iclimb2 = map(int, np.linspace(iclimb1[len(iclimb1)-1] + 1, Nclimb2 + iclimb1[len(iclimb1)-1], Nclimb2))
-icruise2 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise2 + iclimb2[len(iclimb2)-1], Ncruise2))
+if Nclimb2 != 0:
+    iclimb2 = map(int, np.linspace(iclimb1[len(iclimb1)-1] + 1, Nclimb2 + iclimb1[len(iclimb1)-1], Nclimb2))
+else:
+    iclimb2 =0
+    
+if Ncruise2 != 0:
+    icruise2 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise2 + iclimb2[len(iclimb2)-1], Ncruise2))
+else:
+    icruise2 = 0
 
 izbre = map(int, np.linspace(0, Ncruise2 - 1, Ncruise2))
 
@@ -78,7 +85,8 @@ thours = VectorVariable(Nseg, 'thr', 'hour', 'Flight Time in Hours')
 
 #Range  
 RngClimb = VectorVariable(Nclimb, 'RngClimb', 'miles', 'Segment Range During Climb')
-RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCCruise', 'miles', 'Segment Range During Cruise')
+if Ncruise !=0:
+    RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCCruise', 'miles', 'Segment Range During Cruise')
 ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
 ReqRng = Variable('ReqRng', 'miles', 'Required Mission Range')
 
@@ -123,13 +131,16 @@ c1 = Variable('c1', 'lb/lbf/hr', 'Constant')
 #thrust
 thrust = Variable('thrust', 'N', 'Engine Thrust')
 
+#temporary args
+#pass i na 1 for testing climb segment 1
+
 class CommericalMissionConstraints(Model):
     """
     class that is general constraints that apply across the mission
     """
-    def __init__(self, **kwargs):        
+    def __init__(self, test=0, **kwargs):        
         with gpkit.SignomialsEnabled():
-        
+            
             constraints = []
             
             #define variables local to this class
@@ -138,13 +149,13 @@ class CommericalMissionConstraints(Model):
             
             constraints.extend([
                 #speed of sound
-                a  == (gamma * R * T)**.5,
+        #        a  == (gamma * R * T)**.5,
                 
                 #convert m to ft
-                hft  == h,
+       #         hft  == h,
                 
                 #convert min to hours
-                tmin  == thours ,
+     #           tmin  == thours ,
                 
                 #constraints on the various weights
                 TCS([W_e + W_payload + W_ftotal <= W_total]),
@@ -153,15 +164,21 @@ class CommericalMissionConstraints(Model):
                 TCS([W_ftotal   >= sum(W_fuel)]),
                 
                 #altitude at end of climb segment 1...constraint comes from 250kt speed limit below 10,000'
-                hft[Ntakeoff + Nclimb1 - 1] == alt10k,
-                
-                #range constraints
-                TCS([sum(RngClimb) + sum(RngCruise) >= ReqRng]),
-                TCS([ReqRngCruise   >= sum(RngCruise)]),
-
-                #altitude matching constraints
-                hft[icruise2]==hft[Nclimb-1],
+         #       hft[Ntakeoff + Nclimb1 - 1] == alt10k,
                 ])
+            
+            if test != 1:
+                constraints.extend([
+                    #range constraints
+                    TCS([sum(RngClimb) + sum(RngCruise) >= ReqRng]),
+                    TCS([ReqRngCruise   >= sum(RngCruise)]),
+                    #altitude matching constraints
+                    hft[icruise2]==hft[Nclimb-1],
+                    ])
+##            if test ==1:
+##                 constraints.extend([
+##                    sum(RngClimb)>= ReqRng
+##                    ])
 
             #constrain the segment weights in a loop
             for i in range(1, Nseg):
@@ -191,39 +208,46 @@ class Climb1(Model):
         with gpkit.SignomialsEnabled():
             constraints.extend([            
                 #set the velocity limits
-                V[iclimb1] <= climbspeed,
-                V[iclimb1] >= Vstall,
+##                V[iclimb1] <= climbspeed,
+##                V[iclimb1] >= Vstall,
+##                V[iclimb1] == climbspeed,
                 
                 #climb rate constraints
-                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
-                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
+##                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
+##                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
                 
                 #make the small angle approximation and compute theta
-                theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
+##                theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
                
-                dhft[iclimb1]  == tmin[iclimb1] * RC[iclimb1],
+##                dhft[iclimb1]  == tmin[iclimb1] * RC[iclimb1],
                 #compute the distance traveled for each segment
 
                 #takes into account two terms of a cosine expansion
-                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
+##                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
+##                TCS([RngClimb[iclimb1]  == thours[iclimb1]*V[iclimb1]]),
+##                
+##                RngClimb[iclimb1]  == 100*units('miles'),
                 
                 #compute fuel burn from TSFC
-                W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
+                W_fuel[iclimb1]  == 1000*units('N'),#g * TSFC[iclimb1] * thours[iclimb1] * thrust,
 
 
                 #subsitute later
-                TSFC[iclimb1]  == c1,
+##                TSFC[iclimb1]  == c1,
+##                rho[iclimb1] == 1.225*units('kg/m^3'),
+##                hft[iclimb1]==10000*units('ft'),
+##                T[iclimb1] == 273 * units('K')
                 ])
             
-            for i in range(0, Nclimb):
-                if i==0:
-                    constraints.extend([
-                        TCS([hft[i] <= 1500*units('ft')+dhft[i]])
-                        ])
-                else:
-                     constraints.extend([
-                        TCS([hft[i] <= hft[i-1]+dhft[i]])
-                        ])
+##            for i in range(0, Nclimb):
+##                if i==0:
+##                    constraints.extend([
+##                        TCS([hft[i] <= 1500*units('ft')+dhft[i]])
+##                        ])
+##                else:
+##                     constraints.extend([
+##                        TCS([hft[i] <= hft[i-1]+dhft[i]])
+##                        ])
         Model.__init__(self, None, constraints, **kwargs)
         
 #--------------------------------------
@@ -332,10 +356,10 @@ class CommercialAircraft(Model):
     """
     def __init__(self, **kwargs):
         #define all the submodels
-        cmc = CommericalMissionConstraints()
+        cmc = CommericalMissionConstraints(1)
         climb1 = Climb1()
-        climb2 = Climb2()
-        c2 = Cruise2()
+##        climb2 = Climb2()
+##        c2 = Cruise2()
         atm = Atmosphere()
 
         substitutions = {      
@@ -343,7 +367,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 400000*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 3000,
+            'ReqRng': 300,
             'C_{d_0}': .025,
             'K': 0.9,
             'S': 124.58,
@@ -351,7 +375,7 @@ class CommercialAircraft(Model):
             'c1': 2,
             }
 
-        self.submodels = [cmc, climb1, climb2, c2, atm]
+        self.submodels = [cmc, climb1]
 
         lc = LinkedConstraintSet([self.submodels])
 
@@ -359,7 +383,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+    sol = m.solve(kktsolver = "ldl", verbosity = 4)
     
     plt.plot(np.cumsum(sol('tmin')), sol('hft'))
     plt.title('Altitude vs Time')
