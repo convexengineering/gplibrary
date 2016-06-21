@@ -149,13 +149,13 @@ class CommericalMissionConstraints(Model):
             
             constraints.extend([
                 #speed of sound
-        #        a  == (gamma * R * T)**.5,
+                a  == (gamma * R * T)**.5,
                 
                 #convert m to ft
-       #         hft  == h,
+                hft  == h,
                 
                 #convert min to hours
-     #           tmin  == thours ,
+                tmin  == thours ,
                 
                 #constraints on the various weights
                 TCS([W_e + W_payload + W_ftotal <= W_total]),
@@ -164,7 +164,7 @@ class CommericalMissionConstraints(Model):
                 TCS([W_ftotal   >= sum(W_fuel)]),
                 
                 #altitude at end of climb segment 1...constraint comes from 250kt speed limit below 10,000'
-         #       hft[Ntakeoff + Nclimb1 - 1] == alt10k,
+                hft[Ntakeoff + Nclimb1 - 1] == alt10k,
                 ])
             
             if test != 1:
@@ -175,10 +175,10 @@ class CommericalMissionConstraints(Model):
                     #altitude matching constraints
                     hft[icruise2]==hft[Nclimb-1],
                     ])
-##            if test ==1:
-##                 constraints.extend([
-##                    sum(RngClimb)>= ReqRng
-##                    ])
+            if test ==1:
+                 constraints.extend([
+                    sum(RngClimb)>= ReqRng
+                    ])
 
             #constrain the segment weights in a loop
             for i in range(1, Nseg):
@@ -208,12 +208,11 @@ class Climb1(Model):
         with gpkit.SignomialsEnabled():
             constraints.extend([            
                 #set the velocity limits
-##                V[iclimb1] <= climbspeed,
-##                V[iclimb1] >= Vstall,
-##                V[iclimb1] == climbspeed,
+                V[iclimb1] <= climbspeed,
+                V[iclimb1] >= Vstall,
                 
                 #climb rate constraints
-##                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
+#                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
 ##                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
                 
                 #make the small angle approximation and compute theta
@@ -224,19 +223,19 @@ class Climb1(Model):
 
                 #takes into account two terms of a cosine expansion
 ##                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
-##                TCS([RngClimb[iclimb1]  == thours[iclimb1]*V[iclimb1]]),
-##                
-##                RngClimb[iclimb1]  == 100*units('miles'),
+                TCS([RngClimb[iclimb1]  == thours[iclimb1]*V[iclimb1]]),
+                
+                RngClimb[iclimb1]  == 150*units('miles'),
                 
                 #compute fuel burn from TSFC
-                W_fuel[iclimb1]  == 1000*units('lbf'),#g * TSFC[iclimb1] * thours[iclimb1] * thrust,
+                W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
 
 
                 #subsitute later
-##                TSFC[iclimb1]  == c1,
-##                rho[iclimb1] == 1.225*units('kg/m^3'),
-##                hft[iclimb1]==10000*units('ft'),
-##                T[iclimb1] == 273 * units('K')
+                TSFC[iclimb1]  == c1,
+                rho[iclimb1] == 1.225*units('kg/m^3'),
+                hft[iclimb1]==10000*units('ft'),
+                T[iclimb1] == 273 * units('K')
                 ])
             
 ##            for i in range(0, Nclimb):
@@ -367,7 +366,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 400000*units('lbf'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 300,
+            'ReqRng': 250,
             'C_{d_0}': .025,
             'K': 0.9,
             'S': 124.58,
@@ -383,7 +382,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.solve(kktsolver = "ldl", verbosity = 4)
+    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
     
     plt.plot(np.cumsum(sol('tmin')), sol('hft'))
     plt.title('Altitude vs Time')
