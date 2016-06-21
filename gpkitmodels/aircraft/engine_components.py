@@ -158,7 +158,7 @@ class CombustorCooling(Model):
                 ht4 == Cpc * Tt4,
 
                 #fuel flow fraction f
-                f*hf >= ht4 - ht3,
+                TCS([f*hf >= ht4 - ht3]),
                 
                 #flow at turbine inlet
                 Tt41 == Tt4,
@@ -226,12 +226,12 @@ class Turbine(Model):
                 #HPT shafter power balance
 
                 #SIGNOMIAL
-                (1+f)*(ht41-ht45) >= ht3 - ht25,    #B.161
+                TCS([(1+f)*(ht41-ht45) >= ht3 - ht25]),    #B.161
                 
                 #LPT shaft power balance
 
                 #SIGNOMIAL  
-                (1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2)), #B.165
+                TCS([(1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2))]), #B.165
                 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
