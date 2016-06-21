@@ -189,7 +189,7 @@ class CommericalMissionConstraints(Model):
                 constraints.extend([
                     TCS([W_start[i] >= W_end[i] + W_fuel[i]])
                     ])
-        Model.__init__(self, W_total, constraints, **kwargs)
+        Model.__init__(self, W_ftotal, constraints, **kwargs)
         
 #---------------------------------------
 #takeoff
@@ -229,7 +229,7 @@ class Climb1(Model):
 ##                RngClimb[iclimb1]  == 100*units('miles'),
                 
                 #compute fuel burn from TSFC
-                W_fuel[iclimb1]  == 1000*units('N'),#g * TSFC[iclimb1] * thours[iclimb1] * thrust,
+                W_fuel[iclimb1]  == 1000*units('lbf'),#g * TSFC[iclimb1] * thours[iclimb1] * thrust,
 
 
                 #subsitute later
@@ -363,8 +363,8 @@ class CommercialAircraft(Model):
         atm = Atmosphere()
 
         substitutions = {      
-            'W_{e}': 40000*units('N'),
-            'W_{payload}': 400000*units('N'),
+            'W_{e}': 40000*units('lbf'),
+            'W_{payload}': 400000*units('lbf'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
             'ReqRng': 300,
