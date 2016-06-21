@@ -11,7 +11,6 @@ from atmosphere import Atmosphere
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
 we are minimizing the fuel weight
-
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
 
@@ -212,10 +211,11 @@ class Climb1(Model):
                 V[iclimb1] >= Vstall,
                 
                 #climb rate constraints
-                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
-                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
+##                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
+##                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
+                TCS([RC[iclimb1]  <= V[iclimb1] * thrust / W_start[iclimb1]]),
 
-           #     RC[iclimb1]==141.66666*units('ft/min'),
+                
                 #make the small angle approximation and compute theta
                 theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
                
@@ -223,15 +223,19 @@ class Climb1(Model):
                 #compute the distance traveled for each segment
 
                 #takes into account two terms of a cosine expansion
-                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
+##                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
+                TCS([RngClimb[iclimb1]  == thours[iclimb1]*V[iclimb1]]),
+                
+                #RngClimb[iclimb1]  == 150*units('miles'),
                 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
 
 
                 #subsitute later
-                TSFC[iclimb1]  == c1*units('m^.01')/((h)**.01),
+                TSFC[iclimb1]  == c1*units('m^.03')/((h)**.03),
                 rho[iclimb1] == 1.225*units('kg/m^3'),
+                #hft[iclimb1]==10000*units('ft'),
                 T[iclimb1] == 273 * units('K')
                 ])
             
@@ -242,7 +246,7 @@ class Climb1(Model):
                         ])
                 else:
                      constraints.extend([
-                        TCS([hft[i] <= hft[i-1]+dhft[i]])
+                        TCS([hft[i] == hft[i-1]+dhft[i]])
                         ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -283,6 +287,8 @@ class Climb2(Model):
                 W_fuel[iclimb2]  == g * TSFC[iclimb2] * thours[iclimb2] * thrust,
 
 
+
+
                 #substitute later
                 TSFC[iclimb2]  == c1,
                 ])
@@ -300,7 +306,6 @@ class Cruise2(Model):
     """
     class to model the second cruise portion of a flight (if the flight is
     long enough to mandate two cruise portions)
-
     Model is based off of a discretized Breguet Range equation
     """
     def __init__(self, **kwargs):
@@ -361,7 +366,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 400000*units('lbf'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 287.695,
+            'ReqRng': 250,
             'C_{d_0}': .025,
             'K': 0.9,
             'S': 124.58,
