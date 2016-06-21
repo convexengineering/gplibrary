@@ -212,9 +212,10 @@ class Climb1(Model):
                 V[iclimb1] >= Vstall,
                 
                 #climb rate constraints
-#                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
-##                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
-                RC[iclimb1]==5000*units('ft/min'),
+                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
+                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
+
+           #     RC[iclimb1]==141.66666*units('ft/min'),
                 #make the small angle approximation and compute theta
                 theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
                
@@ -222,19 +223,15 @@ class Climb1(Model):
                 #compute the distance traveled for each segment
 
                 #takes into account two terms of a cosine expansion
-##                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
-                TCS([RngClimb[iclimb1]  == thours[iclimb1]*V[iclimb1]]),
-                
-                #RngClimb[iclimb1]  == 150*units('miles'),
+                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
                 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
 
 
                 #subsitute later
-                TSFC[iclimb1]  == c1,
+                TSFC[iclimb1]  == c1*units('m^.01')/((h)**.01),
                 rho[iclimb1] == 1.225*units('kg/m^3'),
-                #hft[iclimb1]==10000*units('ft'),
                 T[iclimb1] == 273 * units('K')
                 ])
             
@@ -284,8 +281,6 @@ class Climb2(Model):
 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb2]  == g * TSFC[iclimb2] * thours[iclimb2] * thrust,
-
-
 
 
                 #substitute later
@@ -366,7 +361,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 400000*units('lbf'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 250,
+            'ReqRng': 287.695,
             'C_{d_0}': .025,
             'K': 0.9,
             'S': 124.58,
