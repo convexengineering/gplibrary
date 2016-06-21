@@ -6,7 +6,7 @@ from gpkit import VectorVariable, Variable, Model, units, LinkedConstraintSet
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
-from atmosphere import Troposphere, Tropopause
+from atmosphere import Atmosphere
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -16,6 +16,8 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 """
 
 #TODO
+#link in with atmosphere
+#link in with engine
 
 #-----------------------------------------------------------
 #defining the number of segments
@@ -61,6 +63,7 @@ R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
 #air properties
 a = VectorVariable(Nseg, 'a', 'm/s', 'Speed of Sound')
 rho = VectorVariable(Nseg, '\rho', 'kg/m^3', 'Air Density')
+p = VectorVariable(Nseg, 'p', 'Pa', 'Pressure')
 mu = VectorVariable(Nseg, '\mu', 'kg/m/s', 'Air Kinematic Viscosity')
 T = VectorVariable(Nseg, 'T', 'K', 'Air Temperature')
 
@@ -77,7 +80,7 @@ thours = VectorVariable(Nseg, 'thr', 'hour', 'Flight Time in Hours')
 RngClimb = VectorVariable(Nclimb, 'RngClimb', 'miles', 'Segment Range During Climb')
 RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCCruise', 'miles', 'Segment Range During Cruise')
 ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
-ReqRng = Variable('ReqRng', 3000, 'miles', 'Required Mission Range')
+ReqRng = Variable('ReqRng', 'miles', 'Required Mission Range')
 
 #aircraft weights
 W_e = Variable('W_{e}', 'lbf', 'Empty Weight of Aircraft')
@@ -90,19 +93,19 @@ W_total = Variable('W_{total}', 'lbf', 'Total Aircraft Weight')
 
 #aero
 LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
-LDmax = Variable('\\frac{L}{D}_{max}', 15, '-', 'Maximum Lift to Drag')
+LDmax = Variable('\\frac{L}{D}_{max}', '-', 'Maximum Lift to Drag')
 
-Cd0 = Variable('C_{d_0}', .025, '-', 'Aircraft Cd0')
-K = Variable('K', .9, '-', 'K for Parametric Drag Model')
+Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+K = Variable('K', '-', 'K for Parametric Drag Model')
 
 #aircraft geometry
 
-S = Variable('S', 124.58, 'm^2', 'Wing Planform Area')
+S = Variable('S', 'm^2', 'Wing Planform Area')
 
 #velocitites and mach numbers
 V = VectorVariable(Nseg, 'V', 'knots', 'Aircraft Flight Speed')
 M = VectorVariable(Nseg, 'M', '-', 'Aircraft Mach Number')
-Vstall = Variable('V_{stall}', 120, 'knots', 'Aircraft Stall Speed')
+Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
 
 #Climb/Decent Rate
 RC = VectorVariable(Nseg, 'RC', 'feet/min', 'Rate of Climb/Decent')
@@ -115,10 +118,10 @@ z_bre = VectorVariable(Nseg, 'z_{bre}', '-', 'Breguet Parameter')
 TSFC = VectorVariable(Nseg, 'TSFC', 'lb/hr/lbf', 'Thrust Specific Fuel Consumption')
 
 #currently sets the value of TSFC, just a place holder
-c1 = Variable('c1', 2, 'lb/lbf/hr', 'Constant')
+c1 = Variable('c1', 'lb/lbf/hr', 'Constant')
 
 #thrust
-thrust = Variable('thrust', 87000, 'N', 'Engine Thrust')
+thrust = Variable('thrust', 'N', 'Engine Thrust')
 
 class CommericalMissionConstraints(Model):
     """
@@ -206,6 +209,10 @@ class Climb1(Model):
                 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
+
+
+                #subsitute later
+                TSFC[iclimb1]  == c1,
                 ])
             
             for i in range(0, Nclimb):
@@ -254,6 +261,12 @@ class Climb2(Model):
 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb2]  == g * TSFC[iclimb2] * thours[iclimb2] * thrust,
+
+
+
+
+                #substitute later
+                TSFC[iclimb2]  == c1,
                 ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -301,13 +314,9 @@ class Cruise2(Model):
                 TSFC[icruise2]  == 1.4*units('lb/lbf/hr'),
                 LD[icruise2]  == 10,
                 V[icruise2]  == 420*units('kts'),
-                TSFC[iclimb2]  == c1,
-                rho[iclimb2] == 1.225*units('kg/m^3'),
-                TSFC[iclimb1]  == c1,
-                rho[iclimb1] == 1.225*units('kg/m^3'),
-                W_e  == 40000*units('N'),
-                W_payload == 400000*units('N'),
-                T ==273*units('K'),
+                TSFC[icruise2]  == 1.4*units('lb/lbf/hr'),
+                LD[icruise2]  == 10,
+                V[icruise2]  == 420*units('kts'),
                 ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -327,12 +336,26 @@ class CommercialAircraft(Model):
         climb1 = Climb1()
         climb2 = Climb2()
         c2 = Cruise2()
+        atm = Atmosphere()
 
-        self.submodels = [cmc, climb1, climb2, c2]
+        substitutions = {      
+            'W_{e}': 40000*units('N'),
+            'W_{payload}': 400000*units('N'),
+            'V_{stall}': 120,
+            '\\frac{L}{D}_{max}': 15,
+            'ReqRng': 3000,
+            'C_{d_0}': .025,
+            'K': 0.9,
+            'S': 124.58,
+            'thrust': 87000,
+            'c1': 2,
+            }
+
+        self.submodels = [cmc, climb1, climb2, c2, atm]
 
         lc = LinkedConstraintSet([self.submodels])
 
-        Model.__init__(self, cmc.cost, lc, **kwargs)
+        Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
     
 if __name__ == '__main__':
     m = CommercialAircraft()
