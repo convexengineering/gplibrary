@@ -456,17 +456,69 @@ class ExhaustAndThrustTEST(Model):
 
                 #SIGNOMIAL
                 TCS([F <= F6 + F8]),
-##                SignomialEquality(F,F6 + F8),
+                #SignomialEquality(F,F6 + F8),
 
-##                Fsp == F/((alphap1)*mCore*a0),   #B.191
-##
-##                #ISP
-##                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
-##
-##                #TSFC
-##                TSFC == 1/Isp                   #B.193
+                Fsp == F/((alphap1)*mCore*a0),   #B.191
+
+                #ISP
+                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
+
+                #TSFC
+                TSFC == 1/Isp                   #B.193
                 ]
-        Model.__init__(self, 1/F, constraints, **kwargs)
+        Model.__init__(self, TSFC, constraints, **kwargs)
+
+class CombustorCoolingTEST(Model):
+    """
+    class to represent the engine's combustor and perform calculations
+    on engine cooling bleed flow...cooling flow is currently not implemented
+    """
+    def __init__(self, **kwargs):
+        #new vars
+        #gas properties
+        gammaC =  Variable('gamma_{C}', 1.4, '-', 'Specific Heat Ratio for Gas in Combustor')
+        Cpc = Variable('Cp_c', 1068, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor")
+        
+        #HPC exit state variables (station 3)
+        Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
+        ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
+        
+        #combustor exit state variables..recall Tt4 is already set in Engine class
+        Pt4 = Variable('P_{t_4}', 'kPa', 'Stagnation Pressure at the Combustor Exit (4)')
+        ht4 = Variable('h_{t_4}', 'J/kg', 'Stagnation Enthalpy at the Combustor Exit (4)')
+        Tt4 = Variable('T_{t_4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')
+
+        #Turbine inlet state variables (station 4.1)
+        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
+        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+        ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
+
+        #burner pressure ratio
+        pib = Variable('\pi_{b}', '-', 'Burner Pressure Ratio')
+
+        #flow faction f
+        f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
+
+        #heat of combustion of jet fuel
+        hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypertextbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
+
+        with SignomialsEnabled():
+        
+            constraints = [
+                #flow through combustor
+                Pt4 == pib * Pt3,   #B.145
+                ht4 == Cpc * Tt4,
+
+                #fuel flow fraction f
+                TCS([f*hf >= ht4 - ht3]),
+                #SignomialEquality(f*hf,ht4 - ht3),
+                #flow at turbine inlet
+                Tt41 == Tt4,
+                Pt41 == Pt4,
+                ht41 == ht4
+                ]
+            
+        Model.__init__(self, f, constraints, **kwargs)
         
 class OnDesignSizing(Model):
     """
@@ -813,6 +865,10 @@ class OffDesign(Model):
         Fspec = Variable('F_{spec}', 'N', 'Specified Total Thrust')
         F = Variable('F', 'N', 'Total Thrust')
 
+        #BPR
+        alpha = Variable('alpha', '-', 'By Pass Ratio')
+
+
         #new best idea is to run this twice and if mach numbers go over 1 pass in a different argument and re run the case
         
         
@@ -833,7 +889,8 @@ class OffDesign(Model):
                 #I think all those Ttref values are the actual on design values
                 P7 == P0,
                 (P7/Pt7) == (T7/Tt7)**(3.5),
-                TCS([u7**2 +2*h7 <= 2*ht7]),
+                #TCS([u7**2 +2*h7 <= 2*ht7]),
+                SignomialEquality(u7**2 +2*h7,2*ht7),
                 h7 == Cpair*T7,
                 rho7 == P7/(Rt*T7),
                 M7 == u7/((T7*Cpair*Rair/(781*units('J/kg/K')))**.5),
@@ -853,6 +910,9 @@ class OffDesign(Model):
 
                 #compute core mass flux
                 mCore == rho5 * A5 * u5,
+
+                #BPR constraint
+                #mf/mCore == alpha,
                 
                 #residual 6 LPC/HPC mass flow constraint
                 mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,

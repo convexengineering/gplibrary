@@ -3,7 +3,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap, ExhaustAndThrustTEST
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap, ExhaustAndThrustTEST, CombustorCoolingTEST
 
 #TODO
 #determine the three different Cp, gamma, and R values to be used
@@ -138,7 +138,7 @@ class EngineOffDesign(Model):
 
     def __init__(self, sol, mhtD, mltD, NlpcD, NhpcD, A5, A7, **kwargs):
         lpc = FanAndLPC()
-        combustor = CombustorCooling()
+        combustor = CombustorCoolingTEST()
         turbine = Turbine()
         thrust = ExhaustAndThrustTEST()
         offD = OffDesign()
@@ -157,7 +157,7 @@ class EngineOffDesign(Model):
                 '\pi_{b}': sol('\pi_{b}'),
                 '\pi_{d}': sol('\pi_{d}'),
                 '\pi_{fn}': sol('\pi_{fn}'),
-                '\pi_f': sol('\pi_f'),
+                #'\pi_f': sol('\pi_f'),
                 'A_5': A5,
                 'A_7': A7,
                 'T_{ref}': 1000,
@@ -167,7 +167,9 @@ class EngineOffDesign(Model):
                 'N_1': 1,
                 'G_f': 1,
                 #'T_{t_{4spec}}': 1450,
-                'F_{spec}': 80000,
+                'alpha': 10,
+                'alphap1': 11,
+                'F_{spec}': 1.2e+05*units('N') ,
             }
 
  
