@@ -224,15 +224,13 @@ class Turbine(Model):
         with SignomialsEnabled():
             constraints = [
                 #HPT shafter power balance
-
-                #SIGNOMIAL
-                #TCS([(1+f)*(ht41-ht45) >= ht3 - ht25]),    
+                #SIGNOMIAL   
                 SignomialEquality((1+f)*(ht41-ht45),ht3 - ht25),    #B.161
+                
                 #LPT shaft power balance
-
                 #SIGNOMIAL  
-                #TCS([(1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2))]), 
                 SignomialEquality((1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
+                
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
                 pihpt == (Tt45/Tt41)**(3.889),
@@ -456,7 +454,7 @@ class ExhaustAndThrustTEST(Model):
 
                 #SIGNOMIAL
                 TCS([F <= F6 + F8]),
-                #SignomialEquality(F,F6 + F8),
+
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -511,7 +509,7 @@ class CombustorCoolingTEST(Model):
 
                 #fuel flow fraction f
                 TCS([f*hf >= ht4 - ht3]),
-                #SignomialEquality(f*hf,ht4 - ht3),
+
                 #flow at turbine inlet
                 Tt41 == Tt4,
                 Pt41 == Pt4,
@@ -708,7 +706,7 @@ class CompressorMap(Model):
 
                 #define ptild
                 #SIGNOMIAL
-                TCS([ptild * (piD-1) >= (pi-1)]),    #B.281
+                SignomialEquality(ptild * (piD-1), (pi-1)),    #B.281
 
                 #define mtild
                 mtild == mbar/mD,   #B.282
@@ -717,8 +715,8 @@ class CompressorMap(Model):
                 Ntild == Nbar/NbarD,    #B.283
 
                 #constrain the "knee" shape of the map
-                TCS([((mtilds-mtild)/.03) >= te_exp_minus1(z, nterm=3)]),  #B.286
-                TCS([ptild <= 2*Ntild*.03*z + ptilds]),    #B.286
+                SignomialEquality(((mtilds-mtild)/.03), te_exp_minus1(z, nterm=3)),  #B.286
+                SignomialEquality(ptild, 2*Ntild*.03*z + ptilds),    #B.286
                 ]
             
             #add the constraints for a fan
@@ -727,9 +725,6 @@ class CompressorMap(Model):
                     #spine parameterization
                     mtilds == Nbar**.85,    #B.284
                     ptilds == mtilds ** 3,   #B.285
-                    
-                    #compute the polytropic efficiency
-                    TCS([etaPol >= etaPolD*(1-2.5*(ptild/(mtild**1.5)-mtild)**3-15*((mtild/.75)-1)**6)])
                     ])
                 
             #add the constraints for a HPC
@@ -738,12 +733,9 @@ class CompressorMap(Model):
                     #spine paramterization
                     mtilds == Nbar**.5, #B.284
                     ptilds == mtilds ** 1.5, #B.285
-                    
-                    #compute the polytropic efficiency
-                    etaPol <= etaPolD*(1-15*(ptild/mtild-mtild)**3-((mtild/.8)-1)**4)
                     ])
             #objective is to maximize component efficiency
-            Model.__init__(self, etaPol, constraints, **kwargs)
+            Model.__init__(self, 1/pi, constraints, **kwargs)
 
 class OffDesign(Model):
     """
@@ -897,7 +889,6 @@ class OffDesign(Model):
                 TCS([(fp1)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 == mltD]),
                 
                 #residual 4
-                #I think all those Ttref values are the actual on design values
                 SignomialEquality(u7**2 +2*h7,2*ht7),
                 h7 == Cpair*T7,
                 rho7 == P7/(Rt*T7),
@@ -911,17 +902,15 @@ class OffDesign(Model):
 
                 #compute core mass flux
                 mCore == rho5 * A5 * u5,
-
-                #fan corrected mass flow constraint
-                #mFan*(Pref/Pt2)*(Tt2/Tref)**.5 == mf,
-                #BPR constraint
-                #(rho7*A7*u7)/(rho5 * A5 * u5) == alpha,
                 
                 #residual 6 LPC/HPC mass flow constraint
                 mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
                 
                 #residual 8, constrain the core exit total pressure
-                Pt49*pitn == Pt5 #B.269
+                Pt49*pitn == Pt5, #B.269
+
+                #constrain the BPR
+                SignomialEquality(alpha*rho5*A5*u5, rho7*A7*u7),
                 ]
             if res7 == 0:
                 constraints.extend([

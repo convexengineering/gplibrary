@@ -9,12 +9,9 @@ from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndTh
 #determine the three different Cp, gamma, and R values to be used
 #get realisitc R and Cp values for the different engine sections
 #verify the values of all constants...and fix where differnces of constants are hard coded
-#implement the varying constraints in the off design case for M5 and M7 being greater than or less than 1
-#look into T7 and T5
 #figure out Tref and Pref and make them the right value in the sizing post processing
 #replace the gammaAirs with gammaTs in post processing for nozzle at station 5
-
-#FIX THIS DAMN MASS FLOW THING FOR THE OFFDESIGN CASE
+#verify that the Tref nad Pref are correct
 
 class EngineOnDesign(Model):
     """
@@ -60,8 +57,8 @@ class EngineOnDesign(Model):
             '\pi_{fn}': 1,
             '\pi_{tn}': 1,
             '\pi_{b}': 1,
-            'alpha': 10,
-            'alphap1': 11,
+            'alpha': 7,
+            'alphap1': 8,
             'M_{4a}': 1,    #choked turbines
             'F_D': 121436.45, #737 max thrust in N
             'M_2': .4,
@@ -190,5 +187,3 @@ if __name__ == "__main__":
     engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
     
     solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
-
-    print solOff('m_{f}')*(solOff('P_{t_2}')/solOff('P_{ref}'))*((solOff('T_{ref}')/solOff('T_{t_2}'))**.5)/solOff('m_{core}')

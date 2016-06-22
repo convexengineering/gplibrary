@@ -4,29 +4,29 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, CompressorMap, OffDesign
 import numpy as np
 from engine import EngineOnDesign
-from gpkit.tools import determine_unbounded_variables
+##from gpkit.tools import determine_unbounded_variables
 
 if __name__ == "__main__":
-    fan = FanAndLPC()
-    fan.substitutions.update({
-            'T_0': 216.5,   #36K feet
-            'P_0': 22.8,    #36K feet
-            'M_0': 0.8,
-            '\pi_f': 1.5,
-            '\pi_{lc}': 3,
-            '\pi_{hc}': 10,
-            '\pi_{d}': 1,
-            '\pi_{fn}': 1
-            })
-    fansol = fan.solve(verbosity = 0)
-
-    combustor = CombustorCooling()
-    combustor.substitutions.update({
-        'T_{t_4}': 1400,
-        '\pi_{b}': 1,
-        'h_{t_3}': fansol('h_{t_3}'),
-        'P_{t_3}': fansol('P_{t_3}')
-        })
+##    fan = FanAndLPC()
+##    fan.substitutions.update({
+##            'T_0': 216.5,   #36K feet
+##            'P_0': 22.8,    #36K feet
+##            'M_0': 0.8,
+##            '\pi_f': 1.5,
+##            '\pi_{lc}': 3,
+##            '\pi_{hc}': 10,
+##            '\pi_{d}': 1,
+##            '\pi_{fn}': 1
+##            })
+##    fansol = fan.solve(verbosity = 0)
+##
+##    combustor = CombustorCooling()
+##    combustor.substitutions.update({
+##        'T_{t_4}': 1400,
+##        '\pi_{b}': 1,
+##        'h_{t_3}': fansol('h_{t_3}'),
+##        'P_{t_3}': fansol('P_{t_3}')
+##        })
 ##    combsol = combustor.localsolve(verbosity = 0)
 ##    print ["constraint1", combsol('h_{t_4.1}')-(fansol('h_{t_3}')-fansol('h_{t_2.5}'))/(1+combsol('f'))]
 ##    print combsol('h_{t_4.1}')
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     #below won't solve because the model is all equality constraints
     #so feasible region is a single point
-    design = OnDesignSizing()
+##    design = OnDesignSizing()
 ##    print fansol('a_0')
 ##    print fansol('T_{t_2}')
 ##    print fansol('T_{t_2.5}')
@@ -88,30 +88,30 @@ if __name__ == "__main__":
 ##    print combsol('P_{t_4.1}')/3
 ##    print combsol('P_{t_4.1}')
     
-    design.substitutions.update({
-        'a_0': 294.940106182,
-        'alphap1': 11,
-        'F_D': 121436.45, #737 max thrust in N
-        'M_2': .4,
-        'M_{2.5}': .5,
-        'u_8': 600,
-        'u_6': 625,
-        'T_{t_2}': 244.211929248,
-        'T_6': 700,
-        'T_8': 500,
-        'T_{t_2.5}': 347.894538264,
-        'P_{t_2}': 34.7549480092,
-        'P_{t_2.5}': 104.264840118,
-        'F_{sp}': 1,
-        'hold_{2}': 1.032,
-        'hold_{2.5}': 1.05,
-        'T_{t_4.1}': 1399.99979048,
-        'T_{t_4.5}': 1199.99979048,
-        'P_{t_4.5}': 347.549389853,
-        'P_{t_4.1}': 1042.64816956,
-        'P_{ref}': 22,
-        'T_{ref}': 290,
-        'f': .016
+##    design.substitutions.update({
+##        'a_0': 294.940106182,
+##        'alphap1': 11,
+##        'F_D': 121436.45, #737 max thrust in N
+##        'M_2': .4,
+##        'M_{2.5}': .5,
+##        'u_8': 600,
+##        'u_6': 625,
+##        'T_{t_2}': 244.211929248,
+##        'T_6': 700,
+##        'T_8': 500,
+##        'T_{t_2.5}': 347.894538264,
+##        'P_{t_2}': 34.7549480092,
+##        'P_{t_2.5}': 104.264840118,
+##        'F_{sp}': 1,
+##        'hold_{2}': 1.032,
+##        'hold_{2.5}': 1.05,
+##        'T_{t_4.1}': 1399.99979048,
+##        'T_{t_4.5}': 1199.99979048,
+##        'P_{t_4.5}': 347.549389853,
+##        'P_{t_4.1}': 1042.64816956,
+##        'P_{ref}': 22,
+##        'T_{ref}': 290,
+##        'f': .016
         
 ##        'a_0': fansol('a_0'),
 ##        'alphap1': 11,
@@ -136,27 +136,26 @@ if __name__ == "__main__":
 ##        'P_{ref}': 22,
 ##        'T_{ref}': 290,
 ##        'f': .016
-        })
+##        })
 
     #designsol = design.solve(verbosity = 4)
-    bounds = determine_unbounded_variables(design, "cvxopt")
+#    bounds = determine_unbounded_variables(design, "cvxopt")
 
     #creating a compressor map model for a HPC
-##    compmap = CompressorMap(0)
-##    compmap.substitutions.update({
-##        'T_{ref}': 1000,
-##        'T_t': 1250,
-##        'm_{dot}': 38,
-##        'm_D': 40,
-##        'P_{ref}': 22,
-##        'P_t': 25,
-##        '\pi_D': 20,
-##        '\pi': 21,
-##        'N_{{bar}_D}': 1,
-##        'N': 12,
-##        '\eta_{{pol}_D}': 0.9
-##        })
-##    compmap.localsolve(kktsolver="ldl", verbosity = 4)
+    compmap = CompressorMap(0)
+    compmap.substitutions.update({
+        'T_{ref}': 1000,
+        'T_t': 1250,
+        'm_{dot}': 38,
+        'm_D': 40,
+        'P_{ref}': 22,
+        'P_t': 25,
+        '\pi_D': 20,
+        'N_{{bar}_D}': 1,
+        'N': 12,
+        '\eta_{{pol}_D}': 0.9
+        })
+    compmap.localsolve(kktsolver="ldl", verbosity = 4)
 
     #run the off design model
 ##    engineOnD = EngineOnDesign()
