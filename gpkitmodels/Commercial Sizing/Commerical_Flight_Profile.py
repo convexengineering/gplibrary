@@ -2,7 +2,7 @@
 from numpy import pi
 import gpkit
 import numpy as np
-from gpkit import VectorVariable, Variable, Model, units, LinkedConstraintSet
+from gpkit import VectorVariable, Variable, Model, units, LinkedConstraintSet, SignomialEquality
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
@@ -158,6 +158,7 @@ class CommericalMissionConstraints(Model):
                 
                 #constraints on the various weights
                 TCS([W_e + W_payload + W_ftotal <= W_total]),
+                #SignomialEquality(W_e + W_payload + W_ftotal, W_total),
                 W_start[0]  == W_total,
                 TCS([W_e + W_payload <= W_end[Nseg-1]]),
                 TCS([W_ftotal   >= sum(W_fuel)]),
@@ -213,7 +214,7 @@ class Climb1(Model):
                 #climb rate constraints
 ##                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
 ##                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
-                TCS([RC[iclimb1]  <= V[iclimb1] * thrust / W_start[iclimb1]]),
+                RC[iclimb1] == 144.33*units('ft/min'),
 
                 
                 #make the small angle approximation and compute theta
@@ -242,11 +243,13 @@ class Climb1(Model):
             for i in range(0, Nclimb):
                 if i==0:
                     constraints.extend([
-                        TCS([hft[i] <= 1500*units('ft')+dhft[i]])
+                        #SignomialEquality(hft[i], 1500*units('ft')+dhft[i])
+                        hft[i] <= 1500*units('ft')+dhft[i]
                         ])
                 else:
                      constraints.extend([
-                        TCS([hft[i] == hft[i-1]+dhft[i]])
+                        #SignomialEquality(hft[i], hft[i-1]+dhft[i])
+                        hft[i] <= hft[i-1]+dhft[i]
                         ])
         Model.__init__(self, None, constraints, **kwargs)
         
