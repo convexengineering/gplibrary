@@ -1,5 +1,5 @@
 import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled, units
+from gpkit import Model, Variable, SignomialsEnabled, units, SignomialEquality
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.small_scripts import mag
 from gpkit.constraints.tight import TightConstraintSet as TCS
@@ -226,13 +226,13 @@ class Turbine(Model):
                 #HPT shafter power balance
 
                 #SIGNOMIAL
-                TCS([(1+f)*(ht41-ht45) >= ht3 - ht25]),    #B.161
-                
+                #TCS([(1+f)*(ht41-ht45) >= ht3 - ht25]),    
+                SignomialEquality((1+f)*(ht41-ht45),ht3 - ht25),    #B.161
                 #LPT shaft power balance
 
                 #SIGNOMIAL  
-                TCS([(1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2))]), #B.165
-                
+                #TCS([(1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2))]), 
+                SignomialEquality((1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
                 pihpt == (Tt45/Tt41)**(3.889),
@@ -452,9 +452,11 @@ class ExhaustAndThrustTEST(Model):
                 #overall thrust values
                 TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
                 TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
+##                SignomialEquality(F6/mCore + u0,(1+f)*u6),
 
                 #SIGNOMIAL
                 TCS([F <= F6 + F8]),
+##                SignomialEquality(F,F6 + F8),
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -464,7 +466,7 @@ class ExhaustAndThrustTEST(Model):
                 #TSFC
                 TSFC == 1/Isp                   #B.193
                 ]
-        Model.__init__(self, TSFC, constraints, **kwargs)
+        Model.__init__(self, 1/TSFC, constraints, **kwargs)
         
 class OnDesignSizing(Model):
     """

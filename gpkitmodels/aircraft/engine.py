@@ -157,6 +157,7 @@ class EngineOffDesign(Model):
                 '\pi_{b}': sol('\pi_{b}'),
                 '\pi_{d}': sol('\pi_{d}'),
                 '\pi_{fn}': sol('\pi_{fn}'),
+                #'\pi_f': sol('\pi_f'),
                 'A_5': A5,
                 'A_7': A7,
                 'T_{ref}': 1000,
@@ -166,7 +167,7 @@ class EngineOffDesign(Model):
                 'N_1': 1,
                 'G_f': 1,
                 #'T_{t_{4spec}}': 1450,
-                'F_{spec}': 120000,
+                'F_{spec}': 80000,
             }
 
  
@@ -178,8 +179,8 @@ if __name__ == "__main__":
     
     solOn = engineOnD.localsolve(verbosity = 4, kktsolver="ldl")
     
-##    mhtD, mltD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
-##    
-##    engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
-##    
-##    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+    mhtD, mltD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
+    
+    engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
+    
+    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
