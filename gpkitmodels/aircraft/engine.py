@@ -143,8 +143,10 @@ class EngineOffDesign(Model):
         thrust = ExhaustAndThrustTEST()
 
         res7 = 0
+        m5opt = 1
+        m7opt = 1
         
-        offD = OffDesign(res7)
+        offD = OffDesign(res7, m5opt, m7opt)
 
         self.submodels = [lpc, combustor, turbine, thrust, offD]
         
@@ -188,3 +190,5 @@ if __name__ == "__main__":
     engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
     
     solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+
+    print solOff('m_{f}')*(solOff('P_{t_2}')/solOff('P_{ref}'))*((solOff('T_{ref}')/solOff('T_{t_2}'))**.5)/solOff('m_{core}')

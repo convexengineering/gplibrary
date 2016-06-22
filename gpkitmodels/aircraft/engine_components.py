@@ -755,8 +755,14 @@ class OffDesign(Model):
 
     Inputs: res7 value of 1 --> residual 7 is the Tt4 constraint
     res7 value of 0 --> residual 7 is the thrust constraint
+
+    m5opt of zero gives the constriants for M5 < 1, m5opt of 1 gives constraints
+    for M5 >= 1
+
+    m7opt of zero gives the constriants for M7 < 1, m7opt of 1 gives constraints
+    for M7 >= 1
     """
-    def __init__(self, res7, **kwargs):
+    def __init__(self, res7, m5opt, m7opt, **kwargs):
         #define all the variables
         #gas properties
         Cpt = Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
@@ -804,7 +810,7 @@ class OffDesign(Model):
         Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
         Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
 
-        #mass flows
+        #Corrected mass flows
         mf = Variable('m_{f}', 'kg/s', 'Fan Corrected Mass Flow')
         mlc = Variable('m_{lc}', 'kg/s', 'LPT Corrected Mass Flow')
         mhc =  Variable('m_{hc}', 'kg/s', 'HPC Corrected Mass Flow')
@@ -863,7 +869,8 @@ class OffDesign(Model):
 
         #core mass flow
         mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-
+        mFan = Variable('m_{fan}', 'kg/s', 'Fan Mass Flow')
+        
         #variables for the thrust constraint
         Fspec = Variable('F_{spec}', 'N', 'Specified Total Thrust')
         F = Variable('F', 'N', 'Total Thrust')
@@ -891,32 +898,24 @@ class OffDesign(Model):
                 
                 #residual 4
                 #I think all those Ttref values are the actual on design values
-                P7 == P0,
-                (P7/Pt7) == (T7/Tt7)**(3.5),
-                #TCS([u7**2 +2*h7 <= 2*ht7]),
                 SignomialEquality(u7**2 +2*h7,2*ht7),
                 h7 == Cpair*T7,
                 rho7 == P7/(Rt*T7),
-                M7 == u7/((T7*Cpair*Rair/(781*units('J/kg/K')))**.5),
                 mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7,
                 
                 #residual 5 core nozzle mass flow
-                P5 == P0,
                 h5 == Cpt*T5,
-                (P5/Pt5) == (T5/Tt5)**(3.5),
-                
-                #TCS([u5**2 +2*h5 <= 2*ht5]),
                 SignomialEquality(u5**2 +2*h5, 2*ht5),
-                
                 rho5 == P5/(Rt*T5),
-                M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
                 TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
 
                 #compute core mass flux
                 mCore == rho5 * A5 * u5,
 
+                #fan corrected mass flow constraint
+                #mFan*(Pref/Pt2)*(Tt2/Tref)**.5 == mf,
                 #BPR constraint
-                #mf/mCore == alpha,
+                #(rho7*A7*u7)/(rho5 * A5 * u5) == alpha,
                 
                 #residual 6 LPC/HPC mass flow constraint
                 mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
@@ -936,4 +935,35 @@ class OffDesign(Model):
                     #option #2 constrain the burner exit temperature
                     Tt4 == Tt4spec,  #B.265
                     ])
+                
+            if m5opt == 0:
+                 constraints.extend([
+                    P5 == P0,
+                    (P5/Pt5) == (T5/Tt5)**(3.5),
+                    M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
+                    ])
+                 
+            if m5opt == 1:
+                 constraints.extend([
+                    M5 == 1,
+                    P5 == Pt5*(1.2)**(-1.4/.4),
+                    T5 == Tt5*1.2**(-1)
+                    ])
+                 
+            if m7opt == 0:
+                constraints.extend([
+                    #additional constraints on residual 4 for M7 < 1
+                    P7 == P0,
+                    (P7/Pt7) == (T7/Tt7)**(3.5),
+                    M7 == u7/((T7*Cpair*Rair/(781*units('J/kg/K')))**.5),
+                    ])
+                
+            if m7opt == 1:
+                 constraints.extend([
+                     #additional constraints on residual 4 for M7 >= 1
+                     M7 == 1,
+                     P7 == Pt7*(1.2)**(-1.4/.4),
+                     T7 == Tt7*1.2**(-1)
+                    ])
+                 
         Model.__init__(self, mhtD, constraints, **kwargs)        
