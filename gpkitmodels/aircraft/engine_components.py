@@ -458,15 +458,15 @@ class ExhaustAndThrustTEST(Model):
                 TCS([F <= F6 + F8]),
 ##                SignomialEquality(F,F6 + F8),
 
-                Fsp == F/((alphap1)*mCore*a0),   #B.191
-
-                #ISP
-                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
-
-                #TSFC
-                TSFC == 1/Isp                   #B.193
+##                Fsp == F/((alphap1)*mCore*a0),   #B.191
+##
+##                #ISP
+##                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
+##
+##                #TSFC
+##                TSFC == 1/Isp                   #B.193
                 ]
-        Model.__init__(self, 1/TSFC, constraints, **kwargs)
+        Model.__init__(self, 1/F, constraints, **kwargs)
         
 class OnDesignSizing(Model):
     """
@@ -843,7 +843,10 @@ class OffDesign(Model):
                 P5 == P0,
                 h5 == Cpt*T5,
                 (P5/Pt5) == (T5/Tt5)**(3.5),
-                TCS([u5**2 +2*h5 <= 2*ht5]),
+                
+                #TCS([u5**2 +2*h5 <= 2*ht5]),
+                SignomialEquality(u5**2 +2*h5, 2*ht5),
+                
                 rho5 == P5/(Rt*T5),
                 M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
                 TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
