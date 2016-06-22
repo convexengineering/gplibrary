@@ -752,8 +752,11 @@ class OffDesign(Model):
     constraints in the compressor map model, as well as within the individual component models.
 
     Note that a turbine map is not needed, instead the turbine is assumed to be choked.
+
+    Inputs: res7 value of 1 --> residual 7 is the Tt4 constraint
+    res7 value of 0 --> residual 7 is the thrust constraint
     """
-    def __init__(self, **kwargs):
+    def __init__(self, res7, **kwargs):
         #define all the variables
         #gas properties
         Cpt = Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
@@ -874,7 +877,8 @@ class OffDesign(Model):
         
         with SignomialsEnabled():
             constraints = [
-                fp1<=f+1,
+                #making f+1 GP compatible --> needed for convergence
+                SignomialEquality(fp1,f+1),
                 
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
@@ -917,13 +921,19 @@ class OffDesign(Model):
                 #residual 6 LPC/HPC mass flow constraint
                 mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
                 
-                #residual 7
-                #option #1 constrain the burner exit temperature
-                #Tt4 == Tt4spec,  #B.265
-                #option #2, constrain the engine's thrust
-                F == Fspec,
-                
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5 #B.269
                 ]
+            if res7 == 0:
+                constraints.extend([
+                    #residual 7
+                    #option #1, constrain the engine's thrust
+                    F == Fspec,
+                    ])
+            if res7 == 1:
+                constraints.extend([
+                    #residual 7
+                    #option #2 constrain the burner exit temperature
+                    Tt4 == Tt4spec,  #B.265
+                    ])
         Model.__init__(self, mhtD, constraints, **kwargs)        

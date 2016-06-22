@@ -141,10 +141,13 @@ class EngineOffDesign(Model):
         combustor = CombustorCoolingTEST()
         turbine = Turbine()
         thrust = ExhaustAndThrustTEST()
-        offD = OffDesign()
+
+        res7 = 0
+        
+        offD = OffDesign(res7)
 
         self.submodels = [lpc, combustor, turbine, thrust, offD]
-            
+        
         with SignomialsEnabled():
 
             lc = LinkedConstraintSet([self.submodels])
@@ -157,7 +160,6 @@ class EngineOffDesign(Model):
                 '\pi_{b}': sol('\pi_{b}'),
                 '\pi_{d}': sol('\pi_{d}'),
                 '\pi_{fn}': sol('\pi_{fn}'),
-                #'\pi_f': sol('\pi_f'),
                 'A_5': A5,
                 'A_7': A7,
                 'T_{ref}': 1000,
@@ -166,10 +168,10 @@ class EngineOffDesign(Model):
                 'm_{ltD}': mltD,
                 'N_1': 1,
                 'G_f': 1,
-                #'T_{t_{4spec}}': 1450,
                 'alpha': 10,
                 'alphap1': 11,
                 'F_{spec}': 1.2e+05*units('N') ,
+                'T_{t_{4spec}}': 1450,
             }
 
  
