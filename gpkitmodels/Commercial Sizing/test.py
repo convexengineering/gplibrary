@@ -2,7 +2,7 @@
 from numpy import pi
 import gpkit
 import numpy as np
-from gpkit import VectorVariable, Variable, Model, units, LinkedConstraintSet #SignomialEquality
+from gpkit import VectorVariable, Variable, Model, units, LinkedConstraintSet
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
@@ -158,7 +158,6 @@ class CommericalMissionConstraints(Model):
                 
                 #constraints on the various weights
                 TCS([W_e + W_payload + W_ftotal <= W_total]),
-                #SignomialEquality(W_e + W_payload + W_ftotal, W_total),
                 W_start[0]  == W_total,
                 TCS([W_e + W_payload <= W_end[Nseg-1]]),
                 TCS([W_ftotal   >= sum(W_fuel)]),
@@ -202,9 +201,7 @@ class Climb1(Model):
     def __init__(self,**kwargs):
         #Climb #1 (sub 10K subject to 250KTS speed limit)
         climbspeed = Variable('climbspeed', 250, 'kts', 'Speed Limit Under 10,000 ft')
-        excessP = VectorVariable(Nclimb, 'Excess Power', 'W', 'Excess Power During Climb')
-        D = VectorVariable(Nclimb, 'Drag', 'N', 'Drag')
-        RCtest = VectorVariable(Nseg, 'RCtest', 'feet/min', 'Rate of Climb/Decent TEST')
+
         constraints = []
 
         with gpkit.SignomialsEnabled():
@@ -214,14 +211,10 @@ class Climb1(Model):
                 V[iclimb1] >= Vstall,
                 
                 #climb rate constraints
-                RC[iclimb1] == 144.33*units('ft/min'),
-                
-                excessP[iclimb1]+V[iclimb1]*D <= V[iclimb1]*thrust,
+                TCS([RC[iclimb1] + 0.5 * (V[iclimb1]**3) * rho[iclimb1] * S / W_start[iclimb1] * Cd0 +
+                W_start[iclimb1] / S * 2 * K / rho[iclimb1] / V[iclimb1] <= V[iclimb1] * thrust / W_start[iclimb1]]),
 
-                TCS([D >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*Cd0 + K*W_start[iclimb1]**2/(.5*S*rho[iclimb1]*V[iclimb1]**2)]),
-
-                RC[iclimb1] == excessP[iclimb1]/W_start[iclimb1],
-                
+           #     RC[iclimb1]==141.66666*units('ft/min'),
                 #make the small angle approximation and compute theta
                 theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
                
@@ -229,32 +222,26 @@ class Climb1(Model):
                 #compute the distance traveled for each segment
 
                 #takes into account two terms of a cosine expansion
-##                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
-                TCS([RngClimb[iclimb1]  == thours[iclimb1]*V[iclimb1]]),
-                
-                #RngClimb[iclimb1]  == 150*units('miles'),
+                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
                 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
 
 
                 #subsitute later
-                TSFC[iclimb1]  == c1*units('m^.1')/((h)**.1),
+                TSFC[iclimb1]  == c1*units('m^.01')/((h)**.01),
                 rho[iclimb1] == 1.225*units('kg/m^3'),
-                #hft[iclimb1]==10000*units('ft'),
                 T[iclimb1] == 273 * units('K')
                 ])
             
             for i in range(0, Nclimb):
                 if i==0:
                     constraints.extend([
-                        #SignomialEquality(hft[i], 1500*units('ft')+dhft[i])
-                        hft[i] <= 1500*units('ft')+dhft[i]
+                        TCS([hft[i] <= 1500*units('ft')+dhft[i]])
                         ])
                 else:
                      constraints.extend([
-                        #SignomialEquality(hft[i], hft[i-1]+dhft[i])
-                        hft[i] <= hft[i-1]+dhft[i]
+                        TCS([hft[i] <= hft[i-1]+dhft[i]])
                         ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -293,8 +280,6 @@ class Climb2(Model):
 
                 #compute fuel burn from TSFC
                 W_fuel[iclimb2]  == g * TSFC[iclimb2] * thours[iclimb2] * thrust,
-
-
 
 
                 #substitute later
@@ -374,11 +359,11 @@ class CommercialAircraft(Model):
             'W_{payload}': 400000*units('lbf'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 250,
+            'ReqRng': 287.695,
             'C_{d_0}': .025,
             'K': 0.9,
             'S': 124.58,
-            'thrust': 2200000,
+            'thrust': 87000,
             'c1': 2,
             }
 
