@@ -108,7 +108,7 @@ class EngineOnDesign(Model):
         u5 = (2*(sol('h_{t_5}')-h5)**.5)
         rho5 = P5/(sol('R_t')*T5)
         A5 = sol('m_{core}')/(rho5*u5)
-        print A7
+        print A5
         return mhtD, mltD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
