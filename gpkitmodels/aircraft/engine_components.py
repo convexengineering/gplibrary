@@ -638,65 +638,62 @@ class FanMap(Model):
     """
     def __init__(self, **kwargs):
         #Temperature Variables
-        Tt = Variable('T_t', 'K', 'Face Stagnation Temperature (Station 2 or 2.5)')
+        Tt2 = Variable('T_{t_2}', 'K', 'Stagnation Temperature at the Fan Inlet (2)')
         Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
 
         #Mass Flow Variables
-        mbar = Variable('m_{bar}', 'kg/s', 'Corrected Mass Flow')
-        mdot = Variable('m_{dot}', 'kg/s', 'Mass Flow')
-        mtild = Variable('m_{tild}', '-', 'Normalized Mass Flow')
-        mD = Variable('m_D', 'kg/s', 'On-Design Mass Flow')
+        mf = Variable('m_{f}', 'kg/s', 'Fan Corrected Mass Flow')
+        mFan = Variable('m_{fan}', 'kg/s', 'Fan Mass Flow')
+        mtildf = Variable('m_{tild}', '-', 'Fan Normalized Mass Flow')
+        mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
 
         #Pressure Variables
-        Pt = Variable('P_t', 'kPa', 'Face Stagnation Pressure (Station 2 or 2.5)')
+        Pt2 = Variable('P_{t_2}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2)')
         Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
 
         #pressure ratio variables
-        ptild = Variable('p_{tild}', '-', 'Normalized Pressure Ratio')
-        pi = Variable('\pi', '-', 'Pressure Ratio')
-        piD = Variable('\pi_D', '-', 'On-Design Pressure Ratio')
+        ptildf = Variable('p_{tildf}', '-', 'Fan Normalized Pressure Ratio')
+        pif = Variable('\pi_f', '-', 'Fan Pressure Ratio')
+        piFanD = Variable('\pi_{f_D}', '-', 'On-Design Pressure Ratio')
         
         #Speed Variables
-        Nbar = Variable('N_{bar}', '-', 'Corrected Compressor/Fan Speed')
-        N = Variable('N', '-', 'Compressor/Fan Speed')
-        Ntild = Variable('N_{tild}', '-', 'Normalized Speed')
-        NbarD = Variable('N_{{bar}_D}', '-', 'On-Design Corrected Speed')
+        Nbarf = Variable('N_{barf}', '-', 'Corrected Fan Speed')
+        Nf = Variable('N_f', '-', 'Fan Speed')
+        Ntildf = Variable('N_{tildf}', '-', 'Fan Normalized Speed')
+        NbarDf = Variable('N_{{bar}_Df}', '-', 'Fan On-Design Corrected Speed')
 
         #Spine Paramterization Variables
-        mtilds = Variable('m_{{tild}_s}', '-', 'Spine Parameterization Variable')
-        ptilds = Variable('p_{{tild}_s}', '-', 'Spine Parameterization Variable')
+        mtildsf = Variable('m_{{tild}_sf}', '-', 'Fan Spine Parameterization Variable')
+        ptildsf = Variable('p_{{tild}_sf}', '-', 'Fan Spine Parameterization Variable')
 
         #te_exp_minus1 variable for B.287
-        z = Variable('z', '-', 'Taylor Expanded Variable to Replace Log Term')
+        zf = Variable('zf', '-', 'Taylor Expanded Variable to Replace Log Term in Fan Map')
 
-        #polytropic efficiecny
-        etaPol = Variable('\eta_{pol}', '-', 'Component Off Design Polytropic Efficiency')
-        etaPolD = Variable('\eta_{{pol}_D}', '-', 'Component On Design Polytropic Efficiency')
         with SignomialsEnabled():
             constraints = [
                 #define N bar
-                Nbar == N/((Tt/Tref)**.5), #B.279
+                Nbarf == Nf/((Tt2/Tref)**.5), #B.279
 
                 #define mbar
-                mbar == mdot*((Tt/Tref)**.5)/(Pt/Pref),    #B.280
+                mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
 
                 #define ptild
                 #SIGNOMIAL
-                SignomialEquality(ptild * (piD-1), (pi-1)),    #B.281
+                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
 
                 #define mtild
-                mtild == mbar/mD,   #B.282
+                mtildf == mbarf/mFanD,   #B.282
 
                 #define N tild
-                Ntild == Nbar/NbarD,    #B.283
+                Ntildf == Nbarf/NbarDf,    #B.283
 
                 #spine parameterization
-                mtilds == Nbar**.85,    #B.284
-                ptilds == mtilds ** 3,   #B.285
+                mtildsf == Nbarf**.85,    #B.284
+                ptildsf == mtildsf ** 3,   #B.285
 
                 #constrain the "knee" shape of the map
-                SignomialEquality(((mtilds-mtild)/.03), te_exp_minus1(z, nterm=3)),  #B.286
-                SignomialEquality(ptild, 2*Ntild*.03*z + ptilds),    #B.286
+                SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
+                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
                 ]
               
             Model.__init__(self, 1/pi, constraints, **kwargs)
