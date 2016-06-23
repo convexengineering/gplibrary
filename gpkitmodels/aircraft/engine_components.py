@@ -502,7 +502,7 @@ class LPCMap(Model):
         #Mass Flow Variables
         mlc = Variable('m_{lc}', 'kg/s', 'LPC Corrected Mass Flow')
         mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-        mtildlc = Variable('m_{tild}', '-', 'LPC Normalized Mass Flow')
+        mtildlc = Variable('m_{tild_lc}', '-', 'LPC Normalized Mass Flow')
         mCoreD = Variable('m_{core_D}', 'kg/s', 'On Design Core Mass Flow')
 
         #Pressure Variables
@@ -510,14 +510,14 @@ class LPCMap(Model):
         Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
 
         #pressure ratio variables
-        ptildlc = Variable('p_{tild}', '-', 'LPC Normalized Pressure Ratio')
+        ptildlc = Variable('p_{tild_lc}', '-', 'LPC Normalized Pressure Ratio')
         pilc = Variable('\pi_{lc}', '-', 'LPC Pressure Ratio')
         pilcD = Variable('\pi_{lc_D}', '-', 'LPC On-Design Pressure Ratio')
         
         #Speed Variables
         Nbarlc = Variable('N_{bar_lc}', '-', 'Corrected LPC Speed')
         N1 = Variable('N_1', '-', 'LPC Speed')
-        Ntildlc = Variable('N_{tild}', '-', 'LPC Normalized Speed')
+        Ntildlc = Variable('N_{tild_lc}', '-', 'LPC Normalized Speed')
         NbarDlc = Variable('N_{{bar}_D_lc}', '-', 'LPC On-Design Corrected Speed')
 
         #Spine Paramterization Variables
@@ -554,7 +554,7 @@ class LPCMap(Model):
                 SignomialEquality(ptildlc, 2*Ntildlc*.03*zlc + ptildslc),    #B.286
                 ]
                 
-            Model.__init__(self, 1/pi, constraints, **kwargs)
+            Model.__init__(self, 1/pilc, constraints, **kwargs)
 
 class HPCMap(Model):
     """
@@ -564,68 +564,65 @@ class HPCMap(Model):
     """
     def __init__(self, **kwargs):
         #Temperature Variables
-        Tt = Variable('T_t', 'K', 'Face Stagnation Temperature (Station 2 or 2.5)')
+        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
         Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
 
         #Mass Flow Variables
-        mbar = Variable('m_{bar}', 'kg/s', 'Corrected Mass Flow')
-        mdot = Variable('m_{dot}', 'kg/s', 'Mass Flow')
-        mtild = Variable('m_{tild}', '-', 'Normalized Mass Flow')
-        mD = Variable('m_D', 'kg/s', 'On-Design Mass Flow')
+        mhc =  Variable('m_{hc}', 'kg/s', 'HPC Corrected Mass Flow')
+        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
+        mtildhc = Variable('m_{tild_hc}', '-', 'HPC Normalized Mass Flow')
+        mCoreD = Variable('m_{core_D}', 'kg/s', 'On Design Core Mass Flow')
 
         #Pressure Variables
-        Pt = Variable('P_t', 'kPa', 'Face Stagnation Pressure (Station 2 or 2.5)')
+        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
         Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
 
         #pressure ratio variables
-        ptild = Variable('p_{tild}', '-', 'Normalized Pressure Ratio')
-        pi = Variable('\pi', '-', 'Pressure Ratio')
-        piD = Variable('\pi_D', '-', 'On-Design Pressure Ratio')
+        ptildhc = Variable('p_{tild_hc}', '-', 'HPC Normalized Pressure Ratio')
+        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
+        pihcD = Variable('\pi_{hc_D}', '-', 'On-Design Pressure Ratio')
         
         #Speed Variables
-        Nbar = Variable('N_{bar}', '-', 'Corrected Compressor/Fan Speed')
-        N = Variable('N', '-', 'Compressor/Fan Speed')
-        Ntild = Variable('N_{tild}', '-', 'Normalized Speed')
-        NbarD = Variable('N_{{bar}_D}', '-', 'On-Design Corrected Speed')
+        Nbarhc = Variable('N_{bar_hc}', '-', 'Corrected HPC Speed')
+        Nh = Variable('N_h', '-', 'HPC Speed')
+        Ntildhc = Variable('N_{tild_hc}', '-', 'HPC Normalized Speed')
+        NbarDhc = Variable('N_{{bar}_D_hc}', '-', 'HPC On-Design Corrected Speed')
 
         #Spine Paramterization Variables
-        mtilds = Variable('m_{{tild}_s}', '-', 'Spine Parameterization Variable')
-        ptilds = Variable('p_{{tild}_s}', '-', 'Spine Parameterization Variable')
+        mtildshc = Variable('m_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
+        ptildsgc = Variable('p_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
 
         #te_exp_minus1 variable for B.287
-        z = Variable('z', '-', 'Taylor Expanded Variable to Replace Log Term')
+        zhc = Variable('zhc', '-', 'Taylor Expanded Variable to Replace Log Term in HPC Map')
 
-        #polytropic efficiecny
-        etaPol = Variable('\eta_{pol}', '-', 'Component Off Design Polytropic Efficiency')
-        etaPolD = Variable('\eta_{{pol}_D}', '-', 'Component On Design Polytropic Efficiency')
         with SignomialsEnabled():
             constraints = [
                 #define N bar
-                Nbar == N/((Tt/Tref)**.5), #B.279
+                Nbarhc == Nh/((Tt25/Tref)**.5), #B.279
 
-                #define mbar
-                mbar == mdot*((Tt/Tref)**.5)/(Pt/Pref),    #B.280
+                #define mhc
+                mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref),    #B.280
 
                 #define ptild
                 #SIGNOMIAL
-                SignomialEquality(ptild * (piD-1), (pi-1)),    #B.281
+                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
 
                 #define mtild
-                mtild == mbar/mD,   #B.282
+                mtildhc == mhc/mCoreD,   #B.282
 
                 #define N tild
-                Ntild == Nbar/NbarD,    #B.283
+                Ntildhc == Nbarhc/NbarhcD,    #B.283
 
                 #spine paramterization
-                mtilds == Nbar**.5, #B.284
-                ptilds == mtilds ** 1.5, #B.285
+                mtildshc == Nbarhc**.5, #B.284
+                ptildshc == mtildshc ** 1.5, #B.285
 
                 #constrain the "knee" shape of the map
-                SignomialEquality(((mtilds-mtild)/.03), te_exp_minus1(z, nterm=3)),  #B.286
-                SignomialEquality(ptild, 2*Ntild*.03*z + ptilds),    #B.286
+                SignomialEquality(((mtildshc-mtildhc)/.03), te_exp_minus1(zhc, nterm=3)),  #B.286
+                SignomialEquality(ptildhc, 2*Ntildhc*.03*zhc + ptildshc),    #B.286
                 ]
                 
-            Model.__init__(self, 1/pi, constraints, **kwargs)
+            Model.__init__(self, 1/pihc, constraints, **kwargs)
 
 class FanMap(Model):
     """
@@ -693,7 +690,7 @@ class FanMap(Model):
                 SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
                 ]
               
-            Model.__init__(self, 1/pi, constraints, **kwargs)
+            Model.__init__(self, 1/pif, constraints, **kwargs)
 
 class OffDesign(Model):
     """
