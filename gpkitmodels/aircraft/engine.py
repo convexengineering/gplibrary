@@ -3,7 +3,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, HPCMap, LPCMap
 
 #TODO
 #determine the three different Cp, gamma, and R values to be used
@@ -138,6 +138,9 @@ class EngineOffDesign(Model):
         combustor = CombustorCooling()
         turbine = Turbine()
         thrust = ExhaustAndThrust()
+        hpcmap = HPCMap()
+        fanmap = FanMap()
+        lpcmap = LPCMap()
 
         res7 = 0
         m5opt = 1

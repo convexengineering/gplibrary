@@ -487,16 +487,14 @@ class OnDesignSizing(Model):
         #single point which likely will not solve
         Model.__init__(self, None, constraints, **kwargs)
 
-class CompressorMap(Model):
+class LPCMap(Model):
     """
     Implentation of TASOPT compressor map model. Map is claibrated with exponents from
-    tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 fan and compressor.
+    tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
     Map is used for off-design calculations.
-    Input arg determines if the map is used for a fan or HPC (i.e. determines which
-    table, B.1 or B.2, exponent values are used from). arg == 0 yeilds a fan, arg ==1
-    yields a HPC.
+    Variables link with off design LPC variables.
     """
-    def __init__(self, arg, **kwargs):
+    def __init__(self, **kwargs):
         #Temperature Variables
         Tt = Variable('T_t', 'K', 'Face Stagnation Temperature (Station 2 or 2.5)')
         Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
@@ -550,27 +548,157 @@ class CompressorMap(Model):
                 #define N tild
                 Ntild == Nbar/NbarD,    #B.283
 
+                #spine paramterization
+                mtilds == Nbar**.5, #B.284
+                ptilds == mtilds ** 1.5, #B.285
+
                 #constrain the "knee" shape of the map
                 SignomialEquality(((mtilds-mtild)/.03), te_exp_minus1(z, nterm=3)),  #B.286
                 SignomialEquality(ptild, 2*Ntild*.03*z + ptilds),    #B.286
                 ]
-            
-            #add the constraints for a fan
-            if arg==0:
-                constraints.append([
-                    #spine parameterization
-                    mtilds == Nbar**.85,    #B.284
-                    ptilds == mtilds ** 3,   #B.285
-                    ])
                 
-            #add the constraints for a HPC
-            if arg == 1:
-                constraints.append([
-                    #spine paramterization
-                    mtilds == Nbar**.5, #B.284
-                    ptilds == mtilds ** 1.5, #B.285
-                    ])
-            #objective is to maximize component efficiency
+            Model.__init__(self, 1/pi, constraints, **kwargs)
+
+class HPCMap(Model):
+    """
+    Implentation of TASOPT compressor map model. Map is claibrated with exponents from
+    tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
+    Map is used for off-design calculations, variables link with HPC variables.
+    """
+    def __init__(self, **kwargs):
+        #Temperature Variables
+        Tt = Variable('T_t', 'K', 'Face Stagnation Temperature (Station 2 or 2.5)')
+        Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
+
+        #Mass Flow Variables
+        mbar = Variable('m_{bar}', 'kg/s', 'Corrected Mass Flow')
+        mdot = Variable('m_{dot}', 'kg/s', 'Mass Flow')
+        mtild = Variable('m_{tild}', '-', 'Normalized Mass Flow')
+        mD = Variable('m_D', 'kg/s', 'On-Design Mass Flow')
+
+        #Pressure Variables
+        Pt = Variable('P_t', 'kPa', 'Face Stagnation Pressure (Station 2 or 2.5)')
+        Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
+
+        #pressure ratio variables
+        ptild = Variable('p_{tild}', '-', 'Normalized Pressure Ratio')
+        pi = Variable('\pi', '-', 'Pressure Ratio')
+        piD = Variable('\pi_D', '-', 'On-Design Pressure Ratio')
+        
+        #Speed Variables
+        Nbar = Variable('N_{bar}', '-', 'Corrected Compressor/Fan Speed')
+        N = Variable('N', '-', 'Compressor/Fan Speed')
+        Ntild = Variable('N_{tild}', '-', 'Normalized Speed')
+        NbarD = Variable('N_{{bar}_D}', '-', 'On-Design Corrected Speed')
+
+        #Spine Paramterization Variables
+        mtilds = Variable('m_{{tild}_s}', '-', 'Spine Parameterization Variable')
+        ptilds = Variable('p_{{tild}_s}', '-', 'Spine Parameterization Variable')
+
+        #te_exp_minus1 variable for B.287
+        z = Variable('z', '-', 'Taylor Expanded Variable to Replace Log Term')
+
+        #polytropic efficiecny
+        etaPol = Variable('\eta_{pol}', '-', 'Component Off Design Polytropic Efficiency')
+        etaPolD = Variable('\eta_{{pol}_D}', '-', 'Component On Design Polytropic Efficiency')
+        with SignomialsEnabled():
+            constraints = [
+                #define N bar
+                Nbar == N/((Tt/Tref)**.5), #B.279
+
+                #define mbar
+                mbar == mdot*((Tt/Tref)**.5)/(Pt/Pref),    #B.280
+
+                #define ptild
+                #SIGNOMIAL
+                SignomialEquality(ptild * (piD-1), (pi-1)),    #B.281
+
+                #define mtild
+                mtild == mbar/mD,   #B.282
+
+                #define N tild
+                Ntild == Nbar/NbarD,    #B.283
+
+                #spine paramterization
+                mtilds == Nbar**.5, #B.284
+                ptilds == mtilds ** 1.5, #B.285
+
+                #constrain the "knee" shape of the map
+                SignomialEquality(((mtilds-mtild)/.03), te_exp_minus1(z, nterm=3)),  #B.286
+                SignomialEquality(ptild, 2*Ntild*.03*z + ptilds),    #B.286
+                ]
+                
+            Model.__init__(self, 1/pi, constraints, **kwargs)
+
+class FanMap(Model):
+    """
+    Implentation of TASOPT compressor map model. Map is claibrated with exponents from
+    tables B.1 or B.2 of TASOPT, making the map realistic for the E3 fan.
+    Map is used for off-design calculations, links with fan variables.
+    """
+    def __init__(self, **kwargs):
+        #Temperature Variables
+        Tt = Variable('T_t', 'K', 'Face Stagnation Temperature (Station 2 or 2.5)')
+        Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
+
+        #Mass Flow Variables
+        mbar = Variable('m_{bar}', 'kg/s', 'Corrected Mass Flow')
+        mdot = Variable('m_{dot}', 'kg/s', 'Mass Flow')
+        mtild = Variable('m_{tild}', '-', 'Normalized Mass Flow')
+        mD = Variable('m_D', 'kg/s', 'On-Design Mass Flow')
+
+        #Pressure Variables
+        Pt = Variable('P_t', 'kPa', 'Face Stagnation Pressure (Station 2 or 2.5)')
+        Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
+
+        #pressure ratio variables
+        ptild = Variable('p_{tild}', '-', 'Normalized Pressure Ratio')
+        pi = Variable('\pi', '-', 'Pressure Ratio')
+        piD = Variable('\pi_D', '-', 'On-Design Pressure Ratio')
+        
+        #Speed Variables
+        Nbar = Variable('N_{bar}', '-', 'Corrected Compressor/Fan Speed')
+        N = Variable('N', '-', 'Compressor/Fan Speed')
+        Ntild = Variable('N_{tild}', '-', 'Normalized Speed')
+        NbarD = Variable('N_{{bar}_D}', '-', 'On-Design Corrected Speed')
+
+        #Spine Paramterization Variables
+        mtilds = Variable('m_{{tild}_s}', '-', 'Spine Parameterization Variable')
+        ptilds = Variable('p_{{tild}_s}', '-', 'Spine Parameterization Variable')
+
+        #te_exp_minus1 variable for B.287
+        z = Variable('z', '-', 'Taylor Expanded Variable to Replace Log Term')
+
+        #polytropic efficiecny
+        etaPol = Variable('\eta_{pol}', '-', 'Component Off Design Polytropic Efficiency')
+        etaPolD = Variable('\eta_{{pol}_D}', '-', 'Component On Design Polytropic Efficiency')
+        with SignomialsEnabled():
+            constraints = [
+                #define N bar
+                Nbar == N/((Tt/Tref)**.5), #B.279
+
+                #define mbar
+                mbar == mdot*((Tt/Tref)**.5)/(Pt/Pref),    #B.280
+
+                #define ptild
+                #SIGNOMIAL
+                SignomialEquality(ptild * (piD-1), (pi-1)),    #B.281
+
+                #define mtild
+                mtild == mbar/mD,   #B.282
+
+                #define N tild
+                Ntild == Nbar/NbarD,    #B.283
+
+                #spine parameterization
+                mtilds == Nbar**.85,    #B.284
+                ptilds == mtilds ** 3,   #B.285
+
+                #constrain the "knee" shape of the map
+                SignomialEquality(((mtilds-mtild)/.03), te_exp_minus1(z, nterm=3)),  #B.286
+                SignomialEquality(ptild, 2*Ntild*.03*z + ptilds),    #B.286
+                ]
+              
             Model.__init__(self, 1/pi, constraints, **kwargs)
 
 class OffDesign(Model):
