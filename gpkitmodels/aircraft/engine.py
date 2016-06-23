@@ -92,7 +92,7 @@ class EngineOnDesign(Model):
         #compute the fan stream velocity and nozzle area
         u7 = (2*(sol('h_{t_7}')-h7)**.5)
         rho7 = P7/(sol('R_t')*T7)
-        A7 = sol('m_{core}')/(rho7*u7)
+        A7 = sol('alpha')*sol('m_{core}')/(rho7*u7)
         
         #core nozzle area calcualtion
         if sol('M_6') >=1:
