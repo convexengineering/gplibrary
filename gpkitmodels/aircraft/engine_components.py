@@ -590,7 +590,7 @@ class HPCMap(Model):
 
         #Spine Paramterization Variables
         mtildshc = Variable('m_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
-        ptildsgc = Variable('p_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
+        ptildshc = Variable('p_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
 
         #te_exp_minus1 variable for B.287
         zhc = Variable('zhc', '-', 'Taylor Expanded Variable to Replace Log Term in HPC Map')
@@ -611,7 +611,7 @@ class HPCMap(Model):
                 mtildhc == mhc/mCoreD,   #B.282
 
                 #define N tild
-                Ntildhc == Nbarhc/NbarhcD,    #B.283
+                Ntildhc == Nbarhc/NbarDhc,    #B.283
 
                 #spine paramterization
                 mtildshc == Nbarhc**.5, #B.284
@@ -676,7 +676,7 @@ class FanMap(Model):
                 SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
 
                 #define mtild
-                mtildf == mbarf/mFanD,   #B.282
+                mtildf == mf/mFanD,   #B.282
 
                 #define N tild
                 Ntildf == Nbarf/NbarDf,    #B.283
