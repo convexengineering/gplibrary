@@ -354,170 +354,7 @@ class ExhaustAndThrust(Model):
                 TSFC == 1/Isp                   #B.193
                 ]
         Model.__init__(self, TSFC, constraints, **kwargs)
-
-class ExhaustAndThrustTEST(Model):
-    """
-    Class to calculate the exhaust quantities as well as
-    the overall engine thrust and on design TSFC & ISP
-    """
-    def __init__(self, **kwargs):
-        
-        a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
-        u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
-        
-        #external atmosphere properties
-        P0 = Variable('P_0', 'kPa', 'Free Stream Stagnation Pressure')
-        
-        #gas properties
-        Cpt =Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
-        gammaT = Variable('gamma_{T}', 1.4, '-', 'Specific Heat Ratio for Gas in Turbine')
-        gammaAir = Variable('gamma_{air}', 1.4, '-', 'Specific Heat Ratio for Air')
-        Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
-        
-        #gravity
-        g = Variable('g', 9.81, 'm/(s^2)', 'Gravitational Acceleration')
-        
-        #fan exhaust variables
-        P8 = Variable('P_8', 'kPa', 'Fan Exhaust Static Pressure')
-        Pt8 = Variable('P_{t_8}', 'kPa', 'Fan Exhaust Stagnation Pressure')
-        ht8 = Variable('h_{t_8}', 'J/kg', 'Fan Exhaust Stagnation Enthalpy')
-        h8 = Variable('h_8', 'J/kg', 'Fan Exhasut Static Enthalpy')
-        Tt8 = Variable('T_{t_8}', 'K', 'Fan Exhaust Stagnation Temperature (8)')
-        T8 = Variable('T_{8}', 'K', 'Fan Exhaust Sttic Temperature (8)')
-
-        #turbine nozzle exit states
-        Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
-        Tt5 = Variable('T_{t_5}', 'K', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
-        ht5 = Variable('h_{t_5}', 'J/kg', 'Stagnation Enthalpy at the Turbine Nozzle Exit (5)')
-        
-        #core exit variables
-        P6 = Variable('P_6', 'kPa', 'Core Exhaust Static Pressure')
-        Pt6 = Variable('P_{t_6}', 'kPa', 'Core Exhaust Stagnation Pressure')
-        Tt6 = Variable('T_{t_6}', 'K', 'Core Exhaust Stagnation Temperature (6)')
-        T6 = Variable('T_{6}', 'K', 'Core Exhaust Static Temperature (6)')
-        ht6 = Variable('h_{t_6}', 'J/kg', 'Core Exhaust Stagnation Enthalpy')
-        h6 = Variable('h_6', 'J/kg', 'Core Exhasut Static Enthalpy')
-
-        #new vars for the fan nozzle exit (station 7)
-        Pt7 = Variable('P_{t_7}', 'kPa', 'Stagnation Pressure at the Fan Nozzle Exit (7)')
-        Tt7 = Variable('T_{t_7}', 'K', 'Stagnation Temperature at the Fan Nozzle Exit (7)')
-        ht7 = Variable('h_{t_7}', 'J/kg', 'Stagnation Enthalpy at the Fan Nozzle Exit (7)')
-
-        #thrust variables
-        F8 = Variable('F_8', 'N', 'Fan Thrust')
-        F6 = Variable('F_6', 'N', 'Core Thrust')
-        F = Variable('F', 'N', 'Total Thrust')
-        Fsp = Variable('F_{sp}', '-', 'Specific Net Thrust')
-        Isp = Variable('I_{sp}', 's', 'Specific Impulse')
-        TSFC = Variable('TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
-
-        #exhaust speeds
-        u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
-        u8 = Variable('u_8', 'm/s', 'Fan Exhaust Velocity')
-
-        #BPR
-        alpha = Variable('alpha', '-', 'By Pass Ratio')
-        alphap1 = Variable('alphap1', '-', '1 plus BPR')
-
-        #core mass flow
-        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-
-        #flow faction f
-        f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
-
-        with SignomialsEnabled():
-            constraints = [
-                #fan exhaust
-                Pt8 == Pt7, #B.179
-                Tt8 == Tt7, #B.180
-                P8 == P0,
-                h8 == Cpair * T8,
-                TCS([u8**2 + 2*h8 <= 2*ht8]),
-                (P8/Pt8)**(.2857) == T8/Tt8,
-                ht8 == Cpair * Tt8,
-                
-                #core exhaust
-                P6 == P0,   #B.4.11 intro
-                Pt6 == Pt5, #B.183
-                Tt6 == Tt5, #B.184
-                (P6/Pt6)**(.2857) == T6/Tt6,
-                TCS([u6**2 + 2*h6 <= 2*ht6]),
-                h6 == Cpt * T6,
-                ht6 == Cpt * Tt6,
-
-                #mass flow
-#--------------------------------------------------------------LOOK RIGHT HERE THIS THE PROBLEM CODE----------------------
-                #overall thrust values
-                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-                TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
-##                SignomialEquality(F6/mCore + u0,(1+f)*u6),
-
-                #SIGNOMIAL
-                TCS([F <= F6 + F8]),
-
-
-                Fsp == F/((alphap1)*mCore*a0),   #B.191
-
-                #ISP
-                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
-
-                #TSFC
-                TSFC == 1/Isp                   #B.193
-                ]
-        Model.__init__(self, TSFC, constraints, **kwargs)
-
-class CombustorCoolingTEST(Model):
-    """
-    class to represent the engine's combustor and perform calculations
-    on engine cooling bleed flow...cooling flow is currently not implemented
-    """
-    def __init__(self, **kwargs):
-        #new vars
-        #gas properties
-        gammaC =  Variable('gamma_{C}', 1.4, '-', 'Specific Heat Ratio for Gas in Combustor')
-        Cpc = Variable('Cp_c', 1068, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor")
-        
-        #HPC exit state variables (station 3)
-        Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
-        ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
-        
-        #combustor exit state variables..recall Tt4 is already set in Engine class
-        Pt4 = Variable('P_{t_4}', 'kPa', 'Stagnation Pressure at the Combustor Exit (4)')
-        ht4 = Variable('h_{t_4}', 'J/kg', 'Stagnation Enthalpy at the Combustor Exit (4)')
-        Tt4 = Variable('T_{t_4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')
-
-        #Turbine inlet state variables (station 4.1)
-        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
-        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
-        ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
-
-        #burner pressure ratio
-        pib = Variable('\pi_{b}', '-', 'Burner Pressure Ratio')
-
-        #flow faction f
-        f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
-
-        #heat of combustion of jet fuel
-        hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypertextbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
-
-        with SignomialsEnabled():
-        
-            constraints = [
-                #flow through combustor
-                Pt4 == pib * Pt3,   #B.145
-                ht4 == Cpc * Tt4,
-
-                #fuel flow fraction f
-                TCS([f*hf >= ht4 - ht3]),
-
-                #flow at turbine inlet
-                Tt41 == Tt4,
-                Pt41 == Pt4,
-                ht41 == ht4
-                ]
-            
-        Model.__init__(self, f, constraints, **kwargs)
-        
+  
 class OnDesignSizing(Model):
     """
     class to perform the on design sizing of the engine.
@@ -655,7 +492,6 @@ class CompressorMap(Model):
     Implentation of TASOPT compressor map model. Map is claibrated with exponents from
     tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 fan and compressor.
     Map is used for off-design calculations.
-
     Input arg determines if the map is used for a fan or HPC (i.e. determines which
     table, B.1 or B.2, exponent values are used from). arg == 0 yeilds a fan, arg ==1
     yields a HPC.
@@ -742,15 +578,11 @@ class OffDesign(Model):
     Class to implement off design performance of a turbofan. Simply equates the residuals
     from section B.6 of TASOPT. The constraints inside this model should be linked with the
     constraints in the compressor map model, as well as within the individual component models.
-
     Note that a turbine map is not needed, instead the turbine is assumed to be choked.
-
     Inputs: res7 value of 1 --> residual 7 is the Tt4 constraint
     res7 value of 0 --> residual 7 is the thrust constraint
-
     m5opt of zero gives the constriants for M5 < 1, m5opt of 1 gives constraints
     for M5 >= 1
-
     m7opt of zero gives the constriants for M7 < 1, m7opt of 1 gives constraints
     for M7 >= 1
     """
@@ -955,4 +787,4 @@ class OffDesign(Model):
                      T7 == Tt7*1.2**(-1)
                     ])
                  
-        Model.__init__(self, mhtD, constraints, **kwargs)        
+        Model.__init__(self, mhtD, constraints, **kwargs)

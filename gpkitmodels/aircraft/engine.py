@@ -3,7 +3,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap, ExhaustAndThrustTEST, CombustorCoolingTEST
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, CompressorMap
 
 #TODO
 #determine the three different Cp, gamma, and R values to be used
@@ -51,14 +51,14 @@ class EngineOnDesign(Model):
             'M_0': 0.8,
             'T_{t_4}': 1400,
             '\pi_f': 1.5,
-            '\pi_{lc}': 3,
+            '\pi_{lc}': 5,
             '\pi_{hc}': 10,
             '\pi_{d}': 1,
             '\pi_{fn}': 1,
             '\pi_{tn}': 1,
             '\pi_{b}': 1,
             'alpha': 7,
-            'alphap1': 8,
+            'alphap1': 10,
             'M_{4a}': 1,    #choked turbines
             'F_D': 121436.45, #737 max thrust in N
             'M_2': .4,
@@ -108,7 +108,7 @@ class EngineOnDesign(Model):
         u5 = (2*(sol('h_{t_5}')-h5)**.5)
         rho5 = P5/(sol('R_t')*T5)
         A5 = sol('m_{core}')/(rho5*u5)
-        
+        print A7
         return mhtD, mltD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
@@ -135,9 +135,9 @@ class EngineOffDesign(Model):
 
     def __init__(self, sol, mhtD, mltD, NlpcD, NhpcD, A5, A7, **kwargs):
         lpc = FanAndLPC()
-        combustor = CombustorCoolingTEST()
+        combustor = CombustorCooling()
         turbine = Turbine()
-        thrust = ExhaustAndThrustTEST()
+        thrust = ExhaustAndThrust()
 
         res7 = 0
         m5opt = 1
