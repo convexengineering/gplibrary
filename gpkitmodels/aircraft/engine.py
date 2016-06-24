@@ -33,11 +33,14 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
+        m6opt = 1
+        m8opt = 1
+        
         lpc = FanAndLPC()
         combustor = CombustorCooling()
         turbine = Turbine()
         thrust = ExhaustAndThrust()
-        size = OnDesignSizing()
+        size = OnDesignSizing(m6opt, m8opt)
 
         self.submodels = [lpc, combustor, turbine, thrust, size]
             
@@ -76,8 +79,8 @@ class EngineOnDesign(Model):
         mhtD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.1}')/(1000*units('K')))**.5)/(sol('P_{t_4.1}')/(22*units('kPa'))) #B.225
         mltD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))) #B.226
         #noting that 
-        NlpcD = 1/(sol('T_{t_1.8}')/1000)**.5    #B.223
-        NhpcD = 1/(sol('T_{t_2.5}')/1000)**.5    #B.224
+        NlpcD = 1/(sol('T_{t_1.8}')/(1000*units('K')))**.5    #B.223
+        NhpcD = 1/(sol('T_{t_2.5}')/(1000*units('K')))**.5    #B.224
 
         #first size the fan nozzle
         if sol('M_8') >= 1:
@@ -109,6 +112,10 @@ class EngineOnDesign(Model):
         rho5 = P5/(sol('R_t')*T5)
         A5 = sol('m_{core}')/(rho5*u5)
         print A5
+        print rho5
+        print T5
+        print sol('m_{core}')
+        print u5
         return mhtD, mltD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
@@ -138,11 +145,10 @@ class EngineOffDesign(Model):
         combustor = CombustorCooling()
         turbine = Turbine()
         thrust = ExhaustAndThrust()
-        hpcmap = HPCMap()
         fanmap = FanMap()
         lpcmap = LPCMap()
 
-        res7 = 0
+        res7 = 1
         m5opt = 1
         m7opt = 1
         
@@ -169,11 +175,19 @@ class EngineOffDesign(Model):
                 'm_{htD}': mhtD,
                 'm_{ltD}': mltD,
                 'N_1': 1,
+                #'\pi_{lc}': sol('\pi_{lc}'),
+                #'\pi_f': 1.7,
                 'G_f': 1,
                 'alpha': 10,
                 'alphap1': 11,
                 'F_{spec}': 1.2e+05*units('N') ,
                 'T_{t_{4spec}}': 1450,
+                'm_{fan_D}': sol('alpha')*sol('m_{core}'),
+                'N_{{bar}_Df}': 1,
+                '\pi_{f_D}': sol('\pi_f'),
+                'm_{core_D}': sol('m_{core}'),
+                '\pi_{lc_D}': sol('\pi_{lc}'),
+                'N_{{bar}_D_lc}': NlpcD,
             }
 
  
@@ -190,3 +204,5 @@ if __name__ == "__main__":
     engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
     
     solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+
+    print solOff('\rho_5')

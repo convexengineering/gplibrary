@@ -360,8 +360,14 @@ class OnDesignSizing(Model):
     class to perform the on design sizing of the engine.
     Nozzle areas are calcualted in post processing due to dependence on
     M6 and M8 being greater than or less than 1
+
+    m6opt of zero gives the constriants for M6 < 1, m6opt of 1 gives constraints
+    for M6 >= 1
+
+    m8opt of zero gives the constriants for M8 < 1, m7opt of 1 gives constraints
+    for M8 >= 1
     """
-    def __init__(self, **kwargs):
+    def __init__(self, m6opt, m8opt, **kwargs):
         #new variables
         a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
         
@@ -434,6 +440,9 @@ class OnDesignSizing(Model):
         #design spool speeds arbitrarily set to 1 since only ratio are considered
         NlcD = Variable('N_{lcD}', 1, '-', 'LPC Design Spool Speed')    #B.221
         NhcD =Variable('N_{hcD}', 1, '-', 'HPC Design Spool Speed') #B.222
+
+        NbarlcD = Variable('N_{bar_lcD}', '-', 'Normalized LPC Design Spool Speed')
+        NbarhcD = Variable('N_{bar_hcD}', '-', 'Normalized HPC Design Spool Speed')
         
         #design corrected mass flow
         mhtD =Variable('m_{htD}', 'kg/s', 'Design HPT Corrected Mass Flow (see B.225)')
@@ -454,35 +463,40 @@ class OnDesignSizing(Model):
         Tt18 = Variable('T_{t_1.8}', 'K', 'Stagnation Temperature at the Diffuser Exit (1.8)')
         Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
 
-        constraints = [
-            #mass flow sizing
-            mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
+        #f plus one
+        fp1 = Variable('fp1', '-', 'f + 1')
 
-            #component area sizing
-            #fan area
-            P2 == Pt2*(hold2)**(-3.5),
-            T2 == Tt2 * hold2**-1,
-            h2 == Cpair * T2,
-            rho2 == P2/(Rair * T2),  #B.196
-            u2 == M2*(Cpair*Rair*T2/(781*units('J/kg/K')))**.5,  #B.197
-            A2 == (alphap1)*mCore/(rho2*u2),     #B.198
+        with SignomialsEnabled():
+            constraints = [
+                #mass flow sizing
+                mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
 
-            #HPC area
-            P25 == Pt25*(hold25)**(-3.5),
-            T25 == Tt25 * hold25**-1,
-            h25 == Cpair * T25,
-            rho25 == P25/(Rair*T25),
-            u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
-            A25 == (alphap1)*mCore/(rho25*u25),     #B.203
+                #component area sizing
+                #fan area
+                P2 == Pt2*(hold2)**(-3.5),
+                T2 == Tt2 * hold2**-1,
+                h2 == Cpair * T2,
+                rho2 == P2/(Rair * T2),  #B.196
+                u2 == M2*(Cpair*Rair*T2/(781*units('J/kg/K')))**.5,  #B.197
+                A2 == (alphap1)*mCore/(rho2*u2),     #B.198
 
-            #mach nubmers for post processing of the data
-            M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
-            M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
+                #HPC area
+                P25 == Pt25*(hold25)**(-3.5),
+                T25 == Tt25 * hold25**-1,
+                h25 == Cpair * T25,
+                rho25 == P25/(Rair*T25),
+                u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
+                A25 == (alphap1)*mCore/(rho25*u25),     #B.203
 
-            #core satic pressure constraints
-            P7 == P0,
-            P5 == P0,
-            ]
+                #mach nubmers for post processing of the data
+                M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
+                M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
+
+                #core satic pressure constraints
+                P7 == P0,
+                P5 == P0,
+
+                ]
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
         Model.__init__(self, None, constraints, **kwargs)
@@ -863,6 +877,7 @@ class OffDesign(Model):
                 #constrain the BPR
                 SignomialEquality(alpha*rho5*A5*u5, rho7*A7*u7),
                 ]
+                
             if res7 == 0:
                 constraints.extend([
                     #residual 7

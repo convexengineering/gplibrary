@@ -190,9 +190,9 @@ if __name__ == "__main__":
         'P_{t_2}': sol('P_{t_2}'),
         '\pi_{f_D}': sol('\pi_f'),
         'N_{{bar}_Df}': 1,
-        'N_f': 10
+        'N_f': 1.3
         })
-    lpcmap.localsolve(kktsolver="ldl", verbosity = 4)
+    fanmap.localsolve(kktsolver="ldl", verbosity = 4)
 
     #cerating a fan model
    
