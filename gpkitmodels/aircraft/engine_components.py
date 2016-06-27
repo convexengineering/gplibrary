@@ -660,7 +660,7 @@ class LPCMap(Model):
                 #SIGNOMIAL
                 SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
 
-                #define mtild
+                #define mtilds
                 mtildlc == mlc/mCoreD,   #B.282
 
                 #define N tild

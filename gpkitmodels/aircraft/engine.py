@@ -114,8 +114,6 @@ class EngineOnDesign(Model):
         u5 = (2*(sol('h_{t_5}')-h5)**.5)
         rho5 = P5/(sol('R_t')*T5)
         A5 = sol('m_{core}')/(rho5*u5)
-        print A5
-        print A7
        
         return mhtD, mltD, NlpcD, NhpcD, A5, A7
 
@@ -193,6 +191,11 @@ class EngineOffDesign(Model):
         offD = OffDesign(res7, m5opt, m7opt)
 
         self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+
+        print A5
+        print A5.to('m^2')
+        print A7
+        print A7.to('m^2')
         
         with SignomialsEnabled():
 
@@ -207,8 +210,8 @@ class EngineOffDesign(Model):
                 '\pi_{d}': sol('\pi_{d}'),
                 '\pi_{fn}': sol('\pi_{fn}'),
                 
-                'A_5': mag(A5)/1000,
-                'A_7': mag(A7)/1000,
+                'A_5': A5,
+                'A_7': A7,
                 'T_{ref}': 1000,
                 'P_{ref}': 22,
                 'm_{htD}': mhtD,
@@ -245,13 +248,13 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-    solOn = engineOnD.localsolve(verbosity = 4, kktsolver="ldl")
+    solOn = engineOnD.localsolve(verbosity = 0, kktsolver="ldl")
     
     mhtD, mltD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
     
     engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
     
-    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+    solOff = engineOffD.localsolve(verbosity = 1, kktsolver="ldl")
     #bounds = engineOffD.determine_unbounded_variables(engineOffD,verbosity=4)
     #print model.program.solver_out
     #print solOff('\rho_5')
