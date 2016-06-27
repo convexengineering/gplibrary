@@ -570,74 +570,6 @@ class LPCMap(Model):
                 
             Model.__init__(self, 1/pilc, constraints, **kwargs)
 
-class HPCMap(Model):
-    """
-    Implentation of TASOPT compressor map model. Map is claibrated with exponents from
-    tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
-    Map is used for off-design calculations, variables link with HPC variables.
-    """
-    def __init__(self, **kwargs):
-        #Temperature Variables
-        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
-        Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
-
-        #Mass Flow Variables
-        mhc =  Variable('m_{hc}', 'kg/s', 'HPC Corrected Mass Flow')
-        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-        mtildhc = Variable('m_{tild_hc}', '-', 'HPC Normalized Mass Flow')
-        mCoreD = Variable('m_{core_D}', 'kg/s', 'On Design Core Mass Flow')
-
-        #Pressure Variables
-        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
-        Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
-
-        #pressure ratio variables
-        ptildhc = Variable('p_{tild_hc}', '-', 'HPC Normalized Pressure Ratio')
-        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
-        pihcD = Variable('\pi_{hc_D}', '-', 'On-Design Pressure Ratio')
-        
-        #Speed Variables
-        Nbarhc = Variable('N_{bar_hc}', '-', 'Corrected HPC Speed')
-        Nh = Variable('N_h', '-', 'HPC Speed')
-        Ntildhc = Variable('N_{tild_hc}', '-', 'HPC Normalized Speed')
-        NbarDhc = Variable('N_{{bar}_D_hc}', '-', 'HPC On-Design Corrected Speed')
-
-        #Spine Paramterization Variables
-        mtildshc = Variable('m_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
-        ptildshc = Variable('p_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
-
-        #te_exp_minus1 variable for B.287
-        zhc = Variable('zhc', '-', 'Taylor Expanded Variable to Replace Log Term in HPC Map')
-
-        with SignomialsEnabled():
-            constraints = [
-                #define N bar
-                Nbarhc == Nh/((Tt25/Tref)**.5), #B.279
-
-                #define mhc
-                mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref),    #B.280
-
-                #define ptild
-                #SIGNOMIAL
-                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
-
-                #define mtild
-                mtildhc == mhc/mCoreD,   #B.282
-
-                #define N tild
-                Ntildhc == Nbarhc/NbarDhc,    #B.283
-
-                #spine paramterization
-                mtildshc == Nbarhc**.5, #B.284
-                ptildshc == mtildshc ** 1.5, #B.285
-
-                #constrain the "knee" shape of the map
-                SignomialEquality(((mtildshc-mtildhc)/.03), te_exp_minus1(zhc, nterm=3)),  #B.286
-                SignomialEquality(ptildhc, 2*Ntildhc*.03*zhc + ptildshc),    #B.286
-                ]
-                
-            Model.__init__(self, 1/pihc, constraints, **kwargs)
-
 class FanMap(Model):
     """
     Implentation of TASOPT compressor map model. Map is claibrated with exponents from
@@ -688,20 +620,20 @@ class FanMap(Model):
                 #define ptild
                 #SIGNOMIAL
                 SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
-
-                #define mtild
-                mtildf == mf/mFanD,   #B.282
-
-                #define N tild
-                Ntildf == Nbarf/NbarDf,    #B.283
-
-                #spine parameterization
-                mtildsf == Nbarf**.85,    #B.284
-                ptildsf == mtildsf ** 3,   #B.285
-
-                #constrain the "knee" shape of the map
-                SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
-                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
+##
+##                #define mtild
+##                mtildf == mf/mFanD,   #B.282
+##
+##                #define N tild
+##                Ntildf == Nbarf/NbarDf,    #B.283
+##
+##                #spine parameterization
+##                mtildsf == Nbarf**.85,    #B.284
+##                ptildsf == mtildsf ** 3,   #B.285
+##
+##                #constrain the "knee" shape of the map
+##                SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
+##                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
                 ]
               
             Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -848,11 +780,11 @@ class OffDesign(Model):
                 Nf*Gf == N1,
 
                 #residual 2 HPT mass flow
-                TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
-
-                #residual 3 LPT mass flow
-                TCS([(fp1)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 == mltD]),
-                
+##                TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
+##
+##                #residual 3 LPT mass flow
+##                TCS([(fp1)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 == mltD]),
+##                
                 #residual 4
                 SignomialEquality(u7**2 +2*h7,2*ht7),
                 h7 == Cpair*T7,
@@ -860,22 +792,25 @@ class OffDesign(Model):
                 mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7,
                 
                 #residual 5 core nozzle mass flow
-                h5 == Cpt*T5,
-                SignomialEquality(u5**2 +2*h5, 2*ht5),
-                rho5 == P5/(Rt*T5),
-                TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
+##                h5 == Cpt*T5,
+##                SignomialEquality(u5**2 +2*h5, 2*ht5),
+##                rho5 == P5/(Rt*T5),
+##                TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
 
                 #compute core mass flux
-                mCore == rho5 * A5 * u5,
+##                mCore == rho5 * A5 * u5,
+
+                #NOT SURE IF THIS IS REQUIRED
+                mFan <= rho7*A7*u7,
                 
                 #residual 6 LPC/HPC mass flow constraint
                 mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
-
-                #constrain the BPR
-                SignomialEquality(alpha*rho5*A5*u5, rho7*A7*u7),
+##
+##                #constrain the BPR
+##                SignomialEquality(alpha*rho5*A5*u5, rho7*A7*u7),
                 ]
                 
             if res7 == 0:
@@ -884,6 +819,7 @@ class OffDesign(Model):
                     #option #1, constrain the engine's thrust
                     F == Fspec,
                     ])
+            
             if res7 == 1:
                 constraints.extend([
                     #residual 7
@@ -891,12 +827,12 @@ class OffDesign(Model):
                     Tt4 == Tt4spec,  #B.265
                     ])
                 
-            if m5opt == 0:
-                 constraints.extend([
-                    P5 == P0,
-                    (P5/Pt5) == (T5/Tt5)**(3.5),
-                    M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
-                    ])
+##            if m5opt == 0:
+##                 constraints.extend([
+##                    P5 == P0,
+##                    (P5/Pt5) == (T5/Tt5)**(3.5),
+##                    M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
+##                    ])
                  
             if m5opt == 1:
                  constraints.extend([
@@ -905,13 +841,13 @@ class OffDesign(Model):
                     T5 == Tt5*1.2**(-1)
                     ])
                  
-            if m7opt == 0:
-                constraints.extend([
-                    #additional constraints on residual 4 for M7 < 1
-                    P7 == P0,
-                    (P7/Pt7) == (T7/Tt7)**(3.5),
-                    M7 == u7/((T7*Cpair*Rair/(781*units('J/kg/K')))**.5),
-                    ])
+##            if m7opt == 0:
+##                constraints.extend([
+##                    #additional constraints on residual 4 for M7 < 1
+##                    P7 == P0,
+##                    (P7/Pt7) == (T7/Tt7)**(3.5),
+##                    M7 == u7/((T7*Cpair*Rair/(781*units('J/kg/K')))**.5),
+##                    ])
                 
             if m7opt == 1:
                  constraints.extend([
@@ -922,3 +858,84 @@ class OffDesign(Model):
                     ])
                  
         Model.__init__(self, mhtD, constraints, **kwargs)
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+##class HPCMap(Model):
+##    """
+##    Implentation of TASOPT compressor map model. Map is claibrated with exponents from
+##    tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
+##    Map is used for off-design calculations, variables link with HPC variables.
+##    """
+##    def __init__(self, **kwargs):
+##        #Temperature Variables
+##        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
+##        Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
+##
+##        #Mass Flow Variables
+##        mhc =  Variable('m_{hc}', 'kg/s', 'HPC Corrected Mass Flow')
+##        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
+##        mtildhc = Variable('m_{tild_hc}', '-', 'HPC Normalized Mass Flow')
+##        mCoreD = Variable('m_{core_D}', 'kg/s', 'On Design Core Mass Flow')
+##
+##        #Pressure Variables
+##        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
+##        Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
+##
+##        #pressure ratio variables
+##        ptildhc = Variable('p_{tild_hc}', '-', 'HPC Normalized Pressure Ratio')
+##        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
+##        pihcD = Variable('\pi_{hc_D}', '-', 'On-Design Pressure Ratio')
+##        
+##        #Speed Variables
+##        Nbarhc = Variable('N_{bar_hc}', '-', 'Corrected HPC Speed')
+##        Nh = Variable('N_h', '-', 'HPC Speed')
+##        Ntildhc = Variable('N_{tild_hc}', '-', 'HPC Normalized Speed')
+##        NbarDhc = Variable('N_{{bar}_D_hc}', '-', 'HPC On-Design Corrected Speed')
+##
+##        #Spine Paramterization Variables
+##        mtildshc = Variable('m_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
+##        ptildshc = Variable('p_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
+##
+##        #te_exp_minus1 variable for B.287
+##        zhc = Variable('zhc', '-', 'Taylor Expanded Variable to Replace Log Term in HPC Map')
+##
+##        with SignomialsEnabled():
+##            constraints = [
+##                #define N bar
+##                Nbarhc == Nh/((Tt25/Tref)**.5), #B.279
+##
+##                #define mhc
+##                mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref),    #B.280
+##
+##                #define ptild
+##                #SIGNOMIAL
+##                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
+##
+##                #define mtild
+##                mtildhc == mhc/mCoreD,   #B.282
+##
+##                #define N tild
+##                Ntildhc == Nbarhc/NbarDhc,    #B.283
+##
+##                #spine paramterization
+##                mtildshc == Nbarhc**.5, #B.284
+##                ptildshc == mtildshc ** 1.5, #B.285
+##
+##                #constrain the "knee" shape of the map
+##                SignomialEquality(((mtildshc-mtildhc)/.03), te_exp_minus1(zhc, nterm=3)),  #B.286
+##                SignomialEquality(ptildhc, 2*Ntildhc*.03*zhc + ptildshc),    #B.286
+##                ]
+##                
+##            Model.__init__(self, 1/pihc, constraints, **kwargs)
