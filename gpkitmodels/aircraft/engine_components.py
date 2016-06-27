@@ -565,7 +565,7 @@ class LPCMap(Model):
 
                 #constrain the "knee" shape of the map
                 SignomialEquality(((mtildslc-mtildlc)/.03), te_exp_minus1(zlc, nterm=3)),  #B.286
-                SignomialEquality(ptildlc, 2*Ntildlc*.03*zlc + ptildslc),    #B.286
+##                SignomialEquality(ptildlc, 2*Ntildlc*.03*zlc + ptildslc),    #B.286
                 ]
                 
             Model.__init__(self, 1/pilc, constraints, **kwargs)
@@ -620,20 +620,21 @@ class FanMap(Model):
                 #define ptild
                 #SIGNOMIAL
                 SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
-##
-##                #define mtild
-##                mtildf == mf/mFanD,   #B.282
-##
-##                #define N tild
-##                Ntildf == Nbarf/NbarDf,    #B.283
-##
-##                #spine parameterization
-##                mtildsf == Nbarf**.85,    #B.284
-##                ptildsf == mtildsf ** 3,   #B.285
-##
-##                #constrain the "knee" shape of the map
-##                SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
-##                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
+
+                #define mtild
+                mtildf == mf/mFanD,   #B.282
+
+                #define N tild
+                Ntildf == Nbarf/NbarDf,    #B.283
+
+                #spine parameterization
+                mtildsf == Nbarf**.85,    #B.284
+                ptildsf == mtildsf ** 3,   #B.285
+
+                #constrain the "knee" shape of the map
+                SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
+##                TCS([ptildf <= 2*Ntildf*.03*zf + ptildsf])
+#                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
                 ]
               
             Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -792,19 +793,19 @@ class OffDesign(Model):
                 mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7,
                 
                 #residual 5 core nozzle mass flow
-##                h5 == Cpt*T5,
-##                SignomialEquality(u5**2 +2*h5, 2*ht5),
-##                rho5 == P5/(Rt*T5),
+                h5 == Cpt*T5,
+                SignomialEquality(u5**2 +2*h5, 2*ht5),
+                rho5 == P5/(Rt*T5),
 ##                TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
 
                 #compute core mass flux
 ##                mCore == rho5 * A5 * u5,
 
                 #NOT SURE IF THIS IS REQUIRED
-                mFan <= rho7*A7*u7,
+                mFan == rho7*A7*u7,
                 
                 #residual 6 LPC/HPC mass flow constraint
-                mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
+##                mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
