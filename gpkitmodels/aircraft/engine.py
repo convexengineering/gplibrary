@@ -3,7 +3,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap, ExhaustAndThrustTEST
 from collections import defaultdict
 from gpkit.small_scripts import mag
 #from gpkit.tools import determine_unbounded_variables
@@ -115,10 +115,8 @@ class EngineOnDesign(Model):
         rho5 = P5/(sol('R_t')*T5)
         A5 = sol('m_{core}')/(rho5*u5)
         print A5
-        print rho5
-        print T5
-        print sol('m_{core}')
-        print u5
+        print A7
+       
         return mhtD, mltD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
@@ -184,7 +182,7 @@ class EngineOffDesign(Model):
         lpc = FanAndLPC()
         combustor = CombustorCooling()
         turbine = Turbine()
-        thrust = ExhaustAndThrust()
+        thrust = ExhaustAndThrustTEST()
         fanmap = FanMap()
         lpcmap = LPCMap()
 
@@ -207,20 +205,21 @@ class EngineOffDesign(Model):
                 '\pi_{tn}': sol('\pi_{tn}'),
                 '\pi_{b}': sol('\pi_{b}'),
                 '\pi_{d}': sol('\pi_{d}'),
-                
                 '\pi_{fn}': sol('\pi_{fn}'),
                 
-                'A_5': A5/1000,
-                'A_7': A7/1000,
+                'A_5': mag(A5)/1000,
+                'A_7': mag(A7)/1000,
                 'T_{ref}': 1000,
                 'P_{ref}': 22,
                 'm_{htD}': mhtD,
                 'm_{ltD}': mltD,
                 
-                'N_1': 1,
-                
-                '\pi_{lc}': sol('\pi_{lc}'),
+                #'N_1': 1,
+                #'\pi_{lc}': sol('\pi_{lc}'),
                 '\pi_{hc}': sol('\pi_{hc}'),
+                #'\pi_f': sol('\pi_f'),
+                #'m_{core}': sol('m_{core}'),
+                #might need Tt4 in full reversion
                 
                 'G_f': 1,
                 'alpha': 10,
@@ -235,8 +234,6 @@ class EngineOffDesign(Model):
                 'm_{core_D}': sol('m_{core}'),
                 '\pi_{lc_D}': sol('\pi_{lc}'),
                 'N_{{bar}_D_lc}': NlpcD,
-
-                'm_{core}': sol('m_{core}'),
             }
 
  
@@ -256,4 +253,5 @@ if __name__ == "__main__":
     
     solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
     #bounds = engineOffD.determine_unbounded_variables(engineOffD,verbosity=4)
+    #print model.program.solver_out
     #print solOff('\rho_5')
