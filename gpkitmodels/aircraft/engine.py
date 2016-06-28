@@ -63,8 +63,8 @@ class EngineOnDesign(Model):
             '\pi_{fn}': 1,
             '\pi_{tn}': 1,
             '\pi_{b}': 1,
-            'alpha': 7,
-            'alphap1': 10,
+            'alpha': 10,
+            'alphap1': 11,
             'M_{4a}': 1,    #choked turbines
             'F_D': 121436.45, #737 max thrust in N
             'M_2': .4,
@@ -79,11 +79,14 @@ class EngineOnDesign(Model):
 
     def sizing(self, sol):
         #find the design normalized speeds and mass flow
-        mhtD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.1}')/(1000*units('K')))**.5)/(sol('P_{t_4.1}')/(22*units('kPa'))) #B.225
-        mltD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(1000*units('K')))**.5)/(sol('P_{t_4.5}')/(22*units('kPa'))) #B.226
+        mhtD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.1}')/(288.15*units('K')))**.5)/(sol('P_{t_4.1}')/(101.325*units('kPa'))) #B.225
+        mltD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(288.15*units('K')))**.5)/(sol('P_{t_4.5}')/(101.325*units('kPa'))) #B.226
+        #normalized on design compressor mass flows for the maps
+        mFanBarD = sol('alpha')*sol('m_{core}')*((sol('T_{t_2}')/(288.15*units('K')))**.5)/(sol('P_{t_2}')/(101.325*units('kPa'))) #B.226
+        mlcD = sol('m_{core}')*((sol('T_{t_2}')/(288.15*units('K')))**.5)/(sol('P_{t_2}')/(101.325*units('kPa'))) #B.226
         #noting that 
-        NlpcD = 1/(sol('T_{t_1.8}')/(1000*units('K')))**.5    #B.223
-        NhpcD = 1/(sol('T_{t_2.5}')/(1000*units('K')))**.5    #B.224
+        NlpcD = 1/(sol('T_{t_1.8}')/(288.15*units('K')))**.5    #B.223
+        NhpcD = 1/(sol('T_{t_2.5}')/(288.15*units('K')))**.5    #B.224
 
         #first size the fan nozzle
         if sol('M_8') >= 1:
@@ -115,7 +118,7 @@ class EngineOnDesign(Model):
         rho5 = P5/(sol('R_t')*T5)
         A5 = sol('m_{core}')/(rho5*u5)
        
-        return mhtD, mltD, NlpcD, NhpcD, A5, A7
+        return mhtD, mltD, mFanBarD, mlcD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
     """
@@ -176,7 +179,7 @@ class EngineOffDesign(Model):
                 out["value near upper bound"].append(varkey)
         return out
 
-    def __init__(self, sol, mhtD, mltD, NlpcD, NhpcD, A5, A7, **kwargs):
+    def __init__(self, sol, mhtD, mltD, mFanBarD, mlcD, NlpcD, NhpcD, A5, A7, **kwargs):
         lpc = FanAndLPC()
         combustor = CombustorCooling()
         turbine = Turbine()
@@ -191,11 +194,6 @@ class EngineOffDesign(Model):
         offD = OffDesign(res7, m5opt, m7opt)
 
         self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
-
-        print A5
-        print A5.to('m^2')
-        print A7
-        print A7.to('m^2')
         
         with SignomialsEnabled():
 
@@ -210,10 +208,10 @@ class EngineOffDesign(Model):
                 '\pi_{d}': sol('\pi_{d}'),
                 '\pi_{fn}': sol('\pi_{fn}'),
                 
-                'A_5': A5,
-                'A_7': A7,
-                'T_{ref}': 1000,
-                'P_{ref}': 22,
+                'A_5': A5.to('m^2'),
+                'A_7': A7.to('m^2'),
+                'T_{ref}': 288.15,
+                'P_{ref}': 101.325,
                 'm_{htD}': mhtD,
                 'm_{ltD}': mltD,
                 
@@ -237,6 +235,8 @@ class EngineOffDesign(Model):
                 'm_{core_D}': sol('m_{core}'),
                 '\pi_{lc_D}': sol('\pi_{lc}'),
                 'N_{{bar}_D_lc}': NlpcD,
+                'm_{lc_D}': mlcD,
+                'm_{fan_bar_D}': mFanBardD,
             }
 
  
@@ -248,13 +248,13 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-    solOn = engineOnD.localsolve(verbosity = 0, kktsolver="ldl")
+    solOn = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
     
-    mhtD, mltD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
+    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
     
-    engineOffD = EngineOffDesign(solOn, mhtD, mltD, NlpcD, NhpcD, A5, A7)
+    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
     
-    solOff = engineOffD.localsolve(verbosity = 1, kktsolver="ldl")
+    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
     #bounds = engineOffD.determine_unbounded_variables(engineOffD,verbosity=4)
     #print model.program.solver_out
     #print solOff('\rho_5')

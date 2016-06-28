@@ -624,7 +624,7 @@ class LPCMap(Model):
         mlc = Variable('m_{lc}', 'kg/s', 'LPC Corrected Mass Flow')
         mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
         mtildlc = Variable('m_{tild_lc}', '-', 'LPC Normalized Mass Flow')
-        mCoreD = Variable('m_{core_D}', 'kg/s', 'On Design Core Mass Flow')
+        mlcD = Variable('m_{lc_D}', 'kg/s', 'On Design LPC Corrected Mass Flow')
 
         #Pressure Variables
         Pt2 = Variable('P_{t_2}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2)')
@@ -661,13 +661,13 @@ class LPCMap(Model):
                 SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
 
                 #define mtilds
-                mtildlc == mlc/mCoreD,   #B.282
+                mtildlc == mlc/mlcD,   #B.282
 
                 #define N tild
                 Ntildlc == Nbarlc/NbarDlc,    #B.283
 
                 #spine paramterization
-                mtildslc == Nbarlc**.5, #B.284
+                mtildslc == Ntildlc**.5, #B.284
                 ptildslc == mtildslc ** 1.5, #B.285
 
                 #constrain the "knee" shape of the map
@@ -676,7 +676,7 @@ class LPCMap(Model):
 ##                SignomialEquality(ptildlc, 2*Ntildlc*.03*zlc + ptildslc),    #B.286
                 ]
                 
-            Model.__init__(self, 1/pilc, constraints, **kwargs)
+            Model.__init__(self, ptildlc, constraints, **kwargs)
 
 class FanMap(Model):
     """
@@ -692,8 +692,10 @@ class FanMap(Model):
         #Mass Flow Variables
         mf = Variable('m_{f}', 'kg/s', 'Fan Corrected Mass Flow')
         mFan = Variable('m_{fan}', 'kg/s', 'Fan Mass Flow')
-        mtildf = Variable('m_{tild}', '-', 'Fan Normalized Mass Flow')
+        mtildf = Variable('m_{tild_f}', '-', 'Fan Normalized Mass Flow')
         mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
+        mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Mass Flow')
+
 
         #Pressure Variables
         Pt2 = Variable('P_{t_2}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2)')
@@ -730,19 +732,20 @@ class FanMap(Model):
                 SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
 
                 #define mtild
-                mtildf == mf/mFanD,   #B.282
+                mtildf == mf/mFanBarD,   #B.282
 
                 #define N tild
                 Ntildf == Nbarf/NbarDf,    #B.283
 
                 #spine parameterization
-                mtildsf == Nbarf**.85,    #B.284
+                mtildsf == Ntildf**.85,    #B.284
                 ptildsf == mtildsf ** 3,   #B.285
 
                 #constrain the "knee" shape of the map
                 SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
-                TCS([ptildf <= 2*Ntildf*.03*zf + ptildsf])
-#                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
+##                TCS([ptildf <= 2*Ntildf*.03*zf + ptildsf])
+                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
+##                SignomialEquality(pif-1, (piFanD -1)*(ptildsf + 2*Ntildf*.03*zf)),
                 ]
               
             Model.__init__(self, 1/pif, constraints, **kwargs)
