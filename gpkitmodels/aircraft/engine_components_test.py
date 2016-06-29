@@ -5,7 +5,7 @@ from gpkit.small_scripts import mag
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from gpkit.tools import te_exp_minus1
 
-class FanAndLPC(Model):
+class FanAndLPCTEST(Model):
     """
     Free Stream, Fan, and LPC Calcs for the Engine Model
     """
@@ -116,7 +116,7 @@ class FanAndLPC(Model):
             ]
         Model.__init__(self, ht3, constraints, **kwargs)
 
-class CombustorCooling(Model):
+class CombustorCoolingTEST(Model):
     """
     class to represent the engine's combustor and perform calculations
     on engine cooling bleed flow...cooling flow is currently not implemented
@@ -159,6 +159,7 @@ class CombustorCooling(Model):
 
                 #fuel flow fraction f
                 TCS([f*hf + ht3 >= ht4]),
+                
 
                 #flow at turbine inlet
                 Tt41 == Tt4,
@@ -168,7 +169,7 @@ class CombustorCooling(Model):
             
         Model.__init__(self, 1/f, constraints, **kwargs)
 
-class Turbine(Model):
+class TurbineTEST(Model):
     """
     classs to represent the engine's turbine
     """
@@ -226,7 +227,7 @@ class Turbine(Model):
                 #HPT shafter power balance
                 #SIGNOMIAL   
                 SignomialEquality((1+f)*(ht41-ht45),ht3 - ht25),    #B.161
-##                TCS([(1+f)*(ht41-ht45)>=ht3 - ht25]),
+##                TCS([(1+f)*(ht41-ht45) >= ht3 - ht25]),
                 #LPT shaft power balance
                 #SIGNOMIAL  
                 SignomialEquality((1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
@@ -247,113 +248,6 @@ class Turbine(Model):
                 ht5 == ht49     #B.169
                 ]
         Model.__init__(self, 1/ht49, constraints, **kwargs)
-
-class ExhaustAndThrust(Model):
-    """
-    Class to calculate the exhaust quantities as well as
-    the overall engine thrust and on design TSFC & ISP
-    """
-    def __init__(self, **kwargs):
-        
-        a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
-        u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
-        
-        #external atmosphere properties
-        P0 = Variable('P_0', 'kPa', 'Free Stream Stagnation Pressure')
-        
-        #gas properties
-        Cpt =Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
-        gammaT = Variable('gamma_{T}', 1.4, '-', 'Specific Heat Ratio for Gas in Turbine')
-        gammaAir = Variable('gamma_{air}', 1.4, '-', 'Specific Heat Ratio for Air')
-        Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
-        
-        #gravity
-        g = Variable('g', 9.81, 'm/(s^2)', 'Gravitational Acceleration')
-        
-        #fan exhaust variables
-        P8 = Variable('P_8', 'kPa', 'Fan Exhaust Static Pressure')
-        Pt8 = Variable('P_{t_8}', 'kPa', 'Fan Exhaust Stagnation Pressure')
-        ht8 = Variable('h_{t_8}', 'J/kg', 'Fan Exhaust Stagnation Enthalpy')
-        h8 = Variable('h_8', 'J/kg', 'Fan Exhasut Static Enthalpy')
-        Tt8 = Variable('T_{t_8}', 'K', 'Fan Exhaust Stagnation Temperature (8)')
-        T8 = Variable('T_{8}', 'K', 'Fan Exhaust Sttic Temperature (8)')
-
-        #turbine nozzle exit states
-        Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
-        Tt5 = Variable('T_{t_5}', 'K', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
-        ht5 = Variable('h_{t_5}', 'J/kg', 'Stagnation Enthalpy at the Turbine Nozzle Exit (5)')
-        
-        #core exit variables
-        P6 = Variable('P_6', 'kPa', 'Core Exhaust Static Pressure')
-        Pt6 = Variable('P_{t_6}', 'kPa', 'Core Exhaust Stagnation Pressure')
-        Tt6 = Variable('T_{t_6}', 'K', 'Core Exhaust Stagnation Temperature (6)')
-        T6 = Variable('T_{6}', 'K', 'Core Exhaust Static Temperature (6)')
-        ht6 = Variable('h_{t_6}', 'J/kg', 'Core Exhaust Stagnation Enthalpy')
-        h6 = Variable('h_6', 'J/kg', 'Core Exhasut Static Enthalpy')
-
-        #new vars for the fan nozzle exit (station 7)
-        Pt7 = Variable('P_{t_7}', 'kPa', 'Stagnation Pressure at the Fan Nozzle Exit (7)')
-        Tt7 = Variable('T_{t_7}', 'K', 'Stagnation Temperature at the Fan Nozzle Exit (7)')
-        ht7 = Variable('h_{t_7}', 'J/kg', 'Stagnation Enthalpy at the Fan Nozzle Exit (7)')
-
-        #thrust variables
-        F8 = Variable('F_8', 'N', 'Fan Thrust')
-        F6 = Variable('F_6', 'N', 'Core Thrust')
-        F = Variable('F', 'N', 'Total Thrust')
-        Fsp = Variable('F_{sp}', '-', 'Specific Net Thrust')
-        Isp = Variable('I_{sp}', 's', 'Specific Impulse')
-        TSFC = Variable('TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
-
-        #exhaust speeds
-        u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
-        u8 = Variable('u_8', 'm/s', 'Fan Exhaust Velocity')
-
-        #BPR
-        alpha = Variable('alpha', '-', 'By Pass Ratio')
-        alphap1 = Variable('alphap1', '-', '1 plus BPR')
-
-        #core mass flow
-        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-
-        #flow faction f
-        f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
-
-        with SignomialsEnabled():
-            constraints = [
-                #fan exhaust
-                Pt8 == Pt7, #B.179
-                Tt8 == Tt7, #B.180
-                P8 == P0,
-                h8 == Cpair * T8,
-                TCS([u8**2 + 2*h8 <= 2*ht8]),
-                (P8/Pt8)**(.2857) == T8/Tt8,
-                ht8 == Cpair * Tt8,
-                
-                #core exhaust
-                P6 == P0,   #B.4.11 intro
-                Pt6 == Pt5, #B.183
-                Tt6 == Tt5, #B.184
-                (P6/Pt6)**(.2857) == T6/Tt6,
-                TCS([u6**2 + 2*h6 <= 2*ht6]),
-                h6 == Cpt * T6,
-                ht6 == Cpt * Tt6,
-
-                #overall thrust values
-                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-                TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
-
-                #SIGNOMIAL
-                TCS([F <= F6 + F8]),
-
-                Fsp == F/((alphap1)*mCore*a0),   #B.191
-
-                #ISP
-                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
-
-                #TSFC
-                TSFC == 1/Isp                   #B.193
-                ]
-        Model.__init__(self, TSFC, constraints, **kwargs)
 
 class ExhaustAndThrustTEST(Model):
     """
@@ -427,12 +321,13 @@ class ExhaustAndThrustTEST(Model):
 
         with SignomialsEnabled():
             constraints = [
-                #fan exhaust
+                               #fan exhaust
                 Pt8 == Pt7, #B.179
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpair * T8,
                 TCS([u8**2 + 2*h8 <= 2*ht8]),
+##                SignomialEquality(u8**2 + 2*h8, 2*ht8),
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpair * Tt8,
                 
@@ -442,6 +337,7 @@ class ExhaustAndThrustTEST(Model):
                 Tt6 == Tt5, #B.184
                 (P6/Pt6)**(.2857) == T6/Tt6,
                 TCS([u6**2 + 2*h6 <= 2*ht6]),
+##                SignomialEquality(u6**2 + 2*h6, 2*ht6),
                 h6 == Cpt * T6,
                 ht6 == Cpt * Tt6,
 
@@ -450,7 +346,8 @@ class ExhaustAndThrustTEST(Model):
                 TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
 
                 #SIGNOMIAL
-                TCS([F <= F6 + F8]),
+##                TCS([F <= F6 + F8]),
+                SignomialEquality(F, F6 + F8),
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -462,7 +359,7 @@ class ExhaustAndThrustTEST(Model):
                 ]
         Model.__init__(self, TSFC, constraints, **kwargs)
   
-class OnDesignSizing(Model):
+class OnDesignSizingTEST(Model):
     """
     class to perform the on design sizing of the engine.
     Nozzle areas are calcualted in post processing due to dependence on
@@ -608,7 +505,7 @@ class OnDesignSizing(Model):
         #single point which likely will not solve
         Model.__init__(self, None, constraints, **kwargs)
 
-class LPCMap(Model):
+class LPCMapTEST(Model):
     """
     Implentation of TASOPT compressor map model. Map is claibrated with exponents from
     tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
@@ -656,7 +553,7 @@ class LPCMap(Model):
                 #define mtild
                 mtildlc == mlc/mlcD,   #B.282
 
-                SignomialEquality(pilc**.112, (0.00823 * (N1)**-58 * (mtildlc)**10.8
+                pilc**.112 >= (0.00823 * (N1)**-58 * (mtildlc)**10.8
                 + 0.087 * (N1)**-0.878 * (mtildlc)**0.0215
                 + 0.0843 * (N1)**-0.839 * (mtildlc)**0.02
                 + 0.0849 * (N1)**-1.03 * (mtildlc)**0.0447
@@ -665,7 +562,18 @@ class LPCMap(Model):
                 + 0.0866 * (N1)**-0.886 * (mtildlc)**0.0224
                 + 0.086 * (N1)**-0.903 * (mtildlc)**0.0243
                 + 0.0835 * (N1)**0.0236 * (mtildlc)**-0.13
-                + 0.0868 * (N1)**-0.884 * (mtildlc)**0.0222))
+                + 0.0868 * (N1)**-0.884 * (mtildlc)**0.0222)
+
+##                SignomialEquality(pilc**.112, (0.00823 * (N1)**-58 * (mtildlc)**10.8
+##                + 0.087 * (N1)**-0.878 * (mtildlc)**0.0215
+##                + 0.0843 * (N1)**-0.839 * (mtildlc)**0.02
+##                + 0.0849 * (N1)**-1.03 * (mtildlc)**0.0447
+##                + 0.0871 * (N1)**-0.876 * (mtildlc)**0.0211
+##                + 0.000164 * (N1)**-770 * (mtildlc)**158
+##                + 0.0866 * (N1)**-0.886 * (mtildlc)**0.0224
+##                + 0.086 * (N1)**-0.903 * (mtildlc)**0.0243
+##                + 0.0835 * (N1)**0.0236 * (mtildlc)**-0.13
+##                + 0.0868 * (N1)**-0.884 * (mtildlc)**0.0222))
 
 ##                #define N bar
 ##                Nbarlc == N1/((Tt2/Tref)**.5), #B.279
@@ -695,7 +603,7 @@ class LPCMap(Model):
                 
             Model.__init__(self, 1/pilc, constraints, **kwargs)
 
-class FanMap(Model):
+class FanMapTEST(Model):
     """
     Implentation of TASOPT compressor map model. Map is claibrated with exponents from
     tables B.1 or B.2 of TASOPT, making the map realistic for the E3 fan.
@@ -745,7 +653,7 @@ class FanMap(Model):
                 mtildf == mf/mFanBarD,   #B.282
                 
                 #use the constraint from gpfit
-                SignomialEquality(pif**.11, (0.0771 * (Nf)**-0.472 * (mtildf)**0.526
+                pif**.11 >= (0.0771 * (Nf)**-0.472 * (mtildf)**0.526
                 + 4.66e-05 * (Nf)**-166 * (mtildf)**201
                 + 0.0815 * (Nf)**-0.0912 * (mtildf)**-0.0388
                 + 0.0816 * (Nf)**-0.0895 * (mtildf)**-0.0407
@@ -754,7 +662,18 @@ class FanMap(Model):
                 + 0.0818 * (Nf)**-0.0871 * (mtildf)**-0.0426
                 + 0.0816 * (Nf)**-0.0893 * (mtildf)**-0.0407
                 + 0.0817 * (Nf)**-0.0882 * (mtildf)**-0.0416
-                + 0.0817 * (Nf)**-0.0883 * (mtildf)**-0.0416))
+                + 0.0817 * (Nf)**-0.0883 * (mtildf)**-0.0416)
+
+##                SignomialEquality(pif**.11,(0.0771 * (Nf)**-0.472 * (mtildf)**0.526
+##                + 4.66e-05 * (Nf)**-166 * (mtildf)**201
+##                + 0.0815 * (Nf)**-0.0912 * (mtildf)**-0.0388
+##                + 0.0816 * (Nf)**-0.0895 * (mtildf)**-0.0407
+##                + 0.082 * (Nf)**-0.0846 * (mtildf)**-0.0449
+##                + 0.0817 * (Nf)**-0.089 * (mtildf)**-0.0415
+##                + 0.0818 * (Nf)**-0.0871 * (mtildf)**-0.0426
+##                + 0.0816 * (Nf)**-0.0893 * (mtildf)**-0.0407
+##                + 0.0817 * (Nf)**-0.0882 * (mtildf)**-0.0416
+##                + 0.0817 * (Nf)**-0.0883 * (mtildf)**-0.0416))
 
 
                 
@@ -787,7 +706,7 @@ class FanMap(Model):
               
             Model.__init__(self, 1/pif, constraints, **kwargs)
 
-class OffDesign(Model):
+class OffDesignTEST(Model):
     """
     Class to implement off design performance of a turbofan. Simply equates the residuals
     from section B.6 of TASOPT. The constraints inside this model should be linked with the
@@ -936,6 +855,7 @@ class OffDesign(Model):
                 
                 #residual 4
                 SignomialEquality(u7**2 +2*h7,2*ht7),
+##                TCS([u7**2 +2*h7 <= 2*ht7]),
                 h7 == Cpair*T7,
                 rho7 == P7/(Rt*T7),
                 mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7,
@@ -943,6 +863,7 @@ class OffDesign(Model):
                 #residual 5 core nozzle mass flow
                 h5 == Cpt*T5,
                 SignomialEquality(u5**2 +2*h5, 2*ht5),
+##                TCS([u5**2 +2*h5 <= 2*ht5]),
                 rho5 == P5/(Rt*T5),
                 TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
 

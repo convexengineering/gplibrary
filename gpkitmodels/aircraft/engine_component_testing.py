@@ -150,38 +150,38 @@ if __name__ == "__main__":
     mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(sol)
 
 ##    #creating a LPC model
-    lpcmap = LPCMap()
-    lpcmap.substitutions.update({
-        'T_{ref}': 288.15,
-        'T_{t_2}': sol('T_{t_2}'),
-        'm_{core}': 253,
-        'm_{core_D}': sol('m_{core}'),
-        'P_{ref}': 101.325,
-        'P_{t_2}': sol('P_{t_2}'),
-        '\pi_{lc_D}': 26,
-        'N_{{bar}_D_lc}': 1,
-        'N_1': 1.3,
-        'm_{lc_D}': mlcD
-        })
-    lpcmap.localsolve(kktsolver="ldl", verbosity = 4)
-    print sol('T_{t_2}')
-    print sol('m_{core}')
-    print sol('P_{t_2}')
+##    lpcmap = LPCMap()
+##    lpcmap.substitutions.update({
+##        'T_{ref}': 288.15,
+##        'T_{t_2}': sol('T_{t_2}'),
+##        'm_{core}': 253,
+##        'm_{core_D}': sol('m_{core}'),
+##        'P_{ref}': 101.325,
+##        'P_{t_2}': sol('P_{t_2}'),
+##        '\pi_{lc_D}': 26,
+##        'N_{{bar}_D_lc}': 1,
+##        'N_1': 1.3,
+##        'm_{lc_D}': mlcD
+##        })
+##    lpcmap.localsolve(kktsolver="ldl", verbosity = 4)
+##    print sol('T_{t_2}')
+##    print sol('m_{core}')
+##    print sol('P_{t_2}')
     
     #creating a fan model
-##    fanmap = FanMap()
-##    fanmap.substitutions.update({
-##        'T_{ref}': 1000,
-##        'T_{t_2}': sol('T_{t_2}'),
-##        'm_{fan}': 320,
-##        'm_{fan_D}': 10*sol('m_{core}'),
-##        'P_{ref}': 22,
-##        'P_{t_2}': sol('P_{t_2}'),
-##        '\pi_{f_D}': sol('\pi_f'),
-##        'N_{{bar}_Df}': 1,
-##        'N_f': 6.3
-##        })
-##    fanmap.localsolve(kktsolver="ldl", verbosity = 4)
+    fanmap = FanMap()
+    fanmap.substitutions.update({
+        'T_{ref}': 288.15,
+        'T_{t_2}': sol('T_{t_2}'),
+        'm_{fan}': 1100,
+        'm_{fan_D}': 10*sol('m_{core}'),
+        'P_{ref}': 101.325,
+        'P_{t_2}': sol('P_{t_2}'),
+        '\pi_{f_D}': sol('\pi_f'),
+        'N_{{bar}_Df}': 1,
+        'N_f': 1.2
+        })
+    fanmap.localsolve(kktsolver="ldl", verbosity = 4)
 
     #cerating a fan model
    
