@@ -70,7 +70,7 @@ class EngineOnDesign(Model):
             'M_2': .4,
             'M_{2.5}': .5,
             'hold_{2}': 1.032,
-            'hold_{2.5}': 1.05
+            'hold_{2.5}': 1.05,
             }
 
             #temporary objective is to minimize the core mass flux 
@@ -248,13 +248,13 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-    solOn = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
+    solOn = engineOnD.localsolve(verbosity = 4, kktsolver="ldl")
     
-    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
-    
-    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
-    
-    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+##    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
+##    
+##    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
+##    
+##    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
     #bounds = engineOffD.determine_unbounded_variables(engineOffD,verbosity=4)
     #print model.program.solver_out
     #print solOff('\rho_5')

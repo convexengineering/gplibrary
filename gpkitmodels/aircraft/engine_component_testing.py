@@ -1,7 +1,7 @@
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, FanMap, HPCMap, LPCMap, OffDesign
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, FanMap, LPCMap, OffDesign
 import numpy as np
 from engine import EngineOnDesign
 ##from gpkit.tools import determine_unbounded_variables
@@ -147,52 +147,41 @@ if __name__ == "__main__":
     
     sol = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
 
-    mhtD, mltD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(sol)
+    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(sol)
 
-    #creating a HPC model
-    hpcmap = HPCMap()
-    hpcmap.substitutions.update({
-        'T_{ref}': 1000,
-        'T_{t_2.5}': sol('T_{t_2.5}'),
-        'm_{core}': 38,
-        'm_{core_D}': sol('m_{core}'),
-        'P_{ref}': 22,
-        'P_{t_2.5}': sol('P_{t_2.5}'),
-        '\pi_{hc_D}': sol('\pi_{hc}'),
-        'N_{{bar}_D_hc}': 1,
-        'N_h': 10
-        })
-    hpcmap.localsolve(kktsolver="ldl", verbosity = 4)
-
-    #creating a LPC model
+##    #creating a LPC model
     lpcmap = LPCMap()
     lpcmap.substitutions.update({
-        'T_{ref}': 1000,
+        'T_{ref}': 288.15,
         'T_{t_2}': sol('T_{t_2}'),
-        'm_{core}': 38,
+        'm_{core}': 253,
         'm_{core_D}': sol('m_{core}'),
-        'P_{ref}': 22,
+        'P_{ref}': 101.325,
         'P_{t_2}': sol('P_{t_2}'),
-        '\pi_{lc_D}': sol('\pi_{lc}'),
+        '\pi_{lc_D}': 26,
         'N_{{bar}_D_lc}': 1,
-        'N_1': 10
+        'N_1': 1.3,
+        'm_{lc_D}': mlcD
         })
     lpcmap.localsolve(kktsolver="ldl", verbosity = 4)
-
-    #creating a LPC model
-    fanmap = FanMap()
-    fanmap.substitutions.update({
-        'T_{ref}': 1000,
-        'T_{t_2}': sol('T_{t_2}'),
-        'm_{fan}': 380,
-        'm_{fan_D}': 10*sol('m_{core}'),
-        'P_{ref}': 22,
-        'P_{t_2}': sol('P_{t_2}'),
-        '\pi_{f_D}': sol('\pi_f'),
-        'N_{{bar}_Df}': 1,
-        'N_f': 1.3
-        })
-    fanmap.localsolve(kktsolver="ldl", verbosity = 4)
+    print sol('T_{t_2}')
+    print sol('m_{core}')
+    print sol('P_{t_2}')
+    
+    #creating a fan model
+##    fanmap = FanMap()
+##    fanmap.substitutions.update({
+##        'T_{ref}': 1000,
+##        'T_{t_2}': sol('T_{t_2}'),
+##        'm_{fan}': 320,
+##        'm_{fan_D}': 10*sol('m_{core}'),
+##        'P_{ref}': 22,
+##        'P_{t_2}': sol('P_{t_2}'),
+##        '\pi_{f_D}': sol('\pi_f'),
+##        'N_{{bar}_Df}': 1,
+##        'N_f': 6.3
+##        })
+##    fanmap.localsolve(kktsolver="ldl", verbosity = 4)
 
     #cerating a fan model
    

@@ -158,15 +158,15 @@ class CombustorCooling(Model):
                 ht4 == Cpc * Tt4,
 
                 #fuel flow fraction f
-                TCS([f*hf >= ht4 - ht3]),
-                
+                TCS([f*hf + ht3 >= ht4]),
+
                 #flow at turbine inlet
                 Tt41 == Tt4,
                 Pt41 == Pt4,
                 ht41 == ht4
                 ]
             
-        Model.__init__(self, f, constraints, **kwargs)
+        Model.__init__(self, 1/f, constraints, **kwargs)
 
 class Turbine(Model):
     """
@@ -226,11 +226,11 @@ class Turbine(Model):
                 #HPT shafter power balance
                 #SIGNOMIAL   
                 SignomialEquality((1+f)*(ht41-ht45),ht3 - ht25),    #B.161
-                
+##                TCS([(1+f)*(ht41-ht45)>=ht3 - ht25]),
                 #LPT shaft power balance
                 #SIGNOMIAL  
                 SignomialEquality((1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
-                
+##                TCS([(1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2))]),
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
                 pihpt == (Tt45/Tt41)**(3.889),
@@ -650,33 +650,50 @@ class LPCMap(Model):
 
         with SignomialsEnabled():
             constraints = [
-                #define N bar
-                Nbarlc == N1/((Tt2/Tref)**.5), #B.279
-
                 #define mbar
                 mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-
-                #define ptild
-                #SIGNOMIAL
-                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
-
-                #define mtilds
+                
+                #define mtild
                 mtildlc == mlc/mlcD,   #B.282
 
-                #define N tild
-                Ntildlc == Nbarlc/NbarDlc,    #B.283
+                pilc**.112 <= (0.00823 * (N1)**-58 * (mtildlc)**10.8
+                + 0.087 * (N1)**-0.878 * (mtildlc)**0.0215
+                + 0.0843 * (N1)**-0.839 * (mtildlc)**0.02
+                + 0.0849 * (N1)**-1.03 * (mtildlc)**0.0447
+                + 0.0871 * (N1)**-0.876 * (mtildlc)**0.0211
+                + 0.000164 * (N1)**-770 * (mtildlc)**158
+                + 0.0866 * (N1)**-0.886 * (mtildlc)**0.0224
+                + 0.086 * (N1)**-0.903 * (mtildlc)**0.0243
+                + 0.0835 * (N1)**0.0236 * (mtildlc)**-0.13
+                + 0.0868 * (N1)**-0.884 * (mtildlc)**0.0222)
 
-                #spine paramterization
-                mtildslc == Ntildlc**.5, #B.284
-                ptildslc == mtildslc ** 1.5, #B.285
-
-                #constrain the "knee" shape of the map
-                SignomialEquality(((mtildslc-mtildlc)/.03), te_exp_minus1(zlc, nterm=3)),  #B.286
-                TCS([ptildlc >= 2*Ntildlc*.03*zlc + ptildslc]),
+##                #define N bar
+##                Nbarlc == N1/((Tt2/Tref)**.5), #B.279
+##
+##                #define mbar
+##                mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
+##
+##                #define ptild
+##                #SIGNOMIAL
+##                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
+##
+##                #define mtilds
+##                mtildlc == mlc/mlcD,   #B.282
+##
+##                #define N tild
+##                Ntildlc == Nbarlc/NbarDlc,    #B.283
+##
+##                #spine paramterization
+##                mtildslc == Ntildlc**5, #B.284
+##                ptildslc == mtildslc ** 1.5, #B.285
+##
+##                #constrain the "knee" shape of the map
+##                SignomialEquality(((mtildslc-mtildlc)/.03), te_exp_minus1(zlc, nterm=3)),  #B.286
+####                TCS([ptildlc >= 2*Ntildlc*.03*zlc + ptildslc]),
 ##                SignomialEquality(ptildlc, 2*Ntildlc*.03*zlc + ptildslc),    #B.286
                 ]
                 
-            Model.__init__(self, ptildlc, constraints, **kwargs)
+            Model.__init__(self, 1/pilc, constraints, **kwargs)
 
 class FanMap(Model):
     """
@@ -721,31 +738,51 @@ class FanMap(Model):
 
         with SignomialsEnabled():
             constraints = [
-                #define N bar
-                Nbarf == Nf/((Tt2/Tref)**.5), #B.279
-
                 #define mbar
                 mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
 
-                #define ptild
-                #SIGNOMIAL
-                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
-
                 #define mtild
                 mtildf == mf/mFanBarD,   #B.282
+                
+                #use the constraint from gpfit
+                pif**.11 <= (0.0771 * (Nf)**-0.472 * (mtildf)**0.526
+                + 4.66e-05 * (N)**-166 * (mtildf)**201
+                + 0.0815 * (Nf)**-0.0912 * (mtildf)**-0.0388
+                + 0.0816 * (Nf)**-0.0895 * (mtildf)**-0.0407
+                + 0.082 * (Nf)**-0.0846 * (mtildf)**-0.0449
+                + 0.0817 * (Nf)**-0.089 * (mtildf)**-0.0415
+                + 0.0818 * (Nf)**-0.0871 * (mtildf)**-0.0426
+                + 0.0816 * (Nf)**-0.0893 * (mtildf)**-0.0407
+                + 0.0817 * (Nf)**-0.0882 * (mtildf)**-0.0416
+                + 0.0817 * (Nf)**-0.0883 * (mtildf)**-0.0416)
 
-                #define N tild
-                Ntildf == Nbarf/NbarDf,    #B.283
 
-                #spine parameterization
-                mtildsf == Ntildf**.85,    #B.284
-                ptildsf == mtildsf ** 3,   #B.285
-
-                #constrain the "knee" shape of the map
-                SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
-##                TCS([ptildf <= 2*Ntildf*.03*zf + ptildsf])
-                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
-##                SignomialEquality(pif-1, (piFanD -1)*(ptildsf + 2*Ntildf*.03*zf)),
+                
+                #define N bar
+##                Nbarf == Nf/((Tt2/Tref)**.5), #B.279
+##
+##                #define mbar
+##                mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
+##
+##                #define ptild
+##                #SIGNOMIAL
+##                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
+##
+##                #define mtild
+##                mtildf == mf/mFanBarD,   #B.282
+##
+##                #define N tild
+##                Ntildf == Nbarf/NbarDf,    #B.283
+##
+##                #spine parameterization
+##                mtildsf == Ntildf**.85,    #B.284
+##                ptildsf == mtildsf ** 3,   #B.285
+##
+##                #constrain the "knee" shape of the map
+##                SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
+####                TCS([ptildf <= 2*Ntildf*.03*zf + ptildsf])
+##                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
+####                SignomialEquality(pif-1, (piFanD -1)*(ptildsf + 2*Ntildf*.03*zf)),
                 ]
               
             Model.__init__(self, 1/pif, constraints, **kwargs)
