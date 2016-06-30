@@ -4,18 +4,13 @@ from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing
-from engine_components_test import FanAndLPCTEST, CombustorCoolingTEST, TurbineTEST, ExhaustAndThrustTEST, OffDesignTEST, FanMapTEST, LPCMapTEST
-from collections import defaultdict
-from gpkit.small_scripts import mag
-#from gpkit.tools import determine_unbounded_variables
+from engine_components_test import FanAndLPCTEST, CombustorCoolingTEST, TurbineTEST, ExhaustAndThrustTEST, OffDesignTEST, FanMapTEST, LPCMapTEST, OnDesignSizingTEST
 
 #TODO
 #determine the three different Cp, gamma, and R values to be used
 #get realisitc R and Cp values for the different engine sections
 #verify the values of all constants...and fix where differnces of constants are hard coded
-#figure out Tref and Pref and make them the right value in the sizing post processing
 #replace the gammaAirs with gammaTs in post processing for nozzle at station 5
-#verify that the Tref nad Pref are correct
 
 class EngineOnDesign(Model):
     """
@@ -40,11 +35,11 @@ class EngineOnDesign(Model):
         m6opt = 1
         m8opt = 1
         
-        lpc = FanAndLPC()
-        combustor = CombustorCooling()
-        turbine = Turbine()
-        thrust = ExhaustAndThrust()
-        size = OnDesignSizing(m6opt, m8opt)
+        lpc = FanAndLPCTEST()
+        combustor = CombustorCoolingTEST()
+        turbine = TurbineTEST()
+        thrust = ExhaustAndThrustTEST()
+        size = OnDesignSizingTEST(m6opt, m8opt)
 
         self.submodels = [lpc, combustor, turbine, thrust, size]
             
@@ -119,49 +114,6 @@ class EngineOnDesign(Model):
         rho5 = P5/(sol('R_t')*T5)
         A5 = sol('m_{core}')/(rho5*u5)
 
-        mhc = 96.4*units('kg/s')
-        #compute the suspect residuals
-        
-        r2 = (1+sol('f'))*mhc*(sol('P_{t_2.5}')/sol('P_{t_4.1}'))*(sol('T_{t_4.1}')/sol('T_{t_2.5}'))**.5 - mhtD
-        r3 = (1+sol('f'))*mhc*(sol('P_{t_2.5}')/sol('P_{t_4.5}'))*(sol('T_{t_4.5}')/sol('T_{t_2.5}'))**.5 - mltD
-        
-        #lead in computation for R4
-        M7 = 1
-        P7 = sol('P_{t_7}')*(1.2)**(-1.4/.4)
-        T7 = sol('T_{t_7}')*1.2**(-1)
-        h7 = 1087*units('J/kg/K')*T7
-        u7 = (2*1087*units('J/kg/K')*(sol('T_{t_7}')-T7))**.5
-        rho7 = P7/(sol('R_t')*T7)
-        r4 = mFanBarD*(sol('P_{t_2}')/(101.325*units('kPa')))*(288.15*units('K')/sol('T_{t_2}'))**.5 - rho7*A7*u7
-        print rho7*A7*u7
-        print mFanBarD*(sol('P_{t_2}')/(101.325*units('kPa')))*(288.15*units('K')/sol('T_{t_2}'))**.5
-
-        #lead in computation for R5
-        M5 = 1
-        P5 = sol('P_{t_5}')*(1.2)**(-1.4/.4)
-        T5 = sol('T_{t_5}')*1.2**(-1)
-        h5 = 1087*units('J/kg/K')*T5
-        u5 = (2*1087*units('J/kg/K')*(sol('T_{t_5}')-T5))**.5
-        rho5 = P5/(sol('R_t')*T5)
-        r5 = (1+sol('f'))*mhc*(sol('P_{t_2.5}')/(101.325*units('kPa')))*(288.15*units('K')/sol('T_{t_2.5}'))**.5 - rho5*A5*u5
-        
-        r6 = mlcD*(sol('P_{t_1.8}')/101.325*units('kPa'))*(288.15*units('K')/sol('T_{t_1.8}'))**.5 - (mhc*(sol('P_{t_2.5}')/101.325*units('kPa'))*(288.15*units('K')/sol('T_{t_2.5}'))**.5)
-        r7 = sol('P_{t_4.9}')*sol('\pi_{tn}') - sol('P_{t_5}')
-
-        r8 = mlcD - sol('m_{core}')*((sol('T_{t_2}')/(288.15*units('K')))**.5)/(sol('P_{t_2}')/(101.325*units('kPa'))),    #B.280
-
-        mhctest = mltD/((1+sol('f'))*sol('P_{t_2.5}')/sol('P_{t_4.5}')*(sol('T_{t_4.5}')/sol('T_{t_2.5}'))**.5)
-
-        print mhctest 
-        
-        print mlcD
-##        print ["r2",r2]
-        print ["r3",r3]
-##        print ["r4",r4]
-##        print ["r5",r5]
-##        print ["r6",r6]
-##        print ["r7",r7]
-##        print ["r8", r8]
         return mhtD, mltD, mFanBarD, mlcD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
@@ -185,44 +137,6 @@ class EngineOffDesign(Model):
     HPC pressure ratio, fan corrected mass flow, LPC corrected mass flow,
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
-    def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
-        "Returns model with additional constraints bounding all free variables"
-        lb = lower if lower else eps
-        ub = upper if upper else 1/eps
-        constraints = []
-        freevks = tuple(vk for vk in model.varkeys if "value" not in vk.descr)
-        for varkey in freevks:
-            units = varkey.descr.get("units", 1)
-            constraints.append([ub*units >= Variable(**varkey.descr),
-                                Variable(**varkey.descr) >= lb*units])
-        m = Model(model.cost, [constraints, model], model.substitutions)
-        m.bound_all = {"lb": lb, "ub": ub, "varkeys": freevks}
-        return m
-
-
-    # pylint: disable=too-many-locals
-    def determine_unbounded_variables(self, model, solver=None, verbosity=0,
-                                      eps=1e-30, lower=None, upper=None, **kwargs):
-        "Returns labeled dictionary of unbounded variables."
-        m = self.bound_all_variables(model, eps, lower, upper)
-        sol = m.localsolve(solver, verbosity, **kwargs)
-        lam = sol["sensitivities"]["la"][1:]
-        out = defaultdict(list)
-        for i, varkey in enumerate(m.bound_all["varkeys"]):
-            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
-            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
-                out["sensitive to upper bound"].append(varkey)
-            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
-                out["sensitive to lower bound"].append(varkey)
-            value = mag(sol["variables"][varkey])
-            distance_below = np.log(value/m.bound_all["lb"])
-            distance_above = np.log(m.bound_all["ub"]/value)
-            if distance_below <= 3:  # arbitrary threshold
-                out["value near lower bound"].append(varkey)
-            elif distance_above <= 3:  # arbitrary threshold
-                out["value near upper bound"].append(varkey)
-        return out
-
     def __init__(self, sol, mhtD, mltD, mFanBarD, mlcD, NlpcD, NhpcD, A5, A7, **kwargs):
         lpc = FanAndLPCTEST()
         combustor = CombustorCoolingTEST()
@@ -259,13 +173,6 @@ class EngineOffDesign(Model):
                 'm_{htD}': mhtD,
                 'm_{ltD}': mltD,
                 
-                #'N_1': 1,
-                #'\pi_{lc}': sol('\pi_{lc}'),
-                #'\pi_{hc}': sol('\pi_{hc}'),
-                #'\pi_f': sol('\pi_f'),
-                #'m_{core}': sol('m_{core}'),
-                #'T_{t_4}': 1400,
-                
                 'G_f': 1,
                 'alpha': 10,
                 'alphap1': 11,
@@ -282,28 +189,16 @@ class EngineOffDesign(Model):
                 'm_{lc_D}': mlcD,
                 'm_{fan_bar_D}': mFanBarD,
             }
-        print mlcD
-        print mFanBarD
-        print mhtD
-        print mltD
-        print A7.to('m^2')
-        print A5.to('m^2')
+        
         Model.__init__(self, thrust.cost, lc, substitutions)
-
- 
-
-            
+   
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
     solOn = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
     
-##    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
-##    
-##    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
-##    
-##    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
-##    bounds = engineOffD.determine_unbounded_variables(engineOffD,verbosity=4)
+    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
     
-    #print model.program.solver_out
-    #print solOff('\rho_5')
+    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
+    
+    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
