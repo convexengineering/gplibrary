@@ -396,6 +396,8 @@ class OnDesignSizing(Model):
         #mach numbers
         M8 = Variable('M_8', '-', 'Fan Exhaust Mach Number')
         M6 = Variable('M_6', '-', 'Core Exhaust Mach Number')
+        M5 = Variable('M_5', '-', 'Station 5 Mach Number')
+        M7 = Variable('M_7', '-', 'Station 7 Mach Number')
 
         #core mass flow
         mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
@@ -410,6 +412,7 @@ class OnDesignSizing(Model):
 
         #BPR
         alphap1 = Variable('alphap1', '-', '1 plus BPR')
+        alpha = Variable('alpha', '-', 'By Pass Ratio')
 
         Pt2 = Variable('P_{t_2}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2)')
         Tt2 = Variable('T_{t_2}', 'K', 'Stagnation Temperature at the Fan Inlet (2)')
@@ -424,6 +427,8 @@ class OnDesignSizing(Model):
         #exhaust temperatures
         T6 = Variable('T_{6}', 'K', 'Core Exhaust Static Temperature (6)')
         T8 = Variable('T_{8}', 'K', 'Fan Exhaust Sttic Temperature (8)')
+        T5 = Variable('T_{5}', 'K', 'Static Temperature at the Turbine Nozzle Exit (5)')
+        T7 = Variable('T_{7}', 'K', 'Static Temperature at the Fan Nozzle Exit (7)')
 
         #exhaust static pressures to be used later
         P7 = Variable('P_{7}', 'kPa', 'Fan Exhaust Static Pressure (7)')
@@ -458,12 +463,23 @@ class OnDesignSizing(Model):
         Tt45 = Variable('T_{t_4.5}', 'K', 'Stagnation Temperature at the HPT Exit (4.5)')
         Tt18 = Variable('T_{t_1.8}', 'K', 'Stagnation Temperature at the Diffuser Exit (1.8)')
         Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
+        Tt5 = Variable('T_{t_5}', 'K', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
+        Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
+        Pt7 = Variable('P_{t_7}', 'kPa', 'Stagnation Pressure at the Fan Nozzle Exit (7)')
+        Tt7 = Variable('T_{t_7}', 'K', 'Stagnation Temperature at the Fan Nozzle Exit (7)')
 
         #f plus one
         fp1 = Variable('fp1', '-', 'f + 1')
 
+        #on design normalized mass flows
+        mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
+        mlcD = Variable('m_{lc_D}', 'kg/s', 'On Design LPC Corrected Mass Flow')
+
         with SignomialsEnabled():
             constraints = [
+                #making f+1 GP compatible --> needed for convergence
+                SignomialEquality(fp1,f+1),
+                
                 #mass flow sizing
                 mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
 
@@ -488,10 +504,51 @@ class OnDesignSizing(Model):
                 M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
                 M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
 
-                #core satic pressure constraints
-                P7 == P0,
-                P5 == P0,
+                #compute on design normalized turbine mass flows
+                mhtD == fp1*mCore*((Tt41/Tref)**.5)/(Pt41/Pref), #B.225
+                mltD == fp1*mCore*((Tt45/Tref)**.5)/(Pt45/Pref), #B.226
+
+                #on design normalized mass flows
+                mFanBarD == alpha*mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
+                mlcD == mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
                 ]
+            
+            if m6opt == 0:
+                #if M6 is less than one add these constraints
+                 constraints.extend([
+                    P5 == P0,
+
+                    #NEEDS UPDATED EXPONENETS
+                    
+                    T5 == Tt5*(P5/Pt5)**(.4/1.4)
+                    ])
+                
+            if m6opt == 1:
+                #if M6 is greather than or equal to 1 add these constraints
+                constraints.extend([
+                    M5 == 1,
+
+                    #NEEDS UPDATED EXPONENTS
+                    
+                    P5 == Pt5*(1.2)**(-3.5),
+                    T5 == Tt5*(1.2)**-1
+                    ])
+                
+            if m8opt == 0:
+                #if M8 is less than one add these constraints
+                constraints.extend([
+                    P7 == P0,
+                    T7 == Tt7*(P7/Pt7)**(.4/1.4)
+                    ])
+                
+            if m8opt == 1:
+                #if M8 is greather than or equal to 1 add these constraints
+                constraints.extend([
+                    M7 == 1,
+                    P7 == Pt7*(1.2)**(-3.5),
+                    T7 == Tt7*(1.2)**-1
+                    ])
+                
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
         Model.__init__(self, None, constraints, **kwargs)
@@ -565,7 +622,7 @@ class FanMap(Model):
         mFan = Variable('m_{fan}', 'kg/s', 'Fan Mass Flow')
         mtildf = Variable('m_{tild_f}', '-', 'Fan Normalized Mass Flow')
         mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
-        mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Mass Flow')
+        mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
 
 
         #Pressure Variables

@@ -31,7 +31,7 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        m6opt = 1
+        m6opt = 0
         m8opt = 1
         
         lpc = FanAndLPC()
@@ -66,6 +66,8 @@ class EngineOnDesign(Model):
             'M_{2.5}': .5,
             'hold_{2}': 1.032,
             'hold_{2.5}': 1.05,
+            'T_{ref}': 288.15,
+            'P_{ref}': 101.325,
             }
 
             #temporary objective is to minimize the core mass flux 
@@ -79,9 +81,6 @@ class EngineOnDesign(Model):
         #normalized on design compressor mass flows for the maps
         mFanBarD = sol('alpha')*sol('m_{core}')*((sol('T_{t_2}')/(288.15*units('K')))**.5)/(sol('P_{t_2}')/(101.325*units('kPa'))) #B.226
         mlcD = sol('m_{core}')*((sol('T_{t_2}')/(288.15*units('K')))**.5)/(sol('P_{t_2}')/(101.325*units('kPa'))) #B.226
-        #noting that 
-        NlpcD = 1/(sol('T_{t_1.8}')/(288.15*units('K')))**.5    #B.223
-        NhpcD = 1/(sol('T_{t_2.5}')/(288.15*units('K')))**.5    #B.224
 
         #first size the fan nozzle
         if sol('M_8') >= 1:
@@ -184,7 +183,6 @@ class EngineOffDesign(Model):
                 '\pi_{f_D}': sol('\pi_f'),
                 'm_{core_D}': sol('m_{core}'),
                 '\pi_{lc_D}': sol('\pi_{lc}'),
-                'N_{{bar}_D_lc}': NlpcD,
                 'm_{lc_D}': mlcD,
                 'm_{fan_bar_D}': mFanBarD,
             }
@@ -194,10 +192,10 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-    solOn = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
+    solOn = engineOnD.localsolve(verbosity = 4, kktsolver="ldl")
     
-    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
-    
-    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
-    
-    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+##    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
+##    
+##    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
+##    
+##    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
