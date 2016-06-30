@@ -150,14 +150,18 @@ class EngineOnDesign(Model):
 
         r8 = mlcD - sol('m_{core}')*((sol('T_{t_2}')/(288.15*units('K')))**.5)/(sol('P_{t_2}')/(101.325*units('kPa'))),    #B.280
 
+        mhctest = mltD/((1+sol('f'))*sol('P_{t_2.5}')/sol('P_{t_4.5}')*(sol('T_{t_4.5}')/sol('T_{t_2.5}'))**.5)
+
+        print mhctest 
+        
         print mlcD
-        print ["r2",r2]
+##        print ["r2",r2]
         print ["r3",r3]
-        print ["r4",r4]
-        print ["r5",r5]
-        print ["r6",r6]
-        print ["r7",r7]
-        print ["r8", r8]
+##        print ["r4",r4]
+##        print ["r5",r5]
+##        print ["r6",r6]
+##        print ["r7",r7]
+##        print ["r8", r8]
         return mhtD, mltD, mFanBarD, mlcD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
@@ -267,7 +271,7 @@ class EngineOffDesign(Model):
                 'alphap1': 11,
                 
                 'F_{spec}': sol('F_D') ,
-                'T_{t_{4spec}}': 1000,
+                'T_{t_{4spec}}': 1100,
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
@@ -294,11 +298,11 @@ if __name__ == "__main__":
     
     solOn = engineOnD.localsolve(verbosity = 1, kktsolver="ldl")
     
-    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
-    
-    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
-    
-    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+##    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
+##    
+##    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
+##    
+##    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
 ##    bounds = engineOffD.determine_unbounded_variables(engineOffD,verbosity=4)
     
     #print model.program.solver_out

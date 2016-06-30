@@ -547,7 +547,7 @@ class LPCMapTEST(Model):
         with SignomialsEnabled():
             constraints = [
                 #define mbar
-                TCS([mlc <= mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
+                TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
 ##                SignomialEquality(mlc, mCore*((Tt2/Tref)**.5)/(Pt2/Pref)),
                 #define mtild
                 mtildlc == mlc/mlcD,   #B.282
@@ -749,7 +749,9 @@ class OffDesignTEST(Model):
         #BPR
         alpha = Variable('alpha', '-', 'By Pass Ratio')
 
-
+        
+        u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
+        u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
         #new best idea is to run this twice and if mach numbers go over 1 pass in a different argument and re run the case
         
         
@@ -766,10 +768,10 @@ class OffDesignTEST(Model):
 
                 #residual 2 HPT mass flow
                 TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
-
+##                TCS([mhtD == (fp1)*mlc*(Pt18/Pt41)*(Tt41/Tt18)**.5]),
                 #residual 3 LPT mass flow
-                TCS([(fp1)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 == mltD]),
-                
+                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
+##                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 #residual 4
 ##                SignomialEquality(u7**2 +2*h7,2*ht7),
                 SignomialEquality(u7**2 +2*Cpair*T7, 2*Cpair*Tt7),
@@ -784,7 +786,7 @@ class OffDesignTEST(Model):
                 SignomialEquality(u5**2 +2*Cpair*T5, 2*Cpair*Tt5),
 ##                TCS([u5**2 +2*Cpt*T5 <= 2*Cpt*Tt5]),
                 rho5 == P5/(Rt*T5),
-                TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 <= rho5*A5*u5]),
+##                TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 <= rho5*A5*u5]),
 ##                (fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 <= rho5*A5*u5,
                 #compute core mass flux
                 mCore == rho5 * A5 * u5/(fp1),
@@ -797,6 +799,9 @@ class OffDesignTEST(Model):
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
+
+                #constrain the exit exhaust exit speeds
+                u6 >= u0
                 ]
                 
             if res7 == 0:
@@ -843,4 +848,4 @@ class OffDesignTEST(Model):
                      T7 == Tt7*1.2**(-1)
                     ])
                  
-        Model.__init__(self, mhtD, constraints, **kwargs)
+        Model.__init__(self, 1/u7, constraints, **kwargs)
