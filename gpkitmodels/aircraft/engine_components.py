@@ -593,7 +593,7 @@ class OnDesignSizing(Model):
                 h25 == Cpair * T25,
                 rho25 == P25/(Rair*T25),
                 u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
-                A25 == (alphap1)*mCore/(rho25*u25),     #B.203
+                A25 == mCore/(rho25*u25),     #B.203
 
                 #mach nubmers for post processing of the data
                 M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),

@@ -489,7 +489,7 @@ class OnDesignSizingTEST(Model):
                 h25 == Cpair * T25,
                 rho25 == P25/(Rair*T25),
                 u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
-                A25 == (alphap1)*mCore/(rho25*u25),     #B.203
+                A25 == mCore/(rho25*u25),     #B.203
 
                 #mach nubmers for post processing of the data
                 M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
@@ -548,64 +548,15 @@ class LPCMapTEST(Model):
             constraints = [
                 #define mbar
                 TCS([mlc <= mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
-
+##                SignomialEquality(mlc, mCore*((Tt2/Tref)**.5)/(Pt2/Pref)),
                 #define mtild
                 mtildlc == mlc/mlcD,   #B.282
 
                 #define ptild
                 #SIGNOMIAL
                 SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
-##                ptildlc * (pilcD-1)+1 <= (pilc),
                 #constrain the "knee" shape of the map
                 ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
-
-                
-##                pilc**.112 >= (0.00823 * (N1)**-58 * (mtildlc)**10.8
-##                + 0.087 * (N1)**-0.878 * (mtildlc)**0.0215
-##                + 0.0843 * (N1)**-0.839 * (mtildlc)**0.02
-##                + 0.0849 * (N1)**-1.03 * (mtildlc)**0.0447
-##                + 0.0871 * (N1)**-0.876 * (mtildlc)**0.0211
-##                + 0.000164 * (N1)**-770 * (mtildlc)**158
-##                + 0.0866 * (N1)**-0.886 * (mtildlc)**0.0224
-##                + 0.086 * (N1)**-0.903 * (mtildlc)**0.0243
-##                + 0.0835 * (N1)**0.0236 * (mtildlc)**-0.13
-##                + 0.0868 * (N1)**-0.884 * (mtildlc)**0.0222)
-
-##                SignomialEquality(pilc**.112, (0.00823 * (N1)**-58 * (mtildlc)**10.8
-##                + 0.087 * (N1)**-0.878 * (mtildlc)**0.0215
-##                + 0.0843 * (N1)**-0.839 * (mtildlc)**0.02
-##                + 0.0849 * (N1)**-1.03 * (mtildlc)**0.0447
-##                + 0.0871 * (N1)**-0.876 * (mtildlc)**0.0211
-##                + 0.000164 * (N1)**-770 * (mtildlc)**158
-##                + 0.0866 * (N1)**-0.886 * (mtildlc)**0.0224
-##                + 0.086 * (N1)**-0.903 * (mtildlc)**0.0243
-##                + 0.0835 * (N1)**0.0236 * (mtildlc)**-0.13
-##                + 0.0868 * (N1)**-0.884 * (mtildlc)**0.0222))
-
-##                #define N bar
-##                Nbarlc == N1/((Tt2/Tref)**.5), #B.279
-##
-##                #define mbar
-##                mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-##
-##                #define ptild
-##                #SIGNOMIAL
-##                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
-##
-##                #define mtilds
-##                mtildlc == mlc/mlcD,   #B.282
-##
-##                #define N tild
-##                Ntildlc == Nbarlc/NbarDlc,    #B.283
-##
-##                #spine paramterization
-##                mtildslc == Ntildlc**5, #B.284
-##                ptildslc == mtildslc ** 1.5, #B.285
-##
-##                #constrain the "knee" shape of the map
-##                SignomialEquality(((mtildslc-mtildlc)/.03), te_exp_minus1(zlc, nterm=3)),  #B.286
-####                TCS([ptildlc >= 2*Ntildlc*.03*zlc + ptildslc]),
-##                SignomialEquality(ptildlc, 2*Ntildlc*.03*zlc + ptildslc),    #B.286
                 ]
                 
             Model.__init__(self, 1/pilc, constraints, **kwargs)
@@ -665,57 +616,6 @@ class FanMapTEST(Model):
 ##                ptildf * (piFanD-1)+1 <= (pif),
                 #constrain the "knee" shape of the map
                 ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
-                
-                #use the constraint from gpfit
-##                pif**.11 >= (0.0771 * (Nf)**-0.472 * (mtildf)**0.526
-##                + 4.66e-05 * (Nf)**-166 * (mtildf)**201
-##                + 0.0815 * (Nf)**-0.0912 * (mtildf)**-0.0388
-##                + 0.0816 * (Nf)**-0.0895 * (mtildf)**-0.0407
-##                + 0.082 * (Nf)**-0.0846 * (mtildf)**-0.0449
-##                + 0.0817 * (Nf)**-0.089 * (mtildf)**-0.0415
-##                + 0.0818 * (Nf)**-0.0871 * (mtildf)**-0.0426
-##                + 0.0816 * (Nf)**-0.0893 * (mtildf)**-0.0407
-##                + 0.0817 * (Nf)**-0.0882 * (mtildf)**-0.0416
-##                + 0.0817 * (Nf)**-0.0883 * (mtildf)**-0.0416)
-
-##                SignomialEquality(pif**.11,(0.0771 * (Nf)**-0.472 * (mtildf)**0.526
-##                + 4.66e-05 * (Nf)**-166 * (mtildf)**201
-##                + 0.0815 * (Nf)**-0.0912 * (mtildf)**-0.0388
-##                + 0.0816 * (Nf)**-0.0895 * (mtildf)**-0.0407
-##                + 0.082 * (Nf)**-0.0846 * (mtildf)**-0.0449
-##                + 0.0817 * (Nf)**-0.089 * (mtildf)**-0.0415
-##                + 0.0818 * (Nf)**-0.0871 * (mtildf)**-0.0426
-##                + 0.0816 * (Nf)**-0.0893 * (mtildf)**-0.0407
-##                + 0.0817 * (Nf)**-0.0882 * (mtildf)**-0.0416
-##                + 0.0817 * (Nf)**-0.0883 * (mtildf)**-0.0416))
-
-
-                
-                #define N bar
-##                Nbarf == Nf/((Tt2/Tref)**.5), #B.279
-##
-##                #define mbar
-##                mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-##
-##                #define ptild
-##                #SIGNOMIAL
-##                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
-##
-##                #define mtild900
-##                mtildf == mf/mFanBarD,   #B.282
-##
-##                #define N tild
-##                Ntildf == Nbarf/NbarDf,    #B.283
-##
-##                #spine parameterization
-##                mtildsf == Ntildf**.85,    #B.284
-##                ptildsf == mtildsf ** 3,   #B.285
-##
-##                #constrain the "knee" shape of the map
-##                SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
-####                TCS([ptildf <= 2*Ntildf*.03*zf + ptildsf])
-##                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
-####                SignomialEquality(pif-1, (piFanD -1)*(ptildsf + 2*Ntildf*.03*zf)),
                 ]
               
             Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -860,7 +760,7 @@ class OffDesignTEST(Model):
                 
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
-                N1 >= .95,
+                N1 >= .1,
                 N1 <= 2,
 ##                SignomialEquality(N1,Nf*Gf),
 
@@ -872,32 +772,31 @@ class OffDesignTEST(Model):
                 
                 #residual 4
 ##                SignomialEquality(u7**2 +2*h7,2*ht7),
-                TCS([u7**2 +2*Cpair*T7 <= 2*Cpair*Tt7]),
+                SignomialEquality(u7**2 +2*Cpair*T7, 2*Cpair*Tt7),
+##                TCS([u7**2 +2*Cpair*T7 <= 2*Cpair*Tt7]),
                 h7 == Cpair*T7,
                 rho7 == P7/(Rt*T7),
-                mf*(Pt2/Pref)*(Tref/Tt2)**.5 <= rho7*A7*u7,
+                TCS([mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7]),
                 
 ##                #residual 5 core nozzle mass flow
                 h5 == Cpt*T5,
 ##                SignomialEquality(u5**2 +2*h5, 2*ht5),
-                TCS([u5**2 +2*Cpt*T5 <= 2*Cpt*Tt5]),
+                SignomialEquality(u5**2 +2*Cpair*T5, 2*Cpair*Tt5),
+##                TCS([u5**2 +2*Cpt*T5 <= 2*Cpt*Tt5]),
                 rho5 == P5/(Rt*T5),
                 TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 <= rho5*A5*u5]),
-
+##                (fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 <= rho5*A5*u5,
                 #compute core mass flux
-                mCore == rho5 * A5 * u5,
+                mCore == rho5 * A5 * u5/(fp1),
 
                 #NOT SURE IF THIS IS REQUIRED
                 mFan == rho7*A7*u7,
                 
                 #residual 6 LPC/HPC mass flow constraint
-                TCS([mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5]),
+                TCS([mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mCore]),
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
-
-                #constrain the BPR
-##                SignomialEquality(alpha*rho5*A5*u5, rho7*A7*u7),
                 ]
                 
             if res7 == 0:
@@ -945,84 +844,3 @@ class OffDesignTEST(Model):
                     ])
                  
         Model.__init__(self, mhtD, constraints, **kwargs)
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-##class HPCMap(Model):
-##    """
-##    Implentation of TASOPT compressor map model. Map is claibrated with exponents from
-##    tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
-##    Map is used for off-design calculations, variables link with HPC variables.
-##    """
-##    def __init__(self, **kwargs):
-##        #Temperature Variables
-##        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
-##        Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
-##
-##        #Mass Flow Variables
-##        mhc =  Variable('m_{hc}', 'kg/s', 'HPC Corrected Mass Flow')
-##        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-##        mtildhc = Variable('m_{tild_hc}', '-', 'HPC Normalized Mass Flow')
-##        mCoreD = Variable('m_{core_D}', 'kg/s', 'On Design Core Mass Flow')
-##
-##        #Pressure Variables
-##        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
-##        Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
-##
-##        #pressure ratio variables
-##        ptildhc = Variable('p_{tild_hc}', '-', 'HPC Normalized Pressure Ratio')
-##        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
-##        pihcD = Variable('\pi_{hc_D}', '-', 'On-Design Pressure Ratio')
-##        
-##        #Speed Variables
-##        Nbarhc = Variable('N_{bar_hc}', '-', 'Corrected HPC Speed')
-##        Nh = Variable('N_h', '-', 'HPC Speed')
-##        Ntildhc = Variable('N_{tild_hc}', '-', 'HPC Normalized Speed')
-##        NbarDhc = Variable('N_{{bar}_D_hc}', '-', 'HPC On-Design Corrected Speed')
-##
-##        #Spine Paramterization Variables
-##        mtildshc = Variable('m_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
-##        ptildshc = Variable('p_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
-##
-##        #te_exp_minus1 variable for B.287
-##        zhc = Variable('zhc', '-', 'Taylor Expanded Variable to Replace Log Term in HPC Map')
-##
-##        with SignomialsEnabled():
-##            constraints = [
-##                #define N bar
-##                Nbarhc == Nh/((Tt25/Tref)**.5), #B.279
-##
-##                #define mhc
-##                mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref),    #B.280
-##
-##                #define ptild
-##                #SIGNOMIAL
-##                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
-##
-##                #define mtild
-##                mtildhc == mhc/mCoreD,   #B.282
-##
-##                #define N tild
-##                Ntildhc == Nbarhc/NbarDhc,    #B.283
-##
-##                #spine paramterization
-##                mtildshc == Nbarhc**.5, #B.284
-##                ptildshc == mtildshc ** 1.5, #B.285
-##
-##                #constrain the "knee" shape of the map
-##                SignomialEquality(((mtildshc-mtildhc)/.03), te_exp_minus1(zhc, nterm=3)),  #B.286
-##                SignomialEquality(ptildhc, 2*Ntildhc*.03*zhc + ptildshc),    #B.286
-##                ]
-##                
-##            Model.__init__(self, 1/pihc, constraints, **kwargs)

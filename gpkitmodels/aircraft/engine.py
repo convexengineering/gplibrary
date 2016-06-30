@@ -228,7 +228,7 @@ class EngineOffDesign(Model):
         lpcmap = LPCMapTEST()
 
         res7 = 1
-        m5opt = 1
+        m5opt = 0
         m7opt = 1
         
         offD = OffDesignTEST(res7, m5opt, m7opt)
@@ -267,7 +267,7 @@ class EngineOffDesign(Model):
                 'alphap1': 11,
                 
                 'F_{spec}': sol('F_D') ,
-                'T_{t_{4spec}}': 1350,
+                'T_{t_{4spec}}': 1000,
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
