@@ -3,8 +3,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing
-from engine_components_test import FanAndLPCTEST, CombustorCoolingTEST, TurbineTEST, ExhaustAndThrustTEST, OffDesignTEST, FanMapTEST, LPCMapTEST, OnDesignSizingTEST
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap
 
 #TODO
 #determine the three different Cp, gamma, and R values to be used
@@ -35,11 +34,11 @@ class EngineOnDesign(Model):
         m6opt = 1
         m8opt = 1
         
-        lpc = FanAndLPCTEST()
-        combustor = CombustorCoolingTEST()
-        turbine = TurbineTEST()
-        thrust = ExhaustAndThrustTEST()
-        size = OnDesignSizingTEST(m6opt, m8opt)
+        lpc = FanAndLPC()
+        combustor = CombustorCooling()
+        turbine = Turbine()
+        thrust = ExhaustAndThrust()
+        size = OnDesignSizing(m6opt, m8opt)
 
         self.submodels = [lpc, combustor, turbine, thrust, size]
             
@@ -138,18 +137,18 @@ class EngineOffDesign(Model):
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
     def __init__(self, sol, mhtD, mltD, mFanBarD, mlcD, NlpcD, NhpcD, A5, A7, **kwargs):
-        lpc = FanAndLPCTEST()
-        combustor = CombustorCoolingTEST()
-        turbine = TurbineTEST()
-        thrust = ExhaustAndThrustTEST()
-        fanmap = FanMapTEST()
-        lpcmap = LPCMapTEST()
+        lpc = FanAndLPC()
+        combustor = CombustorCooling()
+        turbine = Turbine()
+        thrust = ExhaustAndThrust()
+        fanmap = FanMap()
+        lpcmap = LPCMap()
 
         res7 = 1
         m5opt = 0
         m7opt = 1
         
-        offD = OffDesignTEST(res7, m5opt, m7opt)
+        offD = OffDesign(res7, m5opt, m7opt)
 
         self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
         

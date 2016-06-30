@@ -1,9 +1,6 @@
 import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units, SignomialEquality
-from gpkit.constraints.linked import LinkedConstraintSet
-from gpkit.small_scripts import mag
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from gpkit.tools import te_exp_minus1
 
 class FanAndLPC(Model):
     """
@@ -159,7 +156,7 @@ class CombustorCooling(Model):
 
                 #fuel flow fraction f
                 TCS([f*hf + ht3 >= ht4]),
-
+                
                 #flow at turbine inlet
                 Tt41 == Tt4,
                 Pt41 == Pt4,
@@ -226,11 +223,11 @@ class Turbine(Model):
                 #HPT shafter power balance
                 #SIGNOMIAL   
                 SignomialEquality((1+f)*(ht41-ht45),ht3 - ht25),    #B.161
-##                TCS([(1+f)*(ht41-ht45)>=ht3 - ht25]),
+
                 #LPT shaft power balance
                 #SIGNOMIAL  
                 SignomialEquality((1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
-##                TCS([(1+f)*(ht49 - ht45) <= -((ht25-ht18)+alpha*(ht21 - ht2))]),
+
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
                 pihpt == (Tt45/Tt41)**(3.889),
@@ -320,114 +317,6 @@ class ExhaustAndThrust(Model):
 
         with SignomialsEnabled():
             constraints = [
-                #fan exhaust
-                Pt8 == Pt7, #B.179
-                Tt8 == Tt7, #B.180
-                P8 == P0,
-                h8 == Cpair * T8,
-                TCS([u8**2 + 2*h8 <= 2*ht8]),
-                (P8/Pt8)**(.2857) == T8/Tt8,
-                ht8 == Cpair * Tt8,
-                
-                #core exhaust
-                P6 == P0,   #B.4.11 intro
-                Pt6 == Pt5, #B.183
-                Tt6 == Tt5, #B.184
-                (P6/Pt6)**(.2857) == T6/Tt6,
-                TCS([u6**2 + 2*h6 <= 2*ht6]),
-                h6 == Cpt * T6,
-                ht6 == Cpt * Tt6,
-
-                #overall thrust values
-                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-                TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
-
-                #SIGNOMIAL
-                TCS([F <= F6 + F8]),
-
-                Fsp == F/((alphap1)*mCore*a0),   #B.191
-
-                #ISP
-                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
-
-                #TSFC
-                TSFC == 1/Isp                   #B.193
-                ]
-        Model.__init__(self, TSFC, constraints, **kwargs)
-
-class ExhaustAndThrustTEST(Model):
-    """
-    Class to calculate the exhaust quantities as well as
-    the overall engine thrust and on design TSFC & ISP
-    """
-    def __init__(self, **kwargs):
-        
-        a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
-        u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
-        
-        #external atmosphere properties
-        P0 = Variable('P_0', 'kPa', 'Free Stream Stagnation Pressure')
-        
-        #gas properties
-        Cpt =Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
-        gammaT = Variable('gamma_{T}', 1.4, '-', 'Specific Heat Ratio for Gas in Turbine')
-        gammaAir = Variable('gamma_{air}', 1.4, '-', 'Specific Heat Ratio for Air')
-        Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
-        
-        #gravity
-        g = Variable('g', 9.81, 'm/(s^2)', 'Gravitational Acceleration')
-        
-        #fan exhaust variables
-        P8 = Variable('P_8', 'kPa', 'Fan Exhaust Static Pressure')
-        Pt8 = Variable('P_{t_8}', 'kPa', 'Fan Exhaust Stagnation Pressure')
-        ht8 = Variable('h_{t_8}', 'J/kg', 'Fan Exhaust Stagnation Enthalpy')
-        h8 = Variable('h_8', 'J/kg', 'Fan Exhasut Static Enthalpy')
-        Tt8 = Variable('T_{t_8}', 'K', 'Fan Exhaust Stagnation Temperature (8)')
-        T8 = Variable('T_{8}', 'K', 'Fan Exhaust Sttic Temperature (8)')
-
-        #turbine nozzle exit states
-        Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
-        Tt5 = Variable('T_{t_5}', 'K', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
-        ht5 = Variable('h_{t_5}', 'J/kg', 'Stagnation Enthalpy at the Turbine Nozzle Exit (5)')
-        
-        #core exit variables
-        P6 = Variable('P_6', 'kPa', 'Core Exhaust Static Pressure')
-        Pt6 = Variable('P_{t_6}', 'kPa', 'Core Exhaust Stagnation Pressure')
-        Tt6 = Variable('T_{t_6}', 'K', 'Core Exhaust Stagnation Temperature (6)')
-        T6 = Variable('T_{6}', 'K', 'Core Exhaust Static Temperature (6)')
-        ht6 = Variable('h_{t_6}', 'J/kg', 'Core Exhaust Stagnation Enthalpy')
-        h6 = Variable('h_6', 'J/kg', 'Core Exhasut Static Enthalpy')
-
-        #new vars for the fan nozzle exit (station 7)
-        Pt7 = Variable('P_{t_7}', 'kPa', 'Stagnation Pressure at the Fan Nozzle Exit (7)')
-        Tt7 = Variable('T_{t_7}', 'K', 'Stagnation Temperature at the Fan Nozzle Exit (7)')
-        ht7 = Variable('h_{t_7}', 'J/kg', 'Stagnation Enthalpy at the Fan Nozzle Exit (7)')
-
-        #thrust variables
-        F8 = Variable('F_8', 'N', 'Fan Thrust')
-        F6 = Variable('F_6', 'N', 'Core Thrust')
-        F = Variable('F', 'N', 'Total Thrust')
-        Fsp = Variable('F_{sp}', '-', 'Specific Net Thrust')
-        Isp = Variable('I_{sp}', 's', 'Specific Impulse')
-        TSFC = Variable('TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
-
-        #exhaust speeds
-        u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
-        u8 = Variable('u_8', 'm/s', 'Fan Exhaust Velocity')
-
-        #BPR
-        alpha = Variable('alpha', '-', 'By Pass Ratio')
-        alphap1 = Variable('alphap1', '-', '1 plus BPR')
-
-        #core mass flow
-        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-
-        #flow faction f
-        f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
-
-        with SignomialsEnabled():
-            constraints = [
-                #fan exhaust
                 Pt8 == Pt7, #B.179
                 Tt8 == Tt7, #B.180
                 P8 == P0,
@@ -602,7 +491,6 @@ class OnDesignSizing(Model):
                 #core satic pressure constraints
                 P7 == P0,
                 P5 == P0,
-
                 ]
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
@@ -635,62 +523,28 @@ class LPCMap(Model):
         pilc = Variable('\pi_{lc}', '-', 'LPC Pressure Ratio')
         pilcD = Variable('\pi_{lc_D}', '-', 'LPC On-Design Pressure Ratio')
         
-        #Speed Variables
-        Nbarlc = Variable('N_{bar_lc}', '-', 'Corrected LPC Speed')
+        #Speed Variables...by setting the design speed to be 1 since only ratios are
+        #important I was able to drop out all the other speeds
         N1 = Variable('N_1', '-', 'LPC Speed')
-        Ntildlc = Variable('N_{tild_lc}', '-', 'LPC Normalized Speed')
-        NbarDlc = Variable('N_{{bar}_D_lc}', '-', 'LPC On-Design Corrected Speed')
 
         #Spine Paramterization Variables
         mtildslc = Variable('m_{{tild}_slc}', '-', 'LPC Spine Parameterization Variable')
         ptildslc = Variable('p_{{tild}_slc}', '-', 'LPC Spine Parameterization Variable')
 
-        #te_exp_minus1 variable for B.287
-        zlc = Variable('zlc', '-', 'Taylor Expanded Variable to Replace Log Term in LPC Map')
-
         with SignomialsEnabled():
             constraints = [
                 #define mbar
-                mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-                
+                TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
+
                 #define mtild
                 mtildlc == mlc/mlcD,   #B.282
 
-                SignomialEquality(pilc**.112, (0.00823 * (N1)**-58 * (mtildlc)**10.8
-                + 0.087 * (N1)**-0.878 * (mtildlc)**0.0215
-                + 0.0843 * (N1)**-0.839 * (mtildlc)**0.02
-                + 0.0849 * (N1)**-1.03 * (mtildlc)**0.0447
-                + 0.0871 * (N1)**-0.876 * (mtildlc)**0.0211
-                + 0.000164 * (N1)**-770 * (mtildlc)**158
-                + 0.0866 * (N1)**-0.886 * (mtildlc)**0.0224
-                + 0.086 * (N1)**-0.903 * (mtildlc)**0.0243
-                + 0.0835 * (N1)**0.0236 * (mtildlc)**-0.13
-                + 0.0868 * (N1)**-0.884 * (mtildlc)**0.0222))
-
-##                #define N bar
-##                Nbarlc == N1/((Tt2/Tref)**.5), #B.279
-##
-##                #define mbar
-##                mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-##
-##                #define ptild
-##                #SIGNOMIAL
-##                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
-##
-##                #define mtilds
-##                mtildlc == mlc/mlcD,   #B.282
-##
-##                #define N tild
-##                Ntildlc == Nbarlc/NbarDlc,    #B.283
-##
-##                #spine paramterization
-##                mtildslc == Ntildlc**5, #B.284
-##                ptildslc == mtildslc ** 1.5, #B.285
-##
-##                #constrain the "knee" shape of the map
-##                SignomialEquality(((mtildslc-mtildlc)/.03), te_exp_minus1(zlc, nterm=3)),  #B.286
-####                TCS([ptildlc >= 2*Ntildlc*.03*zlc + ptildslc]),
-##                SignomialEquality(ptildlc, 2*Ntildlc*.03*zlc + ptildslc),    #B.286
+                #define ptild
+                #SIGNOMIAL
+                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
+                
+                #constrain the "knee" shape of the map, monomial is from gpfit
+                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
                 ]
                 
             Model.__init__(self, 1/pilc, constraints, **kwargs)
@@ -723,18 +577,13 @@ class FanMap(Model):
         pif = Variable('\pi_f', '-', 'Fan Pressure Ratio')
         piFanD = Variable('\pi_{f_D}', '-', 'On-Design Pressure Ratio')
         
-        #Speed Variables
-        Nbarf = Variable('N_{barf}', '-', 'Corrected Fan Speed')
+        #Speed Variables...by setting the design speed to be 1 since only ratios are
+        #important I was able to drop out all the other speeds
         Nf = Variable('N_f', '-', 'Fan Speed')
-        Ntildf = Variable('N_{tildf}', '-', 'Fan Normalized Speed')
-        NbarDf = Variable('N_{{bar}_Df}', '-', 'Fan On-Design Corrected Speed')
-
+        
         #Spine Paramterization Variables
         mtildsf = Variable('m_{{tild}_sf}', '-', 'Fan Spine Parameterization Variable')
         ptildsf = Variable('p_{{tild}_sf}', '-', 'Fan Spine Parameterization Variable')
-
-        #te_exp_minus1 variable for B.287
-        zf = Variable('zf', '-', 'Taylor Expanded Variable to Replace Log Term in Fan Map')
 
         with SignomialsEnabled():
             constraints = [
@@ -743,46 +592,13 @@ class FanMap(Model):
 
                 #define mtild
                 mtildf == mf/mFanBarD,   #B.282
-                
-                #use the constraint from gpfit
-                SignomialEquality(pif**.11, (0.0771 * (Nf)**-0.472 * (mtildf)**0.526
-                + 4.66e-05 * (Nf)**-166 * (mtildf)**201
-                + 0.0815 * (Nf)**-0.0912 * (mtildf)**-0.0388
-                + 0.0816 * (Nf)**-0.0895 * (mtildf)**-0.0407
-                + 0.082 * (Nf)**-0.0846 * (mtildf)**-0.0449
-                + 0.0817 * (Nf)**-0.089 * (mtildf)**-0.0415
-                + 0.0818 * (Nf)**-0.0871 * (mtildf)**-0.0426
-                + 0.0816 * (Nf)**-0.0893 * (mtildf)**-0.0407
-                + 0.0817 * (Nf)**-0.0882 * (mtildf)**-0.0416
-                + 0.0817 * (Nf)**-0.0883 * (mtildf)**-0.0416))
 
+                #define ptild
+                #SIGNOMIAL
+                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
 
-                
-                #define N bar
-##                Nbarf == Nf/((Tt2/Tref)**.5), #B.279
-##
-##                #define mbar
-##                mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-##
-##                #define ptild
-##                #SIGNOMIAL
-##                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
-##
-##                #define mtild900
-##                mtildf == mf/mFanBarD,   #B.282
-##
-##                #define N tild
-##                Ntildf == Nbarf/NbarDf,    #B.283
-##
-##                #spine parameterization
-##                mtildsf == Ntildf**.85,    #B.284
-##                ptildsf == mtildsf ** 3,   #B.285
-##
-##                #constrain the "knee" shape of the map
-##                SignomialEquality(((mtildsf-mtildf)/.03), te_exp_minus1(zf, nterm=3)),  #B.286
-####                TCS([ptildf <= 2*Ntildf*.03*zf + ptildsf])
-##                SignomialEquality(ptildf, 2*Ntildf*.03*zf + ptildsf),    #B.286
-####                SignomialEquality(pif-1, (piFanD -1)*(ptildsf + 2*Ntildf*.03*zf)),
+                #constrain the "knee" shape of the map, monomial is from gpfit
+                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
                 ]
               
             Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -807,8 +623,6 @@ class OffDesign(Model):
         Rt = Variable('R_t', 287, 'J/kg/K', 'R for the Turbine Gas')
         Rair = Variable('R_{air}', 287, 'J/kg/K', 'R for Air')
         Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
-        gammaAir = Variable('gamma_{air}', 1.4, '-', 'Specific Heat Ratio for Air')
-        gammaT = Variable('gamma_{T}', 1.4, '-', 'Specific Heat Ratio for Gas in Turbine')
         
         #free stream static pressure
         P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
@@ -838,7 +652,6 @@ class OffDesign(Model):
         #fan inlet states
         Pt2 = Variable('P_{t_2}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2)')
         Tt2 = Variable('T_{t_2}', 'K', 'Stagnation Temperature at the Fan Inlet (2)')
-        ht2 = Variable('h_{t_2}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2)')
 
         #turbine inlet states
         Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
@@ -861,24 +674,19 @@ class OffDesign(Model):
 
         #fan exhuast states
         P7 = Variable('P_{7}', 'kPa', 'Fan Exhaust Static Pressure (7)')
-        h7 = Variable('h_{7}', 'J/kg', 'Static Enthalpy at the Fan Nozzle Exit (7)')
         T7 = Variable('T_{7}', 'K', 'Static Temperature at the Fan Nozzle Exit (7)')
         u7 = Variable('u_7', 'm/s', 'Station 7 Exhaust Velocity')
         M7 = Variable('M_7', '-', 'Station 7 Mach Number')
         rho7 = Variable('\rho_7', 'kg/m^3', 'Air Static Density at Fam Exhaust Exit (7)')
         Pt7 = Variable('P_{t_7}', 'kPa', 'Stagnation Pressure at the Fan Nozzle Exit (7)')
         Tt7 = Variable('T_{t_7}', 'K', 'Stagnation Temperature at the Fan Nozzle Exit (7)')
-        ht7 = Variable('h_{t_7}', 'J/kg', 'Stagnation Enthalpy at the Fan Nozzle Exit (7)')
 
         #core exhaust states
         P5 = Variable('P_{5}', 'kPa', 'Core Exhaust Static Pressure (5)')
         T5 = Variable('T_{5}', 'K', 'Static Temperature at the Turbine Nozzle Exit (5)')
-        P5 = Variable('P_{5}', 'kPa', 'Static Pressure at the Turbine Nozzle Exit (5)')
-        h5 = Variable('h_{5}', 'J/kg', 'Static Enthalpy at the Turbine Nozzle Exit (5)')
         M5 = Variable('M_5', '-', 'Station 5 Mach Number')
         u5 = Variable('u_5', 'm/s', 'Station 5 Exhaust Velocity')
         rho5 = Variable('\rho_5', 'kg/m^3', 'Air Static Density at Core Exhaust Exit (5)')
-        ht5 = Variable('h_{t_5}', 'J/kg', 'Stagnation Enthalpy at the Turbine Nozzle Exit (5)')
         Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
         Tt5 = Variable('T_{t_5}', 'K', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
 
@@ -897,12 +705,12 @@ class OffDesign(Model):
         #HPT exit states
         Pt49 = Variable('P_{t_4.9}', 'kPa', 'Stagnation Pressure at the HPTExit (4.9)')
         Tt49 = Variable('T_{t_4.9}', 'K', 'Stagnation Temperature at the HPT Exit (4.9)')
-        ht49 = Variable('h_{t_4.9}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (4.9)')
 
         #reference states
         Tref = Variable('T_{ref}', 'K', 'Reference Temperature for Normalization')
         Pref = Variable('P_{ref}', 'kPa', 'Reference Pressure for Normalization')
 
+        #define the f plus one variable, limits the number of signomials
         fp1 = Variable('fp1', '-', 'f + 1')
 
         #core mass flow
@@ -913,13 +721,10 @@ class OffDesign(Model):
         Fspec = Variable('F_{spec}', 'N', 'Specified Total Thrust')
         F = Variable('F', 'N', 'Total Thrust')
 
-        #BPR
-        alpha = Variable('alpha', '-', 'By Pass Ratio')
-
-
-        #new best idea is to run this twice and if mach numbers go over 1 pass in a different argument and re run the case
-        
-        
+        #exit velocities
+        u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
+        u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
+             
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
@@ -927,39 +732,43 @@ class OffDesign(Model):
                 
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
+                #loose constraints on speed needed to prevent N from sliding out
+                #to zero or infinity
+                N1 >= .1,
+                N1 <= 2,
 
+                #note residuals 2 and 3 differ from TASOPT, by replacing mhc with mlc
+                #in residual 4 I was able to remove the LPC/HPC mass flow equality
+                #in residual 6 which allows for convergence
                 #residual 2 HPT mass flow
                 TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
-
+                
                 #residual 3 LPT mass flow
-                TCS([(fp1)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 == mltD]),
+                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
-                SignomialEquality(u7**2 +2*h7,2*ht7),
-                h7 == Cpair*T7,
+                SignomialEquality(u7**2 +2*Cpair*T7, 2*Cpair*Tt7),
                 rho7 == P7/(Rt*T7),
-                mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7,
+                TCS([mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7]),
                 
                 #residual 5 core nozzle mass flow
-                h5 == Cpt*T5,
-                SignomialEquality(u5**2 +2*h5, 2*ht5),
+                SignomialEquality(u5**2 +2*Cpair*T5, 2*Cpair*Tt5),
                 rho5 == P5/(Rt*T5),
-                TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
-
+                
                 #compute core mass flux
-                mCore == rho5 * A5 * u5,
+                mCore == rho5 * A5 * u5/(fp1),
 
-                #NOT SURE IF THIS IS REQUIRED
+                #compute fan mas flow
                 mFan == rho7*A7*u7,
                 
                 #residual 6 LPC/HPC mass flow constraint
-                mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
+                TCS([mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mCore]),
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
 
-                #constrain the BPR
-##                SignomialEquality(alpha*rho5*A5*u5, rho7*A7*u7),
+                #constrain the exit exhaust exit speeds
+                u6 >= u0
                 ]
                 
             if res7 == 0:
@@ -1006,85 +815,4 @@ class OffDesign(Model):
                      T7 == Tt7*1.2**(-1)
                     ])
                  
-        Model.__init__(self, mhtD, constraints, **kwargs)
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-##class HPCMap(Model):
-##    """
-##    Implentation of TASOPT compressor map model. Map is claibrated with exponents from
-##    tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
-##    Map is used for off-design calculations, variables link with HPC variables.
-##    """
-##    def __init__(self, **kwargs):
-##        #Temperature Variables
-##        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
-##        Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
-##
-##        #Mass Flow Variables
-##        mhc =  Variable('m_{hc}', 'kg/s', 'HPC Corrected Mass Flow')
-##        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
-##        mtildhc = Variable('m_{tild_hc}', '-', 'HPC Normalized Mass Flow')
-##        mCoreD = Variable('m_{core_D}', 'kg/s', 'On Design Core Mass Flow')
-##
-##        #Pressure Variables
-##        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
-##        Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
-##
-##        #pressure ratio variables
-##        ptildhc = Variable('p_{tild_hc}', '-', 'HPC Normalized Pressure Ratio')
-##        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
-##        pihcD = Variable('\pi_{hc_D}', '-', 'On-Design Pressure Ratio')
-##        
-##        #Speed Variables
-##        Nbarhc = Variable('N_{bar_hc}', '-', 'Corrected HPC Speed')
-##        Nh = Variable('N_h', '-', 'HPC Speed')
-##        Ntildhc = Variable('N_{tild_hc}', '-', 'HPC Normalized Speed')
-##        NbarDhc = Variable('N_{{bar}_D_hc}', '-', 'HPC On-Design Corrected Speed')
-##
-##        #Spine Paramterization Variables
-##        mtildshc = Variable('m_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
-##        ptildshc = Variable('p_{{tild}_s_hc}', '-', 'HPC Spine Parameterization Variable')
-##
-##        #te_exp_minus1 variable for B.287
-##        zhc = Variable('zhc', '-', 'Taylor Expanded Variable to Replace Log Term in HPC Map')
-##
-##        with SignomialsEnabled():
-##            constraints = [
-##                #define N bar
-##                Nbarhc == Nh/((Tt25/Tref)**.5), #B.279
-##
-##                #define mhc
-##                mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref),    #B.280
-##
-##                #define ptild
-##                #SIGNOMIAL
-##                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
-##
-##                #define mtild
-##                mtildhc == mhc/mCoreD,   #B.282
-##
-##                #define N tild
-##                Ntildhc == Nbarhc/NbarDhc,    #B.283
-##
-##                #spine paramterization
-##                mtildshc == Nbarhc**.5, #B.284
-##                ptildshc == mtildshc ** 1.5, #B.285
-##
-##                #constrain the "knee" shape of the map
-##                SignomialEquality(((mtildshc-mtildhc)/.03), te_exp_minus1(zhc, nterm=3)),  #B.286
-##                SignomialEquality(ptildhc, 2*Ntildhc*.03*zhc + ptildshc),    #B.286
-##                ]
-##                
-##            Model.__init__(self, 1/pihc, constraints, **kwargs)
+        Model.__init__(self, 1/u7, constraints, **kwargs)
