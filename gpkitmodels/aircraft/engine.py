@@ -72,47 +72,6 @@ class EngineOnDesign(Model):
 
             #temporary objective is to minimize the core mass flux 
             Model.__init__(self, thrust.cost, lc, substitutions)
-            
-
-    def sizing(self, sol):
-        #find the design normalized speeds and mass flow
-        mhtD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.1}')/(288.15*units('K')))**.5)/(sol('P_{t_4.1}')/(101.325*units('kPa'))) #B.225
-        mltD = (1+sol('f'))*sol('m_{core}')*((sol('T_{t_4.5}')/(288.15*units('K')))**.5)/(sol('P_{t_4.5}')/(101.325*units('kPa'))) #B.226
-        #normalized on design compressor mass flows for the maps
-        mFanBarD = sol('alpha')*sol('m_{core}')*((sol('T_{t_2}')/(288.15*units('K')))**.5)/(sol('P_{t_2}')/(101.325*units('kPa'))) #B.226
-        mlcD = sol('m_{core}')*((sol('T_{t_2}')/(288.15*units('K')))**.5)/(sol('P_{t_2}')/(101.325*units('kPa'))) #B.226
-
-        #first size the fan nozzle
-        if sol('M_8') >= 1:
-            M7 = 1
-            P7 = sol('P_{t_7}')*(1+.5*(sol('gamma_{air}')-1))**(-sol('gamma_{air}')/(sol('gamma_{air}')-1))
-            T7 = sol('T_{t_7}')*(1+.5*(sol('gamma_{air}')-1))**-1
-        else:
-            P7 = sol('P_0')
-            T7 = sol('T_{t_7}')*(P7/sol('P_{t_7}'))**((sol('gamma_{air}')-1)/sol('gamma_{air}'))
-            
-        h7 = sol('Cp_{air}')*T7
-        #compute the fan stream velocity and nozzle area
-        u7 = ((2*sol('Cp_{air}')*(sol('T_{t_7}')-T7))**.5)
-        rho7 = P7/(sol('R_t')*T7)
-        A7 = sol('alpha')*sol('m_{core}')/(rho7*u7)
-        
-        #core nozzle area calcualtion
-        if sol('M_6') >=1:
-            M5 = 1
-            P5 = sol('P_{t_5}')*(1+.5*(sol('gamma_{air}')-1))**(-sol('gamma_{air}')/(sol('gamma_{air}')-1))
-            T5 = sol('T_{t_5}')*(1+.5*(sol('gamma_{air}')-1))**-1  
-        else:
-            P5 = sol('P_0')
-            T5 = sol('T_{t_5}')*(P5/sol('P_{t_5}'))**((sol('gamma_{air}')-1)/sol('gamma_{air}'))
-            
-        h5 = sol('Cp_{air}')*T5
-        #compute the core stream velocity and nozzle area    
-        u5 = ((2*sol('Cp_{air}')*(sol('T_{t_5}')-T5))**.5)
-        rho5 = P5/(sol('R_t')*T5)
-        A5 = sol('m_{core}')/(rho5*u5)
-
-        return mhtD, mltD, mFanBarD, mlcD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
     """
@@ -135,7 +94,7 @@ class EngineOffDesign(Model):
     HPC pressure ratio, fan corrected mass flow, LPC corrected mass flow,
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
-    def __init__(self, sol, mhtD, mltD, mFanBarD, mlcD, NlpcD, NhpcD, A5, A7, **kwargs):
+    def __init__(self, sol):
         lpc = FanAndLPC()
         combustor = CombustorCooling()
         turbine = Turbine()
@@ -164,12 +123,12 @@ class EngineOffDesign(Model):
                 '\pi_{d}': sol('\pi_{d}'),
                 '\pi_{fn}': sol('\pi_{fn}'),
                 
-                'A_5': A5.to('m^2'),
-                'A_7': A7.to('m^2'),
+                'A_5': sol('A_5'),
+                'A_7': sol('A_7'),
                 'T_{ref}': 288.15,
                 'P_{ref}': 101.325,
-                'm_{htD}': mhtD,
-                'm_{ltD}': mltD,
+                'm_{htD}': sol('m_{htD}'),
+                'm_{ltD}': sol('m_{ltD}'),
                 
                 'G_f': 1,
                 'alpha': 10,
@@ -183,8 +142,8 @@ class EngineOffDesign(Model):
                 '\pi_{f_D}': sol('\pi_f'),
                 'm_{core_D}': sol('m_{core}'),
                 '\pi_{lc_D}': sol('\pi_{lc}'),
-                'm_{lc_D}': mlcD,
-                'm_{fan_bar_D}': mFanBarD,
+                'm_{lc_D}': sol('m_{lc_D}'),
+                'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
             }
         
         Model.__init__(self, thrust.cost, lc, substitutions)
@@ -194,8 +153,6 @@ if __name__ == "__main__":
     
     solOn = engineOnD.localsolve(verbosity = 4, kktsolver="ldl")
     
-##    mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7 = engineOnD.sizing(solOn)
-##    
-##    engineOffD = EngineOffDesign(solOn, mhtD, mltD, mFanBardD, mlcD, NlpcD, NhpcD, A5, A7)
-##    
-##    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+    engineOffD = EngineOffDesign(solOn)
+    
+    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")

@@ -475,6 +475,16 @@ class OnDesignSizing(Model):
         mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
         mlcD = Variable('m_{lc_D}', 'kg/s', 'On Design LPC Corrected Mass Flow')
 
+        #fan exhuast sizing variables
+        u7 = Variable('u_7', 'm/s', 'Station 7 Exhaust Velocity')
+        rho7 = Variable('\rho_7', 'kg/m^3', 'Air Static Density at Fam Exhaust Exit (7)')
+        A7 = Variable('A_7', 'm^2', 'Fan Exhaust Nozzle Area')
+
+        #core exhaust sizing variables
+        A5 = Variable('A_5', 'm^2', 'Core Exhaust Nozzle Area')
+        u5 = Variable('u_5', 'm/s', 'Station 5 Exhaust Velocity')
+        rho5 = Variable('\rho_5', 'kg/m^3', 'Air Static Density at Core Exhaust Exit (5)')
+
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
@@ -511,6 +521,16 @@ class OnDesignSizing(Model):
                 #on design normalized mass flows
                 mFanBarD == alpha*mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
                 mlcD == mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
+
+                #compute the fan exaust speed and size the nozzle
+                SignomialEquality(u7**2, (2*Cpair*(Tt7-T7))),
+                rho7 == P7/(Rt*T7),
+                A7 == alpha*mCore/(rho7*u7),
+
+                #compute the core exhaust speed and size the nozzle
+                SignomialEquality(u5**2, (2*Cpair*(Tt5-T5))),
+                rho5 == P5/(Rt*T5),
+                A5 == mCore/(rho5*u5),
                 ]
             
             if m6opt == 0:
