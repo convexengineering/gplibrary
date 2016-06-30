@@ -96,11 +96,11 @@ class EngineOnDesign(Model):
             T7 = sol('T_{t_7}')*(1+.5*(sol('gamma_{air}')-1))**-1
         else:
             P7 = sol('P_0')
-            T7 = sol('T_{t_7}')*(P5/sol('P_{t_7}'))**((sol('gamma_{air}')-1)/sol('gamma_{air}'))
+            T7 = sol('T_{t_7}')*(P7/sol('P_{t_7}'))**((sol('gamma_{air}')-1)/sol('gamma_{air}'))
             
-        h7 = sol('Cp_{air}')*T7    
+        h7 = sol('Cp_{air}')*T7
         #compute the fan stream velocity and nozzle area
-        u7 = (2*(sol('h_{t_7}')-h7)**.5)
+        u7 = ((2*sol('Cp_{air}')*(sol('T_{t_7}')-T7))**.5)
         rho7 = P7/(sol('R_t')*T7)
         A7 = sol('alpha')*sol('m_{core}')/(rho7*u7)
         
@@ -115,10 +115,49 @@ class EngineOnDesign(Model):
             
         h5 = sol('Cp_{air}')*T5
         #compute the core stream velocity and nozzle area    
-        u5 = (2*(sol('h_{t_5}')-h5)**.5)
+        u5 = ((2*sol('Cp_{air}')*(sol('T_{t_5}')-T5))**.5)
         rho5 = P5/(sol('R_t')*T5)
         A5 = sol('m_{core}')/(rho5*u5)
-       
+
+        mhc = 96.4*units('kg/s')
+        #compute the suspect residuals
+        
+        r2 = (1+sol('f'))*mhc*(sol('P_{t_2.5}')/sol('P_{t_4.1}'))*(sol('T_{t_4.1}')/sol('T_{t_2.5}'))**.5 - mhtD
+        r3 = (1+sol('f'))*mhc*(sol('P_{t_2.5}')/sol('P_{t_4.5}'))*(sol('T_{t_4.5}')/sol('T_{t_2.5}'))**.5 - mltD
+        
+        #lead in computation for R4
+        M7 = 1
+        P7 = sol('P_{t_7}')*(1.2)**(-1.4/.4)
+        T7 = sol('T_{t_7}')*1.2**(-1)
+        h7 = 1087*units('J/kg/K')*T7
+        u7 = (2*1087*units('J/kg/K')*(sol('T_{t_7}')-T7))**.5
+        rho7 = P7/(sol('R_t')*T7)
+        r4 = mFanBarD*(sol('P_{t_2}')/(101.325*units('kPa')))*(288.15*units('K')/sol('T_{t_2}'))**.5 - rho7*A7*u7
+        print rho7*A7*u7
+        print mFanBarD*(sol('P_{t_2}')/(101.325*units('kPa')))*(288.15*units('K')/sol('T_{t_2}'))**.5
+
+        #lead in computation for R5
+        M5 = 1
+        P5 = sol('P_{t_5}')*(1.2)**(-1.4/.4)
+        T5 = sol('T_{t_5}')*1.2**(-1)
+        h5 = 1087*units('J/kg/K')*T5
+        u5 = (2*1087*units('J/kg/K')*(sol('T_{t_5}')-T5))**.5
+        rho5 = P5/(sol('R_t')*T5)
+        r5 = (1+sol('f'))*mhc*(sol('P_{t_2.5}')/(101.325*units('kPa')))*(288.15*units('K')/sol('T_{t_2.5}'))**.5 - rho5*A5*u5
+        
+        r6 = mlcD*(sol('P_{t_1.8}')/101.325*units('kPa'))*(288.15*units('K')/sol('T_{t_1.8}'))**.5 - (mhc*(sol('P_{t_2.5}')/101.325*units('kPa'))*(288.15*units('K')/sol('T_{t_2.5}'))**.5)
+        r7 = sol('P_{t_4.9}')*sol('\pi_{tn}') - sol('P_{t_5}')
+
+        r8 = mlcD - sol('m_{core}')*((sol('T_{t_2}')/(288.15*units('K')))**.5)/(sol('P_{t_2}')/(101.325*units('kPa'))),    #B.280
+
+        print mlcD
+        print ["r2",r2]
+        print ["r3",r3]
+        print ["r4",r4]
+        print ["r5",r5]
+        print ["r6",r6]
+        print ["r7",r7]
+        print ["r8", r8]
         return mhtD, mltD, mFanBarD, mlcD, NlpcD, NhpcD, A5, A7
 
 class EngineOffDesign(Model):
@@ -221,14 +260,14 @@ class EngineOffDesign(Model):
                 #'\pi_{hc}': sol('\pi_{hc}'),
                 #'\pi_f': sol('\pi_f'),
                 #'m_{core}': sol('m_{core}'),
-                #might need Tt4 in full reversion
+                #'T_{t_4}': 1400,
                 
                 'G_f': 1,
                 'alpha': 10,
                 'alphap1': 11,
                 
                 'F_{spec}': sol('F_D') ,
-                'T_{t_{4spec}}': 1400,
+                'T_{t_{4spec}}': 1350,
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
@@ -237,9 +276,14 @@ class EngineOffDesign(Model):
                 '\pi_{lc_D}': sol('\pi_{lc}'),
                 'N_{{bar}_D_lc}': NlpcD,
                 'm_{lc_D}': mlcD,
-                'm_{fan_bar_D}': mFanBardD,
+                'm_{fan_bar_D}': mFanBarD,
             }
-
+        print mlcD
+        print mFanBarD
+        print mhtD
+        print mltD
+        print A7.to('m^2')
+        print A5.to('m^2')
         Model.__init__(self, thrust.cost, lc, substitutions)
 
  

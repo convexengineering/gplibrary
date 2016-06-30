@@ -160,7 +160,6 @@ class CombustorCoolingTEST(Model):
                 #fuel flow fraction f
                 TCS([f*hf + ht3 >= ht4]),
                 
-
                 #flow at turbine inlet
                 Tt41 == Tt4,
                 Pt41 == Pt4,
@@ -346,8 +345,8 @@ class ExhaustAndThrustTEST(Model):
                 TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
 
                 #SIGNOMIAL
-##                TCS([F <= F6 + F8]),
-                SignomialEquality(F, F6 + F8),
+                TCS([F <= F6 + F8]),
+##                SignomialEquality(F, F6 + F8),
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -548,21 +547,29 @@ class LPCMapTEST(Model):
         with SignomialsEnabled():
             constraints = [
                 #define mbar
-                mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-                
+                TCS([mlc <= mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
+
                 #define mtild
                 mtildlc == mlc/mlcD,   #B.282
 
-                pilc**.112 >= (0.00823 * (N1)**-58 * (mtildlc)**10.8
-                + 0.087 * (N1)**-0.878 * (mtildlc)**0.0215
-                + 0.0843 * (N1)**-0.839 * (mtildlc)**0.02
-                + 0.0849 * (N1)**-1.03 * (mtildlc)**0.0447
-                + 0.0871 * (N1)**-0.876 * (mtildlc)**0.0211
-                + 0.000164 * (N1)**-770 * (mtildlc)**158
-                + 0.0866 * (N1)**-0.886 * (mtildlc)**0.0224
-                + 0.086 * (N1)**-0.903 * (mtildlc)**0.0243
-                + 0.0835 * (N1)**0.0236 * (mtildlc)**-0.13
-                + 0.0868 * (N1)**-0.884 * (mtildlc)**0.0222)
+                #define ptild
+                #SIGNOMIAL
+                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
+##                ptildlc * (pilcD-1)+1 <= (pilc),
+                #constrain the "knee" shape of the map
+                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
+
+                
+##                pilc**.112 >= (0.00823 * (N1)**-58 * (mtildlc)**10.8
+##                + 0.087 * (N1)**-0.878 * (mtildlc)**0.0215
+##                + 0.0843 * (N1)**-0.839 * (mtildlc)**0.02
+##                + 0.0849 * (N1)**-1.03 * (mtildlc)**0.0447
+##                + 0.0871 * (N1)**-0.876 * (mtildlc)**0.0211
+##                + 0.000164 * (N1)**-770 * (mtildlc)**158
+##                + 0.0866 * (N1)**-0.886 * (mtildlc)**0.0224
+##                + 0.086 * (N1)**-0.903 * (mtildlc)**0.0243
+##                + 0.0835 * (N1)**0.0236 * (mtildlc)**-0.13
+##                + 0.0868 * (N1)**-0.884 * (mtildlc)**0.0222)
 
 ##                SignomialEquality(pilc**.112, (0.00823 * (N1)**-58 * (mtildlc)**10.8
 ##                + 0.087 * (N1)**-0.878 * (mtildlc)**0.0215
@@ -651,18 +658,25 @@ class FanMapTEST(Model):
 
                 #define mtild
                 mtildf == mf/mFanBarD,   #B.282
+
+                #define ptild
+                #SIGNOMIAL
+                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
+##                ptildf * (piFanD-1)+1 <= (pif),
+                #constrain the "knee" shape of the map
+                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
                 
                 #use the constraint from gpfit
-                pif**.11 >= (0.0771 * (Nf)**-0.472 * (mtildf)**0.526
-                + 4.66e-05 * (Nf)**-166 * (mtildf)**201
-                + 0.0815 * (Nf)**-0.0912 * (mtildf)**-0.0388
-                + 0.0816 * (Nf)**-0.0895 * (mtildf)**-0.0407
-                + 0.082 * (Nf)**-0.0846 * (mtildf)**-0.0449
-                + 0.0817 * (Nf)**-0.089 * (mtildf)**-0.0415
-                + 0.0818 * (Nf)**-0.0871 * (mtildf)**-0.0426
-                + 0.0816 * (Nf)**-0.0893 * (mtildf)**-0.0407
-                + 0.0817 * (Nf)**-0.0882 * (mtildf)**-0.0416
-                + 0.0817 * (Nf)**-0.0883 * (mtildf)**-0.0416)
+##                pif**.11 >= (0.0771 * (Nf)**-0.472 * (mtildf)**0.526
+##                + 4.66e-05 * (Nf)**-166 * (mtildf)**201
+##                + 0.0815 * (Nf)**-0.0912 * (mtildf)**-0.0388
+##                + 0.0816 * (Nf)**-0.0895 * (mtildf)**-0.0407
+##                + 0.082 * (Nf)**-0.0846 * (mtildf)**-0.0449
+##                + 0.0817 * (Nf)**-0.089 * (mtildf)**-0.0415
+##                + 0.0818 * (Nf)**-0.0871 * (mtildf)**-0.0426
+##                + 0.0816 * (Nf)**-0.0893 * (mtildf)**-0.0407
+##                + 0.0817 * (Nf)**-0.0882 * (mtildf)**-0.0416
+##                + 0.0817 * (Nf)**-0.0883 * (mtildf)**-0.0416)
 
 ##                SignomialEquality(pif**.11,(0.0771 * (Nf)**-0.472 * (mtildf)**0.526
 ##                + 4.66e-05 * (Nf)**-166 * (mtildf)**201
@@ -846,6 +860,9 @@ class OffDesignTEST(Model):
                 
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
+                N1 >= .95,
+                N1 <= 2,
+##                SignomialEquality(N1,Nf*Gf),
 
                 #residual 2 HPT mass flow
                 TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
@@ -854,18 +871,18 @@ class OffDesignTEST(Model):
                 TCS([(fp1)*mhc*(Pt25/Pt45)*(Tt45/Tt25)**.5 == mltD]),
                 
                 #residual 4
-                SignomialEquality(u7**2 +2*h7,2*ht7),
-##                TCS([u7**2 +2*h7 <= 2*ht7]),
+##                SignomialEquality(u7**2 +2*h7,2*ht7),
+                TCS([u7**2 +2*Cpair*T7 <= 2*Cpair*Tt7]),
                 h7 == Cpair*T7,
                 rho7 == P7/(Rt*T7),
-                mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7,
+                mf*(Pt2/Pref)*(Tref/Tt2)**.5 <= rho7*A7*u7,
                 
-                #residual 5 core nozzle mass flow
+##                #residual 5 core nozzle mass flow
                 h5 == Cpt*T5,
-                SignomialEquality(u5**2 +2*h5, 2*ht5),
-##                TCS([u5**2 +2*h5 <= 2*ht5]),
+##                SignomialEquality(u5**2 +2*h5, 2*ht5),
+                TCS([u5**2 +2*Cpt*T5 <= 2*Cpt*Tt5]),
                 rho5 == P5/(Rt*T5),
-                TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 == rho5*A5*u5]),
+                TCS([(fp1)*mhc*(Pt25/Pref)*(Tref/Tt25)**.5 <= rho5*A5*u5]),
 
                 #compute core mass flux
                 mCore == rho5 * A5 * u5,
@@ -874,7 +891,7 @@ class OffDesignTEST(Model):
                 mFan == rho7*A7*u7,
                 
                 #residual 6 LPC/HPC mass flow constraint
-                mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5,
+                TCS([mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mhc*(Pt25/Pref)*(Tref/Tt25)**.5]),
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
