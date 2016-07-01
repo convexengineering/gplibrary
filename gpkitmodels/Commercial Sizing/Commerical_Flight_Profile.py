@@ -176,9 +176,10 @@ class CommericalMissionConstraints(Model):
                  constraints.extend([
                     sum(RngClimb)>= ReqRng,
                     ])
-            for i in range(1, Nclimb1):
+            for i in range(0, Nclimb1):
+                print i
                 constraints.extend([
-                    hft[i] - i*dhft[i] <= 1500*units('ft')
+                    SignomialEquality(hft[i], 1500*units('ft')+(i+1)*dhft[i])
                     ])
 
         #constrain the segment weights in a loop
@@ -186,7 +187,7 @@ class CommericalMissionConstraints(Model):
             constraints.extend([
                 W_start[i] == W_end[i-1] 
                 ])
-        for i in range(0,Nseg):
+        for i in range(0, Nseg):
             constraints.extend([
                 TCS([W_start[i] >= W_end[i] + W_fuel[i]])
                 ])
