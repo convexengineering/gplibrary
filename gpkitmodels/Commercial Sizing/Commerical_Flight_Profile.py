@@ -151,12 +151,10 @@ class CommericalMissionConstraints(Model):
             a  == (gamma * R * T)**.5,
             
             #convert m to ft
-##            hft  == h,
+            hft  == h,
             
             #convert min to hours
             tmin  == thours ,
-
-##            W_fuel[iclimb1] == 1000*units('lbf'),
             
             #constraints on the various weights
             TCS([W_e + W_payload + W_ftotal <= W_total]),
@@ -176,7 +174,11 @@ class CommericalMissionConstraints(Model):
                     ])
             if test ==1:
                  constraints.extend([
-                    sum(RngClimb)>= ReqRng
+                    sum(RngClimb)>= ReqRng,
+                    ])
+            for i in range(1, Nclimb1):
+                constraints.extend([
+                    hft[i] - i*dhft[i] <= 1500*units('ft')
                     ])
 
         #constrain the segment weights in a loop
@@ -240,8 +242,8 @@ class Climb1(Model):
 
             #subsitute later
             TSFC[iclimb1]  == c1,
-            rho[iclimb1] == 1.225*units('kg/m^3'),
-            T[iclimb1] == 273 * units('K')
+##            rho[iclimb1] == 1.225*units('kg/m^3'),
+##            T[iclimb1] == 273 * units('K'),
             ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -355,14 +357,14 @@ class CommercialAircraft(Model):
         climb1 = Climb1()
 ##        climb2 = Climb2()
 ##        c2 = Cruise2()
-        atm = Atmosphere()
+        atm = Atmosphere(Nseg)
 
         substitutions = {      
             'W_{e}': 40000*units('lbf'),
             'W_{payload}': 400000*units('lbf'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 300,
+            'ReqRng': 100,
             'C_{d_0}': .025,
             'K': 0.035,
             'S': 124.58,
@@ -370,7 +372,7 @@ class CommercialAircraft(Model):
             'c1': 2,
             }
 
-        self.submodels = [cmc, climb1]
+        self.submodels = [cmc, climb1, atm]
 
         lc = LinkedConstraintSet([self.submodels])
 
