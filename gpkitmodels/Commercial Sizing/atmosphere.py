@@ -1,7 +1,7 @@
 "Models for atmospheric quantities"
 import numpy as np
 from gpkit import units
-from gpkit import VectorVariable, Variable, Model, units, SignomialsEnabled
+from gpkit import VectorVariable, Variable, Model, units, SignomialsEnabled, SignomialEquality
 from gpkit.constraints.tight import TightConstraintSet as TCS
 # pylint: disable=bad-whitespace
 
