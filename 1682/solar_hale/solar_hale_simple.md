@@ -52,6 +52,9 @@ To achieve the minimum footprint of 100km, the aircraft must fly at 15,000 ft. I
 ```python
 #inPDF: skip
 from solar_hale import SolarHALE
+import matplotlib.pyplot as plt
+from plotting import poor_mans_contour
+import numpy as np
 
 PLOT = False
 
@@ -60,127 +63,14 @@ if __name__ == "__main__":
     sol = M.solve("mosek")
 
     if PLOT:
-
-        # number of data points
-        N = 30
-
-        M.substitutions.update({ 'h_{batt}': ('sweep', [250,350,500])})
-
-        # plotting at 45 degree latitude
-
-        M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5,40,N))})
-        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+    
+        fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200])
+        fig.savefig('bvsV_wind4515.pdf')
         
-        W = sol('W')
-        b = sol('b')
-        V_wind = sol('V_{wind}')
-        ind = np.nonzero(V_wind.magnitude==5.)
-        ind = ind[0]
-
-        plt.close()
-        plt.rcParams['lines.linewidth']=2
-        plt.rcParams['font.size']=13
-        plt.rcParams
-        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], 
-                           label='batt: 250 [Whr/kg]') 
-        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], 
-                           label = 'batt: 350 [Whr/kg]')
-        curve3, = plt.plot(V_wind[ind[2]:V_wind.size], b[ind[2]:V_wind.size], 
-                           label='batt: 500 [Whr/kg]')
-        curve4, = plt.plot([25,25], [0,200], '--', color='r', label='90% wind speed')
-        plt.ylabel('wing span [ft]')
-        plt.xlabel('wind speed on station [m/s]')
-        plt.legend(handles = [curve1, curve2, curve3, curve4], loc =4), 
-        plt.grid()
-        plt.axis([5,40,0,200])
-        plt.savefig('bvsV_wind4515.pdf')
-        
-        # plot at 45 degrees and 50000 ft
         M.substitutions.update({'h': 50000})
-        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
+        fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200])
+        fig.savefig('bvsV_wind4550.pdf')
         
-        W = sol('W')
-        b = sol('b')
-        V_wind = sol('V_{wind}')
-        ind = np.nonzero(V_wind.magnitude==5.)
-        ind = ind[0]
-
-        plt.close()
-        plt.rcParams['lines.linewidth']=2
-        plt.rcParams['font.size']=13
-        plt.rcParams
-        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], 
-                           label='batt: 250 [Whr/kg]') 
-        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], 
-                           label = 'batt: 350 [Whr/kg]')
-        curve3, = plt.plot(V_wind[ind[2]:V_wind.size], b[ind[2]:V_wind.size], 
-                           label='batt: 500 [Whr/kg]')
-        curve4, = plt.plot([32,32], [0,200], '--', color='r', label='90% wind speed')
-        plt.ylabel('wing span [ft]')
-        plt.xlabel('wind speed on station [m/s]')
-        plt.legend(handles = [curve1, curve2, curve3, curve4], loc =3), 
-        plt.grid()
-        plt.axis([5,40,0,200])
-        plt.savefig('bvsV_wind4550.pdf')
-        
-        # plotting at 30 degree latitude and 15000 ft
-        M.substitutions.update({r'\theta': 0.6, 't_{night}': 14})
-
-        M.substitutions.update({'h':15000})
-        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-        
-        W = sol('W')
-        b = sol('b')
-        V_wind = sol('V_{wind}')
-        ind = np.nonzero(V_wind.magnitude==5.)
-        ind = ind[0]
-
-        plt.close()
-        plt.rcParams['lines.linewidth']=2
-        plt.rcParams['font.size']=13
-        plt.rcParams
-        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], 
-                           label='batt: 250 [Whr/kg]') 
-        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], 
-                           label = 'batt: 350 [Whr/kg]')
-        curve3, = plt.plot(V_wind[ind[2]:V_wind.size],  b[ind[2]:V_wind.size], 
-                           label='batt: 500 [Whr/kg]')
-        curve4, = plt.plot([25,25], [0,200], '--', color='r', 
-                            label='90% wind speed')
-        plt.ylabel('wing span [ft]')
-        plt.xlabel('wind speed on station [m/s]')
-        plt.legend(handles = [curve1, curve2, curve3, curve4], loc =2), 
-        plt.grid()
-        plt.axis([5,40,0,200])
-        plt.savefig('bvsV_wind3015.pdf')
-        
-        # plot at 30 degrees and 50000 ft
-        M.substitutions.update({'h': 50000})
-        sol = M.solve(solver='mosek', verbosity=0, skipsweepfailures=True)
-        
-        W = sol('W')
-        b = sol('b')
-        V_wind = sol('V_{wind}')
-        ind = np.nonzero(V_wind.magnitude==5.)
-        ind = ind[0]
-
-        plt.close()
-        plt.rcParams['lines.linewidth']=2
-        plt.rcParams['font.size']=13
-        plt.rcParams
-        curve1, = plt.plot(V_wind[ind[0]:ind[1]], b[ind[0]:ind[1]], 
-                           label='batt: 250 [Whr/kg]') 
-        curve2, = plt.plot(V_wind[ind[1]:ind[2]], b[ind[1]:ind[2]], 
-                           label = 'batt: 350 [Whr/kg]')
-        curve3, = plt.plot(V_wind[ind[2]:V_wind.size], b[ind[2]:V_wind.size], 
-                           label='batt: 500 [Whr/kg]')
-        curve4, = plt.plot([32,32], [0,200], '--', color='r', label='90% wind speed')
-        plt.ylabel('wing span [ft]')
-        plt.xlabel('wind speed on station [m/s]')
-        plt.legend(handles = [curve1, curve2, curve3, curve4], loc =2), 
-        plt.grid()
-        plt.axis([5,40,0,200])
-        plt.savefig('bvsV_wind3050.pdf')
 ```
 
 # Results

@@ -4,7 +4,6 @@ from gpkit import LinkedConstraintSet
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 CD = Variable('C_D', '-', 'Drag coefficient')
 CL = Variable('C_L', '-', 'Lift coefficient')
 P_shaft = Variable('P_{shaft}', 'W', 'Shaft power')
@@ -141,8 +140,6 @@ class SolarHALE(Model):
         aero = Aero()
         atmosphere = Atmosphere()
         self.submodels = [slf, power, weight, sk, aero, atmosphere]
-
-
 
         constraints = []
         lc = LinkedConstraintSet([self.submodels, constraints])
