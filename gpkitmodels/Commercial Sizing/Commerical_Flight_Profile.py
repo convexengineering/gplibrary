@@ -267,8 +267,11 @@ class Climb2(Model):
             constraints.extend([            
                 #set the velocity limits
                 #needs to be replaced by an actual Vne and a mach number
-                M[iclimb2]<= 0.8,
+                M[iclimb2]<= 1,
                 V[iclimb2] >= Vstall,
+
+                #constraint on drag and thrust
+                thrust >= D[iclimb2] + W_start[iclimb2]*theta[iclimb2],
                 
                 #climb rate constraints
                 TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrust]),
@@ -363,15 +366,15 @@ class CommercialAircraft(Model):
         atm = Atmosphere(Nseg)
 
         substitutions = {      
-            'W_{e}': 40000*units('lbf'),
-            'W_{payload}': 400000*units('lbf'),
+            'W_{e}': 44000*9.8*units('N'),
+            'W_{payload}': 20000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
             'ReqRng': 20,
-            'C_{d_0}': .025,
-            'K': 0.035,
+            'C_{d_0}': .05,
+            'K': 0.10,
             'S': 124.58,
-            'thrust': 3640000,
+            'thrust': 40000*units('lbf'),
             'c1': 2,
             'h_{toc}': 11000,
             }
