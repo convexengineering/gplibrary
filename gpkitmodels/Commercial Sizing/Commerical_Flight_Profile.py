@@ -175,9 +175,9 @@ class CommericalMissionConstraints(Model):
 
 ##            rho[iclimb1] == 1.225*units('kg/m^3'),
 ##            T[iclimb1] == 273*units('K'),
-##            rho[iclimb2] == 1.225*units('kg/m^3'),
+##            rho[iclimb2] == .7*units('kg/m^3'),
 ##            T[iclimb2] == 273*units('K'),
-            rho[icruise2] == 1.225*units('kg/m^3'),
+            rho[icruise2] == .3*units('kg/m^3'),
             T[icruise2] == 273*units('K'),
             ])
         
@@ -191,7 +191,7 @@ class CommericalMissionConstraints(Model):
                     ])
             if test ==1:
                  constraints.extend([
-##                    TCS([sum(RngCruise) >= ReqRng]),
+                    TCS([sum(RngCruise) >= ReqRng]),
 ##                    TCS([ReqRngCruise   >= sum(RngCruise)]),
 ##                    SignomialEquality(dhClimb2, htoc - 10000*units('ft'))
                     ])
@@ -327,20 +327,20 @@ class Cruise2(Model):
 
         constraints.extend([
             #constrain flight speeds with drag
-##            thrust >= D[icruise2],
+            thrust >= D[icruise2],
 
             #compute the drag
-##            TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
+            TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
             
             #constrain the climb rate by holding altitude constant
             hft[icruise2]  == htoc,
             
             #taylor series expansion to get the weight term
-##            TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
-            W_fuel[icruise2] == 1000*units('lbf'),
+            TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
+
             #breguet range eqn
-##            TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2]*g)]),
-            RngCruise[izbre]==50*units('mi'),
+            TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2]*g)]),
+
             #time
             thours[icruise2]*V[icruise2]  == RngCruise[izbre],
             ])
@@ -399,7 +399,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.solve(kktsolver = "ldl", verbosity = 4)
+    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
     
     plt.plot(np.cumsum(sol('tmin')), sol('hft'))
     plt.title('Altitude vs Time')
