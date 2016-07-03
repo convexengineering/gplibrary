@@ -327,11 +327,11 @@ class Cruise2(Model):
 
         constraints.extend([
             #constrain flight speeds with drag
-##            thrust >= D[icruise2],
+            TCS([thrust >= D[icruise2]]),
 
             #compute the drag
-##            TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
-            D[icruise2] == 1*units('N'),
+            TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
+##            D[icruise2] == 1*units('N'),
             #constrain the climb rate by holding altitude constant
             hft[icruise2]  == htoc,
             
@@ -382,7 +382,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 20000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 700,
+            'ReqRng': 698,
             'C_{d_0}': .05,
             'K': 0.10,
             'S': 124.58,
@@ -439,12 +439,14 @@ class CommercialAircraft(Model):
 if __name__ == '__main__':
     m = CommercialAircraft()
     sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+    print sol('Drag')
 ##    sol = m.determine_unbounded_variables(m,verbosity=4)
-    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
-    plt.title('Altitude vs Time')
-    plt.ylabel('Altitude [ft]')
-    plt.xlabel('Time [min]')
-    plt.show()
+##    print np.cumsum(sol('tmin'))
+##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
+##    plt.title('Altitude vs Time')
+##    plt.ylabel('Altitude [ft]')
+##    plt.xlabel('Time [min]')
+##    plt.show()
     
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
