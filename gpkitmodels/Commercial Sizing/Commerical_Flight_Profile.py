@@ -85,6 +85,7 @@ hft = VectorVariable(Nseg, 'hft', 'feet', 'Altitude [feet]')
 htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
 dhClimb1 = Variable('dh_{climb1}', 8500, 'feet', 'Total Altitude Change Required in Climb 1')
 dhClimb2 = Variable('dh_{climb2}', 'feet', 'Total Altitude Change Required in Climb 2')
+dhTakeoff = Variable('dh_{takeoff}', 1500, 'feet', 'Total Altitude Change During Takeoff Profile')
 
 #time
 tmin = VectorVariable(Nseg, 'tmin', 'min', 'Flight Time in Minutes')
@@ -154,7 +155,10 @@ class CommericalMissionConstraints(Model):
     """
     class that is general constraints that apply across the mission
     """
-    def __init__(self, test=0, **kwargs): 
+    def __init__(self, test=0, **kwargs):
+        #variable local to this model
+        alt10k = Variable('alt10k', 10000, 'feet', '10,000 feet')
+        
         constraints = []
         constraints.extend([
             #speed of sound
@@ -188,8 +192,7 @@ class CommericalMissionConstraints(Model):
                 constraints.extend([
                     #range constraints
                     TCS([sum(RngClimb) + ReqRngCruise >= ReqRng]),
-##                    SignomialEquality(dhClimb2, htoc - 10000*units('ft'))
-                    dhClimb2 == 20000*units('ft')
+                    TCS([dhClimb2 + alt10k >= htoc])
                     ])
             if test ==1:
                  constraints.extend([
@@ -332,6 +335,7 @@ class Cruise2(Model):
             #compute the drag
             TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
 ##            D[icruise2] == 1*units('N'),
+            
             #constrain the climb rate by holding altitude constant
             hft[icruise2]  == htoc,
             
@@ -353,7 +357,7 @@ class Cruise2(Model):
             
         constraints.extend([
             #substitue these values later
-            TSFC[icruise2]  == c1,
+            TSFC[icruise2]  == c1/((htoc/units('ft'))**.001),
             LD[icruise2]  == 10,
             V[icruise2] == 420*units('kts')
             ])
@@ -382,13 +386,13 @@ class CommercialAircraft(Model):
             'W_{payload}': 20000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 698,
+            'ReqRng': 600,
             'C_{d_0}': .05,
             'K': 0.10,
             'S': 124.58,
             'thrust': 40000*units('lbf'),
             'c1': 2,
-            'h_{toc}': 30000,
+            #'h_{toc}': 30000,
             }
 
         self.submodels = [cmc, climb1, climb2, cruise2]
@@ -439,7 +443,9 @@ class CommercialAircraft(Model):
 if __name__ == '__main__':
     m = CommercialAircraft()
     sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
-    print sol('Drag')
+##    print sol('Drag')
+##    print sol('thrust')
+    print sol('hft')
 ##    sol = m.determine_unbounded_variables(m,verbosity=4)
 ##    print np.cumsum(sol('tmin'))
 ##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
