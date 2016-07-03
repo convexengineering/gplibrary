@@ -188,7 +188,6 @@ class CommericalMissionConstraints(Model):
                 constraints.extend([
                     #range constraints
                     TCS([sum(RngClimb) + ReqRngCruise >= ReqRng]),
-                    TCS([ReqRngCruise   >= sum(RngCruise)]),
 ##                    SignomialEquality(dhClimb2, htoc - 10000*units('ft'))
                     dhClimb2 == 20000*units('ft')
                     ])
@@ -349,7 +348,7 @@ class Cruise2(Model):
         #constraint on the aircraft meeting the required range
         for i in range(min(izbre), max(izbre)+1):
             constraints.extend([
-                TCS([RngCruise[i] == ReqRngCruise/Nseg])
+                TCS([RngCruise[i] == ReqRngCruise/(Ncruise2)])
                 ])
             
         constraints.extend([
@@ -383,7 +382,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 20000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 1300,
+            'ReqRng': 700,
             'C_{d_0}': .05,
             'K': 0.10,
             'S': 124.58,
