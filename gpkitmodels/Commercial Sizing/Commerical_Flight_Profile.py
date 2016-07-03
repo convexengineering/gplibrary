@@ -7,6 +7,8 @@ from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
 from atmosphere import Atmosphere
+from collections import defaultdict
+from gpkit.small_scripts import mag
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -20,8 +22,8 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 #-----------------------------------------------------------
 #defining the number of segments
 Ntakeoff = 0
-Nclimb1 = 0
-Nclimb2 = 0
+Nclimb1 = 2
+Nclimb2 = 2
 Ncruise1 = 0
 Ncruiseclimb = 0
 Ncruise2 = 2
@@ -54,8 +56,8 @@ else:
     iclimb2 =0
     
 if Ncruise2 != 0:
-##    icruise2 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise2 + iclimb2[len(iclimb2)-1], Ncruise2))
-    icruise2 = map(int, np.linspace(0, Ncruise2-1, Ncruise2))
+    icruise2 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise2 + iclimb2[len(iclimb2)-1], Ncruise2))
+##    icruise2 = map(int, np.linspace(0, Ncruise2-1, Ncruise2))
 else:
     icruise2 = 0
 
@@ -92,7 +94,7 @@ thours = VectorVariable(Nseg, 'thr', 'hour', 'Flight Time in Hours')
 if Nclimb != 0:
     RngClimb = VectorVariable(Nclimb, 'RngClimb', 'miles', 'Segment Range During Climb')
 if Ncruise !=0:
-    RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCCruise', 'miles', 'Segment Range During Cruise')
+    RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCruise', 'miles', 'Segment Range During Cruise')
 ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
 ReqRng = Variable('ReqRng', 'miles', 'Required Mission Range')
 
@@ -173,21 +175,22 @@ class CommericalMissionConstraints(Model):
             TCS([W_e + W_payload <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
 
-##            rho[iclimb1] == 1.225*units('kg/m^3'),
-##            T[iclimb1] == 273*units('K'),
-##            rho[iclimb2] == .7*units('kg/m^3'),
-##            T[iclimb2] == 273*units('K'),
+            rho[iclimb1] == 1.225*units('kg/m^3'),
+            T[iclimb1] == 273*units('K'),
+            rho[iclimb2] == .7*units('kg/m^3'),
+            T[iclimb2] == 250*units('K'),
             rho[icruise2] == .3*units('kg/m^3'),
-            T[icruise2] == 273*units('K'),
+            T[icruise2] == 230*units('K'),
             ])
         
         with gpkit.SignomialsEnabled():
             if test != 1:
                 constraints.extend([
                     #range constraints
-                    TCS([sum(RngClimb) + sum(RngCruise) >= ReqRng]),
+                    TCS([sum(RngClimb) + ReqRngCruise >= ReqRng]),
                     TCS([ReqRngCruise   >= sum(RngCruise)]),
-                    SignomialEquality(dhClimb2, htoc - 10000*units('ft'))
+##                    SignomialEquality(dhClimb2, htoc - 10000*units('ft'))
+                    dhClimb2 == 20000*units('ft')
                     ])
             if test ==1:
                  constraints.extend([
@@ -195,15 +198,15 @@ class CommericalMissionConstraints(Model):
 ##                    TCS([ReqRngCruise   >= sum(RngCruise)]),
 ##                    SignomialEquality(dhClimb2, htoc - 10000*units('ft'))
                     ])
-##            for i in range(0, Nclimb1):
-##                constraints.extend([
-##                    SignomialEquality(hft[i], 1500*units('ft')+(i+1)*dhft[i])
-##                    ])
-##
-##            for i in range(0, Nclimb2):
-##                constraints.extend([
-##                    SignomialEquality(hft[i+Nclimb1], 10000*units('ft')+(i+1)*dhft[i+Nclimb1])
-##                    ])
+            for i in range(0, Nclimb1):
+                constraints.extend([
+                    SignomialEquality(hft[i], 1500*units('ft')+(i+1)*dhft[i])
+                    ])
+
+            for i in range(0, Nclimb2):
+                constraints.extend([
+                    SignomialEquality(hft[i+Nclimb1], 10000*units('ft')+(i+1)*dhft[i+Nclimb1])
+                    ])
 
         #constrain the segment weights in a loop
         for i in range(1, Nseg):
@@ -297,11 +300,9 @@ class Climb2(Model):
             
             #compute fuel burn from TSFC
             W_fuel[iclimb2]  == g * TSFC[iclimb2] * thours[iclimb2] * thrust,
-##            W_fuel[iclimb2] == (10*units('lbf')),
-##            thours[iclimb2] == .1*units('hr'),
+
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
-##            RngClimb[iclimb2] == 2*units('mile'),
 
             #substitute later
             TSFC[iclimb2]  == c1,
@@ -327,17 +328,17 @@ class Cruise2(Model):
 
         constraints.extend([
             #constrain flight speeds with drag
-            thrust >= D[icruise2],
+##            thrust >= D[icruise2],
 
             #compute the drag
-            TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
-            
+##            TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
+            D[icruise2] == 1*units('N'),
             #constrain the climb rate by holding altitude constant
             hft[icruise2]  == htoc,
             
             #taylor series expansion to get the weight term
             TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
-
+##            W_fuel[icruise2] == 1000*units('lbf'),
             #breguet range eqn
             TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2]*g)]),
 
@@ -348,7 +349,7 @@ class Cruise2(Model):
         #constraint on the aircraft meeting the required range
         for i in range(min(izbre), max(izbre)+1):
             constraints.extend([
-                TCS([RngCruise[i] >= (i+1)*ReqRngCruise/Nseg])
+                TCS([RngCruise[i] == ReqRngCruise/Nseg])
                 ])
             
         constraints.extend([
@@ -371,9 +372,9 @@ class CommercialAircraft(Model):
     """
     def __init__(self, **kwargs):
         #define all the submodels
-        cmc = CommericalMissionConstraints(1)
-##        climb1 = Climb1()
-##        climb2 = Climb2()
+        cmc = CommericalMissionConstraints(0)
+        climb1 = Climb1()
+        climb2 = Climb2()
         cruise2 = Cruise2()
         atm = Atmosphere(Nseg)
 
@@ -382,7 +383,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 20000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 99,
+            'ReqRng': 1300,
             'C_{d_0}': .05,
             'K': 0.10,
             'S': 124.58,
@@ -391,16 +392,55 @@ class CommercialAircraft(Model):
             'h_{toc}': 30000,
             }
 
-        self.submodels = [cmc, cruise2]
+        self.submodels = [cmc, climb1, climb2, cruise2]
 
         lc = LinkedConstraintSet([self.submodels])
 
         Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
+
+    def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
+        "Returns model with additional constraints bounding all free variables"
+        lb = lower if lower else eps
+        ub = upper if upper else 1/eps
+        constraints = []
+        freevks = tuple(vk for vk in model.varkeys if "value" not in vk.descr)
+        for varkey in freevks:
+            units = varkey.descr.get("units", 1)
+            constraints.append([ub*units >= Variable(**varkey.descr),
+                                Variable(**varkey.descr) >= lb*units])
+        m = Model(model.cost, [constraints, model], model.substitutions)
+        m.bound_all = {"lb": lb, "ub": ub, "varkeys": freevks}
+        return m
+
+
+    # pylint: disable=too-many-locals
+    def determine_unbounded_variables(self, model, solver=None, verbosity=0,
+                                      eps=1e-30, lower=None, upper=None, **kwargs):
+        "Returns labeled dictionary of unbounded variables."
+        m = self.bound_all_variables(model, eps, lower, upper)
+        sol = m.localsolve(solver, verbosity, **kwargs)
+        lam = sol["sensitivities"]["la"][1:]
+        out = defaultdict(list)
+        for i, varkey in enumerate(m.bound_all["varkeys"]):
+            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
+            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to upper bound"].append(varkey)
+            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to lower bound"].append(varkey)
+            value = mag(sol["variables"][varkey])
+            distance_below = np.log(value/m.bound_all["lb"])
+            distance_above = np.log(m.bound_all["ub"]/value)
+            if distance_below <= 3:  # arbitrary threshold
+                out["value near lower bound"].append(varkey)
+            elif distance_above <= 3:  # arbitrary threshold
+                out["value near upper bound"].append(varkey)
+        return out
+
     
 if __name__ == '__main__':
     m = CommercialAircraft()
     sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
-    
+##    sol = m.determine_unbounded_variables(m,verbosity=4)
     plt.plot(np.cumsum(sol('tmin')), sol('hft'))
     plt.title('Altitude vs Time')
     plt.ylabel('Altitude [ft]')
