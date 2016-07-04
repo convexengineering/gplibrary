@@ -180,11 +180,11 @@ class CommericalMissionConstraints(Model):
             TCS([W_ftotal >= sum(W_fuel)]),
 
             rho[iclimb1] == 1.225*units('kg/m^3'),
-            T[iclimb1] == 273*units('K'),
+##            T[iclimb1] == 273*units('K'),
             rho[iclimb2] == .7*units('kg/m^3'),
-            T[iclimb2] == 250*units('K'),
+##            T[iclimb2] == 250*units('K'),
             rho[icruise2] == .3*units('kg/m^3'),
-            T[icruise2] == 230*units('K'),
+##            T[icruise2] == 230*units('K'),
             ])
         
         with gpkit.SignomialsEnabled():
@@ -357,7 +357,7 @@ class Cruise2(Model):
             
         constraints.extend([
             #substitue these values later
-            TSFC[icruise2]  == c1/((htoc/units('ft'))**.001),
+            TSFC[icruise2]  == c1/((htoc/units('ft'))**.3),
             LD[icruise2]  == 10,
             V[icruise2] == 420*units('kts')
             ])
@@ -395,7 +395,7 @@ class CommercialAircraft(Model):
             #'h_{toc}': 30000,
             }
 
-        self.submodels = [cmc, climb1, climb2, cruise2]
+        self.submodels = [cmc, climb1, climb2, cruise2, atm]
 
         lc = LinkedConstraintSet([self.submodels])
 
