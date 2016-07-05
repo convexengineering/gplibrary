@@ -612,7 +612,7 @@ class LPCMap(Model):
 
         with SignomialsEnabled():
             constraints = [
-                #define mbar
+                #define mbar..technially not needed b/c constrained in res 2 and/or 3
                 TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
 
                 #define mtild
@@ -665,16 +665,13 @@ class HPCMap(Model):
 
         with SignomialsEnabled():
             constraints = [
-                #define mbar
-##                TCS([mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref)]),    #B.280
-
                 #define mtild
                 mtildhc == mhc/mhcD,   #B.282
 
                 #define ptild
                 #SIGNOMIAL
                 SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
-                
+               
                 #constrain the "knee" shape of the map, monomial is from gpfit
                 ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
                 ]
@@ -911,7 +908,7 @@ class OffDesign(Model):
                     #residual 7
                     #option #1, constrain the engine's thrust
                     F == Fspec,
-                    Tt4 <= 3000*units('K'),
+                    Tt4 <= 2000*units('K'),
                     Tt4 >= 500*units('K'),
                     ])
             

@@ -103,14 +103,18 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 0
+        res7 = 1
         m5opt = 0
         m7opt = 1
         
         offD = OffDesign(res7, m5opt, m7opt)
 
-        self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
-        
+        #only add the HPCmap if residual 7 specifies a thrust
+        if res7 ==0:
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
+        else:
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            
         with SignomialsEnabled():
 
             lc = LinkedConstraintSet([self.submodels])
@@ -135,8 +139,8 @@ class EngineOffDesign(Model):
                 'alpha': 10,
                 'alphap1': 11,
                 
-                'F_{spec}': 1.214e+05 ,
-                'T_{t_{4spec}}': 1100,
+                'F_{spec}': 8.0e+04 ,
+                'T_{t_{4spec}}': 1226,
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
