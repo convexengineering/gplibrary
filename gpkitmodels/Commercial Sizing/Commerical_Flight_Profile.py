@@ -179,11 +179,11 @@ class CommericalMissionConstraints(Model):
             TCS([W_e + W_payload <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
 
-            rho[iclimb1] == 1.225*units('kg/m^3'),
+##            rho[iclimb1] == 1.225*units('kg/m^3'),
 ##            T[iclimb1] == 273*units('K'),
-            rho[iclimb2] == .7*units('kg/m^3'),
+##            rho[iclimb2] == .7*units('kg/m^3'),
 ##            T[iclimb2] == 250*units('K'),
-            rho[icruise2] == .3*units('kg/m^3'),
+##            rho[icruise2] == .3*units('kg/m^3'),
 ##            T[icruise2] == 230*units('K'),
             ])
         
@@ -261,7 +261,7 @@ class Climb1(Model):
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
             #subsitute later
-            TSFC[iclimb1]  == c1,
+            TSFC[iclimb1]  == c1
             ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -280,7 +280,7 @@ class Climb2(Model):
         constraints.extend([            
             #set the velocity limits
             #needs to be replaced by an actual Vne and a mach number
-            M[iclimb2]<= 1,
+##            M[iclimb2]<= 1,
             V[iclimb2] >= Vstall,
 
             #constraint on drag and thrust
@@ -445,7 +445,7 @@ if __name__ == '__main__':
     sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
 ##    print sol('Drag')
 ##    print sol('thrust')
-    print sol('hft')
+    print sol('T')
 ##    sol = m.determine_unbounded_variables(m,verbosity=4)
 ##    print np.cumsum(sol('tmin'))
 ##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))

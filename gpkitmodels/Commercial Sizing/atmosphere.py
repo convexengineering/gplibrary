@@ -6,6 +6,8 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 # pylint: disable=bad-whitespace
 
 GAS_CONSTANT = 287  # [J/(kg*K)]
+Lval = 0.0065   # [K/m]
+th = 9.81/(GAS_CONSTANT*Lval) # [-]
 
 class Atmosphere(Model):
     """
@@ -40,25 +42,43 @@ class Atmosphere(Model):
         m = Variable('m', 1, 'm', '1 Meter')
         kgm3 = Variable('kgm3', 1, 'kg/m^3', '1 kg/m^3')
         pa =Variable('pa', 1, 'Pa', '1 Pa')
+
+
+        L    = Variable('L', Lval, 'K/m', 'Temperature lapse rate')
+        p_0  = Variable('p_0', 101325, 'Pa', 'Pressure at sea level')
+        T_0  = Variable('T_0', 288.15, 'K', 'Temperature at sea level')
+
+        
         constraints = []
         with SignomialsEnabled():
             constraints += [
                 #constrain temperature with the ideal gas law
-                T == p/(rho*R),
-
-                #bad way of handling units problem
-                hu*m == h,
-                pu*pa ==p,
-                rhou*kgm3 == rho,
-                
+##                T == p/(rho*R),
+##
+##                #bad way of handling units problem
+##                hu*m == h,
+##                pu*pa ==p,
+##                rhou*kgm3 == rho,
+##                
                 #pressure constraint
-                TCS([pu**-.58 <= (0.000162 * hu**-6.78e-06+ 1.54e-10 * hu**-2+ 2.87e-05 * (hu)**0.00355+ 0.000812 *
-                          (hu)**0.00022+ 0.000248 * (hu)**8.7e-05+ 1.41e-15 * (hu)**2.88 + 5.66e-08 * (hu)**1.06)]),
-                
+##                TCS([pu**-.58 <= (0.000162 * hu**-6.78e-06+ 1.54e-10 * hu**-2+ 2.87e-05 * (hu)**0.00355+ 0.000812 *
+##                          (hu)**0.00022+ 0.000248 * (hu)**8.7e-05+ 1.41e-15 * (hu)**2.88 + 5.66e-08 * (hu)**1.06)]),
+##                p[index] == 0.195 * (h[index]*units('1/Pa'))**0.702,
                 #density constraint
-##                TCS([rhou**-2.15 >= (0.149 * (hu)**-0.00179+ 4.74e-10 * (hu)**2.47+ 0.132 * (hu)**-0.00142 + 3.55e-28 *
+##                TCS([rhou**(-2.15) >= (0.149 * (hu)**-0.00179+ 4.74e-10 * (hu)**2.47+ 0.132 * (hu)**-0.00142 + 3.55e-28 *
 ##                           (hu)**6.89+ 0.0882 * (hu)**-0.00141+ 0.151 * (hu)**-0.000969+ 0.126 * (hu)**-0.00141+ 0.000232 *
 ##                           (hu)**0.933)]),
+
+
+                # Temperature lapse rate constraint
+                TCS([T_0 <= T + L*h]),
+                T >= 216.65*units('K'),
+                
+                # Pressure-altitude relation
+                (p/p_0)**(1/th) == T/T_0,
+
+                # Ideal gas law
+                rho == p/(R*T),
                 ]
         
 ##        su = Sutherland(N)
