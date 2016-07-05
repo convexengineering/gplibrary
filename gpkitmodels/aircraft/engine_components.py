@@ -2,16 +2,19 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units, SignomialEquality
 from gpkit.constraints.tight import TightConstraintSet as TCS
 
+#Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/propeRy_tables/air/air_Cp_Cv.html
+
 class FanAndLPC(Model):
     """
     Free Stream, Fan, and LPC Calcs for the Engine Model
     """
     def __init__(self, **kwargs):
-        #air properties
-        Rair = Variable('R_{air}', 287, 'J/kg/K', 'R for Air')
-        gammaAir = Variable('gamma_{air}', 1.4, '-', 'Specific Heat Ratio for Air')
-        Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
-        gm1 = Variable('gm1', 0.4, '-', 'Gamma for Air Minus 1')
+        #air propeRies
+        R = Variable('R', 287, 'J/kg/K', 'R')
+        gammaAir = Variable('gamma_{air}', 1.4, '-', 'Specific Heat Ratio for Ambient Air')
+        Cpair = Variable('Cp_{air}', 1003, 'J/kg/K', "Cp Value for Air at 250K")
+        Cp1 = Variable('Cp_{1}', 1008, 'J/kg/K', "Cp Value for Air at 350K")#gamma = 1.398
+        Cp2 = Variable('Cp_{2}', 1099, 'J/kg/K', "Cp Value for Air at 800K") #gamma = 1.354
         c1 = Variable('c1', 1.128, '-', 'Constant in Stagnation Eqn')
 
         #free stream
@@ -73,7 +76,7 @@ class FanAndLPC(Model):
         #constraints
         constraints = [
             #free stream speed of sound and free stream velocity
-            a0 == (gammaAir * Rair*  T0)**.5,        #traceable to B.109
+            a0 == (gammaAir * R*  T0)**.5,        #traceable to B.109
             u0 == M0 * a0,                           #traceable to B.110
             
             #free stream stagnation values
@@ -103,13 +106,13 @@ class FanAndLPC(Model):
 
             #LPC exit (station 2.5)
             Pt25 == pilc * Pt2,
-            Tt25 == Tt2 * pilc ** (.3221),
-            ht25 == Tt25 * Cpair,
+            Tt25 == Tt2 * pilc ** (.320961),
+            ht25 == Tt25 * Cp1,
 
             #HPC Exit
             Pt3 == pihc * Pt25,
-            Tt3 == Tt25 * pihc ** (.3221),
-            ht3 == Cpair * Tt3
+            Tt3 == Tt25 * pihc ** (.2947548622),
+            ht3 == Cp2 * Tt3
             ]
         Model.__init__(self, ht3, constraints, **kwargs)
 
@@ -120,9 +123,8 @@ class CombustorCooling(Model):
     """
     def __init__(self, **kwargs):
         #new vars
-        #gas properties
-        gammaC =  Variable('gamma_{C}', 1.4, '-', 'Specific Heat Ratio for Gas in Combustor')
-        Cpc = Variable('Cp_c', 1068, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor")
+        #gas propeRies
+        Cpc = Variable('Cp_c', 1204, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K
         
         #HPC exit state variables (station 3)
         Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
@@ -145,7 +147,7 @@ class CombustorCooling(Model):
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
         #heat of combustion of jet fuel
-        hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypertextbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
+        hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
 
         with SignomialsEnabled():
         
@@ -170,9 +172,9 @@ class Turbine(Model):
     classs to represent the engine's turbine
     """
     def __init__(self, **kwargs):
-        #gas properties
-        gammaT = Variable('gamma_{T}', 1.4, '-', 'Specific Heat Ratio for Gas in Turbine')
-        Cpt =Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
+        #gas propeRies
+        Cpt1 =Variable('Cp_t1', 1190, 'J/kg/K', "Cp Value for Combustion Products in HP Turbine") #1300K gamma = 1.318
+        Cpt2 =Variable('Cp_t2', 1099, 'J/kg/K', "Cp Value for Combustion Products in LP Turbine") #800K gamma = 1.354
         
         #new variables
         ht45 = Variable('h_{t_4.5}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (4.5)')
@@ -230,13 +232,13 @@ class Turbine(Model):
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
-                pihpt == (Tt45/Tt41)**(3.889),
-                ht45 == Cpt * Tt45,
+                pihpt == (Tt45/Tt41)**(4.60517),      #turbine efficiency is 0.9
+                ht45 == Cpt1 * Tt45,
 
                 #LPT Exit States
                 Pt49 == pilpt * Pt45,
-                pilpt == (Tt49/Tt45)**(3.889),
-                ht49 == Cpt * Tt49,
+                pilpt == (Tt49/Tt45)**(4.2498431),    #turbine efficiency is 0.9
+                ht49 == Cpt2 * Tt49,
 
                 #turbine nozzle exit states
                 Pt5 == pitn * Pt49, #B.167
@@ -255,14 +257,12 @@ class ExhaustAndThrust(Model):
         a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
         u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
         
-        #external atmosphere properties
+        #external atmosphere propeRies
         P0 = Variable('P_0', 'kPa', 'Free Stream Stagnation Pressure')
         
-        #gas properties
-        Cpt =Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
-        gammaT = Variable('gamma_{T}', 1.4, '-', 'Specific Heat Ratio for Gas in Turbine')
-        gammaAir = Variable('gamma_{air}', 1.4, '-', 'Specific Heat Ratio for Air')
-        Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
+        #gas propeRies
+        Cptex =Variable('Cp_tex', 1029, 'J/kg/K', "Cp Value for Combustion Products at Core Exhaust") #500K, gamma = 1.387
+        Cpfanex = Variable('Cp_fex', 1005, 'J/kg/K', "Cp Value for Air at 300K") #gamma =1.4
         
         #gravity
         g = Variable('g', 9.81, 'm/(s^2)', 'Gravitational Acceleration')
@@ -320,19 +320,19 @@ class ExhaustAndThrust(Model):
                 Pt8 == Pt7, #B.179
                 Tt8 == Tt7, #B.180
                 P8 == P0,
-                h8 == Cpair * T8,
+                h8 == Cpfanex * T8,
                 TCS([u8**2 + 2*h8 <= 2*ht8]),
                 (P8/Pt8)**(.2857) == T8/Tt8,
-                ht8 == Cpair * Tt8,
+                ht8 == Cpfanex * Tt8,
                 
                 #core exhaust
                 P6 == P0,   #B.4.11 intro
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
-                (P6/Pt6)**(.2857) == T6/Tt6,
+                (P6/Pt6)**(.279) == T6/Tt6,
                 TCS([u6**2 + 2*h6 <= 2*ht6]),
-                h6 == Cpt * T6,
-                ht6 == Cpt * Tt6,
+                h6 == Cptex * T6,
+                ht6 == Cptex * Tt6,
 
                 #overall thrust values
                 TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
@@ -367,11 +367,15 @@ class OnDesignSizing(Model):
         #new variables
         a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
         
-        #air properties
-        Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
-        Rair = Variable('R_{air}', 287, 'J/kg/K', 'R for Air')
+        #air propeRies
+        Cpair = Variable('Cp_{air}', 1003, 'J/kg/K', "Cp Value for Air at 250K")
+        Cp1 = Variable('Cp_{1}', 1008, 'J/kg/K', "Cp Value for Air at 350K")#gamma = 1.398
+        Cp2 = Variable('Cp_{2}', 1099, 'J/kg/K', "Cp Value for Air at 800K") #gamma = 1.354
+        R = Variable('R', 287, 'J/kg/K', 'R for Air')
         Cpt =Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
-        Rt = Variable('R_t', 287, 'J/kg/K', 'R for the Turbine Gas')
+        R = Variable('R_t', 287, 'J/kg/K', 'R for the Turbine Gas')
+        Cptex =Variable('Cp_tex', 1029, 'J/kg/K', "Cp Value for Combustion Products at Core Exhaust") #500K, gamma = 1.387
+        Cpfanex = Variable('Cp_fex', 1005, 'J/kg/K', "Cp Value for Air at 300K") #gamma =1.4
         
         #fan face variables
         hold2 = Variable('hold_{2}', '-', '1+(gamma-1)/2 * M_2**2')
@@ -496,24 +500,24 @@ class OnDesignSizing(Model):
 
                 #component area sizing
                 #fan area
-                P2 == Pt2*(hold2)**(-3.5),
+                P2 == Pt2*(hold2)**(-3.512),
                 T2 == Tt2 * hold2**-1,
-                h2 == Cpair * T2,
-                rho2 == P2/(Rair * T2),  #B.196
-                u2 == M2*(Cpair*Rair*T2/(781*units('J/kg/K')))**.5,  #B.197
+                h2 == Cp1 * T2,
+                rho2 == P2/(R * T2),  #B.196
+                u2 == M2*(Cp1*R*T2/(781*units('J/kg/K')))**.5,  #B.197
                 A2 == (alphap1)*mCore/(rho2*u2),     #B.198
 
                 #HPC area
-                P25 == Pt25*(hold25)**(-3.5),
+                P25 == Pt25*(hold25)**(-3.824857),
                 T25 == Tt25 * hold25**-1,
-                h25 == Cpair * T25,
-                rho25 == P25/(Rair*T25),
-                u25 == M25*(Cpair*Rair*T25/(781*units('J/kg/K')))**.5,   #B.202
+                h25 == Cp2 * T25,
+                rho25 == P25/(R*T25),
+                u25 == M25*(Cp2*R*T25/(781*units('J/kg/K')))**.5,   #B.202
                 A25 == mCore/(rho25*u25),     #B.203
 
                 #mach nubmers for post processing of the data
-                M8 == u8/((T8*Cpair*Rair/(781*units('J/kg/K')))**.5),
-                M6 == u6/((T6*Cpt*Rt/(781*units('J/kg/K')))**.5),
+                M8 == u8/((T8*Cpair*R/(781*units('J/kg/K')))**.5),
+                M6 == u6/((T6*Cpt*R/(781*units('J/kg/K')))**.5),
 
                 #compute on design normalized turbine mass flows
                 mhtD == fp1*mCore*((Tt41/Tref)**.5)/(Pt41/Pref), #B.225
@@ -525,13 +529,13 @@ class OnDesignSizing(Model):
                 mhcD == mCore*((Tt25/Tref)**.5)/(Pt25/Pref), #B.226
 
                 #compute the fan exaust speed and size the nozzle
-                SignomialEquality(u7**2, (2*Cpair*(Tt7-T7))),
-                rho7 == P7/(Rt*T7),
+                SignomialEquality(u7**2, (2*Cpfanex*(Tt7-T7))),
+                rho7 == P7/(R*T7),
                 A7 == alpha*mCore/(rho7*u7),
 
                 #compute the core exhaust speed and size the nozzle
-                SignomialEquality(u5**2, (2*Cpair*(Tt5-T5))),
-                rho5 == P5/(Rt*T5),
+                SignomialEquality(u5**2, (2*Cptex*(Tt5-T5))),
+                rho5 == P5/(R*T5),
                 A5 == mCore/(rho5*u5),
                 ]
             
@@ -539,21 +543,15 @@ class OnDesignSizing(Model):
                 #if M6 is less than one add these constraints
                  constraints.extend([
                     P5 == P0,
-
-                    #NEEDS UPDATED EXPONENETS
-                    
-                    T5 == Tt5*(P5/Pt5)**(.4/1.4)
+                    T5 == Tt5*(P5/Pt5)**(.387/1.387)
                     ])
                 
             if m6opt == 1:
                 #if M6 is greather than or equal to 1 add these constraints
                 constraints.extend([
                     M5 == 1,
-
-                    #NEEDS UPDATED EXPONENTS
-                    
-                    P5 == Pt5*(1.2)**(-3.5),
-                    T5 == Tt5*(1.2)**-1
+                    P5 == Pt5*(1.1935)**(-3.583987),
+                    T5 == Tt5*(1.1935)**-1
                     ])
                 
             if m8opt == 0:
@@ -603,7 +601,7 @@ class LPCMap(Model):
         pilcD = Variable('\pi_{lc_D}', '-', 'LPC On-Design Pressure Ratio')
         
         #Speed Variables...by setting the design speed to be 1 since only ratios are
-        #important I was able to drop out all the other speeds
+        #impoRant I was able to drop out all the other speeds
         N1 = Variable('N_1', '-', 'LPC Speed')
 
         #Spine Paramterization Variables
@@ -656,7 +654,7 @@ class HPCMap(Model):
         pihcD = Variable('\pi_{hc_D}', '-', 'HPC On-Design Pressure Ratio')
         
         #Speed Variables...by setting the design speed to be 1 since only ratios are
-        #important I was able to drop out all the other speeds
+        #impoRant I was able to drop out all the other speeds
         N2 = Variable('N_2', '-', 'HPC Speed')
 
         #Spine Paramterization Variables
@@ -708,7 +706,7 @@ class FanMap(Model):
         piFanD = Variable('\pi_{f_D}', '-', 'On-Design Pressure Ratio')
         
         #Speed Variables...by setting the design speed to be 1 since only ratios are
-        #important I was able to drop out all the other speeds
+        #impoRant I was able to drop out all the other speeds
         Nf = Variable('N_f', '-', 'Fan Speed')
         
         #Spine Paramterization Variables
@@ -748,11 +746,11 @@ class OffDesign(Model):
     """
     def __init__(self, res7, m5opt, m7opt, **kwargs):
         #define all the variables
-        #gas properties
-        Cpt = Variable('Cp_t', 1068, 'J/kg/K', "Cp Value for Combustion Products in Turbine")
-        Rt = Variable('R_t', 287, 'J/kg/K', 'R for the Turbine Gas')
-        Rair = Variable('R_{air}', 287, 'J/kg/K', 'R for Air')
-        Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-properties-d_156.html
+        #gas propeRies
+        R = Variable('R', 287, 'J/kg/K', 'R')
+        Cpair = Variable('Cp_{air}', 1068, 'J/kg/K', "Cp Value for Air at 673K") #http://www.engineeringtoolbox.com/air-propeRies-d_156.html
+        Cptex =Variable('Cp_tex', 1029, 'J/kg/K', "Cp Value for Combustion Products at Core Exhaust") #500K, gamma = 1.387
+        Cpfanex = Variable('Cp_fex', 1005, 'J/kg/K', "Cp Value for Air at 300K") #gamma =1.4
         
         #free stream static pressure
         P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
@@ -879,13 +877,13 @@ class OffDesign(Model):
                 TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
-                SignomialEquality(u7**2 +2*Cpair*T7, 2*Cpair*Tt7),
-                rho7 == P7/(Rt*T7),
+                SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),
+                rho7 == P7/(R*T7),
                 TCS([mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7]),
                 
                 #residual 5 core nozzle mass flow
-                SignomialEquality(u5**2 +2*Cpair*T5, 2*Cpair*Tt5),
-                rho5 == P5/(Rt*T5),
+                SignomialEquality(u5**2 +2*Cptex*T5, 2*Cptex*Tt5),
+                rho5 == P5/(R*T5),
                 
                 #compute core mass flux
                 mCore == rho5 * A5 * u5/(fp1),
@@ -922,15 +920,15 @@ class OffDesign(Model):
             if m5opt == 0:
                  constraints.extend([
                     P5 == P0,
-                    (P5/Pt5) == (T5/Tt5)**(3.5),
-                    M5 == u5/((T5*Cpt*Rt/(781*units('J/kg/K')))**.5),
+                    (P5/Pt5) == (T5/Tt5)**(3.583979),
+                    M5 == u5/((T5*Cptex*R/(781*units('J/kg/K')))**.5),
                     ])
                  
             if m5opt == 1:
                  constraints.extend([
                     M5 == 1,
-                    P5 == Pt5*(1.2)**(-1.4/.4),
-                    T5 == Tt5*1.2**(-1)
+                    P5 == Pt5*(1.1935)**(-3.583979),
+                    T5 == Tt5*1.1935**(-1)
                     ])
                  
             if m7opt == 0:
@@ -938,7 +936,7 @@ class OffDesign(Model):
                     #additional constraints on residual 4 for M7 < 1
                     P7 == P0,
                     (P7/Pt7) == (T7/Tt7)**(3.5),
-                    M7 == u7/((T7*Cpair*Rair/(781*units('J/kg/K')))**.5),
+                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
                     ])
                 
             if m7opt == 1:
