@@ -3,7 +3,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap
+from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap, HPCMap
 
 #TODO
 #determine the three different Cp, gamma, and R values to be used
@@ -101,14 +101,15 @@ class EngineOffDesign(Model):
         thrust = ExhaustAndThrust()
         fanmap = FanMap()
         lpcmap = LPCMap()
+        hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
         m7opt = 1
         
         offD = OffDesign(res7, m5opt, m7opt)
 
-        self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+        self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         
         with SignomialsEnabled():
 
@@ -134,7 +135,7 @@ class EngineOffDesign(Model):
                 'alpha': 10,
                 'alphap1': 11,
                 
-                'F_{spec}': sol('F_D') ,
+                'F_{spec}': 1.214e+05 ,
                 'T_{t_{4spec}}': 1100,
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
@@ -144,6 +145,8 @@ class EngineOffDesign(Model):
                 '\pi_{lc_D}': sol('\pi_{lc}'),
                 'm_{lc_D}': sol('m_{lc_D}'),
                 'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
+                'm_{hc_D}': sol('m_{hc_D}'),
+                '\pi_{hc_D}': sol('\pi_{hc}')
             }
         
         Model.__init__(self, thrust.cost, lc, substitutions)
@@ -155,4 +158,5 @@ if __name__ == "__main__":
     
     engineOffD = EngineOffDesign(solOn)
     
-    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl")
+    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl",iteration_limit=200)
+    print solOff('F')

@@ -448,6 +448,7 @@ class OnDesignSizing(Model):
         #design corrected mass flow
         mhtD =Variable('m_{htD}', 'kg/s', 'Design HPT Corrected Mass Flow (see B.225)')
         mltD = Variable('m_{ltD}', 'kg/s', 'Design LPT Corrected Mass Flow (see B.226)')
+        mhcD = Variable('m_{hc_D}', 'kg/s', 'On Design HPC Corrected Mass Flow')
 
         #reference states
         Tref = Variable('T_{ref}', 'K', 'Reference Temperature for Normalization')
@@ -521,6 +522,7 @@ class OnDesignSizing(Model):
                 #on design normalized mass flows
                 mFanBarD == alpha*mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
                 mlcD == mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
+                mhcD == mCore*((Tt25/Tref)**.5)/(Pt25/Pref), #B.226
 
                 #compute the fan exaust speed and size the nozzle
                 SignomialEquality(u7**2, (2*Cpair*(Tt7-T7))),
@@ -625,6 +627,60 @@ class LPCMap(Model):
                 ]
                 
             Model.__init__(self, 1/pilc, constraints, **kwargs)
+
+class HPCMap(Model):
+    """
+    Implentation of TASOPT compressor map model. Map is claibrated with exponents from
+    tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
+    Map is used for off-design calculations.
+    Variables link with off design HPC variables.
+    """
+    def __init__(self, **kwargs):
+        #Temperature Variables
+        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
+        Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
+
+        #Mass Flow Variables
+        mhc = Variable('m_{lc}', 'kg/s', 'HPC Corrected Mass Flow')
+        mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
+        mtildhc = Variable('m_{tild_hc}', '-', 'HPC Normalized Mass Flow')
+        mhcD = Variable('m_{hc_D}', 'kg/s', 'On Design HPC Corrected Mass Flow')
+
+        #Pressure Variables
+        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
+        Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
+
+        #pressure ratio variables
+        ptildhc = Variable('p_{tild_lc}', '-', 'LPC Normalized Pressure Ratio')
+        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
+        pihcD = Variable('\pi_{hc_D}', '-', 'HPC On-Design Pressure Ratio')
+        
+        #Speed Variables...by setting the design speed to be 1 since only ratios are
+        #important I was able to drop out all the other speeds
+        N2 = Variable('N_2', '-', 'HPC Speed')
+
+        #Spine Paramterization Variables
+        mtildshc = Variable('m_{{tild}_shc}', '-', 'HPC Spine Parameterization Variable')
+        ptildshc = Variable('p_{{tild}_shc}', '-', 'HPC Spine Parameterization Variable')
+
+        with SignomialsEnabled():
+            constraints = [
+                #define mbar
+##                TCS([mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref)]),    #B.280
+
+                #define mtild
+                mtildhc == mhc/mhcD,   #B.282
+
+                #define ptild
+                #SIGNOMIAL
+                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
+                
+                #constrain the "knee" shape of the map, monomial is from gpfit
+                ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
+                ]
+                
+            Model.__init__(self, 1/pihc, constraints, **kwargs)
+
 
 class FanMap(Model):
     """
@@ -801,6 +857,8 @@ class OffDesign(Model):
         #exit velocities
         u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
         u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
+
+        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
              
         with SignomialsEnabled():
             constraints = [
@@ -853,6 +911,8 @@ class OffDesign(Model):
                     #residual 7
                     #option #1, constrain the engine's thrust
                     F == Fspec,
+                    Tt4 <= 3000*units('K'),
+                    Tt4 >= 500*units('K'),
                     ])
             
             if res7 == 1:
