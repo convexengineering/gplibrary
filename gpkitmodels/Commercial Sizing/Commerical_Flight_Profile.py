@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from atmosphere import Atmosphere
 from collections import defaultdict
 from gpkit.small_scripts import mag
-from engine import EngineOnDesign
+from engine_atm import EngineOnDesign
 from engine_components import FanAndLPC
 
 """
@@ -341,14 +341,14 @@ class Cruise2(Model):
             T0 == T[Nclimb],
 
             #climb rate constraints for engine sizing at TOC
-##            TCS([excessPtoc+Vtoc*Dtoc <= Vtoc*thrustsizing]),
-##            RCtoc == excessPtoc/W_start[icruise2],
-##            RCtoc == 500*units('ft/min'),
+            TCS([excessPtoc+Vtoc*Dtoc <= Vtoc*thrustsizing]),
+            RCtoc == excessPtoc/W_total,
+            RCtoc == 500*units('ft/min'),
 
-##            Vtoc == .8*a[Nclimb],
+            Vtoc == .8*a[Nclimb],
 
             #compute the drag
-##            TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
+            TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
             TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
             
             #constrain the climb rate by holding altitude constant
