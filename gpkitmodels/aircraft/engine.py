@@ -31,7 +31,7 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        m6opt = 0
+        m6opt = 1
         m8opt = 1
         
         lpc = FanAndLPC()
@@ -52,20 +52,20 @@ class EngineOnDesign(Model):
             'M_0': 0.8,
             'T_{t_4}': 1400,
             '\pi_f': 1.5,
-            '\pi_{lc}': 3,
+            '\pi_{lc}': 4,
             '\pi_{hc}': 10,
             '\pi_{d}': 1,
             '\pi_{fn}': 1,
             '\pi_{tn}': 1,
-            '\pi_{b}': 1,
-            'alpha': 10,
-            'alphap1': 11,
+            '\pi_{b}': .94,
+            'alpha': 8,
+            'alphap1': 9,
             'M_{4a}': 1,    #choked turbines
-            'F_D': 121436.45, #737 max thrust in N
-            'M_2': .4,
-            'M_{2.5}': .5,
-            'hold_{2}': 1+.5*(1.398-1)*.4**2,
-            'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
+            'F_D': 10.67*1000, #737 max thrust in N
+            'M_2': .6,
+            'M_{2.5}': .6,
+            'hold_{2}': 1+.5*(1.398-1)*.6**2,
+            'hold_{2.5}': 1+.5*(1.354-1)*.6**2,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
             }
@@ -111,7 +111,7 @@ class EngineOffDesign(Model):
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
         else:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
             
@@ -136,11 +136,11 @@ class EngineOffDesign(Model):
                 'm_{ltD}': sol('m_{ltD}'),
                 
                 'G_f': 1,
-                'alpha': 10,
-                'alphap1': 11,
+                'alpha': 8,
+                'alphap1': 9,
                 
                 'F_{spec}': 8.0e+04 ,
-                'T_{t_{4spec}}': 1226,
+                'T_{t_{4spec}}': 1500,
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
@@ -163,4 +163,4 @@ if __name__ == "__main__":
     engineOffD = EngineOffDesign(solOn)
     
     solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl",iteration_limit=200)
-    print solOff('F')
+##    print solOff('F')

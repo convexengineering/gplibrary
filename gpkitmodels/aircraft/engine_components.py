@@ -147,7 +147,7 @@ class CombustorCooling(Model):
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
         #heat of combustion of jet fuel
-        hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
+        hf = Variable('h_f', 43.003, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
 
         with SignomialsEnabled():
         
