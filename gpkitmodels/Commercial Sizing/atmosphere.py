@@ -75,11 +75,17 @@ class Atmosphere(Model):
                 T >= 216.65*units('K'),
                 
                 # Pressure-altitude relation
-                (p/p_0)**(1/th) == T/T_0,
+##                (p/p_0)**(1/th) == T/T_0,
 
                 # Ideal gas law
-                rho == p/(R*T),
+##                rho == p/(R*T),
                 ]
+            #tomorrow try a one term fit for rho
+            array_sec = [SignomialEquality(rhou[i]**(-2.15), (0.149 * (hu[i])**-0.00179+ 4.74e-10 * (hu[i])**2.47+ 0.132 * (hu[i])**-0.00142 + 3.55e-28 *
+                           (hu[i])**6.89+ 0.0882 * (hu[i])**-0.00141+ 0.151 * (hu[i])**-0.000969+ 0.126 * (hu[i])**-0.00141+ 0.000232 *
+                           (hu[i])**0.933)) for i in range(len(hu))]
+
+            constraints.extend(array_sec)
         
 ##        su = Sutherland(N)
 ##        lc = su.link(constraints)
