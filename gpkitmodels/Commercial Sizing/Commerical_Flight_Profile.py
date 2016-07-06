@@ -150,6 +150,8 @@ c1 = Variable('c1', 'lb/lbf/hr', 'Constant')
 
 #defien thrust variable
 thrust = Variable('thrust', 'N', 'Engine Thrust')
+
+#define the amount of thrust required at the sizing point
 thrustsizing = Variable('thrustsizing', 'N', 'Engine Thrust for Sizing')
 
 #set the speed limit under 10,000'
@@ -332,37 +334,40 @@ class Cruise2(Model):
         #defined here for linking purposes
         T0 = Variable('T_0', 'K', 'Free Stream Stagnation Temperature')
         P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
-        
-        constraints.extend([
-            #constrain flight speeds with drag
-            TCS([thrust >= D[icruise2]]),
-
-##            P0 == p[Nclimb],
-            T0 == T[Nclimb],
-
-            #climb rate constraints for engine sizing at TOC
-            TCS([excessPtoc+Vtoc*Dtoc <= Vtoc*thrustsizing]),
-            RCtoc == excessPtoc/W_total,
-            RCtoc == 500*units('ft/min'),
-
-            Vtoc == .8*a[Nclimb],
-
-            #compute the drag
-            TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
-            TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
+        Wzf = Variable('W_{zf}', 'lbf', 'Zero Fuel Weight')
+        with gpkit.SignomialsEnabled():
             
-            #constrain the climb rate by holding altitude constant
-            hft[icruise2]  == htoc,
-            
-            #taylor series expansion to get the weight term
-            TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
+            constraints.extend([
+                #constrain flight speeds with drag
+                TCS([thrust >= D[icruise2]]),
 
-            #breguet range eqn
-            TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2])]),
+    ##            P0 == p[Nclimb],
+                T0 == T[Nclimb],
+                
+                #climb rate constraints for engine sizing at TOC
+##                TCS([excessPtoc+Vtoc*Dtoc <= Vtoc*thrustsizing]),
+                SignomialEquality(excessPtoc+Vtoc*Dtoc, Vtoc*thrustsizing),
+##                thrustsizing<=500000*units('N'),
+                RCtoc == excessPtoc/Wzf,
+                RCtoc == 1000*units('ft/min'),
+                Vtoc == .8*a[Nclimb],
 
-            #time
-            thours[icruise2]*V[icruise2]  == RngCruise[izbre],
-            ])
+                #compute the drag
+                TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(Wzf/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
+                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
+                
+                #constrain the climb rate by holding altitude constant
+                hft[icruise2]  == htoc,
+                
+                #taylor series expansion to get the weight term
+                TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
+
+                #breguet range eqn
+                TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2])]),
+
+                #time
+                thours[icruise2]*V[icruise2]  == RngCruise[izbre],
+                ])
         
         #constraint on the aircraft meeting the required range
         for i in range(min(izbre), max(izbre)+1):
@@ -395,11 +400,13 @@ class CommercialAircraft(Model):
         cruise2 = Cruise2()
         atm = Atmosphere(Nseg)
         eonD = EngineOnDesign()
-
+        for i in range(Nseg):
+            None
         
         substitutions = {      
             'W_{e}': 44000*9.8*units('N'),
             'W_{payload}': 20000*9.8*units('N'),
+            'W_{zf}': 66000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
             'ReqRng': 600,
@@ -408,6 +415,7 @@ class CommercialAircraft(Model):
             'S': 124.58,
             'c1': 2,
             'h_{toc}': 30000,
+            'thrust': 40000*units('lbf')
             }
 
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
@@ -418,7 +426,7 @@ class CommercialAircraft(Model):
    
         constraints = ConstraintSet(lc)
         
-        constraints.subinplace({'thrust': 'F_D'})
+        constraints.subinplace({thrustsizing: 'F_D'})
 
         Model.__init__(self, cmc.cost, constraints, substitutions, **kwargs)
 
@@ -463,12 +471,12 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+##    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
 ##    print sol('Drag')
 ##    print sol('thrust')
-    print sol('Drag')
-    print sol('thrust').to('N')
-##    sol = m.determine_unbounded_variables(m,verbosity=4)
+##    print sol('Drag')
+##    print sol('thrust').to('N')
+    sol = m.determine_unbounded_variables(m,verbosity=4)
 ##    print np.cumsum(sol('tmin'))
 ##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
 ##    plt.title('Altitude vs Time')
