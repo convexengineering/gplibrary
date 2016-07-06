@@ -328,16 +328,22 @@ class Cruise2(Model):
     """
     def __init__(self, **kwargs):
         constraints = []
-        test = Variable('test', 'N', 'test')
+        
+        #defined here for linking purposes
+        T0 = Variable('T_0', 'K', 'Free Stream Stagnation Temperature')
+        P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
+        
         constraints.extend([
             #constrain flight speeds with drag
             TCS([thrust >= D[icruise2]]),
+
+##            P0 == p[Nclimb],
+            T0 == T[Nclimb],
 
             #climb rate constraints for engine sizing at TOC
 ##            TCS([excessPtoc+Vtoc*Dtoc <= Vtoc*thrustsizing]),
 ##            RCtoc == excessPtoc/W_start[icruise2],
 ##            RCtoc == 500*units('ft/min'),
-##            thrustsizing == test,
 
 ##            Vtoc == .8*a[Nclimb],
 
@@ -400,10 +406,8 @@ class CommercialAircraft(Model):
             'C_{d_0}': .05,
             'K': 0.10,
             'S': 124.58,
-            'F_D': 121436.45, #737 max thrust in N
             'c1': 2,
             'h_{toc}': 30000,
-            #'test': 121436.45
             }
 
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
