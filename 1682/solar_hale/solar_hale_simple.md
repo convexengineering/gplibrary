@@ -56,19 +56,21 @@ import matplotlib.pyplot as plt
 from plotting import poor_mans_contour
 import numpy as np
 
-PLOT = False
+PLOT = True
 
 if __name__ == "__main__":
     M = SolarHALE()
     sol = M.solve("mosek")
 
+    YLIM_b = [0, 200]
+
     if PLOT:
     
-        fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200])
+        fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", YLIM_b, vref=25, vrefname="90% wind speed")
         fig.savefig('bvsV_wind4515.pdf')
         
         M.substitutions.update({'h': 50000})
-        fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200])
+        fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200], vref=25, vrefname="90% wind speed")
         fig.savefig('bvsV_wind4550.pdf')
         
 ```
