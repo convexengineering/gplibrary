@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from atmosphere import Atmosphere
 from collections import defaultdict
 from gpkit.small_scripts import mag
+from engine import EngineOnDesign
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -280,7 +281,7 @@ class Climb2(Model):
         constraints.extend([            
             #set the velocity limits
             #needs to be replaced by an actual Vne and a mach number
-##            M[iclimb2]<= 1,
+            M[iclimb2]<= 1,
             V[iclimb2] >= Vstall,
 
             #constraint on drag and thrust
@@ -290,7 +291,7 @@ class Climb2(Model):
             TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrust]),
             TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*(W_start[iclimb2]/(.5*S*rho[iclimb2]*V[iclimb2]**2))**2)]),
             RC[iclimb2] == excessP[iclimb2]/W_start[iclimb2],
-            RC[iclimb2] == 1000*units('ft/min'),
+            RC[iclimb2] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
             theta[iclimb2]*V[iclimb2]  == RC[iclimb2],
@@ -334,14 +335,13 @@ class Cruise2(Model):
 
             #compute the drag
             TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
-##            D[icruise2] == 1*units('N'),
             
             #constrain the climb rate by holding altitude constant
             hft[icruise2]  == htoc,
             
             #taylor series expansion to get the weight term
             TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
-##            W_fuel[icruise2] == 1000*units('lbf'),
+
             #breguet range eqn
             TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2]*g)]),
 
@@ -380,6 +380,7 @@ class CommercialAircraft(Model):
         climb2 = Climb2()
         cruise2 = Cruise2()
         atm = Atmosphere(Nseg)
+        eonD = EngineOnDesign()
 
         substitutions = {      
             'W_{e}': 44000*9.8*units('N'),
