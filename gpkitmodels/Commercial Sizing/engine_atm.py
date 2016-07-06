@@ -47,7 +47,6 @@ class EngineOnDesign(Model):
             lc = LinkedConstraintSet([self.submodels])
 
             substitutions = {
-##            'T_0': 240,   #36K feet
             'P_0': .8,  
             'M_0': 0.8,
             'T_{t_4}': 1400,
@@ -67,7 +66,7 @@ class EngineOnDesign(Model):
             'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
-            'F_D': 121436.45, #737 max thrust in N
+            #'F_D': 121436.45, #737 max thrust in N
             }
 
             #temporary objective is to minimize the core mass flux 
