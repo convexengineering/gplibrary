@@ -62,16 +62,6 @@ if __name__ == "__main__":
     M = SolarHALE()
     sol = M.solve("mosek")
 
-    YLIM_b = [0, 200]
-
-    if PLOT:
-    
-        fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", YLIM_b, vref=25, vrefname="90% wind speed")
-        fig.savefig('bvsV_wind4515.pdf')
-        
-        M.substitutions.update({'h': 50000})
-        fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200], vref=25, vrefname="90% wind speed")
-        fig.savefig('bvsV_wind4550.pdf')
         
 ```
 
@@ -99,43 +89,39 @@ The plane was also sized for each altitude and latitude case for three different
 
 ## 45 Degree Latitude Sizing 
 
-Figures 1 and 2 show how the aircraft would be sized at the 45 degree latitude case.  The plots show how wing span would grow based on the average wind speed during the mission.  The 90% wind speed is shown for reference.  As is observed at the 45 degree latitude case, in order for the plane to produce enough power to match the wind speeds of the 90% case the wing span would be well over 200 ft.  As the wind speed increases the plane requires more power to station keep and therefore more solar cells and more batteries to harvest and store that power.  Even for the 15,000 ft altitude case, the wind speeds between 15-18 m/s require about a 100 ft wing span to produce the power necessary regardless of the battry type.  Reaching the 90% wind speed limit is simply infeasible.  For the 50,000 ft altitude case the best available lithium ion battery is not even feasible and does not appear on the graph and reaching the 90% wind speeds is even more difficult than the 15,000 ft altitude case. (Please note that this assumes that flight occurs during the winter solstice.)
 
-\begin{figure}[H]
-	\label{f:bvsV_wind}
-	\begin{center}
-	\includegraphics[scale = 0.5]{bvsV_wind4515}
-	\caption{This figure shows how at the 45 degree latitude and at 15,000 ft, the wind span of the aircraft grows based on the average wind speed during the mission.}
-	\end{center}
-\end{figure}
+```python
+#inPDF: skip
 
-\begin{figure}[H]
-	\label{f:bvsV_wind30}
-	\begin{center}
-	\includegraphics[scale = 0.5]{bvsV_wind4550}
-	\caption{This figure shows how at the 45 degree latitude and at 50,000 ft, the wind span of the aircraft grows based on the average wind speed during the mission.}
-	\end{center}
-\end{figure}
+def gen_tex_fig(fig, filename, caption=None):
+    fig.savefig("%s.pdf" % filename)
+    with open("%s.fig.generated.tex" % filename, "w") as f:
+        f.write("\\begin{figure}[H]")
+        f.write("\\label{f:%s}" % filename)
+        f.write("\\begin{center}")
+        f.write("\\includegraphics[scale=0.5]{%s}" % filename)
+        if caption:
+            f.write("\\caption{%s}" % caption)
+        f.write("\\end{center}")
+        f.write("\\end{figure}")
+```
+```python
+#inPDF: replace with bvsV_wind4515.fig.generated.tex
+    
+YLIM_b = [0, 200]
+    
+fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", YLIM_b, vref=25, vrefname="90% wind speed")
+gen_tex_fig(fig, 'bvsV_wind4515', "Assumptions: Rubber aircraft, Altitude-15,000 ft, Latitude-45 deg, Avg Sol Irr = 2.9 kW-hr\/m\^2")
 
-## 30 Degree Latitude Sizing 
+```
+```python
+#inPDF: replace with bvsV_wind4550.fig.generated.tex
+    
+M.substitutions.update({'h': 50000})
+fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200], vref=25, vrefname="90% wind speed")
+gen_tex_fig(fig, 'bvsV_wind4550', "Assumptions: Rubber aircraft, Altitude-50,000 ft, Latitude-45 deg, Avg Sol Irr = 2.9 kW-hr\/m\^2")
 
-A sizing for the 30 degree latitude case, at both 15,000 and 50,000 ft, was done to oberseve how the aircraft would be sized under less constraining conditions.  Figures 3 and 4 show how the wing span grows with average wind speed during the mission.  While, for the lithium sulphur battery case, a 100 ft wing span span would achieve the 90% availability requirement, it can only do so at the 30th degree parallel and under optimistic assumptions.  Again, the 50,000 ft case is not feasible for the 90% wind speed case. 
-
-\begin{figure}[H]
-	\label{f:bvsV_wind}
-	\begin{center}
-	\includegraphics[scale = 0.5]{bvsV_wind3015}
-	\caption{This figure shows how at the 30 degree latitude and at 15,000 ft, the wind span of the aircraft grows based on the average wind speed during the mission.}
-	\end{center}
-\end{figure}
-
-\begin{figure}[H]
-	\label{f:bvsV_wind30}
-	\begin{center}
-	\includegraphics[scale = 0.5]{bvsV_wind3050}
-	\caption{This figure shows how at the 30 degree latitude and at 50,000 ft, the wind span of the aircraft grows based on the average wind speed during the mission.}
-	\end{center}
-\end{figure}
+```
 
 # Conclusion
 
