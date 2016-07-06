@@ -2,7 +2,7 @@
 from numpy import pi
 import gpkit
 import numpy as np
-from gpkit import VectorVariable, Variable, Model, units, LinkedConstraintSet, SignomialEquality
+from gpkit import VectorVariable, Variable, Model, units, ConstraintSet, LinkedConstraintSet, SignomialEquality
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
@@ -10,6 +10,7 @@ from atmosphere import Atmosphere
 from collections import defaultdict
 from gpkit.small_scripts import mag
 from engine import EngineOnDesign
+from engine_components import FanAndLPC
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -119,6 +120,8 @@ K = Variable('K', '-', 'K for Parametric Drag Model')
 if Nclimb != 0:
     excessP = VectorVariable(Nclimb, 'Excess Power', 'W', 'Excess Power During Climb')
 D = VectorVariable(Nseg, 'Drag', 'N', 'Drag')
+Dtoc = Variable('Drag @ TOC', 'N', 'Drag at Top of Climb')
+excessPtoc = Variable('Excess Power @ TOC', 'W', 'Excess Power at Top Of Climb')
 
 #aircraft geometry
 S = Variable('S', 'm^2', 'Wing Planform Area')
@@ -127,24 +130,27 @@ S = Variable('S', 'm^2', 'Wing Planform Area')
 V = VectorVariable(Nseg, 'V', 'knots', 'Aircraft Flight Speed')
 M = VectorVariable(Nseg, 'M', '-', 'Aircraft Mach Number')
 Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
+Vtoc = Variable('V @ TOC', 'knots', 'Aircraft Flight Speed at TOC')
 
 #Climb/Decent Rate
 if Nclimb != 0:
     RC = VectorVariable(Nclimb, 'RC', 'feet/min', 'Rate of Climb/Decent')
     theta = VectorVariable(Nclimb, '\\theta', '-', 'Aircraft Climb Angle')
+RCtoc = Variable('RC @ TOC', 'feet/min', 'Rate of Climb at Top of Climb')
 
 #breguet parameter
 if Ncruise != 0:
     z_bre = VectorVariable(Ncruise, 'z_{bre}', '-', 'Breguet Parameter')
 
 #engine
-TSFC = VectorVariable(Nseg, 'TSFC', 'lb/hr/lbf', 'Thrust Specific Fuel Consumption')
+TSFC = VectorVariable(Nseg, 'TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
 
 #currently sets the value of TSFC, just a place holder
 c1 = Variable('c1', 'lb/lbf/hr', 'Constant')
 
 #defien thrust variable
 thrust = Variable('thrust', 'N', 'Engine Thrust')
+thrustsizing = Variable('thrustsizing', 'N', 'Engine Thrust for Sizing')
 
 #set the speed limit under 10,000'
 speedlimit = Variable('speedlimit', 250, 'kts', 'Speed Limit Under 10,000 ft')
@@ -256,13 +262,10 @@ class Climb1(Model):
             TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
             
             #compute fuel burn from TSFC
-            W_fuel[iclimb1]  == g * TSFC[iclimb1] * thours[iclimb1] * thrust,
+            W_fuel[iclimb1]  == TSFC[iclimb1] * thours[iclimb1] * thrust,
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
-
-            #subsitute later
-            TSFC[iclimb1]  == c1
             ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -302,13 +305,10 @@ class Climb2(Model):
             TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
             
             #compute fuel burn from TSFC
-            W_fuel[iclimb2]  == g * TSFC[iclimb2] * thours[iclimb2] * thrust,
+            W_fuel[iclimb2]  == TSFC[iclimb2] * thours[iclimb2] * thrust,
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
-
-            #substitute later
-            TSFC[iclimb2]  == c1,
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -328,12 +328,21 @@ class Cruise2(Model):
     """
     def __init__(self, **kwargs):
         constraints = []
-
+        test = Variable('test', 'N', 'test')
         constraints.extend([
             #constrain flight speeds with drag
             TCS([thrust >= D[icruise2]]),
 
+            #climb rate constraints for engine sizing at TOC
+##            TCS([excessPtoc+Vtoc*Dtoc <= Vtoc*thrustsizing]),
+##            RCtoc == excessPtoc/W_start[icruise2],
+##            RCtoc == 500*units('ft/min'),
+##            thrustsizing == test,
+
+##            Vtoc == .8*a[Nclimb],
+
             #compute the drag
+##            TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
             TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
             
             #constrain the climb rate by holding altitude constant
@@ -343,7 +352,7 @@ class Cruise2(Model):
             TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
 
             #breguet range eqn
-            TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2]*g)]),
+            TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2])]),
 
             #time
             thours[icruise2]*V[icruise2]  == RngCruise[izbre],
@@ -357,7 +366,6 @@ class Cruise2(Model):
             
         constraints.extend([
             #substitue these values later
-            TSFC[icruise2]  == c1,#/((htoc/units('ft'))**.3),
             LD[icruise2]  == 10,
             V[icruise2] == 420*units('kts')
             ])
@@ -382,6 +390,7 @@ class CommercialAircraft(Model):
         atm = Atmosphere(Nseg)
         eonD = EngineOnDesign()
 
+        
         substitutions = {      
             'W_{e}': 44000*9.8*units('N'),
             'W_{payload}': 20000*9.8*units('N'),
@@ -391,16 +400,23 @@ class CommercialAircraft(Model):
             'C_{d_0}': .05,
             'K': 0.10,
             'S': 124.58,
-            'thrust': 40000*units('lbf'),
+            'F_D': 121436.45, #737 max thrust in N
             'c1': 2,
-            #'h_{toc}': 30000,
+            'h_{toc}': 30000,
+            #'test': 121436.45
             }
 
-        self.submodels = [cmc, climb1, climb2, cruise2]
+        #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
+
+        self.submodels = [cmc, climb1, climb2, cruise2, eonD]
 
         lc = LinkedConstraintSet([self.submodels])
+   
+        constraints = ConstraintSet(lc)
+        
+        constraints.subinplace({'thrust': 'F_D'})
 
-        Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
+        Model.__init__(self, cmc.cost, constraints, substitutions, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
         "Returns model with additional constraints bounding all free variables"
