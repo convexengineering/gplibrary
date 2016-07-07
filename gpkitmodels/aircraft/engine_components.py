@@ -180,7 +180,7 @@ class CombustorCooling(Model):
 
                 #fuel flow fraction f
                 #THIS IS AN OVERESTIMATION IF THERE IS COOLING
-                TCS([f*hf >= Cpc*(Tt4-Tt3)+Cpc*f*(Tt4-Ttf)]),
+                TCS([f*hf >= ht4-ht3+Cpc*f*(Tt4-Ttf)]),
                 
                 #making f+1 GP compatible --> needed for convergence
                 SignomialEquality(fp1,f+1),

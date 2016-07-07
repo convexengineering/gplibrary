@@ -10,6 +10,7 @@ from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndTh
 #get realisitc R and Cp values for the different engine sections
 #verify the values of all constants...and fix where differnces of constants are hard coded
 #replace the gammaAirs with gammaTs in post processing for nozzle at station 5
+#get jet fuel Cp
 
 class EngineOnDesign(Model):
     """
@@ -33,8 +34,8 @@ class EngineOnDesign(Model):
         #set up the overeall model for an on design solve
         m6opt = 1
         m8opt = 1
-        cooling = True
-        tstages = 2
+        cooling = False
+        tstages = 1
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(cooling)
@@ -77,14 +78,14 @@ class EngineOnDesign(Model):
             'P_{ref}': 101.325,
 
             #new subs for cooling flow losses
-            'T_{t_f}': 1200,
-            'hold_{4a}': 1+.5*(1.313-1)*M25**2,
+            'T_{t_f}': 600,
+            'hold_{4a}': 1+.5*(1.313-1)*M4a**2,
             'r_{uc}': 0.5,
             'T_{m_TO}': 1000,
             'M_{t_exit}': Mexit,
             'chold_2': (1+.5*(1.318-1)*Mexit**2)**-1,
             'chold_3': (1+.5*(1.318-1)*Mexit**2)**-2,
-            'T_{t_4TO}': 1500,
+            'T_{t_4TO}': 1600,
             }
 
             #temporary objective is to minimize the core mass flux 
@@ -112,8 +113,10 @@ class EngineOffDesign(Model):
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
     def __init__(self, sol):
+        cooling = False
+        
         lpc = FanAndLPC()
-        combustor = CombustorCooling()
+        combustor = CombustorCooling(cooling)
         turbine = Turbine()
         thrust = ExhaustAndThrust()
         fanmap = FanMap()
@@ -140,7 +143,7 @@ class EngineOffDesign(Model):
                 'T_0': sol('T_0'),   #36K feet
                 'P_0': sol('P_0'),    #36K feet
                 'M_0': sol('M_0'),
-                'M_{4a}': sol('M_{4a}'),
+                
                 '\pi_{tn}': sol('\pi_{tn}'),
                 '\pi_{b}': sol('\pi_{b}'),
                 '\pi_{d}': sol('\pi_{d}'),
@@ -154,11 +157,11 @@ class EngineOffDesign(Model):
                 'm_{ltD}': sol('m_{ltD}'),
                 
                 'G_f': 1,
-                'alpha': 8,
-                'alphap1': 9,
+                'alpha': sol('alpha'),
+                'alphap1': sol('alphap1'),
                 
                 'F_{spec}': 8.0e+04 ,
-                'T_{t_{4spec}}': 1500,
+                'T_{t_{4spec}}': 1600,
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
@@ -168,8 +171,17 @@ class EngineOffDesign(Model):
                 'm_{lc_D}': sol('m_{lc_D}'),
                 'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
                 'm_{hc_D}': sol('m_{hc_D}'),
-                '\pi_{hc_D}': sol('\pi_{hc}')
+                '\pi_{hc_D}': sol('\pi_{hc}'),
+
+                'T_{t_f}': sol('T_{t_f}'),
             }
+        if cooling == True:
+            substitutions.update({
+                'M_{4a}': .6,#sol('M_{4a}'),
+                'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
+                'r_{uc}': 0.5,
+                '\alpca_c': .5
+                })
         
         Model.__init__(self, thrust.cost, lc, substitutions)
    
@@ -178,7 +190,7 @@ if __name__ == "__main__":
     
     solOn = engineOnD.localsolve(verbosity = 4, kktsolver="ldl")
     
-##    engineOffD = EngineOffDesign(solOn)
-##    
-##    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl",iteration_limit=200)
-##    print solOff('F')
+    engineOffD = EngineOffDesign(solOn)
+    
+    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl",iteration_limit=200)
+    print solOff('F')
