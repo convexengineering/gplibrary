@@ -41,6 +41,10 @@ class EngineOnDesign(Model):
         size = OnDesignSizing(m6opt, m8opt)
 
         self.submodels = [lpc, combustor, turbine, thrust, size]
+
+        M2 = .6
+        M25 = .6
+        M4a = .6
             
         with SignomialsEnabled():
 
@@ -60,18 +64,20 @@ class EngineOnDesign(Model):
             '\pi_{b}': .94,
             'alpha': 8,
             'alphap1': 9,
-            'M_{4a}': 1,    #choked turbines
+            'M_{4a}': M4a,    #choked turbines
             'F_D': 10.67*1000, #737 max thrust in N
-            'M_2': .6,
-            'M_{2.5}': .6,
-            'hold_{2}': 1+.5*(1.398-1)*.6**2,
-            'hold_{2.5}': 1+.5*(1.354-1)*.6**2,
+            'M_2': M2,
+            'M_{2.5}':M25,
+            'hold_{2}': 1+.5*(1.398-1)*M2**2,
+            'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
 
             #new subs for cooling flow losses
             'T_{t_f}': 1200,
-            '\alpca_c': 0
+            '\alpca_c': 0.1,
+            'hold_{4a}': 1+.5*(1.313-1)*M25**2,
+            'r_{uc}': 0.5
             }
 
             #temporary objective is to minimize the core mass flux 
@@ -127,6 +133,7 @@ class EngineOffDesign(Model):
                 'T_0': sol('T_0'),   #36K feet
                 'P_0': sol('P_0'),    #36K feet
                 'M_0': sol('M_0'),
+                'M_{4a}': sol('M_{4a}'),
                 '\pi_{tn}': sol('\pi_{tn}'),
                 '\pi_{b}': sol('\pi_{b}'),
                 '\pi_{d}': sol('\pi_{d}'),

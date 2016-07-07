@@ -125,6 +125,7 @@ class CombustorCooling(Model):
         #new vars
         #gas propeRies
         Cpc = Variable('Cp_c', 1204, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K
+        R = Variable('R', 287, 'J/kg/K', 'R')
         
         #HPC exit state variables (station 3)
         Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
@@ -141,6 +142,8 @@ class CombustorCooling(Model):
         Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
         ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
         Ttf = Variable('T_{t_f}', 'K', 'Incoming Fuel Total Temperature')
+        u41 = Variable('u_{4.1}', 'm/s', 'Flow Velocity at Station 4.1')
+        T41 = Variable('T_{4.1}', 'K', 'Static Temperature at the Turbine Inlet (4.1)')
 
         #burner pressure ratio
         pib = Variable('\pi_{b}', '-', 'Burner Pressure Ratio')
@@ -159,6 +162,17 @@ class CombustorCooling(Model):
 
         #define the f plus one variable, limits the number of signomials
         fp1 = Variable('fp1', '-', 'f + 1')
+
+        #variables for station 4a
+        u4a = Variable('u_{4a}', 'm/s', 'Flow Velocity at Station 4a')
+        M4a = Variable('M_{4a}', '-', 'User Specified Station 4a Mach #')
+        hold4a = Variable('hold_{4a}', '-', '1+(gamma-1)/2 * M_4a**2')
+        P4a = Variable('P_{4a}', 'kPa', 'Static Pressure at Station 4a (4a)')
+
+        #variables for cooling flow velocity
+        ruc = Variable('r_{uc}', '-', 'User Specified Cooling Flow Velocity Ratio')
+        uc = Variable('u_c', 'm/s', 'Cooling Airflow Speed at Station 4a')
+
         
         with SignomialsEnabled():
         
@@ -177,9 +191,19 @@ class CombustorCooling(Model):
                 SignomialEquality(fp1,f+1),
                 
                 #flow at turbine inlet
-                Tt41 == Tt4,
-                Pt41 == Pt4,
-                ht41 == ht4
+                SignomialEquality(Tt41, (f*hf/Cpc + Tt3 + Ttf*f)/fp1),
+                ht41 == Cpc * Tt41,
+
+                #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
+                u4a == M4a*((1.313*R*Tt4)**.5)/hold4a,
+                uc == ruc*u4a,
+                P4a == Pt4*hold4a**(-1.313/.313),
+
+                #comptue the rest of the station 4.1 variables
+                SignomialEquality(u41, (1/fp1)*(u4a*(fp1-ac)+ac*uc)),
+                SignomialEquality(T41 + .5*(u41**2)/Cpc, Tt41),
+                #here we assume no pressure loss in mixing so P41=P4a
+                Pt41 == P4a*(Tt41/T41)**(1.313/.313)
                 ]
             
         Model.__init__(self, 1/f, constraints, **kwargs)
