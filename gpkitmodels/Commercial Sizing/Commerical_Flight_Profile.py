@@ -335,6 +335,7 @@ class Cruise2(Model):
         T0 = Variable('T_0', 'K', 'Free Stream Stagnation Temperature')
         P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
         Wzf = Variable('W_{zf}', 'lbf', 'Zero Fuel Weight')
+        Fd = Variable('F_D', 'N', 'Design Thrust')
         with gpkit.SignomialsEnabled():
             
             constraints.extend([
@@ -345,15 +346,18 @@ class Cruise2(Model):
                 T0 == T[Nclimb],
                 
                 #climb rate constraints for engine sizing at TOC
-##                TCS([excessPtoc+Vtoc*Dtoc <= Vtoc*thrustsizing]),
-                SignomialEquality(excessPtoc+Vtoc*Dtoc, Vtoc*thrustsizing),
-##                thrustsizing<=500000*units('N'),
+##                TCS([excessPtoc <= Fd*Vtoc]),
+                SignomialEquality(excessPtoc+Vtoc*Dtoc, Fd*Vtoc),
+##                thrustsizing >= 9999*units('N'),
+##                thrustsizing == Wzf,
                 RCtoc == excessPtoc/Wzf,
                 RCtoc == 1000*units('ft/min'),
-                Vtoc == .8*a[Nclimb],
+                Vtoc == V[icruise2],
+                Dtoc == 1000*units('N'),
+##                Fd == 121436.45*units('N'),
 
                 #compute the drag
-                TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(Wzf/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
+##                TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(Wzf/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
                 TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
                 
                 #constrain the climb rate by holding altitude constant
@@ -415,7 +419,28 @@ class CommercialAircraft(Model):
             'S': 124.58,
             'c1': 2,
             'h_{toc}': 30000,
-            'thrust': 40000*units('lbf')
+            'thrust': 40000*units('lbf'),
+
+            'P_0': .8,  
+            'M_0': 0.8,
+            'T_{t_4}': 1400,
+            '\pi_f': 1.5,
+            '\pi_{lc}': 3,
+            '\pi_{hc}': 10,
+            '\pi_{d}': 1,
+            '\pi_{fn}': 1,
+            '\pi_{tn}': 1,
+            '\pi_{b}': 1,
+            'alpha': 10,
+            'alphap1': 11,
+            'M_{4a}': 1,    #choked turbines
+            'M_2': .4,
+            'M_{2.5}': .5,
+            'hold_{2}': 1+.5*(1.398-1)*.4**2,
+            'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
+            'T_{ref}': 288.15,
+            'P_{ref}': 101.325,
+            #'F_D': 121436.45, #737 max thrust in N
             }
 
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
@@ -426,7 +451,7 @@ class CommercialAircraft(Model):
    
         constraints = ConstraintSet(lc)
         
-        constraints.subinplace({thrustsizing: 'F_D'})
+##        constraints.subinplace({'thrustsizing': 'F_D'})
 
         Model.__init__(self, cmc.cost, constraints, substitutions, **kwargs)
 
@@ -472,11 +497,14 @@ class CommercialAircraft(Model):
 if __name__ == '__main__':
     m = CommercialAircraft()
 ##    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+    
 ##    print sol('Drag')
 ##    print sol('thrust')
 ##    print sol('Drag')
 ##    print sol('thrust').to('N')
+    
     sol = m.determine_unbounded_variables(m,verbosity=4)
+    
 ##    print np.cumsum(sol('tmin'))
 ##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
 ##    plt.title('Altitude vs Time')

@@ -46,31 +46,8 @@ class EngineOnDesign(Model):
 
             lc = LinkedConstraintSet([self.submodels])
 
-            substitutions = {
-            'P_0': .8,  
-            'M_0': 0.8,
-            'T_{t_4}': 1400,
-            '\pi_f': 1.5,
-            '\pi_{lc}': 3,
-            '\pi_{hc}': 10,
-            '\pi_{d}': 1,
-            '\pi_{fn}': 1,
-            '\pi_{tn}': 1,
-            '\pi_{b}': 1,
-            'alpha': 10,
-            'alphap1': 11,
-            'M_{4a}': 1,    #choked turbines
-            'M_2': .4,
-            'M_{2.5}': .5,
-            'hold_{2}': 1+.5*(1.398-1)*.4**2,
-            'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
-            'T_{ref}': 288.15,
-            'P_{ref}': 101.325,
-            #'F_D': 121436.45, #737 max thrust in N
-            }
-
             #temporary objective is to minimize the core mass flux 
-            Model.__init__(self, thrust.cost, lc, substitutions)
+            Model.__init__(self, thrust.cost, lc)
 
 class EngineOffDesign(Model):
     """
