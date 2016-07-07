@@ -228,7 +228,7 @@ class CommericalMissionConstraints(Model):
             constraints.extend([
                 TCS([W_start[i] >= W_end[i] + W_fuel[i]])
                 ])
-        Model.__init__(self, W_ftotal, constraints, **kwargs)
+        Model.__init__(self, W_total, constraints, **kwargs)
         
 #---------------------------------------
 #takeoff
@@ -342,22 +342,16 @@ class Cruise2(Model):
                 #constrain flight speeds with drag
                 TCS([thrust >= D[icruise2]]),
 
-    ##            P0 == p[Nclimb],
+##                P0 == p[Nclimb],
                 T0 == T[Nclimb],
                 
                 #climb rate constraints for engine sizing at TOC
-##                TCS([excessPtoc <= Fd*Vtoc]),
                 SignomialEquality(excessPtoc+Vtoc*Dtoc, Fd*Vtoc),
-##                thrustsizing >= 9999*units('N'),
-##                thrustsizing == Wzf,
                 RCtoc == excessPtoc/W_start[Nclimb],
                 RCtoc == 1000*units('ft/min'),
                 Vtoc == V[icruise2],
-##                Dtoc == 1000*units('N'),
-##                Fd == 121436.45*units('N'),
 
                 #compute the drag
-##                TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(Wzf/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
                 SignomialEquality(Dtoc, (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(W_start[Nclimb]/(.5*S*rho[Ncruise2]*Vtoc**2))**2)),
                 TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
                 
@@ -383,7 +377,7 @@ class Cruise2(Model):
         constraints.extend([
             #substitue these values later
             LD[icruise2]  == 10,
-            V[icruise2] == 420*units('kts')
+            M[icruise2] == 0.8
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -422,7 +416,7 @@ class CommercialAircraft(Model):
             'h_{toc}': 30000,
             'thrust': 40000*units('lbf'),
 
-            'P_0': .8,  
+            'P_0': 19.8,  
             'M_0': 0.8,
             'T_{t_4}': 1400,
             '\pi_f': 1.5,
@@ -432,8 +426,8 @@ class CommercialAircraft(Model):
             '\pi_{fn}': 1,
             '\pi_{tn}': 1,
             '\pi_{b}': 1,
-            'alpha': 10,
-            'alphap1': 11,
+            'alpha': 8,
+            'alphap1': 9,
             'M_{4a}': 1,    #choked turbines
             'M_2': .4,
             'M_{2.5}': .5,
@@ -497,14 +491,14 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
     
 ##    print sol('Drag')
 ##    print sol('thrust')
 ##    print sol('Drag')
 ##    print sol('thrust').to('N')
     
-    sol = m.determine_unbounded_variables(m,verbosity=4)
+##    sol = m.determine_unbounded_variables(m,verbosity=4)
     
 ##    print np.cumsum(sol('tmin'))
 ##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
