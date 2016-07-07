@@ -350,7 +350,7 @@ class Cruise2(Model):
                 SignomialEquality(excessPtoc+Vtoc*Dtoc, Fd*Vtoc),
 ##                thrustsizing >= 9999*units('N'),
 ##                thrustsizing == Wzf,
-                RCtoc == excessPtoc/Wzf,
+                RCtoc == excessPtoc/W_start[Nclimb],
                 RCtoc == 1000*units('ft/min'),
                 Vtoc == V[icruise2],
 ##                Dtoc == 1000*units('N'),
@@ -358,7 +358,7 @@ class Cruise2(Model):
 
                 #compute the drag
 ##                TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(Wzf/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
-                SignomialEquality(Dtoc, (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(Wzf/(.5*S*rho[Ncruise2]*Vtoc**2))**2)),
+                SignomialEquality(Dtoc, (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(W_start[Nclimb]/(.5*S*rho[Ncruise2]*Vtoc**2))**2)),
                 TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
                 
                 #constrain the climb rate by holding altitude constant
