@@ -2,7 +2,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units, SignomialEquality
 from gpkit.constraints.tight import TightConstraintSet as TCS
 
-#Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/propeRy_tables/air/air_Cp_Cv.html
+#Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/property_tables/air/air_Cp_Cv.html
 
 class FanAndLPC(Model):
     """
@@ -72,7 +72,7 @@ class FanAndLPC(Model):
         pifn = Variable('\pi_{fn}', '-', 'Fan Duct Pressure Loss Ratio')
         pilc = Variable('\pi_{lc}', '-', 'LPC Pressure Ratio')
         pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
-        
+
         #constraints
         constraints = [
             #free stream speed of sound and free stream velocity
@@ -128,6 +128,7 @@ class CombustorCooling(Model):
         
         #HPC exit state variables (station 3)
         Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
+        Tt3 = Variable('T_{t_3}', 'K', 'Stagnation Temperature at the HPC Exit (3)')
         ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
         
         #combustor exit state variables..recall Tt4 is already set in Engine class
@@ -139,6 +140,7 @@ class CombustorCooling(Model):
         Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
         Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
         ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
+        Ttf = Variable('T_{t_f}', 'K', 'Incoming Fuel Total Temperature')
 
         #burner pressure ratio
         pib = Variable('\pi_{b}', '-', 'Burner Pressure Ratio')
@@ -149,6 +151,15 @@ class CombustorCooling(Model):
         #heat of combustion of jet fuel
         hf = Variable('h_f', 43.003, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
 
+        #cooling flow bypass ratio
+        ac = Variable('\alpca_c', '-', 'Total Cooling Flow Bypass Ratio')
+
+        #variables for takeoff condition
+        Tt3TO = Variable('T_{t_3TO}', 'K', 'Estimated Station 3 Stagnation Temp @ Take Off')
+
+        #define the f plus one variable, limits the number of signomials
+        fp1 = Variable('fp1', '-', 'f + 1')
+        
         with SignomialsEnabled():
         
             constraints = [
@@ -157,7 +168,13 @@ class CombustorCooling(Model):
                 ht4 == Cpc * Tt4,
 
                 #fuel flow fraction f
-                TCS([f*hf + ht3 >= ht4]),
+##                TCS([f*hf + ht3 >= ht4]),
+
+                #new way to find f
+                TCS([f*hf >= Cpc*(Tt4-Tt3)-ac*Cpc*(Tt4-Tt3)+Cpc*(Tt4-Ttf)]),
+
+                #making f+1 GP compatible --> needed for convergence
+                SignomialEquality(fp1,f+1),
                 
                 #flow at turbine inlet
                 Tt41 == Tt4,
@@ -490,6 +507,13 @@ class OnDesignSizing(Model):
         u5 = Variable('u_5', 'm/s', 'Station 5 Exhaust Velocity')
         rho5 = Variable('\rho_5', 'kg/m^3', 'Air Static Density at Core Exhaust Exit (5)')
 
+        #variables for takeoff condition
+        Tt3TO = Variable('T_{t_3TO}', 'K', 'Estimated Station 3 Stagnation Temp @ Take Off')
+
+        #pressure ratios needed for calc of Tt3TO
+        pilc = Variable('\pi_{lc}', '-', 'LPC Pressure Ratio')
+        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
+        
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
@@ -537,6 +561,10 @@ class OnDesignSizing(Model):
                 SignomialEquality(u5**2, (2*Cptex*(Tt5-T5))),
                 rho5 == P5/(R*T5),
                 A5 == mCore/(rho5*u5),
+
+                #take off estimates, assume standard day air temperature outside, assumes Cp value for 500K
+                #further assume gamma is 1.387 (500K value) and polytropic efficiency is 0.9
+                Tt3TO == 288.15*units('K')*(pihc*pilc)**.31,
                 ]
             
             if m6opt == 0:
@@ -858,7 +886,7 @@ class OffDesign(Model):
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
-                SignomialEquality(fp1,f+1),
+##                SignomialEquality(fp1,f+1),
                 
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,

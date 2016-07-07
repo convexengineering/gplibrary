@@ -68,6 +68,10 @@ class EngineOnDesign(Model):
             'hold_{2.5}': 1+.5*(1.354-1)*.6**2,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
+
+            #new subs for cooling flow losses
+            'T_{t_f}': 1200,
+            '\alpca_c': 0
             }
 
             #temporary objective is to minimize the core mass flux 
@@ -160,7 +164,7 @@ if __name__ == "__main__":
     
     solOn = engineOnD.localsolve(verbosity = 4, kktsolver="ldl")
     
-    engineOffD = EngineOffDesign(solOn)
-    
-    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl",iteration_limit=200)
+##    engineOffD = EngineOffDesign(solOn)
+##    
+##    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl",iteration_limit=200)
 ##    print solOff('F')
