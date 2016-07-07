@@ -408,13 +408,13 @@ class CommercialAircraft(Model):
             'W_{zf}': 66000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 600,
+            'ReqRng': 1000,
             'C_{d_0}': .05,
             'K': 0.10,
             'S': 124.58,
-            'c1': 2,
+##            'c1': 2,
             'h_{toc}': 30000,
-            'thrust': 40000*units('lbf'),
+            'thrust': 60000*units('lbf'),
 
             'P_0': 19.8,  
             'M_0': 0.8,
@@ -422,10 +422,10 @@ class CommercialAircraft(Model):
             '\pi_f': 1.5,
             '\pi_{lc}': 3,
             '\pi_{hc}': 10,
-            '\pi_{d}': 1,
-            '\pi_{fn}': 1,
-            '\pi_{tn}': 1,
-            '\pi_{b}': 1,
+            '\pi_{d}': .99,
+            '\pi_{fn}': .98,
+            '\pi_{tn}': .99,
+            '\pi_{b}': .94,
             'alpha': 8,
             'alphap1': 9,
             'M_{4a}': 1,    #choked turbines
@@ -435,18 +435,17 @@ class CommercialAircraft(Model):
             'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
-            #'F_D': 121436.45, #737 max thrust in N
             }
 
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
 
         self.submodels = [cmc, climb1, climb2, cruise2, eonD]
-
+        
         lc = LinkedConstraintSet([self.submodels])
    
         constraints = ConstraintSet(lc)
         
-##        constraints.subinplace({'thrustsizing': 'F_D'})
+##        constraints.subinplace({'thrust': 'F_D'})
 
         Model.__init__(self, cmc.cost, constraints, substitutions, **kwargs)
 
