@@ -33,20 +33,21 @@ class EngineOnDesign(Model):
         #set up the overeall model for an on design solve
         m6opt = 1
         m8opt = 1
-
         cooling = True
+        tstages = 1
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(cooling)
         turbine = Turbine()
         thrust = ExhaustAndThrust()
-        size = OnDesignSizing(m6opt, m8opt)
+        size = OnDesignSizing(m6opt, m8opt, cooling, tstages)
 
         self.submodels = [lpc, combustor, turbine, thrust, size]
 
         M2 = .6
         M25 = .6
         M4a = .6
+        Mexit = 1
             
         with SignomialsEnabled():
 
@@ -77,9 +78,13 @@ class EngineOnDesign(Model):
 
             #new subs for cooling flow losses
             'T_{t_f}': 1200,
-            '\alpca_c': 0.1,
             'hold_{4a}': 1+.5*(1.313-1)*M25**2,
-            'r_{uc}': 0.5
+            'r_{uc}': 0.5,
+            'T_{m_TO}': 1000,
+            'M_{t_exit}': Mexit,
+            'chold_2': (1+.5*(1.318-1)*Mexit**2)**-1,
+            'chold_3': (1+.5*(1.318-1)*Mexit**2)**-2,
+            'T_{t_4TO}': 1500,
             }
 
             #temporary objective is to minimize the core mass flux 

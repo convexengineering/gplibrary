@@ -58,13 +58,6 @@ class FanAndLPC(Model):
         Pt7 = Variable('P_{t_7}', 'kPa', 'Stagnation Pressure at the Fan Nozzle Exit (7)')
         Tt7 = Variable('T_{t_7}', 'K', 'Stagnation Temperature at the Fan Nozzle Exit (7)')
         ht7 = Variable('h_{t_7}', 'J/kg', 'Stagnation Enthalpy at the Fan Nozzle Exit (7)')
-        
-        #fan efficiency variable
-        etaFan = Variable('\eta_{fan}', 0.9,'-', 'Fan Polytropic Efficiency')
-
-        #compressor efficiency variables
-        etalc = Variable('\eta_{lc}', 0.887,'-', 'Low Pressure Compressor Polytropic Efficiency')
-        etahc = Variable('\eta_{hc}', 0.887,'-', 'High Pressure Compressor Polytropic Efficiency')
 
         #pressure ratios
         pid = Variable('\pi_{d}', '-', 'Diffuser Pressure Ratio')
@@ -121,12 +114,12 @@ class CombustorCooling(Model):
     class to represent the engine's combustor and perform calculations
     on engine cooling bleed flow...cooling flow is currently not implemented
 
-    input is the boolean value mixing. A value of true implements the cooling flow
+    input is the boolean value cooling. A value of true implements the cooling flow
     non-cooling flow mixing equations, which results in an efficiency drop. Note these
     equations introduce 2 signomial equality constraints which slightly slows model
     convergence.
     """
-    def __init__(self, mixing, **kwargs):
+    def __init__(self, cooling, **kwargs):
         #new vars
         #gas propeRies
         Cpc = Variable('Cp_c', 1204, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K
@@ -177,9 +170,6 @@ class CombustorCooling(Model):
         #variables for cooling flow velocity
         ruc = Variable('r_{uc}', '-', 'User Specified Cooling Flow Velocity Ratio')
         uc = Variable('u_c', 'm/s', 'Cooling Airflow Speed at Station 4a')
-
-        #variable definitions for the cooling model
-
         
         with SignomialsEnabled():
         
@@ -189,8 +179,9 @@ class CombustorCooling(Model):
                 ht4 == Cpc * Tt4,
 
                 #fuel flow fraction f
-                TCS([f*hf >= Cpc*(Tt4-Tt3)-ac*Cpc*(Tt4-Tt3)+Cpc*(Tt4-Ttf)]),
-
+                #THIS IS AN OVERESTIMATION IF THERE IS COOLING
+                TCS([f*hf >= Cpc*(Tt4-Tt3)+Cpc*f*(Tt4-Ttf)]),
+                
                 #making f+1 GP compatible --> needed for convergence
                 SignomialEquality(fp1,f+1),
                 
@@ -199,7 +190,7 @@ class CombustorCooling(Model):
                 ht41 == Cpc * Tt41,
                 ]
             
-            if mixing == True:
+            if cooling == True:
                 constraints.extend([
                     #comptue the rest of the station 4.1 variables
                     SignomialEquality(u41, (1/fp1)*(u4a*(fp1-ac)+ac*uc)),
@@ -258,10 +249,6 @@ class Turbine(Model):
         pihpt = Variable('\pi_{HPT}', '-', 'HPT Pressure Ratio')
         pilpt = Variable('\pi_{LPT}', '-', 'LPT Pressure Ratio')
         
-        #turbine efficiences
-        etaht = Variable('\eta_{ht}', 0.9, '-', 'Polytropic Efficiency of HPT')
-        etalt = Variable('\eta_{lt}', 0.9, '-', 'Polytropic Efficiency of LPT')
-
         #flow faction f
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
@@ -413,8 +400,13 @@ class OnDesignSizing(Model):
 
     m8opt of zero gives the constriants for M8 < 1, m7opt of 1 gives constraints
     for M8 >= 1
+
+    cooling is a boolean that determines whether or not a cooling flow is calculated
+
+    tstages is the number of air cooled turbine stages in the HPT. It can assume
+    a value of either 
     """
-    def __init__(self, m6opt, m8opt, **kwargs):
+    def __init__(self, m6opt, m8opt, cooling, tstages, **kwargs):
         #new variables
         a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
         
@@ -544,6 +536,30 @@ class OnDesignSizing(Model):
         #variables for takeoff condition
         Tt3TO = Variable('T_{t_3TO}', 'K', 'Estimated Station 3 Stagnation Temp @ Take Off')
 
+        #variable definitions for the cooling model
+        TmTO = Variable('T_{m_TO}', 'K', 'Max Allowed Turbine Blade Metal Temperature at Take Off')
+        thetaf = Variable('\theta_f', 0.4, '-', 'Film Effectiveness Ratio')     #TASOPT equation C.2,
+        #value taken from Sargison, TASOPT reference 20
+        eta = Variable('\eta', 0.7, '-', 'Cooling Efficiency')  #TASOPT C.3, from Horlock TASOPT ref 19
+        Sta = Variable('S_{t_A}', 2*.035, '-', 'Weighted Stanton Number') #TASOPT C.8, also from TASOPT ref 19
+        #note that it is doubled for safety factor
+        Mtexit = Variable('M_{t_exit}', '-', 'Mach Number at Exit of Each Turbine Blade Row')
+        DTstreak = Variable('\deltaT_{streak}', 200, 'K', 'Hot Streak Allowance for 1st IGV Row') #C.14, from Koff
+        #which is TASOPT ref 21
+        chold2 = Variable('chold_2', '-', '(1+(gammaT-1)/2 * M_exit**2)**-1')
+        chold3 = Variable('chold_3', '-', '(1+(gammaT-1)/2 * M_exit**2)**-2')
+        theta1 = Variable('\theta_1', '-', 'Blade Row 1 Cooling Effectiveness Ratio')
+        theta2 = Variable('\theta_2', '-', 'Blade Row 2 Cooling Effectiveness Ratio')
+        theta3 = Variable('\theta_3', '-', 'Blade Row 3 Cooling Effectiveness Ratio')
+        e1 = Variable('e_1', '-', 'Cooling/Total Mass Flow Ratio for Row 1')
+        e2 = Variable('e_2', '-', 'Cooling/Total Mass Flow Ratio for Row 2')
+        e3 = Variable('e_3', '-', 'Cooling/Total Mass Flow Ratio for Row 3')
+        Tg1 = Variable('T_{g1}', 'K', 'Turbine Blade Row 1 Hot Gas Temp')
+        Tt4TO = Variable('T_{t_4TO}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature @ Take Off')
+
+        #cooling flow bypass ratio
+        ac = Variable('\alpca_c', '-', 'Total Cooling Flow Bypass Ratio')
+
         #pressure ratios needed for calc of Tt3TO
         pilc = Variable('\pi_{lc}', '-', 'LPC Pressure Ratio')
         pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
@@ -595,11 +611,31 @@ class OnDesignSizing(Model):
                 SignomialEquality(u5**2, (2*Cptex*(Tt5-T5))),
                 rho5 == P5/(R*T5),
                 A5 == mCore/(rho5*u5),
-
-                #take off estimates, assume standard day air temperature outside, assumes Cp value for 500K
-                #further assume gamma is 1.387 (500K value) and polytropic efficiency is 0.9
-                Tt3TO == 288.15*units('K')*(pihc*pilc)**.31,
                 ]
+            if cooling == True:
+                constraints.extend([
+                    #take off estimates, assume standard day air temperature outside, assumes Cp value for 500K
+                    #further assume gamma is 1.387 (500K value) and polytropic efficiency is 0.9
+                    Tt3TO == 288.15*units('K')*(pihc*pilc)**.31,
+
+                    #comptue the first e value
+                    SignomialEquality(Tg1, Tt4TO + DTstreak),
+                    TCS([theta1*(Tg1 - Tt3TO) >= (Tg1 - TmTO)]),
+                    SignomialEquality(e1**-1, (theta1*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta1)))),
+                    ac == e1,
+                    ])
+            if tstages == 2 and cooling == True:
+                constraints.extend([
+                    Tg2 == Tt4TO*chold2,
+                    ac >= e1 +e2
+                    ])
+                
+            if tstages == 3  and cooling == True:
+                constraints.extend([
+                    Tg2 == Tt4TO*chold2,
+                    Tg3 == Tt4TO*chold3,
+                    ac >= e1 +e2 +e3
+                    ])
             
             if m6opt == 0:
                 #if M6 is less than one add these constraints
