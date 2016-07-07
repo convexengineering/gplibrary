@@ -33,9 +33,11 @@ class EngineOnDesign(Model):
         #set up the overeall model for an on design solve
         m6opt = 1
         m8opt = 1
+
+        cooling = True
         
         lpc = FanAndLPC()
-        combustor = CombustorCooling()
+        combustor = CombustorCooling(cooling)
         turbine = Turbine()
         thrust = ExhaustAndThrust()
         size = OnDesignSizing(m6opt, m8opt)

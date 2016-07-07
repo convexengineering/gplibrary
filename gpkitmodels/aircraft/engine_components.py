@@ -120,8 +120,13 @@ class CombustorCooling(Model):
     """
     class to represent the engine's combustor and perform calculations
     on engine cooling bleed flow...cooling flow is currently not implemented
+
+    input is the boolean value mixing. A value of true implements the cooling flow
+    non-cooling flow mixing equations, which results in an efficiency drop. Note these
+    equations introduce 2 signomial equality constraints which slightly slows model
+    convergence.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, mixing, **kwargs):
         #new vars
         #gas propeRies
         Cpc = Variable('Cp_c', 1204, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K
@@ -173,6 +178,8 @@ class CombustorCooling(Model):
         ruc = Variable('r_{uc}', '-', 'User Specified Cooling Flow Velocity Ratio')
         uc = Variable('u_c', 'm/s', 'Cooling Airflow Speed at Station 4a')
 
+        #variable definitions for the cooling model
+
         
         with SignomialsEnabled():
         
@@ -182,9 +189,6 @@ class CombustorCooling(Model):
                 ht4 == Cpc * Tt4,
 
                 #fuel flow fraction f
-##                TCS([f*hf + ht3 >= ht4]),
-
-                #new way to find f
                 TCS([f*hf >= Cpc*(Tt4-Tt3)-ac*Cpc*(Tt4-Tt3)+Cpc*(Tt4-Ttf)]),
 
                 #making f+1 GP compatible --> needed for convergence
@@ -193,18 +197,24 @@ class CombustorCooling(Model):
                 #flow at turbine inlet
                 SignomialEquality(Tt41, (f*hf/Cpc + Tt3 + Ttf*f)/fp1),
                 ht41 == Cpc * Tt41,
-
-                #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
-                u4a == M4a*((1.313*R*Tt4)**.5)/hold4a,
-                uc == ruc*u4a,
-                P4a == Pt4*hold4a**(-1.313/.313),
-
-                #comptue the rest of the station 4.1 variables
-                SignomialEquality(u41, (1/fp1)*(u4a*(fp1-ac)+ac*uc)),
-                SignomialEquality(T41 + .5*(u41**2)/Cpc, Tt41),
-                #here we assume no pressure loss in mixing so P41=P4a
-                Pt41 == P4a*(Tt41/T41)**(1.313/.313)
                 ]
+            
+            if mixing == True:
+                constraints.extend([
+                    #comptue the rest of the station 4.1 variables
+                    SignomialEquality(u41, (1/fp1)*(u4a*(fp1-ac)+ac*uc)),
+                    SignomialEquality(T41 + .5*(u41**2)/Cpc, Tt41),
+                    #here we assume no pressure loss in mixing so P41=P4a
+                    Pt41 == P4a*(Tt41/T41)**(1.313/.313),
+                    #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
+                    u4a == M4a*((1.313*R*Tt4)**.5)/hold4a,
+                    uc == ruc*u4a,
+                    P4a == Pt4*hold4a**(-1.313/.313),
+                    ])
+            else:
+                constraints.extend([
+                    Pt41 == Pt4
+                    ])
             
         Model.__init__(self, 1/f, constraints, **kwargs)
 
