@@ -353,11 +353,12 @@ class Cruise2(Model):
                 RCtoc == excessPtoc/Wzf,
                 RCtoc == 1000*units('ft/min'),
                 Vtoc == V[icruise2],
-                Dtoc == 1000*units('N'),
+##                Dtoc == 1000*units('N'),
 ##                Fd == 121436.45*units('N'),
 
                 #compute the drag
 ##                TCS([Dtoc >= (.5*S*rho[icruise2]*Vtoc**2)*(Cd0 + K*(Wzf/(.5*S*rho[icruise2]*Vtoc**2))**2)]),
+                SignomialEquality(Dtoc, (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(Wzf/(.5*S*rho[Ncruise2]*Vtoc**2))**2)),
                 TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
                 
                 #constrain the climb rate by holding altitude constant
