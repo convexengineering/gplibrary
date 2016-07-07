@@ -555,6 +555,8 @@ class OnDesignSizing(Model):
         e2 = Variable('e_2', '-', 'Cooling/Total Mass Flow Ratio for Row 2')
         e3 = Variable('e_3', '-', 'Cooling/Total Mass Flow Ratio for Row 3')
         Tg1 = Variable('T_{g1}', 'K', 'Turbine Blade Row 1 Hot Gas Temp')
+        Tg2 = Variable('T_{g2}', 'K', 'Turbine Blade Row 2 Hot Gas Temp')
+        Tg3 = Variable('T_{g3}', 'K', 'Turbine Blade Row 3 Hot Gas Temp')
         Tt4TO = Variable('T_{t_4TO}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature @ Take Off')
 
         #cooling flow bypass ratio
@@ -622,19 +624,19 @@ class OnDesignSizing(Model):
                     SignomialEquality(Tg1, Tt4TO + DTstreak),
                     TCS([theta1*(Tg1 - Tt3TO) >= (Tg1 - TmTO)]),
                     SignomialEquality(e1**-1, (theta1*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta1)))),
+                    ])
+                
+            if tstages == 1 and cooling == True:
+                constraints.extend([
                     ac == e1,
                     ])
+                
             if tstages == 2 and cooling == True:
                 constraints.extend([
                     Tg2 == Tt4TO*chold2,
-                    ac >= e1 +e2
-                    ])
-                
-            if tstages == 3  and cooling == True:
-                constraints.extend([
-                    Tg2 == Tt4TO*chold2,
-                    Tg3 == Tt4TO*chold3,
-                    ac >= e1 +e2 +e3
+                    TCS([theta2*(Tg2 - Tt3TO) >= (Tg2 - TmTO)]),
+                    SignomialEquality(e2**-1, (theta2*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta2)))),
+                    SignomialEquality(ac, e1 +e2),
                     ])
             
             if m6opt == 0:

@@ -34,7 +34,7 @@ class EngineOnDesign(Model):
         m6opt = 1
         m8opt = 1
         cooling = True
-        tstages = 1
+        tstages = 2
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(cooling)
