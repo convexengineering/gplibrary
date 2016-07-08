@@ -122,6 +122,10 @@ YLIM_b = [0, 200]
 #gen_tex_fig(fig, 'bvsV_wind4550', "Assumptions: Rubber aircraft, Altitude-50,000 ft, Latitude-45 deg, Avg Sol Irr = 2.9 kW-hr\/m\^2")
 ```
 
+Data source for solar irradiance vs latitude: http://applet-magic.com/insolation.htm
+
+Data source for daylight time vs latitude: http://www.orchidculture.com/COD/daylength.html
+
 ```python
 #inPDF: replace with b_vs_latitude15.fig.generated.tex
 M.substitutions.update({"h": 15000})
