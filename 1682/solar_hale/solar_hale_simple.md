@@ -53,7 +53,7 @@ To achieve the minimum footprint of 100km, the aircraft must fly at 15,000 ft. I
 #inPDF: skip
 from solar_hale import SolarHALE
 import matplotlib.pyplot as plt
-from plotting import poor_mans_contour
+from plotting import poor_mans_contour, latitude_sweep
 import numpy as np
 
 PLOT = True
@@ -110,17 +110,31 @@ def gen_tex_fig(fig, filename, caption=None):
     
 YLIM_b = [0, 200]
     
-fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", YLIM_b, vref=25, vrefname="90% wind speed")
-gen_tex_fig(fig, 'bvsV_wind4515', "Assumptions: Rubber aircraft, Altitude-15,000 ft, Latitude-45 deg, Avg Sol Irr = 2.9 kW-hr\/m\^2")
+#fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", YLIM_b, vref=25, vrefname="90% wind speed")
+#gen_tex_fig(fig, 'bvsV_wind4515', "Assumptions: Rubber aircraft, Altitude-15,000 ft, Latitude-45 deg, Avg Sol Irr = 2.9 kW-hr\/m\^2")
 
 ```
 ```python
 #inPDF: replace with bvsV_wind4550.fig.generated.tex
     
-M.substitutions.update({'h': 50000})
-fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200], vref=25, vrefname="90% wind speed")
-gen_tex_fig(fig, 'bvsV_wind4550', "Assumptions: Rubber aircraft, Altitude-50,000 ft, Latitude-45 deg, Avg Sol Irr = 2.9 kW-hr\/m\^2")
+#M.substitutions.update({'h': 50000})
+#fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200], vref=25, vrefname="90% wind speed")
+#gen_tex_fig(fig, 'bvsV_wind4550', "Assumptions: Rubber aircraft, Altitude-50,000 ft, Latitude-45 deg, Avg Sol Irr = 2.9 kW-hr\/m\^2")
+```
 
+```python
+#inPDF: replace with b_vs_latitude15.fig.generated.tex
+M.substitutions.update({"h": 15000})
+M.substitutions.update({"V_{wind}": 20})
+import pandas as pd
+df = pd.read_csv("solar_irr_vs_lat.csv")
+df = df[df!=0.0]
+df = df.dropna()
+xsweeps = np.array([df.Winter_Solstice, df.DayLight, 24 - df.DayLight])
+xvarnames = ["(E/S)_{irr}", "t_{day}", "t_{night}"]
+
+fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", [20,25,30,35], "b", [0, 200])
+gen_tex_fig(fig, "b_vs_latitude15")
 ```
 
 # Conclusion
