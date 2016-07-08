@@ -86,6 +86,7 @@ class EngineOnDesign(Model):
             'chold_2': (1+.5*(1.318-1)*Mexit**2)**-1,
             'chold_3': (1+.5*(1.318-1)*Mexit**2)**-2,
             'T_{t_4TO}': 1600,
+            '\alpca_c': .5
             }
 
             #temporary objective is to minimize the core mass flux 
@@ -113,7 +114,7 @@ class EngineOffDesign(Model):
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
     def __init__(self, sol):
-        cooling = False
+        cooling = True
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(cooling)
@@ -180,7 +181,14 @@ class EngineOffDesign(Model):
                 'M_{4a}': .6,#sol('M_{4a}'),
                 'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
                 'r_{uc}': 0.5,
-                '\alpca_c': .5
+                '\alpca_c': .5,
+
+                
+                'T_{m_TO}': 1000,
+                'M_{t_exit}': .6,
+                'chold_2': (1+.5*(1.318-1)*.6**2)**-1,
+                'chold_3': (1+.5*(1.318-1)*.6**2)**-2,
+                'T_{t_4TO}': 1600,
                 })
         
         Model.__init__(self, thrust.cost, lc, substitutions)

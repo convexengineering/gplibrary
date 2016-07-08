@@ -193,8 +193,10 @@ class CombustorCooling(Model):
             if cooling == True:
                 constraints.extend([
                     #comptue the rest of the station 4.1 variables
-                    SignomialEquality(u41, (1/fp1)*(u4a*(fp1-ac)+ac*uc)),
-                    SignomialEquality(T41 + .5*(u41**2)/Cpc, Tt41),
+##                    SignomialEquality(u41, (1/fp1)*(u4a*(fp1-ac)+ac*uc)),
+                    TCS([u41 >= (1/fp1)*(u4a*(fp1-ac)+ac*uc)]),
+##                    SignomialEquality(T41 + .5*(u41**2)/Cpc, Tt41),
+                    TCS([T41 + .5*(u41**2)/Cpc <= Tt41]),
                     #here we assume no pressure loss in mixing so P41=P4a
                     Pt41 == P4a*(Tt41/T41)**(1.313/.313),
                     #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
@@ -621,14 +623,17 @@ class OnDesignSizing(Model):
                     Tt3TO == 288.15*units('K')*(pihc*pilc)**.31,
 
                     #comptue the first e value
-                    SignomialEquality(Tg1, Tt4TO + DTstreak),
-                    TCS([theta1*(Tg1 - Tt3TO) >= (Tg1 - TmTO)]),
-                    SignomialEquality(e1**-1, (theta1*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta1)))),
+##                    SignomialEquality(Tg1, Tt4TO + DTstreak),
+##                    Tg1 >= Tt4TO + DTstreak,
+##                    TCS([theta1*(Tg1 - Tt3TO) >= (Tg1 - TmTO)]),
+##                    SignomialEquality(theta1*(Tg1 - Tt3TO), (Tg1 - TmTO)),
+##                    SignomialEquality(e1**-1, (theta1*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta1)))),
+##                    e1**-1 >= (theta1*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta1)))
                     ])
                 
             if tstages == 1 and cooling == True:
                 constraints.extend([
-                    ac == e1,
+##                    ac == e1,
                     ])
                 
             if tstages == 2 and cooling == True:
