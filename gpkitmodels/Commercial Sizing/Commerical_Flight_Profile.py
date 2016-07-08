@@ -146,7 +146,7 @@ if Ncruise != 0:
 TSFC = VectorVariable(Nseg, 'TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
 
 #currently sets the value of TSFC, just a place holder
-c1 = Variable('c1', 'lb/lbf/hr', 'Constant')
+c1 = Variable('c1', '-', 'Constant')
 
 #defien thrust variable
 thrust = Variable('thrust', 'N', 'Engine Thrust')
@@ -268,6 +268,8 @@ class Climb1(Model):
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
+
+            TSFC[iclimb1] == c1*units('1/hr')
             ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -311,6 +313,8 @@ class Climb2(Model):
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
+
+            TSFC[iclimb2] == c1*units('1/hr')
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -366,6 +370,8 @@ class Cruise2(Model):
 
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
+
+                TSFC[5] == c1*units('1/hr')
                 ])
         
         #constraint on the aircraft meeting the required range
@@ -412,7 +418,7 @@ class CommercialAircraft(Model):
             'C_{d_0}': .05,
             'K': 0.10,
             'S': 124.58,
-##            'c1': 2,
+            'c1': 2,
             'h_{toc}': 30000,
             'thrust': 60000*units('lbf'),
 
@@ -436,18 +442,21 @@ class CommercialAircraft(Model):
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
             }
+        TSFCe = Variable('TSFC_E', '1/hr', 'Thrust Specific Fuel Consumption')
 
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
 
         self.submodels = [cmc, climb1, climb2, cruise2, eonD]
-        
-        lc = LinkedConstraintSet([self.submodels])
-   
-        constraints = ConstraintSet(lc)
-        
-##        constraints.subinplace({'thrust': 'F_D'})
 
-        Model.__init__(self, cmc.cost, constraints, substitutions, **kwargs)
+        constraints = ConstraintSet([self.submodels])
+        print TSFC[4]
+        print TSFCe
+        print constraints
+        constraints.subinplace({TSFC[4]: TSFCe})
+        print constraints
+        lc = LinkedConstraintSet(constraints)
+
+        Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
         "Returns model with additional constraints bounding all free variables"
@@ -501,7 +510,7 @@ if __name__ == '__main__':
     
 ##    print np.cumsum(sol('tmin'))
 ##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
-##    plt.title('Altitude vs Time')
+##    plt.title('Altitude vs Time')f
 ##    plt.ylabel('Altitude [ft]')
 ##    plt.xlabel('Time [min]')
 ##    plt.show()
