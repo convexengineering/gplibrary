@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 from atmosphere import Atmosphere
 from collections import defaultdict
 from gpkit.small_scripts import mag
-from engine_atm import EngineOnDesign
-from engine_components import FanAndLPC
+from engine_atm import EngineOnDesign, EngineOffDesign
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -353,6 +352,10 @@ class Cruise2(Model):
         T0 = Variable('T_0', 'K', 'Free Stream Stagnation Temperature')
         P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
         Fd = Variable('F_D', 'N', 'Design Thrust')
+
+        Tt4 = Variable('T_{t_4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')
+
+        
         with gpkit.SignomialsEnabled():
             
             constraints.extend([
@@ -385,8 +388,8 @@ class Cruise2(Model):
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
-                TSFCcr22 == c1*units('1/hr'),
-                TSFCcr21 == c1*units('1/hr'),
+##                TSFCcr22 == c1*units('1/hr'),
+##                TSFCcr21 == c1*units('1/hr'),
                 ])
         
         #constraint on the aircraft meeting the required range
@@ -420,13 +423,14 @@ class CommercialAircraft(Model):
         cruise2 = Cruise2()
         atm = Atmosphere(Nseg)
         eonD = EngineOnDesign()
+        eoffD = EngineOffDesign()
+        
         for i in range(Nseg):
             None
         
         substitutions = {      
             'W_{e}': 44000*9.8*units('N'),
             'W_{payload}': 20000*9.8*units('N'),
-            'W_{zf}': 66000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
             'ReqRng': 1000,
@@ -437,33 +441,38 @@ class CommercialAircraft(Model):
             'h_{toc}': 30000,
             'thrust': 60000*units('lbf'),
 
-            'P_0': 19.8,  
-            'M_0': 0.8,
-            'T_{t_4}': 1400,
-            '\pi_f': 1.5,
-            '\pi_{lc}': 3,
-            '\pi_{hc}': 10,
-            '\pi_{d}': .99,
-            '\pi_{fn}': .98,
-            '\pi_{tn}': .99,
-            '\pi_{b}': .94,
-            'alpha': 8,
-            'alphap1': 9,
-            'M_{4a}': 1,    #choked turbines
-            'M_2': .4,
-            'M_{2.5}': .5,
-            'hold_{2}': 1+.5*(1.398-1)*.4**2,
-            'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
-            'T_{ref}': 288.15,
-            'P_{ref}': 101.325,
+##            'P_0': 19.8,  
+##            'M_0': 0.8,
+##            'T_{t_4}': 1400,
+##            '\pi_f': 1.5,
+##            '\pi_{lc}': 3,
+##            '\pi_{hc}': 10,
+##            '\pi_{d}': .99,
+##            '\pi_{fn}': .98,
+##            '\pi_{tn}': .99,
+##            '\pi_{b}': .94,
+##            'alpha': 8,
+##            'alphap1': 9,
+##            'M_{4a}': 1,    #choked turbines
+##            'M_2': .4,
+##            'M_{2.5}': .5,
+##            'hold_{2}': 1+.5*(1.398-1)*.4**2,
+##            'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
+##            'T_{ref}': 288.15,
+##            'P_{ref}': 101.325,
+
+            'G_f': 1,
+            'N_{{bar}_Df}': 1,
+            'F_{spec}': 8.0e+04 ,
+            'T_{t_{4spec}}': 1400,
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
-
-        self.submodels = [cmc, climb1, climb2, cruise2, eonD]
+        
+        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD]
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign'})
+        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'

@@ -11,7 +11,7 @@ from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndTh
 #verify the values of all constants...and fix where differnces of constants are hard coded
 #replace the gammaAirs with gammaTs in post processing for nozzle at station 5
 
-class EngineOnDesign(ConstraintSet):
+class EngineOnDesign(Model):
     """
     Engine Sizing
 
@@ -44,13 +44,35 @@ class EngineOnDesign(ConstraintSet):
             
         with SignomialsEnabled():
 
+            substitutions = {
+                'P_0': 19.8,  
+                'M_0': 0.8,
+                'T_{t_4}': 1400,
+                '\pi_f': 1.5,
+                '\pi_{lc}': 3,
+                '\pi_{hc}': 10,
+                '\pi_{d}': .99,
+                '\pi_{fn}': .98,
+                '\pi_{tn}': .99,
+                '\pi_{b}': .94,
+                'alpha': 8,
+                'alphap1': 9,
+                'M_{4a}': 1,    #choked turbines
+                'M_2': .4,
+                'M_{2.5}': .5,
+                'hold_{2}': 1+.5*(1.398-1)*.4**2,
+                'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
+                'T_{ref}': 288.15,
+                'P_{ref}': 101.325,
+                }
+                    
             lc = LinkedConstraintSet([self.submodels])
 
             #temporary objective is to minimize the core mass flux 
-            ConstraintSet.__init__(self, lc, **kwargs)
+            Model.__init__(self, None, lc, substitutions, **kwargs)
         
 
-class EngineOffDesign(ConstraintSet):
+class EngineOffDesign(Model):
     """
     Engine Sizing for off design operation
 
@@ -71,7 +93,7 @@ class EngineOffDesign(ConstraintSet):
     HPC pressure ratio, fan corrected mass flow, LPC corrected mass flow,
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
-    def __init__(self, sol):
+    def __init__(self, **kwargs):
         lpc = FanAndLPC()
         combustor = CombustorCooling()
         turbine = Turbine()
@@ -97,40 +119,40 @@ class EngineOffDesign(ConstraintSet):
             lc = LinkedConstraintSet([self.submodels])
 
             substitutions = {
-                'T_0': sol('T_0'),   #36K feet
-                'P_0': sol('P_0'),    #36K feet
-                'M_0': sol('M_0'),
-                '\pi_{tn}': sol('\pi_{tn}'),
-                '\pi_{b}': sol('\pi_{b}'),
-                '\pi_{d}': sol('\pi_{d}'),
-                '\pi_{fn}': sol('\pi_{fn}'),
+                'T_0': 230,   #36K feet
+                 'P_0': 19.8,  
+                'M_0': 0.8,
+##                '\pi_{tn}': sol('\pi_{tn}'),
+##                '\pi_{b}': sol('\pi_{b}'),
+##                '\pi_{d}': sol('\pi_{d}'),
+##                '\pi_{fn}': sol('\pi_{fn}'),
+##                
+##                'A_5': sol('A_5'),
+##                'A_7': sol('A_7'),
+##                'T_{ref}': 288.15,
+##                'P_{ref}': 101.325,
+##                'm_{htD}': sol('m_{htD}'),
+##                'm_{ltD}': sol('m_{ltD}'),
                 
-                'A_5': sol('A_5'),
-                'A_7': sol('A_7'),
-                'T_{ref}': 288.15,
-                'P_{ref}': 101.325,
-                'm_{htD}': sol('m_{htD}'),
-                'm_{ltD}': sol('m_{ltD}'),
+##                'G_f': 1,
+##                'alpha': 10,
+##                'alphap1': 11,
                 
-                'G_f': 1,
-                'alpha': 10,
-                'alphap1': 11,
-                
-                'F_{spec}': 8.0e+04 ,
-                'T_{t_{4spec}}': 1226,
-                
-                'm_{fan_D}': sol('alpha')*sol('m_{core}'),
-                'N_{{bar}_Df}': 1,
-                '\pi_{f_D}': sol('\pi_f'),
-                'm_{core_D}': sol('m_{core}'),
-                '\pi_{lc_D}': sol('\pi_{lc}'),
-                'm_{lc_D}': sol('m_{lc_D}'),
-                'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
-                'm_{hc_D}': sol('m_{hc_D}'),
-                '\pi_{hc_D}': sol('\pi_{hc}')
+##                'F_{spec}': 8.0e+04 ,
+##                'T_{t_{4spec}}': 1226,
+##                
+##                'm_{fan_D}': sol('alpha')*sol('m_{core}'),
+##                'N_{{bar}_Df}': 1,
+##                '\pi_{f_D}': sol('\pi_f'),
+##                'm_{core_D}': sol('m_{core}'),
+##                '\pi_{lc_D}': sol('\pi_{lc}'),
+##                'm_{lc_D}': sol('m_{lc_D}'),
+##                'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
+##                'm_{hc_D}': sol('m_{hc_D}'),
+##                '\pi_{hc_D}': sol('\pi_{hc}')
             }
         
-        ConstraintSet.__init__(self, lc, **kwargs)
+        Model.__init__(self, None, lc, substitutions, **kwargs)
         
    
 if __name__ == "__main__":

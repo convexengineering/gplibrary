@@ -495,7 +495,9 @@ class OnDesignSizing(ConstraintSet):
         u5 = Variable('u_5', 'm/s', 'Station 5 Exhaust Velocity')
         rho5 = Variable('\rho_5', 'kg/m^3', 'Air Static Density at Core Exhaust Exit (5)')
 
-        u0 = Variable('u_0', 'm/s', 'Free Stream Speed') 
+        u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
+
+        mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
         
         with SignomialsEnabled():
             constraints = [
@@ -546,7 +548,11 @@ class OnDesignSizing(ConstraintSet):
                 A5 == mCore/(rho5*u5),
 
                 #constrain the exit exhaust exit speeds
-                u6 >= u0
+                u6 >= u0,
+
+                #compute on design mass flows
+                mFanD == alpha*mCore,
+##                mCore == mCoreD
                 ]
             
             if m6opt == 0:
