@@ -337,14 +337,15 @@ class Cruise2(ConstraintSet):
     Model is based off of a discretized Breguet Range equation
     """
     def __init__(self, **kwargs):
-        TSFCcr2 = VectorVariable(Ncruise2, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+##        TSFCcr2 = VectorVariable(Ncruise2, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+        TSFCcr21 = Variable('TSFC_{cr21}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+        TSFCcr22 = Variable('TSFC_{cr22}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
         
         constraints = []
         
         #defined here for linking purposes
         T0 = Variable('T_0', 'K', 'Free Stream Stagnation Temperature')
         P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
-        Wzf = Variable('W_{zf}', 'lbf', 'Zero Fuel Weight')
         Fd = Variable('F_D', 'N', 'Design Thrust')
         with gpkit.SignomialsEnabled():
             
@@ -372,12 +373,13 @@ class Cruise2(ConstraintSet):
                 TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
 
                 #breguet range eqn
-                TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFCcr2[iclimb1])]),
-
+##                TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFCcr2[iclimb1])]),
+                TCS([RngCruise[0] <= z_bre[0]*LD[4]*V[4]/(TSFCcr21)]),
+                TCS([RngCruise[1] <= z_bre[1]*LD[5]*V[5]/(TSFCcr22)]),
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
-                TSFCcr2[1] == c1*units('1/hr')
+                TSFCcr22 == c1*units('1/hr')
                 ])
         
         #constraint on the aircraft meeting the required range
@@ -454,7 +456,7 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-##        constraints.subinplace({'TSFC_Cruise2_(4,)': 'TSFC_E'})
+        constraints.subinplace({'TSFC_{cr21}': 'TSFC_E'})
 
         lc = LinkedConstraintSet(constraints)
 
