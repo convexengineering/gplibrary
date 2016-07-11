@@ -20,6 +20,7 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 
 #TODO
 #link in with engine
+#fix indicies on the TSFC vector variables
 
 #-----------------------------------------------------------
 #defining the number of segments
@@ -143,7 +144,7 @@ if Ncruise != 0:
     z_bre = VectorVariable(Ncruise, 'z_{bre}', '-', 'Breguet Parameter')
 
 #engine
-TSFC = VectorVariable(Nseg, 'TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
+#TSFC = VectorVariable(Nseg, 'TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
 
 #currently sets the value of TSFC, just a place holder
 c1 = Variable('c1', '-', 'Constant')
@@ -239,6 +240,7 @@ class Climb1(Model):
     10,000'
     """
     def __init__(self,**kwargs):
+        TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
         #Climb #1 (sub 10K subject to 250KTS speed limit)
         constraints = []
 
@@ -264,12 +266,12 @@ class Climb1(Model):
             TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
             
             #compute fuel burn from TSFC
-            W_fuel[iclimb1]  == TSFC[iclimb1] * thours[iclimb1] * thrust,
+            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
-            TSFC[iclimb1] == c1*units('1/hr')
+            TSFCc1[iclimb1] == c1*units('1/hr')
             ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -283,6 +285,8 @@ class Climb2(Model):
     class to model the climb portion above 10,000'
     """
     def __init__(self, **kwargs):
+        TSFCc2 = VectorVariable(Nclimb2, 'TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
+        
         constraints = []
         
         constraints.extend([            
@@ -309,12 +313,12 @@ class Climb2(Model):
             TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
             
             #compute fuel burn from TSFC
-            W_fuel[iclimb2]  == TSFC[iclimb2] * thours[iclimb2] * thrust,
+            W_fuel[iclimb2]  == TSFCc2[iclimb1] * thours[iclimb2] * thrust,
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
 
-            TSFC[iclimb2] == c1*units('1/hr')
+            TSFCc2[iclimb1] == c1*units('1/hr')
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -333,6 +337,8 @@ class Cruise2(Model):
     Model is based off of a discretized Breguet Range equation
     """
     def __init__(self, **kwargs):
+        TSFCcr2 = VectorVariable(Ncruise2, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+        
         constraints = []
         
         #defined here for linking purposes
@@ -366,12 +372,12 @@ class Cruise2(Model):
                 TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
 
                 #breguet range eqn
-                TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFC[icruise2])]),
+                TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFCcr2[iclimb1])]),
 
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
-                TSFC[5] == c1*units('1/hr')
+                TSFCcr2[1] == c1*units('1/hr')
                 ])
         
         #constraint on the aircraft meeting the required range
@@ -442,18 +448,14 @@ class CommercialAircraft(Model):
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
             }
-        TSFCe = Variable('TSFC_E', '1/hr', 'Thrust Specific Fuel Consumption')
-
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
 
         self.submodels = [cmc, climb1, climb2, cruise2, eonD]
 
         constraints = ConstraintSet([self.submodels])
-        print TSFC[4]
-        print TSFCe
-        print constraints
-        constraints.subinplace({TSFC[4]: TSFCe})
-        print constraints
+
+        constraints.subinplace({'TSFC_Cruise2_(4,)': 'TSFC_E'})
+
         lc = LinkedConstraintSet(constraints)
 
         Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
