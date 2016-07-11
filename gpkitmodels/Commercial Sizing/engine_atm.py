@@ -1,6 +1,6 @@
 #Implements the TASOPT engine model, currently disregards BLI
 import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled, units
+from gpkit import Model, Variable, SignomialsEnabled, units, ConstraintSet
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap, HPCMap
@@ -11,7 +11,7 @@ from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndTh
 #verify the values of all constants...and fix where differnces of constants are hard coded
 #replace the gammaAirs with gammaTs in post processing for nozzle at station 5
 
-class EngineOnDesign(Model):
+class EngineOnDesign(ConstraintSet):
     """
     Engine Sizing
 
@@ -47,9 +47,10 @@ class EngineOnDesign(Model):
             lc = LinkedConstraintSet([self.submodels])
 
             #temporary objective is to minimize the core mass flux 
-            Model.__init__(self, thrust.cost, lc)
+            ConstraintSet.__init__(self, lc, **kwargs)
+        
 
-class EngineOffDesign(Model):
+class EngineOffDesign(ConstraintSet):
     """
     Engine Sizing for off design operation
 
@@ -129,7 +130,8 @@ class EngineOffDesign(Model):
                 '\pi_{hc_D}': sol('\pi_{hc}')
             }
         
-        Model.__init__(self, thrust.cost, lc, substitutions)
+        ConstraintSet.__init__(self, lc, **kwargs)
+        
    
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()

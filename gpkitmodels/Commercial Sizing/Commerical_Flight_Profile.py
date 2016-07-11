@@ -161,7 +161,7 @@ speedlimit = Variable('speedlimit', 250, 'kts', 'Speed Limit Under 10,000 ft')
 #temporary args
 #pass in a 1 for testing climb segment 1
 
-class CommericalMissionConstraints(Model):
+class CommericalMissionConstraints(ConstraintSet):
     """
     class that is general constraints that apply across the mission
     """
@@ -229,12 +229,12 @@ class CommericalMissionConstraints(Model):
             constraints.extend([
                 TCS([W_start[i] >= W_end[i] + W_fuel[i]])
                 ])
-        Model.__init__(self, W_total, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
         
 #---------------------------------------
 #takeoff
 
-class Climb1(Model):
+class Climb1(ConstraintSet):
     """
     class to model the climb portion of a flight, applies to all climbs below
     10,000'
@@ -274,13 +274,13 @@ class Climb1(Model):
             TSFCc1[iclimb1] == c1*units('1/hr')
             ])
             
-        Model.__init__(self, None, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
         
 #--------------------------------------
 #transition between climb 1 and 2 if desired
 
             
-class Climb2(Model):
+class Climb2(ConstraintSet):
     """
     class to model the climb portion above 10,000'
     """
@@ -320,7 +320,7 @@ class Climb2(Model):
 
             TSFCc2[iclimb1] == c1*units('1/hr')
             ])
-        Model.__init__(self, None, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
         
 #--------------------------------------
 #cruise #1
@@ -330,7 +330,7 @@ class Climb2(Model):
 #---------------------------------------
 #cruise climb/decent...might switch altitude in cruise
 
-class Cruise2(Model):
+class Cruise2(ConstraintSet):
     """
     class to model the second cruise portion of a flight (if the flight is
     long enough to mandate two cruise portions)
@@ -391,7 +391,7 @@ class Cruise2(Model):
             LD[icruise2]  == 10,
             M[icruise2] == 0.8
             ])
-        Model.__init__(self, None, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
         
 #---------------------------------------
 #decent
@@ -454,11 +454,11 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_Cruise2_(4,)': 'TSFC_E'})
+##        constraints.subinplace({'TSFC_Cruise2_(4,)': 'TSFC_E'})
 
         lc = LinkedConstraintSet(constraints)
 
-        Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
+        Model.__init__(self, W_ftotal, lc, substitutions, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
         "Returns model with additional constraints bounding all free variables"

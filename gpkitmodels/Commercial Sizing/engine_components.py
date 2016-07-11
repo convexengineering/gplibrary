@@ -1,10 +1,10 @@
 import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled, units, SignomialEquality
+from gpkit import Model, Variable, SignomialsEnabled, units, SignomialEquality, ConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 
 #Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/propeRy_tables/air/air_Cp_Cv.html
 
-class FanAndLPC(Model):
+class FanAndLPC(ConstraintSet):
     """
     Free Stream, Fan, and LPC Calcs for the Engine Model
     """
@@ -114,9 +114,11 @@ class FanAndLPC(Model):
             Tt3 == Tt25 * pihc ** (.2947548622),
             ht3 == Cp2 * Tt3
             ]
-        Model.__init__(self, ht3, constraints, **kwargs)
+##        Model.__init__(self, ht3, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
+        
 
-class CombustorCooling(Model):
+class CombustorCooling(ConstraintSet):
     """
     class to represent the engine's combustor and perform calculations
     on engine cooling bleed flow...cooling flow is currently not implemented
@@ -165,9 +167,11 @@ class CombustorCooling(Model):
                 ht41 == ht4
                 ]
             
-        Model.__init__(self, 1/f, constraints, **kwargs)
+##        Model.__init__(self, 1/f, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
+        
 
-class Turbine(Model):
+class Turbine(ConstraintSet):
     """
     classs to represent the engine's turbine
     """
@@ -245,9 +249,10 @@ class Turbine(Model):
                 Tt5 == Tt49,    #B.168
                 ht5 == ht49     #B.169
                 ]
-        Model.__init__(self, 1/ht49, constraints, **kwargs)
-
-class ExhaustAndThrust(Model):
+##        Model.__init__(self, 1/ht49, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
+        
+class ExhaustAndThrust(ConstraintSet):
     """
     Class to calculate the exhaust quantities as well as
     the overall engine thrust and on design TSFCe & ISP
@@ -349,9 +354,9 @@ class ExhaustAndThrust(Model):
                 #TSFCe
                 TSFCe == 1/Isp                   #B.193
                 ]
-        Model.__init__(self, TSFCe, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
   
-class OnDesignSizing(Model):
+class OnDesignSizing(ConstraintSet):
     """
     class to perform the on design sizing of the engine.
     Nozzle areas are calcualted in post processing due to dependence on
@@ -576,9 +581,11 @@ class OnDesignSizing(Model):
                 
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
-        Model.__init__(self, None, constraints, **kwargs)
+##        Model.__init__(self, None, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
+        
 
-class LPCMap(Model):
+class LPCMap(ConstraintSet):
     """
     Implentation of TASOPT compressor map model. Map is claibrated with exponents from
     tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
@@ -629,9 +636,11 @@ class LPCMap(Model):
                 ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
                 ]
                 
-            Model.__init__(self, 1/pilc, constraints, **kwargs)
+##            Model.__init__(self, 1/pilc, constraints, **kwargs)
+            ConstraintSet.__init__(self, constraints, **kwargs)
+        
 
-class HPCMap(Model):
+class HPCMap(ConstraintSet):
     """
     Implentation of TASOPT compressor map model. Map is claibrated with exponents from
     tables B.1 or B.2 of TASOPT, making the maps realistic for the E3 compressor.
@@ -679,10 +688,12 @@ class HPCMap(Model):
                 ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
                 ]
                 
-            Model.__init__(self, 1/pihc, constraints, **kwargs)
+##            Model.__init__(self, 1/pihc, constraints, **kwargs)
+            ConstraintSet.__init__(self, constraints, **kwargs)
+        
 
 
-class FanMap(Model):
+class FanMap(ConstraintSet):
     """
     Implentation of TASOPT compressor map model. Map is claibrated with exponents from
     tables B.1 or B.2 of TASOPT, making the map realistic for the E3 fan.
@@ -734,9 +745,11 @@ class FanMap(Model):
                 ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
                 ]
               
-            Model.__init__(self, 1/pif, constraints, **kwargs)
+##            Model.__init__(self, 1/pif, constraints, **kwargs)
+            ConstraintSet.__init__(self, constraints, **kwargs)
+        
 
-class OffDesign(Model):
+class OffDesign(ConstraintSet):
     """
     Class to implement off design performance of a turbofan. Simply equates the residuals
     from section B.6 of TASOPT. The constraints inside this model should be linked with the
@@ -952,4 +965,6 @@ class OffDesign(Model):
                      T7 == Tt7*1.2**(-1)
                     ])
                  
-        Model.__init__(self, 1/u7, constraints, **kwargs)
+##        Model.__init__(self, 1/u7, constraints, **kwargs)
+        ConstraintSet.__init__(self, constraints, **kwargs)
+        
