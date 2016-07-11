@@ -6,10 +6,6 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap, HPCMap
 
 #TODO
-#determine the three different Cp, gamma, and R values to be used
-#get realisitc R and Cp values for the different engine sections
-#verify the values of all constants...and fix where differnces of constants are hard coded
-#replace the gammaAirs with gammaTs in post processing for nozzle at station 5
 #get jet fuel Cp
 
 class EngineOnDesign(Model):
