@@ -161,7 +161,7 @@ speedlimit = Variable('speedlimit', 250, 'kts', 'Speed Limit Under 10,000 ft')
 #temporary args
 #pass in a 1 for testing climb segment 1
 
-class CommericalMissionConstraints(ConstraintSet):
+class CommericalMissionConstraints(Model):
     """
     class that is general constraints that apply across the mission
     """
@@ -229,12 +229,12 @@ class CommericalMissionConstraints(ConstraintSet):
             constraints.extend([
                 TCS([W_start[i] >= W_end[i] + W_fuel[i]])
                 ])
-        ConstraintSet.__init__(self, constraints, **kwargs)
+        Model.__init__(self, W_total, constraints, **kwargs)
         
 #---------------------------------------
 #takeoff
 
-class Climb1(ConstraintSet):
+class Climb1(Model):
     """
     class to model the climb portion of a flight, applies to all climbs below
     10,000'
@@ -274,13 +274,13 @@ class Climb1(ConstraintSet):
             TSFCc1[iclimb1] == c1*units('1/hr')
             ])
             
-        ConstraintSet.__init__(self, constraints, **kwargs)
+        Model.__init__(self, None, constraints, **kwargs)
         
 #--------------------------------------
 #transition between climb 1 and 2 if desired
 
             
-class Climb2(ConstraintSet):
+class Climb2(Model):
     """
     class to model the climb portion above 10,000'
     """
@@ -320,7 +320,7 @@ class Climb2(ConstraintSet):
 
             TSFCc2[iclimb1] == c1*units('1/hr')
             ])
-        ConstraintSet.__init__(self, constraints, **kwargs)
+        Model.__init__(self, None, constraints, **kwargs)
         
 #--------------------------------------
 #cruise #1
@@ -330,8 +330,14 @@ class Climb2(ConstraintSet):
 #---------------------------------------
 #cruise climb/decent...might switch altitude in cruise
 
-class Cruise2(ConstraintSet):
+class Cruise2(Model):
     """
+    class to model the second cruise portion of a flight (if the flight is
+    long enough to mandate two cruise portions)
+    Model is based off of a discretized Breguet Range equation
+    """
+    def __init__(self, **kwargs):
+        """
     class to model the second cruise portion of a flight (if the flight is
     long enough to mandate two cruise portions)
     Model is based off of a discretized Breguet Range equation
@@ -379,7 +385,8 @@ class Cruise2(ConstraintSet):
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
-                TSFCcr22 == c1*units('1/hr')
+                TSFCcr22 == c1*units('1/hr'),
+                TSFCcr21 == c1*units('1/hr'),
                 ])
         
         #constraint on the aircraft meeting the required range
@@ -393,7 +400,7 @@ class Cruise2(ConstraintSet):
             LD[icruise2]  == 10,
             M[icruise2] == 0.8
             ])
-        ConstraintSet.__init__(self, constraints, **kwargs)
+        Model.__init__(self, None, constraints, **kwargs)
         
 #---------------------------------------
 #decent
@@ -456,7 +463,7 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_{cr21}': 'TSFC_E',})
+        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
@@ -471,7 +478,7 @@ class CommercialAircraft(Model):
                                                        'M_5','M_7','M_2','M_{2.5}','F_{sp}','T_{2}','h_{2}','T_{6}','T_{8}','T_{5}',
                                                        'T_{7}','P_{5}','P_0','fp1','u_7','\rho_7','A_7','A_5','u_5','\rho_5'})
 
-        Model.__init__(self, W_ftotal, lc, substitutions, **kwargs)
+        Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
         "Returns model with additional constraints bounding all free variables"
