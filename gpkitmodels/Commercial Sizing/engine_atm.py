@@ -102,7 +102,7 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap1()
         hpcmap = HPCMap1()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
         m7opt = 1
         
@@ -110,7 +110,7 @@ class EngineOffDesign(Model):
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap]#, lpcmap, hpcmap]
         else:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
             
@@ -125,9 +125,9 @@ class EngineOffDesign(Model):
 
 
 ##                '\pi_{lc}': 2.5,
-##                '\pi_{hc}': 8,
+                '\pi_{hc}': 8,
 
-##                'T_{t_4}': 1300,
+##                'T_{t_4}': 1400,
 ##                'u_6': 10,
 ##                '\pi_{tn}': sol('\pi_{tn}'),
 ##                '\pi_{b}': sol('\pi_{b}'),
