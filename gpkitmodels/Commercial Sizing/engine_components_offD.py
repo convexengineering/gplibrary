@@ -326,7 +326,7 @@ class ExhaustAndThrust1(ConstraintSet):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpfanex * T8,
-##                TCS([u8**2 + 2*h8 <= 2*ht8]),
+                TCS([u8**2 + 2*h8 <= 2*ht8]),
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -335,7 +335,7 @@ class ExhaustAndThrust1(ConstraintSet):
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
                 (P6/Pt6)**(.279) == T6/Tt6,
-##                TCS([u6**2 + 2*h6 <= 2*ht6]),
+                TCS([u6**2 + 2*h6 <= 2*ht6]),
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 

@@ -530,14 +530,14 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+##    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
     
 ##    print sol('Drag')
 ##    print sol('thrust')
 ##    print sol('Drag')
 ##    print sol('thrust').to('N')
     
-##    sol = m.determine_unbounded_variables(m,verbosity=4, iteration_limit=50)
+    sol = m.determine_unbounded_variables(m,verbosity=4, iteration_limit=200)
     
 ##    print np.cumsum(sol('tmin'))
 ##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
