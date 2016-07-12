@@ -124,8 +124,8 @@ class EngineOffDesign(Model):
                 'M_0': 0.8,
 
 
-                '\pi_{lc}': 2.5,
-                '\pi_{hc}': 8,
+##                '\pi_{lc}': 2.5,
+##                '\pi_{hc}': 8,
 
 ##                'T_{t_4}': 1300,
 ##                'u_6': 10,

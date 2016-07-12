@@ -898,7 +898,7 @@ class OffDesign1(ConstraintSet):
                 TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
                 
                 #residual 3 LPT mass flow
-##                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
+                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
                 SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),
@@ -922,7 +922,7 @@ class OffDesign1(ConstraintSet):
                 Pt49*pitn == Pt5, #B.269
 
                 #constrain the exit exhaust exit speeds
-##                u6 >= u0
+                u6 >= u0
                 ]
 ##                
 ##            if res7 == 0:

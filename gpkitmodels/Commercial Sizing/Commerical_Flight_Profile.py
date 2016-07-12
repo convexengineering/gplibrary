@@ -368,7 +368,7 @@ class Cruise2(Model):
                 #climb rate constraints for engine sizing at TOC
                 SignomialEquality(excessPtoc+Vtoc*Dtoc, Fd*Vtoc),
                 RCtoc == excessPtoc/W_start[Nclimb],
-                RCtoc == 1000*units('ft/min'),
+                RCtoc == 500*units('ft/min'),
                 Vtoc == V[icruise2],
 
                 #compute the drag
