@@ -388,7 +388,7 @@ class Cruise2(Model):
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
-##                TSFCcr22 == c1*units('1/hr'),
+                TSFCcr22 == c1*units('1/hr'),
 ##                TSFCcr21 == c1*units('1/hr'),
                 ])
         
@@ -464,7 +464,7 @@ class CommercialAircraft(Model):
             'G_f': 1,
             'N_{{bar}_Df}': 1,
             'F_{spec}': 8.0e+04 ,
-            'T_{t_{4spec}}': 1400,
+            'T_{t_{4spec}}': 1300,
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
@@ -472,7 +472,7 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign'})
+        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign'})#, 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
@@ -537,7 +537,7 @@ if __name__ == '__main__':
 ##    print sol('Drag')
 ##    print sol('thrust').to('N')
     
-##    sol = m.determine_unbounded_variables(m,verbosity=4)
+##    sol = m.determine_unbounded_variables(m,verbosity=4, iteration_limit=50)
     
 ##    print np.cumsum(sol('tmin'))
 ##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
