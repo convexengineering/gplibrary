@@ -485,7 +485,7 @@ class CommercialAircraft(Model):
                                                        ,'I_{sp}','TSFC_E','u_6','u_8','m_{core}','T_2','P_2','u_2','\rho_2.5','T_{2.5}',
                                                        'P_{2.5}','P_{t_2.5}','u_{2.5}','T_{t_2.5}','h_{t_2.5}','h_{2.5}','M_8','M_6',
                                                        'M_5','M_7','M_2','M_{2.5}','F_{sp}','T_{2}','h_{2}','T_{6}','T_{8}','T_{5}',
-                                                       'T_{7}','P_{5}','P_0','fp1','u_7','\rho_7','A_7','A_5','u_5','\rho_5'})
+                                                       'T_{7}','P_{5}','P_0','fp1','u_7','\rho_7','u_5','\rho_5'})
 
         Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
 
@@ -530,14 +530,14 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
     
 ##    print sol('Drag')
 ##    print sol('thrust')
 ##    print sol('Drag')
 ##    print sol('thrust').to('N')
     
-    sol = m.determine_unbounded_variables(m,verbosity=4, iteration_limit=200)
+##    sol = m.determine_unbounded_variables(m,verbosity=4, iteration_limit=200)
     
 ##    print np.cumsum(sol('tmin'))
 ##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))

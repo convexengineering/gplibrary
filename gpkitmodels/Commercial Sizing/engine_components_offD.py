@@ -326,7 +326,7 @@ class ExhaustAndThrust1(ConstraintSet):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpfanex * T8,
-                TCS([u8**2 + 2*h8 <= 2*ht8]),
+##                TCS([u8**2 + 2*h8 <= 2*ht8]),
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -335,7 +335,7 @@ class ExhaustAndThrust1(ConstraintSet):
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
                 (P6/Pt6)**(.279) == T6/Tt6,
-                TCS([u6**2 + 2*h6 <= 2*ht6]),
+##                TCS([u6**2 + 2*h6 <= 2*ht6]),
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
@@ -882,7 +882,7 @@ class OffDesign1(ConstraintSet):
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
-##                SignomialEquality(fp1,f+1),
+                SignomialEquality(fp1,f+1),
                 
                 #residual 1 Fan/LPC speed
 ##                Nf*Gf == N1,
@@ -901,25 +901,25 @@ class OffDesign1(ConstraintSet):
 ##                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
-##                SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),
-##                rho7 == P7/(R*T7),
+                SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),
+                rho7 == P7/(R*T7),
 ##                TCS([mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7]),
                 
                 #residual 5 core nozzle mass flow
-##                SignomialEquality(u5**2 +2*Cptex*T5, 2*Cptex*Tt5),
-##                rho5 == P5/(R*T5),
+                SignomialEquality(u5**2 +2*Cptex*T5, 2*Cptex*Tt5),
+                rho5 == P5/(R*T5),
                 
                 #compute core mass flux
-##                mCore == rho5 * A5 * u5/(fp1),
+                mCore == rho5 * A5 * u5/(fp1),
 ##
                 #compute fan mas flow
-##                mFan == rho7*A7*u7,
+                mFan == rho7*A7*u7,
 ##                
                 #residual 6 LPC/HPC mass flow constraint
 ##                TCS([mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mCore]),
                 
                 #residual 8, constrain the core exit total pressure
-##                Pt49*pitn == Pt5, #B.269
+                Pt49*pitn == Pt5, #B.269
 
                 #constrain the exit exhaust exit speeds
 ##                u6 >= u0
@@ -938,14 +938,14 @@ class OffDesign1(ConstraintSet):
                 constraints.extend([
                     #residual 7
                     #option #2 constrain the burner exit temperature
-##                    Tt4 == Tt4spec,  #B.265
+                    Tt4 == Tt4spec,  #B.265
                     ])
                 
             if m5opt == 0:
                  constraints.extend([
-##                    P5 == P0,
-##                    (P5/Pt5) == (T5/Tt5)**(3.583979),
-##                    M5 == u5/((T5*Cptex*R/(781*units('J/kg/K')))**.5),
+                    P5 == P0,
+                    (P5/Pt5) == (T5/Tt5)**(3.583979),
+                    M5 == u5/((T5*Cptex*R/(781*units('J/kg/K')))**.5),
                     ])
                  
             if m5opt == 1:
@@ -966,9 +966,9 @@ class OffDesign1(ConstraintSet):
             if m7opt == 1:
                  constraints.extend([
                      #additional constraints on residual 4 for M7 >= 1
-##                     M7 == 1,
-##                     P7 == Pt7*(1.2)**(-1.4/.4),
-##                     T7 == Tt7*1.2**(-1)
+                     M7 == 1,
+                     P7 == Pt7*(1.2)**(-1.4/.4),
+                     T7 == Tt7*1.2**(-1)
                     ])
                  
 ##        Model.__init__(self, 1/u7, constraints, **kwargs)

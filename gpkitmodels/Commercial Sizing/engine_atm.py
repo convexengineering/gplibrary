@@ -112,7 +112,7 @@ class EngineOffDesign(Model):
         if res7 ==0:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         else:
-            self.submodels = [lpc, combustor, turbine, thrust]#, offD]#, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD]#, fanmap, lpcmap]
             
         with SignomialsEnabled():
 
@@ -127,7 +127,7 @@ class EngineOffDesign(Model):
                 '\pi_{lc}': 2.5,
                 '\pi_{hc}': 8,
 
-                'T_{t_4}': 1300,
+##                'T_{t_4}': 1300,
 ##                'u_6': 10,
 ##                '\pi_{tn}': sol('\pi_{tn}'),
 ##                '\pi_{b}': sol('\pi_{b}'),
