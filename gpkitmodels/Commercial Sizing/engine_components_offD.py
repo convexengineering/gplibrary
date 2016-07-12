@@ -628,18 +628,18 @@ class LPCMap1(ConstraintSet):
 
         with SignomialsEnabled():
             constraints = [
-##                #define mbar..technially not needed b/c constrained in res 2 and/or 3
-##                TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
-##
-##                #define mtild
-##                mtildlc == mlc/mlcD,   #B.282
-##
-##                #define ptild
-##                #SIGNOMIAL
-##                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
-##                
-##                #constrain the "knee" shape of the map, monomial is from gpfit
-##                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
+                #define mbar..technially not needed b/c constrained in res 2 and/or 3
+                TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
+
+                #define mtild
+                mtildlc == mlc/mlcD,   #B.282
+
+                #define ptild
+                #SIGNOMIAL
+                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
+                
+                #constrain the "knee" shape of the map, monomial is from gpfit
+                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
                 ]
                 
 ##            Model.__init__(self, 1/pilc, constraints, **kwargs)
@@ -743,12 +743,12 @@ class FanMap1(ConstraintSet):
                 #define mtild
                 mtildf == mf/mFanBarD,   #B.282
 
-##                #define ptild
-##                #SIGNOMIAL
-##                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
-##
-##                #constrain the "knee" shape of the map, monomial is from gpfit
-##                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
+                #define ptild
+                #SIGNOMIAL
+                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
+
+                #constrain the "knee" shape of the map, monomial is from gpfit
+                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
                 ]
               
 ##            Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -885,7 +885,7 @@ class OffDesign1(ConstraintSet):
                 SignomialEquality(fp1,f+1),
                 
                 #residual 1 Fan/LPC speed
-##                Nf*Gf == N1,
+                Nf*Gf == N1,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity
                 N1 >= .1,
