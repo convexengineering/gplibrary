@@ -737,12 +737,12 @@ class FanMap1(ConstraintSet):
 
         with SignomialsEnabled():
             constraints = [
-##                #define mbar
-##                mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-##
-##                #define mtild
-##                mtildf == mf/mFanBarD,   #B.282
-##
+                #define mbar
+                mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
+
+                #define mtild
+                mtildf == mf/mFanBarD,   #B.282
+
 ##                #define ptild
 ##                #SIGNOMIAL
 ##                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
@@ -888,22 +888,22 @@ class OffDesign1(ConstraintSet):
 ##                Nf*Gf == N1,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity
-##                N1 >= .1,
-##                N1 <= 2,
+                N1 >= .1,
+                N1 <= 2,
 
                 #note residuals 2 and 3 differ from TASOPT, by replacing mhc with mlc
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality
                 #in residual 6 which allows for convergence
                 #residual 2 HPT mass flow
-##                TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
-##                
-##                #residual 3 LPT mass flow
+                TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
+                
+                #residual 3 LPT mass flow
 ##                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
                 SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),
                 rho7 == P7/(R*T7),
-##                TCS([mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7]),
+                TCS([mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7]),
                 
                 #residual 5 core nozzle mass flow
                 SignomialEquality(u5**2 +2*Cptex*T5, 2*Cptex*Tt5),
@@ -911,12 +911,12 @@ class OffDesign1(ConstraintSet):
                 
                 #compute core mass flux
                 mCore == rho5 * A5 * u5/(fp1),
-##
+
                 #compute fan mas flow
                 mFan == rho7*A7*u7,
-##                
+                
                 #residual 6 LPC/HPC mass flow constraint
-##                TCS([mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mCore]),
+                TCS([mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mCore]),
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
