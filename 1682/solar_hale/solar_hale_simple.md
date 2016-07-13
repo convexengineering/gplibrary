@@ -128,18 +128,16 @@ Data source for daylight time vs latitude: http://www.orchidculture.com/COD/dayl
 
 ```python
 #inPDF: replace with b_vs_latitude15.fig.generated.tex
-M.substitutions.update({"h": 15000})
-M.substitutions.update({"V_{wind}": 20})
 M.cost = M["b"]
 import pandas as pd
-df = pd.read_csv("solar_irr_vs_lat.csv")
-df = df[df!=0.0]
+df = pd.read_csv("solar_irr_vs_lat_interpolated.csv")
+df = df[df["Latitude"] <= 50]
 df = df.dropna()
 xsweeps = np.array([df.Winter_Solstice, df.DayLight, 24 - df.DayLight])
 xvarnames = ["(E/S)_{irr}", "t_{day}", "t_{night}"]
 
-fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", [20,25,30,35], "b", [0, 200])
-gen_tex_fig(fig, "b_vs_latitude15")
+fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", [25,30,35], "b", [0, 200])
+gen_tex_fig(fig, "b_vs_latitude45")
 ```
 
 # Conclusion
