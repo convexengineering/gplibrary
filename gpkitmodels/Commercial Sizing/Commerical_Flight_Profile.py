@@ -426,7 +426,7 @@ class CommercialAircraft(Model):
         atm = Atmosphere(Nseg)
         eonD = EngineOnDesign()
         eoffD = EngineOffDesign()
-        
+        eoffD2 = EngineOffDesign()
         for i in range(Nseg):
             None
         
@@ -460,7 +460,7 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD]
+        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2]
 
         constraints = ConstraintSet([self.submodels])
 
