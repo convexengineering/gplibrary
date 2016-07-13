@@ -130,6 +130,7 @@ Data source for daylight time vs latitude: http://www.orchidculture.com/COD/dayl
 #inPDF: replace with b_vs_latitude15.fig.generated.tex
 M.substitutions.update({"h": 15000})
 M.substitutions.update({"V_{wind}": 20})
+M.cost = M["b"]
 import pandas as pd
 df = pd.read_csv("solar_irr_vs_lat.csv")
 df = df[df!=0.0]
