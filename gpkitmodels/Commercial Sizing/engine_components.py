@@ -498,6 +498,13 @@ class OnDesignSizing(ConstraintSet):
         u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
 
         mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
+
+        piFanD = Variable('\pi_{f_D}', '-', 'On-Design Pressure Ratio')
+        pif = Variable('\pi_f', '-', 'Fan Pressure Ratio')
+        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
+        pihcD = Variable('\pi_{hc_D}', '-', 'HPC On-Design Pressure Ratio')
+        pilc = Variable('\pi_{lc}', '-', 'LPC Pressure Ratio')
+        pilcD = Variable('\pi_{lc_D}', '-', 'LPC On-Design Pressure Ratio')
         
         with SignomialsEnabled():
             constraints = [
@@ -552,7 +559,10 @@ class OnDesignSizing(ConstraintSet):
 
                 #compute on design mass flows
                 mFanD == alpha*mCore,
-##                mCore == mCoreD
+##                mCore == mCoreD,
+                pif == piFanD,
+                pilc == pilcD,
+                pihc == pihcD,
                 ]
             
             if m6opt == 0:
