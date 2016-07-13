@@ -4,7 +4,7 @@ from gpkit import Model, Variable, SignomialsEnabled, units, ConstraintSet
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap, HPCMap
-from engine_components_offD import FanAndLPC1, CombustorCooling1, Turbine1, ExhaustAndThrust1, OnDesignSizing1, OffDesign1, FanMap1, LPCMap1, HPCMap1
+
 #TODO
 #determine the three different Cp, gamma, and R values to be used
 #get realisitc R and Cp values for the different engine sections
@@ -94,19 +94,19 @@ class EngineOffDesign(Model):
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
     def __init__(self, **kwargs):
-        lpc = FanAndLPC1()
-        combustor = CombustorCooling1()
-        turbine = Turbine1()
-        thrust = ExhaustAndThrust1()
-        fanmap = FanMap1()
-        lpcmap = LPCMap1()
-        hpcmap = HPCMap1()
+        lpc = FanAndLPC()
+        combustor = CombustorCooling()
+        turbine = Turbine()
+        thrust = ExhaustAndThrust()
+        fanmap = FanMap()
+        lpcmap = LPCMap()
+        hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
         m7opt = 1
         
-        offD = OffDesign1(res7, m5opt, m7opt)
+        offD = OffDesign(res7, m5opt, m7opt)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:

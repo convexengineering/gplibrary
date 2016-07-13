@@ -554,10 +554,6 @@ class OnDesignSizing(ConstraintSet):
 
                 #constrain the exit exhaust exit speeds
                 u6 >= u0,
-
-##                pif == piFanD,
-##                pilc == pilcD,
-##                pihc == pihcD,
                 ]
             
             if m6opt == 0:
@@ -594,8 +590,7 @@ class OnDesignSizing(ConstraintSet):
         #single point which likely will not solve
 ##        Model.__init__(self, None, constraints, **kwargs)
         ConstraintSet.__init__(self, constraints, **kwargs)
-        
-
+    
 class LPCMap(ConstraintSet):
     """
     Implentation of TASOPT compressor map model. Map is claibrated with exponents from
@@ -701,8 +696,6 @@ class HPCMap(ConstraintSet):
                 
 ##            Model.__init__(self, 1/pihc, constraints, **kwargs)
             ConstraintSet.__init__(self, constraints, **kwargs)
-        
-
 
 class FanMap(ConstraintSet):
     """
@@ -719,6 +712,7 @@ class FanMap(ConstraintSet):
         mf = Variable('m_{f}', 'kg/s', 'Fan Corrected Mass Flow')
         mFan = Variable('m_{fan}', 'kg/s', 'Fan Mass Flow')
         mtildf = Variable('m_{tild_f}', '-', 'Fan Normalized Mass Flow')
+        mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
         mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
 
 
@@ -954,17 +948,17 @@ class OffDesign(ConstraintSet):
                  
             if m5opt == 1:
                  constraints.extend([
-                    M5 == 1,
-                    P5 == Pt5*(1.1935)**(-3.583979),
-                    T5 == Tt5*1.1935**(-1)
+##                    M5 == 1,
+##                    P5 == Pt5*(1.1935)**(-3.583979),
+##                    T5 == Tt5*1.1935**(-1)
                     ])
                  
             if m7opt == 0:
                 constraints.extend([
                     #additional constraints on residual 4 for M7 < 1
-                    P7 == P0,
-                    (P7/Pt7) == (T7/Tt7)**(3.5),
-                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
+##                    P7 == P0,
+##                    (P7/Pt7) == (T7/Tt7)**(3.5),
+##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
                     ])
                 
             if m7opt == 1:
@@ -978,3 +972,4 @@ class OffDesign(ConstraintSet):
 ##        Model.__init__(self, 1/u7, constraints, **kwargs)
         ConstraintSet.__init__(self, constraints, **kwargs)
         
+
