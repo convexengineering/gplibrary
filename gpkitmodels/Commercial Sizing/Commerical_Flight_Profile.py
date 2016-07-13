@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from atmosphere import Atmosphere
 from collections import defaultdict
 from gpkit.small_scripts import mag
-from engine_atm import EngineOnDesign, EngineOffDesign
+from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -390,7 +390,7 @@ class Cruise2(Model):
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
-##                TSFCcr22 == c1*units('1/hr'),
+                TSFCcr22 == c1*units('1/hr'),
 ##                TSFCcr21 == c1*units('1/hr'),
                 ])
         
@@ -426,7 +426,7 @@ class CommercialAircraft(Model):
         atm = Atmosphere(Nseg)
         eonD = EngineOnDesign()
         eoffD = EngineOffDesign()
-        eoffD2 = EngineOffDesign()
+        eoffD2 = EngineOffDesign2()
         for i in range(Nseg):
             None
         
@@ -464,8 +464,8 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign',
-                                'D2_Cruise2': 'F_{spec_EngineOffDesign'})
+        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign2',
+                                'D2_Cruise2': 'F_{spec}_EngineOffDesign2', 'D1_Cruise2': 'F_{spec}_EngineOffDesign'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
