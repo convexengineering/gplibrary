@@ -497,8 +497,6 @@ class OnDesignSizing(ConstraintSet):
 
         u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
 
-        mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
-
         piFanD = Variable('\pi_{f_D}', '-', 'On-Design Pressure Ratio')
         pif = Variable('\pi_f', '-', 'Fan Pressure Ratio')
         pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
@@ -557,12 +555,9 @@ class OnDesignSizing(ConstraintSet):
                 #constrain the exit exhaust exit speeds
                 u6 >= u0,
 
-                #compute on design mass flows
-                mFanD == alpha*mCore,
-##                mCore == mCoreD,
-                pif == piFanD,
-                pilc == pilcD,
-                pihc == pihcD,
+##                pif == piFanD,
+##                pilc == pilcD,
+##                pihc == pihcD,
                 ]
             
             if m6opt == 0:
@@ -724,7 +719,6 @@ class FanMap(ConstraintSet):
         mf = Variable('m_{f}', 'kg/s', 'Fan Corrected Mass Flow')
         mFan = Variable('m_{fan}', 'kg/s', 'Fan Mass Flow')
         mtildf = Variable('m_{tild_f}', '-', 'Fan Normalized Mass Flow')
-        mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
         mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
 
 

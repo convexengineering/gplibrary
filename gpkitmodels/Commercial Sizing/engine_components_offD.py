@@ -636,7 +636,7 @@ class LPCMap1(ConstraintSet):
 
                 #define ptild
                 #SIGNOMIAL
-                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
+##                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
                 
                 #constrain the "knee" shape of the map, monomial is from gpfit
 ##                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
@@ -750,7 +750,8 @@ class FanMap1(ConstraintSet):
                 SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
 
                 #constrain the "knee" shape of the map, monomial is from gpfit
-##                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
+##                ptildf <= ((Nf**.28)*(mtildf**-.00011))**10,
+##                ptildf <= 3
                 ]
               
 ##            Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -890,17 +891,17 @@ class OffDesign1(ConstraintSet):
 ##                Nf*Gf == N1,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity
-                N1 >= .1,
-                N1 <= 2,
+##                N1 >= .1,
+##                N1 <= 2,
 
                 #note residuals 2 and 3 differ from TASOPT, by replacing mhc with mlc
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality
                 #in residual 6 which allows for convergence
                 #residual 2 HPT mass flow
                 TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
-##                
+                
                 #residual 3 LPT mass flow
-##                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
+                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
                 SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),

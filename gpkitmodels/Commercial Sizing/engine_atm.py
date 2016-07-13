@@ -110,7 +110,7 @@ class EngineOffDesign(Model):
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap]#, lpcmap, hpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]#, hpcmap]
         else:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
             
@@ -124,9 +124,9 @@ class EngineOffDesign(Model):
                 'M_0': 0.8,
 
 
-                '\pi_{lc}': 2.5,
+##                '\pi_{lc}': 2.5,
                 '\pi_{hc}': 8,
-
+##                'N_f': 1,
                 'T_{t_4}': 1400,
 ##                'u_6': 10,
 ##                '\pi_{tn}': sol('\pi_{tn}'),
@@ -150,13 +150,13 @@ class EngineOffDesign(Model):
 ##                
 ##                'm_{fan_D}': sol('alpha')*sol('m_{core}'),
 ##                'N_{{bar}_Df}': 1,
-##                '\pi_{f_D}': sol('\pi_f'),
+                '\pi_{f_D}': 1.5,
 ##                'm_{core_D}': sol('m_{core}'),
-##                '\pi_{lc_D}': sol('\pi_{lc}'),
+                '\pi_{lc_D}': 3,
 ##                'm_{lc_D}': sol('m_{lc_D}'),
 ##                'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
 ##                'm_{hc_D}': sol('m_{hc_D}'),
-##                '\pi_{hc_D}': sol('\pi_{hc}')
+                '\pi_{hc_D}': 10
             }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)
