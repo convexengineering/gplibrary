@@ -106,7 +106,7 @@ def gen_tex_fig(fig, filename, caption=None):
         f.write("\\end{figure}")
 ```
 ```python
-#inPDF: replace with bvsV_wind4515.fig.generated.tex
+#inPDF: skip replace with bvsV_wind4515.fig.generated.tex
     
 YLIM_b = [0, 200]
     
@@ -115,7 +115,7 @@ YLIM_b = [0, 200]
 
 ```
 ```python
-#inPDF: replace with bvsV_wind4550.fig.generated.tex
+#inPDF: skip replace with bvsV_wind4550.fig.generated.tex
     
 #M.substitutions.update({'h': 50000})
 #fig, ax = poor_mans_contour(M, "V_{wind}", np.linspace(5, 40, 30), "h_{batt}", [250,350, 500], "b", [0, 200], vref=25, vrefname="90% wind speed")
