@@ -346,13 +346,13 @@ class ExhaustAndThrust1(ConstraintSet):
                 #SIGNOMIAL
                 TCS([F <= F6 + F8]),
 
-##                Fsp == F/((alphap1)*mCore*a0),   #B.191
+                Fsp == F/((alphap1)*mCore*a0),   #B.191
 
                 #ISP
-##                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
+                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
 
                 #TSFCe
-##                TSFCe == 1/Isp                   #B.193
+                TSFCe == 1/Isp                   #B.193
                 ]
         ConstraintSet.__init__(self, constraints, **kwargs)
   
