@@ -8,6 +8,7 @@ CD = Variable('C_D', '-', 'Drag coefficient')
 CL = Variable('C_L', '-', 'Lift coefficient')
 P_shaft = Variable('P_{shaft}', 'W', 'Shaft power')
 S = Variable('S', 'm^2', 'Wing reference area')
+S_solar = Variable('S_{solar}', 'm^2', 'solar cell area')
 V = Variable('V', 'm/s', 'Cruise velocity')
 W = Variable('W', 'lbf', 'Aircraft weight')
 rho = Variable(r'\rho', 'kg/m^3', 'Density of air')
@@ -69,7 +70,7 @@ class Weight(Model):
 
         constraints = [W_airframe >= W*f_airframe,
                        W_batt >= E_batt/h_batt*g,
-                       W_solar >= rho_solar*g*S,
+                       W_solar >= rho_solar*g*S_solar,
                        W >= W_pay + W_solar + W_airframe + W_batt + W_avionics]
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -91,7 +92,8 @@ class Power(Model):
         t_day = Variable('t_{day}', 8, 'hr', 'Daylight span')
         t_night = Variable('t_{night}', 16, 'hr', 'Night span')
 
-        constraints = [ES_irr*eta_solar*S >= P_oper*t_day + E_batt/eta_charge,
+        constraints = [ES_irr*eta_solar*S_solar >= P_oper*t_day + E_batt/eta_charge,
+                       S_solar <= S,
                        P_oper >= P_shaft + P_acc,
                        E_batt >= P_oper*t_night/eta_discharge]
         Model.__init__(self, None, constraints, **kwargs)
