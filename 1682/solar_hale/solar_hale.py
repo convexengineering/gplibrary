@@ -11,7 +11,7 @@ S = Variable('S', 'm^2', 'Wing reference area')
 S_solar = Variable('S_{solar}', 'm^2', 'solar cell area')
 V = Variable('V', 'm/s', 'Cruise velocity')
 W = Variable('W', 'lbf', 'Aircraft weight')
-rho = Variable(r'\rho', 'kg/m^3', 'Density of air')
+rho = Variable(r'\rho', 0.1895, 'kg/m^3', 'Density of air')
 E_batt = Variable('E_{batt}', 'J', 'Battery energy')
 h = Variable("h", "ft", "Altitude")
 g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
@@ -140,8 +140,9 @@ class SolarHALE(Model):
         weight = Weight()
         sk = StationKeeping()
         aero = Aero()
-        atmosphere = Atmosphere()
-        self.submodels = [slf, power, weight, sk, aero, atmosphere]
+        # atmosphere = Atmosphere()
+        # self.submodels = [slf, power, weight, sk, aero, atmosphere]
+        self.submodels = [slf, power, weight, sk, aero]
 
         constraints = []
         lc = LinkedConstraintSet([self.submodels, constraints])
