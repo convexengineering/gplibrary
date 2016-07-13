@@ -110,7 +110,7 @@ class EngineOffDesign(Model):
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]#, hpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         else:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
             

@@ -639,7 +639,7 @@ class LPCMap1(ConstraintSet):
                 SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
                 
                 #constrain the "knee" shape of the map, monomial is from gpfit
-##                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
+                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
                 ]
                 
 ##            Model.__init__(self, 1/pilc, constraints, **kwargs)
@@ -686,14 +686,14 @@ class HPCMap1(ConstraintSet):
                 #define mtild
                 mtildhc == mhc/mhcD,   #B.282
 
-                TCS([mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref)]),    #B.280
+##                TCS([mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref)]),    #B.280
 
                 #define ptild
                 #SIGNOMIAL
-                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
+##                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
                
                 #constrain the "knee" shape of the map, monomial is from gpfit
-                ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
+##                ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
                 ]
                 
 ##            Model.__init__(self, 1/pihc, constraints, **kwargs)
@@ -750,7 +750,7 @@ class FanMap1(ConstraintSet):
                 SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
 
                 #constrain the "knee" shape of the map, monomial is from gpfit
-##                ptildf <= ((Nf**.28)*(mtildf**-.00011))**10,
+                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
 ##                ptildf <= 3
                 ]
               
@@ -888,11 +888,11 @@ class OffDesign1(ConstraintSet):
                 SignomialEquality(fp1,f+1),
                 
                 #residual 1 Fan/LPC speed
-##                Nf*Gf == N1,
+                Nf*Gf == N1,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity
-##                N1 >= .1,
-##                N1 <= 2,
+                N1 >= .1,
+                N1 <= 2,
 
                 #note residuals 2 and 3 differ from TASOPT, by replacing mhc with mlc
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality
