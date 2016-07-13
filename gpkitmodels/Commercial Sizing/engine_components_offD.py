@@ -690,10 +690,10 @@ class HPCMap1(ConstraintSet):
 
                 #define ptild
                 #SIGNOMIAL
-##                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
+                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
                
                 #constrain the "knee" shape of the map, monomial is from gpfit
-##                ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
+                ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
                 ]
                 
 ##            Model.__init__(self, 1/pihc, constraints, **kwargs)

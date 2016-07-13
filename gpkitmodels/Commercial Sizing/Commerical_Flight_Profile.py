@@ -345,7 +345,8 @@ class Cruise2(Model):
 ##        TSFCcr2 = VectorVariable(Ncruise2, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
         TSFCcr21 = Variable('TSFC_{cr21}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
         TSFCcr22 = Variable('TSFC_{cr22}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
-        
+        D1 = Variable('D1', 'N', 'Drag for cruise part 1')
+        D2 = Variable('D2', 'N', 'Drag for cruise part 2')
         constraints = []
         
         #defined here for linking purposes
@@ -374,7 +375,8 @@ class Cruise2(Model):
                 #compute the drag
                 SignomialEquality(Dtoc, (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(W_start[Nclimb]/(.5*S*rho[Ncruise2]*Vtoc**2))**2)),
                 TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
-                
+                D[4] == D1,
+                D[5] == D2,
                 #constrain the climb rate by holding altitude constant
                 hft[icruise2]  == htoc,
                 
@@ -472,7 +474,8 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign'})
+        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign',
+                                'D2_Cruise2': 'F_{spec_EngineOffDesign'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
