@@ -127,7 +127,7 @@ class EngineOffDesign(Model):
 ##                '\pi_{lc}': 2.5,
                 '\pi_{hc}': 8,
 ##                'N_f': 1,
-                'T_{t_4}': 1400,
+##                'T_{t_4}': 1400,
 ##                'u_6': 10,
 ##                '\pi_{tn}': sol('\pi_{tn}'),
 ##                '\pi_{b}': sol('\pi_{b}'),

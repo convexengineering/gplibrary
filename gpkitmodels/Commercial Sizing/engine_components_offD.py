@@ -326,7 +326,7 @@ class ExhaustAndThrust1(ConstraintSet):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpfanex * T8,
-##                TCS([u8**2 + 2*h8 <= 2*ht8]),
+                TCS([u8**2 + 2*h8 <= 2*ht8]),
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -335,16 +335,16 @@ class ExhaustAndThrust1(ConstraintSet):
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
                 (P6/Pt6)**(.279) == T6/Tt6,
-##                TCS([u6**2 + 2*h6 <= 2*ht6]),
+                TCS([u6**2 + 2*h6 <= 2*ht6]),
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
                 #overall thrust values
-##                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-##                TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
+                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
+                TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
 
                 #SIGNOMIAL
-##                TCS([F <= F6 + F8]),
+                TCS([F <= F6 + F8]),
 
 ##                Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -636,7 +636,7 @@ class LPCMap1(ConstraintSet):
 
                 #define ptild
                 #SIGNOMIAL
-##                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
+                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
                 
                 #constrain the "knee" shape of the map, monomial is from gpfit
 ##                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
