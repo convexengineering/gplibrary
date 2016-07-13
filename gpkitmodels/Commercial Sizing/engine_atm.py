@@ -51,10 +51,6 @@ class EngineOnDesign(Model):
                 '\pi_f': 1.5,
                 '\pi_{lc}': 3,
                 '\pi_{hc}': 10,
-                '\pi_{d}': .99,
-                '\pi_{fn}': .98,
-                '\pi_{tn}': .99,
-                '\pi_{b}': .94,
                 'alpha': 8,
                 'alphap1': 9,
                 'M_{4a}': 1,    #choked turbines
@@ -62,8 +58,6 @@ class EngineOnDesign(Model):
                 'M_{2.5}': .5,
                 'hold_{2}': 1+.5*(1.398-1)*.4**2,
                 'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
-                'T_{ref}': 288.15,
-                'P_{ref}': 101.325,
                 }
                     
             lc = LinkedConstraintSet([self.submodels])
@@ -122,41 +116,6 @@ class EngineOffDesign(Model):
                 'T_0': 230,   #36K feet
                 'P_0': 19.8,  
                 'M_0': 0.8,
-
-
-##                '\pi_{lc}': 2.5,
-##                '\pi_{hc}': 8,
-##                'N_f': 1,
-##                'T_{t_4}': 1400,
-##                'u_6': 10,
-##                '\pi_{tn}': sol('\pi_{tn}'),
-##                '\pi_{b}': sol('\pi_{b}'),
-##                '\pi_{d}': sol('\pi_{d}'),
-##                '\pi_{fn}': sol('\pi_{fn}'),
-##                
-##                'A_5': sol('A_5'),
-##                'A_7': sol('A_7'),
-##                'T_{ref}': 288.15,
-##                'P_{ref}': 101.325,
-##                'm_{htD}': sol('m_{htD}'),
-##                'm_{ltD}': sol('m_{ltD}'),
-                
-##                'G_f': 1,
-##                'alpha': 10,
-##                'alphap1': 11,
-                
-##                'F_{spec}': 8.0e+04 ,
-##                'T_{t_{4spec}}': 1226,
-##                
-##                'm_{fan_D}': sol('alpha')*sol('m_{core}'),
-##                'N_{{bar}_Df}': 1,
-                '\pi_{f_D}': 1.5,
-##                'm_{core_D}': sol('m_{core}'),
-                '\pi_{lc_D}': 3,
-##                'm_{lc_D}': sol('m_{lc_D}'),
-##                'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
-##                'm_{hc_D}': sol('m_{hc_D}'),
-                '\pi_{hc_D}': 10
             }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)

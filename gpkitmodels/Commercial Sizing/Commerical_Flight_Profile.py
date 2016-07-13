@@ -390,7 +390,7 @@ class Cruise2(Model):
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
-                TSFCcr22 == c1*units('1/hr'),
+##                TSFCcr22 == c1*units('1/hr'),
 ##                TSFCcr21 == c1*units('1/hr'),
                 ])
         
@@ -443,30 +443,20 @@ class CommercialAircraft(Model):
             'h_{toc}': 30000,
             'thrust': 60000*units('lbf'),
 
-##            'P_0': 19.8,  
-##            'M_0': 0.8,
-##            'T_{t_4}': 1400,
-##            '\pi_f': 1.5,
-##            '\pi_{lc}': 3,
-##            '\pi_{hc}': 10,
-##            '\pi_{d}': .99,
-##            '\pi_{fn}': .98,
-##            '\pi_{tn}': .99,
-##            '\pi_{b}': .94,
-##            'alpha': 8,
-##            'alphap1': 9,
-##            'M_{4a}': 1,    #choked turbines
-##            'M_2': .4,
-##            'M_{2.5}': .5,
-##            'hold_{2}': 1+.5*(1.398-1)*.4**2,
-##            'hold_{2.5}': 1+.5*(1.354-1)*.5**2,
-##            'T_{ref}': 288.15,
-##            'P_{ref}': 101.325,
-
+            #substitutions for global engine variables
             'G_f': 1,
             'N_{{bar}_Df}': 1,
             'F_{spec}': 10.0e+04 ,
             'T_{t_{4spec}}': 1300,
+            'T_{ref}': 288.15,
+            'P_{ref}': 101.325,
+            '\pi_{d}': .99,
+            '\pi_{fn}': .98,
+            '\pi_{tn}': .99,
+            '\pi_{b}': .94,
+            '\pi_{f_D}': 1.5,
+            '\pi_{lc_D}': 3,
+            '\pi_{hc_D}': 10
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
@@ -474,8 +464,8 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign'})#,
-##                                'D2_Cruise2': 'F_{spec_EngineOffDesign'})
+        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign',
+                                'D2_Cruise2': 'F_{spec_EngineOffDesign'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
@@ -539,19 +529,7 @@ if __name__ == '__main__':
     m = CommercialAircraft()
     sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
     
-##    print sol('Drag')
-##    print sol('thrust')
-##    print sol('Drag')
-##    print sol('thrust').to('N')
-    
 ##    sol = m.determine_unbounded_variables(m,verbosity=4, iteration_limit=50)
-    
-##    print np.cumsum(sol('tmin'))
-##    plt.plot(np.cumsum(sol('tmin')), sol('hft'))
-##    plt.title('Altitude vs Time')f
-##    plt.ylabel('Altitude [ft]')
-##    plt.xlabel('Time [min]')
-##    plt.show()
     
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
