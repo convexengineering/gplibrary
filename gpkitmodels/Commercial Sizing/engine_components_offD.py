@@ -342,16 +342,16 @@ class ExhaustAndThrust1(ConstraintSet):
                 #overall thrust values
 ##                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
 ##                TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
-##
-##                #SIGNOMIAL
+
+                #SIGNOMIAL
 ##                TCS([F <= F6 + F8]),
-##
+
 ##                Fsp == F/((alphap1)*mCore*a0),   #B.191
-##
-##                #ISP
+
+                #ISP
 ##                Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
-##
-##                #TSFCe
+
+                #TSFCe
 ##                TSFCe == 1/Isp                   #B.193
                 ]
         ConstraintSet.__init__(self, constraints, **kwargs)
@@ -639,7 +639,7 @@ class LPCMap1(ConstraintSet):
                 SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
                 
                 #constrain the "knee" shape of the map, monomial is from gpfit
-                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
+##                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
                 ]
                 
 ##            Model.__init__(self, 1/pilc, constraints, **kwargs)
@@ -690,10 +690,10 @@ class HPCMap1(ConstraintSet):
 
                 #define ptild
                 #SIGNOMIAL
-##                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
-##               
-##                #constrain the "knee" shape of the map, monomial is from gpfit
-##                ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
+                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
+               
+                #constrain the "knee" shape of the map, monomial is from gpfit
+                ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
                 ]
                 
 ##            Model.__init__(self, 1/pihc, constraints, **kwargs)
@@ -750,7 +750,7 @@ class FanMap1(ConstraintSet):
                 SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
 
                 #constrain the "knee" shape of the map, monomial is from gpfit
-                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
+##                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
                 ]
               
 ##            Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -887,7 +887,7 @@ class OffDesign1(ConstraintSet):
                 SignomialEquality(fp1,f+1),
                 
                 #residual 1 Fan/LPC speed
-                Nf*Gf == N1,
+##                Nf*Gf == N1,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity
                 N1 >= .1,
@@ -898,9 +898,9 @@ class OffDesign1(ConstraintSet):
                 #in residual 6 which allows for convergence
                 #residual 2 HPT mass flow
                 TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
-                
+##                
                 #residual 3 LPT mass flow
-                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
+##                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
                 SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),
@@ -931,7 +931,7 @@ class OffDesign1(ConstraintSet):
                 constraints.extend([
                     #residual 7
                     #option #1, constrain the engine's thrust
-##                    F == Fspec,
+                    F == Fspec,
                     Tt4 <= 2000*units('K'),
                     Tt4 >= 500*units('K'),
                     ])

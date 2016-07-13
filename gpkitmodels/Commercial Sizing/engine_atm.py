@@ -124,10 +124,10 @@ class EngineOffDesign(Model):
                 'M_0': 0.8,
 
 
-##                '\pi_{lc}': 2.5,
+                '\pi_{lc}': 2.5,
                 '\pi_{hc}': 8,
 
-##                'T_{t_4}': 1400,
+                'T_{t_4}': 1400,
 ##                'u_6': 10,
 ##                '\pi_{tn}': sol('\pi_{tn}'),
 ##                '\pi_{b}': sol('\pi_{b}'),

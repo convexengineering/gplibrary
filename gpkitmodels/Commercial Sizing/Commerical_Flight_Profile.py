@@ -389,7 +389,7 @@ class Cruise2(Model):
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
                 TSFCcr22 == c1*units('1/hr'),
-                TSFCcr21 == c1*units('1/hr'),
+##                TSFCcr21 == c1*units('1/hr'),
                 ])
         
         #constraint on the aircraft meeting the required range
@@ -472,7 +472,7 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign'})
+        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOnDesign'})#, 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
