@@ -59,13 +59,13 @@ class Weight(Model):
         W_batt = Variable('W_{batt}', 'lbf', 'Battery weight')
         W_airframe = Variable('W_{airframe}', 'lbf', 'Airframe weight')
         W_solar = Variable('W_{solar}', 'lbf', 'Solar panel weight')
-        W_pay = Variable('W_{pay}', 4, 'lbf', 'Payload weight')
-        W_avionics = Variable('W_{avionics}', 4, 'lbf', 'avionics weight')
-        rho_solar = Variable(r'\rho_{solar}', 1.2, 'kg/m^2',
+        W_pay = Variable('W_{pay}', 10, 'lbf', 'Payload weight')
+        W_avionics = Variable('W_{avionics}', 8, 'lbf', 'avionics weight')
+        rho_solar = Variable(r'\rho_{solar}', 0.3, 'kg/m^2',
                              'Solar cell area density')
-        f_airframe = Variable('f_{airframe}', 0.20, '-',
-                              'Airframe weight fraction')
-        h_batt = Variable('h_{batt}', 250, 'W*hr/kg', 'Battery energy density')
+        f_airframe = Variable('f_{airframe}', 0.30, '-',
+                              'Airframe weight fraction') # incl propulsion
+        h_batt = Variable('h_{batt}', 350, 'W*hr/kg', 'Battery energy density')
 
         constraints = [W_airframe >= W*f_airframe,
                        W_batt >= E_batt/h_batt*g,
