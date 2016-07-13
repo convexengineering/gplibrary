@@ -390,7 +390,7 @@ class Cruise2(Model):
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
-                TSFCcr22 == c1*units('1/hr'),
+##                TSFCcr22 == c1*units('1/hr'),
 ##                TSFCcr21 == c1*units('1/hr'),
                 ])
         
@@ -446,7 +446,6 @@ class CommercialAircraft(Model):
             #substitutions for global engine variables
             'G_f': 1,
             'N_{{bar}_Df}': 1,
-            'F_{spec}': 10.0e+04 ,
             'T_{t_{4spec}}': 1300,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
