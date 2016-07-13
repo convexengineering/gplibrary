@@ -80,7 +80,7 @@ def latitude_sweep(model, lat, xvarnames, xsweeps, zvarname, zsweep, yvarname, y
                                unitstr(model[yvarname].units)))
     ax.set_ylim((ylim[0], ylim[1]))
 
-    plt.legend(handles=lines)
+    plt.legend(handles=lines, loc="upper left")
     plt.grid()
 
     return fig, ax
