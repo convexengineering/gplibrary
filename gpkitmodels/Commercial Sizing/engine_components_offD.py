@@ -751,7 +751,6 @@ class FanMap1(ConstraintSet):
 
                 #constrain the "knee" shape of the map, monomial is from gpfit
                 ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
-##                ptildf <= 3
                 ]
               
 ##            Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -925,7 +924,7 @@ class OffDesign1(ConstraintSet):
                 Pt49*pitn == Pt5, #B.269
 
                 #constrain the exit exhaust exit speeds
-##                u6 >= u0
+                u6 >= u0
                 ]
                 
             if res7 == 0:
