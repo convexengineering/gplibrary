@@ -272,7 +272,7 @@ class Climb1(Model):
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
-            TSFCc1==c1*units('1/hr')*.9,
+##            TSFCc1==c1*units('1/hr')*.5,
             ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -439,7 +439,7 @@ class CommercialAircraft(Model):
             'C_{d_0}': .05,
             'K': 0.1,
             'S': 124.58,
-            'c1': 1.11,
+            'c1': 1.1,
             'h_{toc}': 30000,
             'thrust': 40000*units('lbf'),
 
@@ -459,13 +459,13 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2]#, eoffD3]
+        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2, eoffD3]
 
         constraints = ConstraintSet([self.submodels])
 
         constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign2',
-                                'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec}_EngineOffDesign2',})#,
-##                                'TSFC_{c1}_Climb1': 'TSFC_E_EngineOffDesign3'})
+                                'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec}_EngineOffDesign2',
+                                'TSFC_{c1}_Climb1': 'TSFC_E_EngineOffDesign3'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
