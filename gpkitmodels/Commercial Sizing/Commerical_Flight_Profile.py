@@ -240,7 +240,9 @@ class Climb1(Model):
     """
     def __init__(self,**kwargs):
 ##        TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
-        TSFCc1 = Variable('TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
+        TSFCc11 = Variable('TSFC_{c11}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
+##        thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
+        thrustc11 = Variable('thrust_{c11}', 'N', 'Thrust During Climb Segment #1')
         #Climb #1 (sub 10K subject to 250KTS speed limit)
         constraints = []
 
@@ -250,10 +252,10 @@ class Climb1(Model):
 ##            V[iclimb1] >= Vstall,
 
             #constraint on drag and thrust
-            thrust >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
+            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
             
             #climb rate constraints
-            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrust]),
+            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
             TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*(W_start[iclimb1]/(.5*S*rho[iclimb1]*V[iclimb1]**2))**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_start[iclimb1],
             RC[iclimb1] >= 500*units('ft/min'),
@@ -268,7 +270,7 @@ class Climb1(Model):
             
             #compute fuel burn from TSFC
 ##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
-            W_fuel[iclimb1]  == TSFCc1 * thours[iclimb1] * thrust,
+            W_fuel[iclimb1]  == TSFCc11 * thours[iclimb1] * thrustc11,
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
@@ -465,7 +467,7 @@ class CommercialAircraft(Model):
 
         constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign2',
                                 'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec}_EngineOffDesign2',
-                                'TSFC_{c1}_Climb1': 'TSFC_E_EngineOffDesign3'})
+                                'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign3', 'thrust_{c11}': 'F_EngineOffDesign3'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
