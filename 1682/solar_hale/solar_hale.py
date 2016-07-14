@@ -20,7 +20,7 @@ g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
 class SteadyLevelFlight(Model):
     def __init__(self, **kwargs):
-        eta_prop = Variable(r'\eta_{prop}', 0.7, '-', 'Propulsive efficiency')
+        eta_prop = Variable(r'\eta_{prop}', 0.80, '-', 'Propulsive efficiency')
 
         constraints = [P_shaft >= V*W*CD/CL/eta_prop,   # eta*P = D*V
                        W == 0.5*rho*V**2*CL*S]

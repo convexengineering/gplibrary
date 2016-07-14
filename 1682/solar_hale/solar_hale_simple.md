@@ -127,7 +127,7 @@ Data source for solar irradiance vs latitude: http://applet-magic.com/insolation
 Data source for daylight time vs latitude: http://www.orchidculture.com/COD/daylength.html
 
 ```python
-#inPDF: replace with b_vs_latitude15.fig.generated.tex
+#inPDF: replace with b_vs_latitude50k_winter.fig.generated.tex
 M.cost = M["b"]
 import pandas as pd
 df = pd.read_csv("solar_irr_vs_lat_interpolated.csv")
@@ -137,20 +137,20 @@ xsweeps = np.array([df.Winter_Solstice, df.DayLight, 24 - df.DayLight])
 xvarnames = ["(E/S)_{irr}", "t_{day}", "t_{night}"]
 
 pcts = [80, 90, 95, 99]
-fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", pcts, "b", [0, 400], winddf=df[["%sth Percentile Winds" % p for p in pcts]])
+fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", pcts, "b", [0, 200], winddf=df[["%sth Percentile Winds" % p for p in pcts]])
 ax.legend(["%sth percentile winds" % p for p in pcts],
-          loc="lower right",
+          loc="upper left",
           fontsize=14)
-gen_tex_fig(fig, "b_vs_latitude45")
+gen_tex_fig(fig, "b_vs_latitude50k_winter")
 
 xsweeps = np.array([df.Equinoxes, 12 + 0*df.DayLight, 12 - 0*df.DayLight])
 xvarnames = ["(E/S)_{irr}", "t_{day}", "t_{night}"]
 
-fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", pcts, "b", [0, 400], winddf=df[["%sth Percentile Winds" % p for p in pcts]])
+fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", pcts, "b", [0, 200], winddf=df[["%sth Percentile Winds" % p for p in pcts]])
 ax.legend(["%sth percentile winds" % p for p in pcts],
           loc="upper left",
           fontsize=14)
-gen_tex_fig(fig, "b_vs_latitude45_equinox")
+gen_tex_fig(fig, "b_vs_latitude50k_equinox")
 ```
 
 # Conclusion
