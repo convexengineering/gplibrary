@@ -488,7 +488,7 @@ class CommercialAircraft(Model):
                                 'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec}_EngineOffDesign2',
                                 'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign3', 'thrust_{c11}': 'F_EngineOffDesign3',
                                 'TSFC_{c21}': 'TSFC_E_EngineOffDesign4','TSFC_{c22}': 'TSFC_E_EngineOffDesign5',
-                                'thrust_{c21}': 'F_EngineOffDesign4','thrust_{c33}': 'F_EngineOffDesign5'})
+                                'thrust_{c21}': 'F_EngineOffDesign4','thrust_{c22}': 'F_EngineOffDesign5'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
