@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from atmosphere import Atmosphere
 from collections import defaultdict
 from gpkit.small_scripts import mag
-from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2, EngineOffDesign3, EngineOffDesign4, EngineOffDesign5
+from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2, EngineOffDesign3, EngineOffDesign4, EngineOffDesign5, EngineOffDesign35
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -256,11 +256,11 @@ class Climb1(Model):
             #constraint on drag and thrust
 ##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
             thrustc11 >= D[0] + W_start[0]*theta[0],
-            thrustc11 >= D[1] + W_start[1]*theta[1],
+            thrustc12 >= D[1] + W_start[1]*theta[1],
             #climb rate constraints
 ##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
             TCS([excessP[0]+V[0]*D[0] <= V[0]*thrustc11]),
-            TCS([excessP[1]+V[1]*D[1] <= V[1]*thrustc11]),
+            TCS([excessP[1]+V[1]*D[1] <= V[1]*thrustc12]),
             
             TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*(W_start[iclimb1]/(.5*S*rho[iclimb1]*V[iclimb1]**2))**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_start[iclimb1],
@@ -277,7 +277,7 @@ class Climb1(Model):
             #compute fuel burn from TSFC
 ##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
             W_fuel[0]  == TSFCc11 * thours[0] * thrustc11,
-            W_fuel[1]  == TSFCc11 * thours[1] * thrustc11,
+            W_fuel[1]  == TSFCc12 * thours[1] * thrustc12,
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
@@ -445,7 +445,8 @@ class CommercialAircraft(Model):
         eonD = EngineOnDesign()
         eoffD = EngineOffDesign()
         eoffD2 = EngineOffDesign2()
-        eoffD3 = EngineOffDesign3()
+        eoffD35 = EngineOffDesign3()
+        eoffD3 = EngineOffDesign35()
         eoffD4 = EngineOffDesign4()
         eoffD5 = EngineOffDesign5()
         for i in range(Nseg):
@@ -480,15 +481,16 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5]
+        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2, eoffD3, eoffD4]#, eoffD5]#, eoffD35]
 
         constraints = ConstraintSet([self.submodels])
 
         constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign2',
                                 'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec}_EngineOffDesign2',
-                                'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign3', 'thrust_{c11}': 'F_EngineOffDesign3',
-                                'TSFC_{c21}': 'TSFC_E_EngineOffDesign4','TSFC_{c22}': 'TSFC_E_EngineOffDesign5',
-                                'thrust_{c21}': 'F_EngineOffDesign4','thrust_{c22}': 'F_EngineOffDesign5'})
+                                'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign3', 'thrust_{c11}_Climb1': 'F_EngineOffDesign3',
+                                'TSFC_{c21}_Climb2': 'TSFC_E4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4',
+                                'thrust_{c21}_Climb2': 'F_EngineOffDesign4','thrust_{c22}_Climb2': 'F_EngineOffDesign4',
+                                'TSFC_{c12}_Climb1': 'TSFC_E_EngineOffDesign3', 'thrust_{c12}_Climb1': 'F_EngineOffDesign3'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
