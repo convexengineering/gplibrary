@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from atmosphere import Atmosphere
 from collections import defaultdict
 from gpkit.small_scripts import mag
-from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2, EngineOffDesign3
+from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2, EngineOffDesign3, EngineOffDesign4
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -241,21 +241,27 @@ class Climb1(Model):
     def __init__(self,**kwargs):
 ##        TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
         TSFCc11 = Variable('TSFC_{c11}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
+        TSFCc12 = Variable('TSFC_{c12}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
 ##        thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
         thrustc11 = Variable('thrust_{c11}', 'N', 'Thrust During Climb Segment #1')
+        thrustc12 = Variable('thrust_{c12}', 'N', 'Thrust During Climb Segment #1')
         #Climb #1 (sub 10K subject to 250KTS speed limit)
         constraints = []
 
         constraints.extend([            
             #set the velocity limits
-            V[iclimb1] == speedlimit,
-##            V[iclimb1] >= Vstall,
+            V[iclimb1] <= speedlimit,
+            V[iclimb1] >= Vstall,
 
             #constraint on drag and thrust
-            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
-            
+##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
+            thrustc11 >= D[0] + W_start[0]*theta[0],
+            thrustc11 >= D[1] + W_start[1]*theta[1],
             #climb rate constraints
-            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
+##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
+            TCS([excessP[0]+V[0]*D[0] <= V[0]*thrustc11]),
+            TCS([excessP[1]+V[1]*D[1] <= V[1]*thrustc11]),
+            
             TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*(W_start[iclimb1]/(.5*S*rho[iclimb1]*V[iclimb1]**2))**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_start[iclimb1],
             RC[iclimb1] >= 500*units('ft/min'),
@@ -270,7 +276,8 @@ class Climb1(Model):
             
             #compute fuel burn from TSFC
 ##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
-            W_fuel[iclimb1]  == TSFCc11 * thours[iclimb1] * thrustc11,
+            W_fuel[0]  == TSFCc11 * thours[0] * thrustc11,
+            W_fuel[1]  == TSFCc11 * thours[1] * thrustc11,
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
@@ -429,6 +436,7 @@ class CommercialAircraft(Model):
         eoffD = EngineOffDesign()
         eoffD2 = EngineOffDesign2()
         eoffD3 = EngineOffDesign3()
+        eoffD4 = EngineOffDesign4()
         for i in range(Nseg):
             None
         
@@ -467,7 +475,8 @@ class CommercialAircraft(Model):
 
         constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign2',
                                 'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec}_EngineOffDesign2',
-                                'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign3', 'thrust_{c11}': 'F_EngineOffDesign3'})
+                                'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign3', 'thrust_{c11}': 'F_EngineOffDesign3',
+                                'thrust_{c12}': 'F_EngineOffDesign4'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
