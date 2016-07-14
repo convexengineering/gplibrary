@@ -136,13 +136,20 @@ df = df.dropna()
 xsweeps = np.array([df.Winter_Solstice, df.DayLight, 24 - df.DayLight])
 xvarnames = ["(E/S)_{irr}", "t_{day}", "t_{night}"]
 
-fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", [25,30,35], "b", [0, 200])
+pcts = [80, 90, 95, 99]
+fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", pcts, "b", [0, 400], winddf=df[["%sth Percentile Winds" % p for p in pcts]])
+ax.legend(["%sth percentile winds" % p for p in pcts],
+          loc="lower right",
+          fontsize=14)
 gen_tex_fig(fig, "b_vs_latitude45")
 
 xsweeps = np.array([df.Equinoxes, 12 + 0*df.DayLight, 12 - 0*df.DayLight])
 xvarnames = ["(E/S)_{irr}", "t_{day}", "t_{night}"]
 
-fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", [25,30,35], "b", [0, 200])
+fig, ax = latitude_sweep(M, np.array(df.Latitude), xvarnames, xsweeps, "V_{wind}", pcts, "b", [0, 400], winddf=df[["%sth Percentile Winds" % p for p in pcts]])
+ax.legend(["%sth percentile winds" % p for p in pcts],
+          loc="upper left",
+          fontsize=14)
 gen_tex_fig(fig, "b_vs_latitude45_equinox")
 ```
 

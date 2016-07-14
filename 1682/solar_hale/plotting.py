@@ -1,7 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 from gpkit.small_scripts import unitstr
 import pdb
+
+matplotlib.rc('font', size=17)
 
 def poor_mans_contour(model, xvarname, xsweep, zvarname, zsweep, yvarname,
                       ylimits, vref=None, vrefname=None, href=None,
@@ -50,7 +53,7 @@ def poor_mans_contour(model, xvarname, xsweep, zvarname, zsweep, yvarname,
 
     return fig, ax
 
-def latitude_sweep(model, lat, xvarnames, xsweeps, zvarname, zsweep, yvarname, ylim):
+def latitude_sweep(model, lat, xvarnames, xsweeps, zvarname, zsweep, yvarname, ylim, winddf=None):
 
     # save original values
     x_old = []
@@ -68,10 +71,16 @@ def latitude_sweep(model, lat, xvarnames, xsweeps, zvarname, zsweep, yvarname, y
         for j in range(0,xsweeps.size/len(xvarnames)):
             for k, name in enumerate(xvarnames):
                 model.substitutions.update({name: xsweeps[k,j]})
-            sol = model.solve("mosek", verbosity=0)
-            y.append(sol(yvarname).magnitude)
+            if winddf is not None:
+                model.substitutions.update({"V_{wind}": np.array(winddf["%sth Percentile Winds" % zval])[j]})
+                print "subbed %s for V_{wind}" % model.substitutions["V_{wind}"]
+            try:
+                sol = model.solve("mosek", verbosity=0)
+                y.append(sol(yvarname).magnitude)
+            except RuntimeWarning:
+                y.append(np.nan)
 
-        l, = ax.plot(lat, y, label="%s: %s" % (zvarname, zval))
+        l, = ax.plot(lat, y, label="%s: %s" % (zvarname, zval), linewidth=2)
         lines.append(l)
 
     # format plot
