@@ -153,6 +153,40 @@ class EngineOffDesign2(Model):
             }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)
+
+class EngineOffDesign3(Model):
+    def __init__(self, **kwargs):
+        lpc = FanAndLPC()
+        combustor = CombustorCooling()
+        turbine = Turbine()
+        thrust = ExhaustAndThrust()
+        fanmap = FanMap()
+        lpcmap = LPCMap()
+        hpcmap = HPCMap()
+
+        res7 = 1
+        m5opt = 0
+        m7opt = 1
+        
+        offD = OffDesign(res7, m5opt, m7opt)
+
+        #only add the HPCmap if residual 7 specifies a thrust
+        if res7 ==0:
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
+        else:
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            
+        with SignomialsEnabled():
+
+            lc = LinkedConstraintSet([self.submodels])
+
+            substitutions = {
+                'T_0': 230,   #36K feet
+                'P_0': 19.8,  
+                'M_0': 0.8,
+            }
+        
+        Model.__init__(self, None, lc, substitutions, **kwargs)
         
    
 if __name__ == "__main__":
