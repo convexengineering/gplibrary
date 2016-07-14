@@ -246,8 +246,8 @@ class Climb1(Model):
 
         constraints.extend([            
             #set the velocity limits
-            V[iclimb1] <= speedlimit,
-            V[iclimb1] >= Vstall,
+            V[iclimb1] == speedlimit,
+##            V[iclimb1] >= Vstall,
 
             #constraint on drag and thrust
             thrust >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
@@ -256,6 +256,7 @@ class Climb1(Model):
             TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrust]),
             TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*(W_start[iclimb1]/(.5*S*rho[iclimb1]*V[iclimb1]**2))**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_start[iclimb1],
+            RC[iclimb1] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
             theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
@@ -271,7 +272,7 @@ class Climb1(Model):
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
-            TSFCc1==c1*units('1/hr'),
+            TSFCc1==c1*units('1/hr')*.9,
             ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -318,7 +319,7 @@ class Climb2(Model):
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
 
-            TSFCc2[iclimb1] == c1*units('1/hr')
+            TSFCc2[iclimb1] == c1*units('1/hr')*.5
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -436,11 +437,11 @@ class CommercialAircraft(Model):
             '\\frac{L}{D}_{max}': 15,
             'ReqRng': 1000,
             'C_{d_0}': .05,
-            'K': 0.10,
+            'K': 0.1,
             'S': 124.58,
-            'c1': 2,
+            'c1': 1.11,
             'h_{toc}': 30000,
-            'thrust': 60000*units('lbf'),
+            'thrust': 40000*units('lbf'),
 
             #substitutions for global engine variables
             'G_f': 1,
@@ -463,7 +464,7 @@ class CommercialAircraft(Model):
         constraints = ConstraintSet([self.submodels])
 
         constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign2',
-                                'D1_Cruise2': 'F_{spec}_EngineOffDesign'})#,,'D2_Cruise2': 'F_{spec}_EngineOffDesign2',})#,
+                                'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec}_EngineOffDesign2',})#,
 ##                                'TSFC_{c1}_Climb1': 'TSFC_E_EngineOffDesign3'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
