@@ -297,6 +297,10 @@ class Climb2(Model):
     def __init__(self, **kwargs):
 ##        TSFCc2 = VectorVariable(Nclimb2, 'TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
         TSFCc2 = Variable('TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
+##        thrustc2 = VectorVariable(Nclimb1, 'thrust_{c2}', 'N', 'Thrust During Climb Segment #2')
+        thrustc21 = Variable('thrust_{c21}', 'N', 'Thrust During Climb Segment #2')
+##        thrustc22 = Variable('thrust_{c22}', 'N', 'Thrust During Climb Segment #2')
+
         constraints = []
         
         constraints.extend([            
@@ -306,10 +310,10 @@ class Climb2(Model):
             V[iclimb2] >= Vstall,
 
             #constraint on drag and thrust
-            thrust >= D[iclimb2] + W_start[iclimb2]*theta[iclimb2],
+            thrustc21 >= D[iclimb2] + W_start[iclimb2]*theta[iclimb2],
             
             #climb rate constraints
-            TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrust]),
+            TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrustc21]),
             TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*(W_start[iclimb2]/(.5*S*rho[iclimb2]*V[iclimb2]**2))**2)]),
             RC[iclimb2] == excessP[iclimb2]/W_start[iclimb2],
             RC[iclimb2] >= 500*units('ft/min'),
@@ -323,7 +327,7 @@ class Climb2(Model):
             TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
             
             #compute fuel burn from TSFC
-            W_fuel[iclimb2]  == TSFCc2 * thours[iclimb2] * thrust,
+            W_fuel[iclimb2]  == TSFCc2 * thours[iclimb2] * thrustc21,
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
