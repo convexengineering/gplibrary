@@ -250,7 +250,7 @@ class Climb1(Model):
 
         constraints.extend([            
             #set the velocity limits
-            V[iclimb1] <= speedlimit,
+            V[iclimb1] == speedlimit,
             V[iclimb1] >= Vstall,
 
             #constraint on drag and thrust
@@ -281,7 +281,10 @@ class Climb1(Model):
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
-##            TSFCc1==c1*units('1/hr')*.5,
+            TSFCc11==c1*units('1/hr')*.5,
+            TSFCc12==c1*units('1/hr')*.5,
+            thrustc11 == 30000*units('lbf'),
+            thrustc12 == 30000*units('lbf'),
             ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -338,7 +341,10 @@ class Climb2(Model):
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
 
-##            TSFCc2[iclimb1] == c1*units('1/hr')*.5
+##            thrustc21 == 30000*units('lbf'),
+            thrustc22 == 30000*units('lbf'),
+##            TSFCc21 == c1*units('1/hr')*.5,
+            TSFCc22 == c1*units('1/hr')*.5,
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -468,7 +474,7 @@ class CommercialAircraft(Model):
             #substitutions for global engine variables
             'G_f': 1,
             'N_{{bar}_Df}': 1,
-            'T_{t_{4spec}}': 1300,
+            'T_{t_{4spec}}': 2000,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
             '\pi_{d}': .99,
@@ -481,16 +487,24 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2, eoffD3, eoffD4]#, eoffD5]#, eoffD35]
+        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2, eoffD4]#,eoffD3,  eoffD5, eoffD35]
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E_EngineOffDesign2',
-                                'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec}_EngineOffDesign2',
-                                'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign3', 'thrust_{c11}_Climb1': 'F_EngineOffDesign3',
-                                'TSFC_{c21}_Climb2': 'TSFC_E4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4',
-                                'thrust_{c21}_Climb2': 'F_EngineOffDesign4','thrust_{c22}_Climb2': 'F_EngineOffDesign4',
-                                'TSFC_{c12}_Climb1': 'TSFC_E_EngineOffDesign3', 'thrust_{c12}_Climb1': 'F_EngineOffDesign3'})
+##        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E2_EngineOffDesign2',
+##                                'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec2}_EngineOffDesign2',
+##                                'TSFC_{c11}_Climb1': 'TSFC_E3_EngineOffDesign3', 'thrust_{c11}_Climb1': 'F_3_EngineOffDesign3',
+##                                'TSFC_{c21}_Climb2': 'TSFC_E4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E5_EngineOffDesign5',
+##                                'thrust_{c21}_Climb2': 'F_4_EngineOffDesign4','thrust_{c22}_Climb2': 'F_5_EngineOffDesign5',
+##                                'TSFC_{c12}_Climb1': 'TSFC_E35_EngineOffDesign35', 'thrust_{c12}_Climb1': 'F_35_EngineOffDesign35'})
+
+        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E2_EngineOffDesign2',
+                               'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec2}_EngineOffDesign2',
+                                'thrust_{c21}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c21}_Climb2': 'TSFC_E4_EngineOffDesign4'})
+##                                'TSFC_{c11}_Climb1': 'TSFC_E3_EngineOffDesign3', 'thrust_{c11}_Climb1': 'F_3_EngineOffDesign3',
+##                                'TSFC_{c21}_Climb2': 'TSFC_E4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E5_EngineOffDesign5',
+##                                'thrust_{c22}_Climb2': 'F_5_EngineOffDesign5',
+##                                'TSFC_{c12}_Climb1': 'TSFC_E35_EngineOffDesign35', 'thrust_{c12}_Climb1': 'F_35_EngineOffDesign35'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
