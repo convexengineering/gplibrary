@@ -167,7 +167,7 @@ class EngineOffDesign3(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 0
+        res7 = 1
         m5opt = 0
         m7opt = 1
         
@@ -190,7 +190,6 @@ class EngineOffDesign3(Model):
             'T_0': 230,   #36K feet
             'P_0': 19.8,  
             'M_0': 0.8,
-            'F_{spec}': 30000*units('lbf')
         }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)
@@ -267,8 +266,8 @@ class EngineOffDesign5(Model):
         }
         Model.__init__(self, None, lc, substitutions, **kwargs)
 
-class EngineOffDesign35(Model):
-    def __init__(self, **kwargs):
+class EngineOffDesign6(Model):
+     def __init__(self, **kwargs):
         lpc = FanAndLPC()
         combustor = CombustorCooling()
         turbine = Turbine()
@@ -291,7 +290,7 @@ class EngineOffDesign35(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E35', 'F': 'F_35'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E6', 'F': 'F_6'})
     
 
         lc = LinkedConstraintSet(constraints)
@@ -301,9 +300,7 @@ class EngineOffDesign35(Model):
             'P_0': 19.8,  
             'M_0': 0.8,
         }
-        
         Model.__init__(self, None, lc, substitutions, **kwargs)
-        
    
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
