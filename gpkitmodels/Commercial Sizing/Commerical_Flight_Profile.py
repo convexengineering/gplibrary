@@ -25,7 +25,7 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 #defining the number of segments
 Ntakeoff = 0
 Nclimb1 = 2
-Nclimb2 = 0
+Nclimb2 = 2
 Ncruise1 = 0
 Ncruiseclimb = 0
 Ncruise2 = 0
@@ -190,8 +190,8 @@ class CommericalMissionConstraints(Model):
 
             rho[iclimb1] == 1.225*units('kg/m^3'),
             T[iclimb1] == 273*units('K'),
-##            rho[iclimb2] == .7*units('kg/m^3'),
-##            T[iclimb2] == 250*units('K'),
+            rho[iclimb2] == .7*units('kg/m^3'),
+            T[iclimb2] == 250*units('K'),
 ##            rho[icruise2] == .3*units('kg/m^3'),
 ##            T[icruise2] == 230*units('K'),
             ])
@@ -207,17 +207,17 @@ class CommericalMissionConstraints(Model):
                  constraints.extend([
                     TCS([sum(RngClimb) >= ReqRng]),
 ##                    TCS([ReqRngCruise   >= sum(RngCruise)]),
-##                    SignomialEquality(dhClimb2, htoc - 10000*units('ft'))
+                    TCS([dhClimb2 + alt10k >= htoc])
                     ])
             for i in range(0, Nclimb1):
                 constraints.extend([
                     SignomialEquality(hft[i], 1500*units('ft')+(i+1)*dhft[i])
                     ])
 
-##            for i in range(0, Nclimb2):
-##                constraints.extend([
-##                    SignomialEquality(hft[i+Nclimb1], 10000*units('ft')+(i+1)*dhft[i+Nclimb1])
-##                    ])
+            for i in range(0, Nclimb2):
+                constraints.extend([
+                    SignomialEquality(hft[i+Nclimb1], 10000*units('ft')+(i+1)*dhft[i+Nclimb1])
+                    ])
 
         #constrain the segment weights in a loop
         for i in range(1, Nseg):
@@ -285,10 +285,10 @@ class Climb1(Model):
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
-            TSFCc11==c1*units('1/hr')*.5,
-            TSFCc12==c1*units('1/hr')*.5,
-            thrustc11 == 30000*units('lbf'),
-            thrustc12 == 30000*units('lbf'),
+##            TSFCc11==c1*units('1/hr')*.5,
+##            TSFCc12==c1*units('1/hr')*.5,
+##            thrustc11 == 30000*units('lbf'),
+##            thrustc12 == 30000*units('lbf'),
             ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -345,10 +345,10 @@ class Climb2(Model):
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
 
-##            thrustc21 == 30000*units('lbf'),
-##            thrustc22 == 30000*units('lbf'),
-##            TSFCc21 == c1*units('1/hr')*.5,
-##            TSFCc22 == c1*units('1/hr')*.5,
+            thrustc21 == 30000*units('lbf'),
+            thrustc22 == 30000*units('lbf'),
+            TSFCc21 == c1*units('1/hr')*.5,
+            TSFCc22 == c1*units('1/hr')*.5,
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -450,12 +450,12 @@ class CommercialAircraft(Model):
         #define all the submodels
         cmc = CommericalMissionConstraints(1)
         climb1 = Climb1()
-##        climb2 = Climb2()
+        climb2 = Climb2()
         cruise2 = Cruise2()
 ##        atm = Atmosphere(Nseg)
         eonD = EngineOnDesign()
-##        eoffD = EngineOffDesign()
-##        eoffD2 = EngineOffDesign2()
+        eoffD = EngineOffDesign()
+        eoffD2 = EngineOffDesign2()
 ##        eoffD3 = EngineOffDesign3()
 ##        eoffD4 = EngineOffDesign4()
 ##        eoffD5 = EngineOffDesign5()
@@ -468,7 +468,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 20000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 40,
+            'ReqRng': 500,
             'C_{d_0}': .05,
             'K': 0.1,
             'S': 124.58,
@@ -492,7 +492,7 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, cruise2, eonD]#, climb2, cruise2, eonD, eoffD, eoffD2, eoffD4, eoffD3, eoffD5]#, eoffD6]#,eoffD3,  , ]
+        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2]#, climb2, cruise2, eonD, eoffD, eoffD2, eoffD4, eoffD3, eoffD5]#, eoffD6]#,eoffD3,  , ]
 
         constraints = ConstraintSet([self.submodels])
 
@@ -502,6 +502,9 @@ class CommercialAircraft(Model):
 ##                                'TSFC_{c21}_Climb2': 'TSFC_E4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E5_EngineOffDesign5',
 ##                                'thrust_{c21}_Climb2': 'F_4_EngineOffDesign4','thrust_{c22}_Climb2': 'F_5_EngineOffDesign5',
 ##                                'TSFC_{c12}_Climb1': 'TSFC_E35_EngineOffDesign35', 'thrust_{c12}_Climb1': 'F_35_EngineOffDesign35'})
+
+        constraints.subinplace({'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign', 'thrust_{c11}_Climb1': 'F__EngineOffDesign',
+                                'TSFC_{c12}_Climb1': 'TSFC_E2_EngineOffDesign2', 'thrust_{c12}_Climb1': 'F_2_EngineOffDesign2'})
 
 ##        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E2_EngineOffDesign2',
 ##                               'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec2}_EngineOffDesign2',

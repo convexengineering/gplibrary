@@ -96,7 +96,7 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 0
+        res7 = 1
         m5opt = 0
         m7opt = 1
         
@@ -130,7 +130,7 @@ class EngineOffDesign2(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 0
+        res7 = 1
         m5opt = 0
         m7opt = 1
         
@@ -144,7 +144,7 @@ class EngineOffDesign2(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E2', 'F_{spec}': 'F_{spec2}'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E2', 'F': 'F_2'})
     
 
         lc = LinkedConstraintSet(constraints)
@@ -240,7 +240,7 @@ class EngineOffDesign5(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
         m7opt = 1
         
@@ -254,7 +254,7 @@ class EngineOffDesign5(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E5', 'F': 'F_5'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E5', 'F_{spec}': 'F_{spec5}'})
     
 
         lc = LinkedConstraintSet(constraints)
@@ -276,7 +276,7 @@ class EngineOffDesign6(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
         m7opt = 1
         
@@ -290,7 +290,7 @@ class EngineOffDesign6(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E6', 'F': 'F_6'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E6', 'F_{spec}': 'F_{sepc6}'})
     
 
         lc = LinkedConstraintSet(constraints)
