@@ -345,10 +345,10 @@ class Climb2(Model):
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
 
-            thrustc21 == 30000*units('lbf'),
-            thrustc22 == 30000*units('lbf'),
-            TSFCc21 == c1*units('1/hr')*.5,
-            TSFCc22 == c1*units('1/hr')*.5,
+##            thrustc21 == 30000*units('lbf'),
+##            thrustc22 == 30000*units('lbf'),
+##            TSFCc21 == c1*units('1/hr')*.5,
+##            TSFCc22 == c1*units('1/hr')*.5,
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -456,8 +456,8 @@ class CommercialAircraft(Model):
         eonD = EngineOnDesign()
         eoffD = EngineOffDesign()
         eoffD2 = EngineOffDesign2()
-##        eoffD3 = EngineOffDesign3()
-##        eoffD4 = EngineOffDesign4()
+        eoffD3 = EngineOffDesign3()
+        eoffD4 = EngineOffDesign4()
 ##        eoffD5 = EngineOffDesign5()
 ##        eoffD6 = EngineOffDesign6()
         for i in range(Nseg):
@@ -492,7 +492,7 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2]#, climb2, cruise2, eonD, eoffD, eoffD2, eoffD4, eoffD3, eoffD5]#, eoffD6]#,eoffD3,  , ]
+        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2, eoffD3, eoffD4]#, climb2, cruise2, eonD, eoffD, eoffD2, , eoffD3, eoffD5]#, eoffD6]#,eoffD3,  , ]
 
         constraints = ConstraintSet([self.submodels])
 
@@ -504,7 +504,9 @@ class CommercialAircraft(Model):
 ##                                'TSFC_{c12}_Climb1': 'TSFC_E35_EngineOffDesign35', 'thrust_{c12}_Climb1': 'F_35_EngineOffDesign35'})
 
         constraints.subinplace({'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign', 'thrust_{c11}_Climb1': 'F__EngineOffDesign',
-                                'TSFC_{c12}_Climb1': 'TSFC_E2_EngineOffDesign2', 'thrust_{c12}_Climb1': 'F_2_EngineOffDesign2'})
+                                'TSFC_{c12}_Climb1': 'TSFC_E2_EngineOffDesign2', 'thrust_{c12}_Climb1': 'F_2_EngineOffDesign2',
+                                'thrust_{c21}_Climb2': 'F_3_EngineOffDesign3','TSFC_{c21}_Climb2': 'TSFC_E3_EngineOffDesign3',
+                                'thrust_{c22}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4'})
 
 ##        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E2_EngineOffDesign2',
 ##                               'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec2}_EngineOffDesign2',
