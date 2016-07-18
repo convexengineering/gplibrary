@@ -319,7 +319,8 @@ class ExhaustAndThrust(ConstraintSet):
 
         #flow faction f
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
-
+        fp1 = Variable('fp1', '-', 'f + 1')
+        
         with SignomialsEnabled():
             constraints = [
                 Pt8 == Pt7, #B.179
@@ -340,11 +341,13 @@ class ExhaustAndThrust(ConstraintSet):
                 ht6 == Cptex * Tt6,
 
                 #overall thrust values
-                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-                TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
+##                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
+##                TCS([F6/mCore + u0 <= u6]),      #B.189
 
                 #SIGNOMIAL
-                TCS([F <= F6 + F8]),
+##                TCS([F  <= F6 + F8]),
+
+                F + alphap1*mCore*u0 <= mCore*u6+mCore*alpha*u8, 
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -503,6 +506,12 @@ class OnDesignSizing(ConstraintSet):
         pihcD = Variable('\pi_{hc_D}', '-', 'HPC On-Design Pressure Ratio')
         pilc = Variable('\pi_{lc}', '-', 'LPC Pressure Ratio')
         pilcD = Variable('\pi_{lc_D}', '-', 'LPC On-Design Pressure Ratio')
+
+        ht4 = Variable('h_{t_4}', 'J/kg', 'Stagnation Enthalpy at the Combustor Exit (4)')
+        ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
+
+        #heat of combustion of jet fuel
+        hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
         
         with SignomialsEnabled():
             constraints = [
@@ -876,7 +885,13 @@ class OffDesign(ConstraintSet):
         u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
 
         pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
-             
+
+        ht4 = Variable('h_{t_4}', 'J/kg', 'Stagnation Enthalpy at the Combustor Exit (4)')
+        ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
+    
+        #heat of combustion of jet fuel
+        hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
+
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence

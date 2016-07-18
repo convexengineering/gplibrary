@@ -478,7 +478,7 @@ class CommercialAircraft(Model):
             'S': 124.58,
             'c1': 1.1,
             'h_{toc}': 30000,
-            'thrust': 40000*units('lbf'),
+##            'thrust': 40000*units('lbf'),
 
             #substitutions for global engine variables
             'G_f': 1,
