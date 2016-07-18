@@ -314,7 +314,7 @@ class Climb2(Model):
         constraints.extend([            
             #set the velocity limits
             #needs to be replaced by an actual Vne and a mach number
-            M[iclimb2]<= 1,
+            M[iclimb2]== .5,
             V[iclimb2] >= Vstall,
 
             #constraint on drag and thrust
@@ -405,7 +405,9 @@ class Cruise2(Model):
 
                 #compute the drag
                 SignomialEquality(Dtoc, (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(W_start[Nclimb]/(.5*S*rho[Ncruise2]*Vtoc**2))**2)),
-                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
+##                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
+                SignomialEquality(D[4],(.5*S*rho[4]*V[4]**2)*(Cd0 + K*(W_start[4]/(.5*S*rho[4]*V[4]**2))**2)),
+                SignomialEquality(D[5], (.5*S*rho[5]*V[5]**2)*(Cd0 + K*(W_start[5]/(.5*S*rho[5]*V[5]**2))**2)),
                 D[4] == D1,
                 D[5] == D2,
                 #constrain the climb rate by holding altitude constant
@@ -481,7 +483,7 @@ class CommercialAircraft(Model):
             #substitutions for global engine variables
             'G_f': 1,
             'N_{{bar}_Df}': 1,
-            'T_{t_{4spec}}': 2000,
+            'T_{t_{4spec}}': 1400,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
             '\pi_{d}': .99,
@@ -580,7 +582,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+    sol = m.localsolve(kktsolver="ldl", verbosity = 4, iteration_limit=1000)
     
 ##    sol = m.determine_unbounded_variables(m,verbosity=4, iteration_limit=50)
     
