@@ -290,7 +290,7 @@ class EngineOffDesign6(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E6', 'F_{spec}': 'F_{sepc6}'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E6', 'F_{spec}': 'F_{spec6}'})
     
 
         lc = LinkedConstraintSet(constraints)
