@@ -31,7 +31,7 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        m6opt = 0
+        m6opt = 1
         m8opt = 1
         
         lpc = FanAndLPC()
@@ -96,9 +96,9 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
-        m7opt = 1
+        m7opt = 0
         
         offD = OffDesign(res7, m5opt, m7opt)
 
@@ -130,9 +130,9 @@ class EngineOffDesign2(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
-        m7opt = 1
+        m7opt = 0
         
         offD = OffDesign(res7, m5opt, m7opt)
 
@@ -167,9 +167,9 @@ class EngineOffDesign3(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
-        m7opt = 1
+        m7opt = 0
         
         offD = OffDesign(res7, m5opt, m7opt)
 
@@ -204,9 +204,9 @@ class EngineOffDesign4(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
-        m7opt = 1
+        m7opt = 0
         
         offD = OffDesign(res7, m5opt, m7opt)
 
@@ -240,7 +240,7 @@ class EngineOffDesign5(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 0
+        res7 = 1
         m5opt = 0
         m7opt = 1
         
@@ -276,7 +276,7 @@ class EngineOffDesign6(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 0
+        res7 = 1
         m5opt = 0
         m7opt = 1
         

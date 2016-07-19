@@ -472,7 +472,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 20000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 500,
+            'ReqRng': 1150,
             'C_{d_0}': .05,
             'K': 0.1,
             'S': 124.58,
@@ -483,7 +483,7 @@ class CommercialAircraft(Model):
             #substitutions for global engine variables
             'G_f': 1,
             'N_{{bar}_Df}': 1,
-            'T_{t_{4spec}}': 1400,
+            'T_{t_{4spec}}': 2000,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
             '\pi_{d}': .99,
@@ -500,13 +500,6 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-##        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E2_EngineOffDesign2',
-##                                'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec2}_EngineOffDesign2',
-##                                'TSFC_{c11}_Climb1': 'TSFC_E3_EngineOffDesign3', 'thrust_{c11}_Climb1': 'F_3_EngineOffDesign3',
-##                                'TSFC_{c21}_Climb2': 'TSFC_E4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E5_EngineOffDesign5',
-##                                'thrust_{c21}_Climb2': 'F_4_EngineOffDesign4','thrust_{c22}_Climb2': 'F_5_EngineOffDesign5',
-##                                'TSFC_{c12}_Climb1': 'TSFC_E35_EngineOffDesign35', 'thrust_{c12}_Climb1': 'F_35_EngineOffDesign35'})
-
         constraints.subinplace({'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign', 'thrust_{c11}_Climb1': 'F__EngineOffDesign',
                                 'TSFC_{c12}_Climb1': 'TSFC_E2_EngineOffDesign2', 'thrust_{c12}_Climb1': 'F_2_EngineOffDesign2',
                                 'thrust_{c21}_Climb2': 'F_3_EngineOffDesign3','TSFC_{c21}_Climb2': 'TSFC_E3_EngineOffDesign3',
@@ -514,14 +507,6 @@ class CommercialAircraft(Model):
                                 'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'D1_Cruise2': 'F_{spec5}_EngineOffDesign5',
                                 'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'D2_Cruise2': 'F_{spec6}_EngineOffDesign6'})
 
-##        constraints.subinplace({'TSFC_{cr21}_Cruise2': 'TSFC_E_EngineOffDesign', 'TSFC_{cr22}_Cruise2': 'TSFC_E2_EngineOffDesign2',
-##                               'D1_Cruise2': 'F_{spec}_EngineOffDesign','D2_Cruise2': 'F_{spec2}_EngineOffDesign2',
-##                                'thrust_{c21}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c21}_Climb2': 'TSFC_E4_EngineOffDesign4',
-##                                'TSFC_{c22}_Climb2': 'TSFC_E3_EngineOffDesign3','thrust_{c22}_Climb2': 'F_3_EngineOffDesign3',
-##                                'TSFC_{c11}_Climb1': 'TSFC_E5_EngineOffDesign5', 'thrust_{c11}_Climb1': 'F_5_EngineOffDesign5'})#,
-##                                'TSFC_{c12}_Climb1': 'TSFC_E6_EngineOffDesign6', 'thrust_{c12}_Climb1': 'F_6_EngineOffDesign6'})
-##                                'TSFC_{c11}_Climb1': 'TSFC_E3_EngineOffDesign3', 'thrust_{c11}_Climb1': 'F_3_EngineOffDesign3',
-        
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
                                                        'h_{t_2.1}', 'P_{t_2.5}', 'T_{t_2.5}', 'h_{t_2.5}', 'P_{t_3}', 'T_{t_3}',
@@ -537,7 +522,7 @@ class CommercialAircraft(Model):
                                                        'm_{tild_f}','p_{tildf}','N_f','m_{{tild}_sf}','p_{{tild}_sf}','N_1','m_{lc}',
                                                         'm_{hc}','u_7','M_7','\rho_7','P_{5}','T_{5}','M_5','u_5','\rho_5','T_{t_{4spec}}'
                                                         ,'m_{tild_hc}','p_{tild_lc}','N_2','m_{{tild}_shc}','p_{{tild}_shc}','m_{tild_lc}'
-                                                        ,'p_{tild_lc}','m_{{tild}_slc}','p_{{tild}_slc}'})
+                                                        ,'p_{tild_lc}','m_{{tild}_slc}','p_{{tild}_slc}','P_{7}'})
 
         Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
 

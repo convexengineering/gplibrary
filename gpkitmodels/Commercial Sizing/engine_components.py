@@ -336,9 +336,10 @@ class ExhaustAndThrust(ConstraintSet):
                 P6 == P0,   #B.4.11 intro
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
-                (P6/Pt6)**(.279) == T6/Tt6,
+                (P6/Pt6)**(.387/1.387) == T6/Tt6,
                 TCS([u6**2 <= (2*(ht6 -h6))]),
-##                SignomialEquality(u6**2, (2*(ht6 -h6))),
+##                TCS([u6**2 >= .5*(2*(ht6 -h6))]),
+##                SignomialEquality(u6**2+2*h6, 2*ht6),
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
@@ -976,9 +977,9 @@ class OffDesign(ConstraintSet):
             if m7opt == 0:
                 constraints.extend([
                     #additional constraints on residual 4 for M7 < 1
-##                    P7 == P0,
-##                    (P7/Pt7) == (T7/Tt7)**(3.5),
-##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
+                    P7 == P0,
+                    (P7/Pt7) == (T7/Tt7)**(3.5),
+                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
                     ])
                 
             if m7opt == 1:
