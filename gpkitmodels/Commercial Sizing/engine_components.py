@@ -327,7 +327,8 @@ class ExhaustAndThrust(ConstraintSet):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpfanex * T8,
-                TCS([u8**2 + 2*h8 <= 2*ht8]),
+##                TCS([u8**2 + 2*h8 <= 2*ht8]),
+                SignomialEquality(u8**2 + 2*h8, 2*ht8),
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -336,7 +337,8 @@ class ExhaustAndThrust(ConstraintSet):
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
                 (P6/Pt6)**(.279) == T6/Tt6,
-                TCS([u6**2 + 2*h6 <= 2*ht6]),
+                TCS([u6**2 <= (2*(ht6 -h6))]),
+##                SignomialEquality(u6**2, (2*(ht6 -h6))),
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
@@ -563,6 +565,7 @@ class OnDesignSizing(ConstraintSet):
 
                 #constrain the exit exhaust exit speeds
                 u6 >= u0,
+                u8 >= u0,
                 ]
             
             if m6opt == 0:
@@ -883,6 +886,7 @@ class OffDesign(ConstraintSet):
         #exit velocities
         u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
         u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
+        u8 = Variable('u_8', 'm/s', 'Fan Exhaust Velocity')
 
         pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
 
@@ -935,7 +939,8 @@ class OffDesign(ConstraintSet):
                 Pt49*pitn == Pt5, #B.269
 
                 #constrain the exit exhaust exit speeds
-                u6 >= u0
+                u6 >= u0,
+                u8 >= u0,
                 ]
                 
             if res7 == 0:

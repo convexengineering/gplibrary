@@ -476,7 +476,7 @@ class CommercialAircraft(Model):
             'C_{d_0}': .05,
             'K': 0.1,
             'S': 124.58,
-            'c1': 1.1,
+##            'c1': 1.1,
             'h_{toc}': 30000,
 ##            'thrust': 40000*units('lbf'),
 
