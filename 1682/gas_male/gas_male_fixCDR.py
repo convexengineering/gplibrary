@@ -4,10 +4,6 @@ from gpkit import VectorVariable, Variable, Model, units
 from gpkit.tools import te_exp_minus1
 import gpkit
 import numpy as np
-gpkit.settings['latex_modelname'] = False
-plt.rc('font', family='serif') 
-plt.rc('font', serif='Times New Roman')
-plt.rcParams.update({'font.size':19})
 
 PLOT = True
 fixed = True
@@ -448,10 +444,10 @@ if __name__ == '__main__':
         sol = M.solve('mosek', verbosity=0)
 
     if PLOT:
-        
+
         #del M.substitutions["t_{station}"]
         M.cost = 1/M["t_{station}"]
-        
+
         if wind:
 
             M.substitutions.update({'V_{wind}': ('sweep', np.linspace(5, 40, 15))})
@@ -553,7 +549,7 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 10])
             plt.savefig('tvsh_station.pdf')
-            
+
             plt.close()
             plt.plot(h_station, MTOW)
             plt.xlabel('Altitude at Station [ft]')
@@ -561,7 +557,7 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 200])
             plt.savefig('MTOWvsh_station.pdf')
-            
+
             plt.close()
             plt.plot(h_station, P_shafttot)
             plt.xlabel('Altitude at Station [ft]')
@@ -569,7 +565,7 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 5])
             plt.savefig('P_shafttotvsh_station.pdf')
-            
+
             plt.close()
             plt.plot(h_station, m_dotfuel)
             plt.xlabel('Altitude at Station [ft]')
@@ -577,7 +573,7 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 0.0002])
             plt.savefig('m_dotfuelvsh_station.pdf')
-            
+
             plt.close()
             plt.plot(h_station, P_shaftmax)
             plt.xlabel('Altitude at Station [ft]')
@@ -585,7 +581,7 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 5])
             plt.savefig('P_shaftmaxvsh_station.pdf')
-            
+
             plt.close()
             plt.plot(h_station, BSFC)
             plt.xlabel('Altitude at Station [ft]')
@@ -593,7 +589,7 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 1.5])
             plt.savefig('BSFCvsh_station.pdf')
-            
+
             plt.close()
             plt.plot(h_station, eta_prop)
             plt.xlabel('Altitude at Station [ft]')
@@ -601,7 +597,7 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0.7, 0.8])
             plt.savefig('eta_propvsh_station.pdf')
-            
+
             plt.close()
             plt.plot(h_station, RPM)
             plt.xlabel('Altitude at Station [ft]')
@@ -609,7 +605,7 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 9000])
             plt.savefig('RPMvsh_station.pdf')
-            
+
             plt.close()
             plt.plot(h_station, CD)
             plt.xlabel('Altitude at Station [ft]')
@@ -617,7 +613,7 @@ if __name__ == '__main__':
             plt.grid()
             plt.axis([min(h_station), max(h_station), 0, 0.2])
             plt.savefig('CDvsh_station.pdf')
-            
+
             plt.close()
             plt.plot(h_station, V)
             plt.xlabel('Altitude at Station [ft]')
