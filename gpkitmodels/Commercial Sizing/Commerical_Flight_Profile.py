@@ -21,6 +21,8 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 #link in with engine
 #fix indicies on the TSFC vector variables
 
+#figure out if minimizing total weight is the same as minimizing fuel weight
+
 #-----------------------------------------------------------
 #defining the number of segments
 Ntakeoff = 0
@@ -84,7 +86,6 @@ if Nclimb != 0:
     dhft = VectorVariable(Nclimb, 'dhft', 'feet', 'Change in Altitude Per Climb Segment [feet]') 
 h = VectorVariable(Nseg, 'h', 'm', 'Altitude [meters]')
 hft = VectorVariable(Nseg, 'hft', 'feet', 'Altitude [feet]')
-htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
 dhClimb1 = Variable('dh_{climb1}', 8500, 'feet', 'Total Altitude Change Required in Climb 1')
 dhClimb2 = Variable('dh_{climb2}', 'feet', 'Total Altitude Change Required in Climb 2')
 dhTakeoff = Variable('dh_{takeoff}', 1500, 'feet', 'Total Altitude Change During Takeoff Profile')
@@ -102,14 +103,10 @@ ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
 ReqRng = Variable('ReqRng', 'miles', 'Required Mission Range')
 
 #aircraft weights
-W_e = Variable('W_{e}', 'lbf', 'Empty Weight of Aircraft')
 W_start = VectorVariable(Nseg, 'W_{start}', 'lbf', 'Segment Start Weight')
 W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'lbf', 'Segment Fuel Weight')
-W_ftotal = Variable('W_{f_{total}}', 'lbf', 'Total Fuel Weight')
 W_end = VectorVariable(Nseg, 'W_{end}', 'lbf', 'Segment End Weight')
-W_payload = Variable('W_{payload}', 'lbf', 'Aircraft Payload Weight')
 W_total = Variable('W_{total}', 'lbf', 'Total Aircraft Weight')
-W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
 
 #aero
 LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
@@ -121,8 +118,6 @@ K = Variable('K', '-', 'K for Parametric Drag Model')
 if Nclimb != 0:
     excessP = VectorVariable(Nclimb, 'Excess Power', 'W', 'Excess Power During Climb')
 D = VectorVariable(Nseg, 'Drag', 'N', 'Drag')
-Dtoc = Variable('Drag @ TOC', 'N', 'Drag at Top of Climb')
-excessPtoc = Variable('Excess Power @ TOC', 'W', 'Excess Power at Top Of Climb')
 
 #aircraft geometry
 S = Variable('S', 'm^2', 'Wing Planform Area')
@@ -131,32 +126,17 @@ S = Variable('S', 'm^2', 'Wing Planform Area')
 V = VectorVariable(Nseg, 'V', 'knots', 'Aircraft Flight Speed')
 M = VectorVariable(Nseg, 'M', '-', 'Aircraft Mach Number')
 Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
-Vtoc = Variable('V @ TOC', 'knots', 'Aircraft Flight Speed at TOC')
 
 #Climb/Decent Rate
 if Nclimb != 0:
     RC = VectorVariable(Nclimb, 'RC', 'feet/min', 'Rate of Climb/Decent')
     theta = VectorVariable(Nclimb, '\\theta', '-', 'Aircraft Climb Angle')
-RCtoc = Variable('RC @ TOC', 'feet/min', 'Rate of Climb at Top of Climb')
-
-#breguet parameter
-if Ncruise != 0:
-    z_bre = VectorVariable(Ncruise, 'z_{bre}', '-', 'Breguet Parameter')
-
-#engine
-#TSFC = VectorVariable(Nseg, 'TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
 
 #currently sets the value of TSFC, just a place holder
 c1 = Variable('c1', '-', 'Constant')
 
 #defien thrust variable
 thrust = Variable('thrust', 'N', 'Engine Thrust')
-
-#define the amount of thrust required at the sizing point
-thrustsizing = Variable('thrustsizing', 'N', 'Engine Thrust for Sizing')
-
-#set the speed limit under 10,000'
-speedlimit = Variable('speedlimit', 250, 'kts', 'Speed Limit Under 10,000 ft')
 
 #temporary args
 #pass in a 1 for testing climb segment 1
@@ -168,6 +148,12 @@ class CommericalMissionConstraints(Model):
     def __init__(self, test=0, **kwargs):
         #variable local to this model
         alt10k = Variable('alt10k', 10000, 'feet', '10,000 feet')
+        W_payload = Variable('W_{payload}', 'lbf', 'Aircraft Payload Weight')
+        W_e = Variable('W_{e}', 'lbf', 'Empty Weight of Aircraft')
+        W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
+        W_ftotal = Variable('W_{f_{total}}', 'lbf', 'Total Fuel Weight')
+
+        htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
         
         constraints = []
         constraints.extend([
@@ -245,6 +231,8 @@ class Climb1(Model):
     10,000'
     """
     def __init__(self,**kwargs):
+        #set the speed limit under 10,000'
+        speedlimit = Variable('speedlimit', 'kts', 'Speed Limit Under 10,000 ft')
 ##        TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
         TSFCc11 = Variable('TSFC_{c11}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
         TSFCc12 = Variable('TSFC_{c12}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
@@ -257,8 +245,7 @@ class Climb1(Model):
         constraints.extend([            
             #set the velocity limits
             
-##            V[iclimb1] <= speedlimit,
-            V[iclimb1] <= 250*units('knots'),
+            V[iclimb1] <= speedlimit,
             V[iclimb1] >= Vstall,
 
             #constraint on drag and thrust
@@ -391,7 +378,16 @@ class Cruise2(Model):
 
         Tt4 = Variable('T_{t_4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')
 
-        
+        #parameter to make breguent range eqn gp compatible
+        z_brec2 = VectorVariable(Ncruise2, 'z_{brec2}', '-', 'Breguet Parameter')
+
+        #top of climb parameters for engine sizing
+        RCtoc = Variable('RC @ TOC', 'feet/min', 'Rate of Climb at Top of Climb')
+        Dtoc = Variable('Drag @ TOC', 'N', 'Drag at Top of Climb')
+        excessPtoc = Variable('Excess Power @ TOC', 'W', 'Excess Power at Top Of Climb')
+        Vtoc = Variable('V @ TOC', 'knots', 'Aircraft Flight Speed at TOC')
+        htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
+                  
         with gpkit.SignomialsEnabled():
             
             constraints.extend([
@@ -418,12 +414,12 @@ class Cruise2(Model):
                 hft[icruise2]  == htoc,
                 
                 #taylor series expansion to get the weight term
-                TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_bre[izbre], nterm=3)]),
+                TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_brec2[izbre], nterm=3)]),
 
                 #breguet range eqn
-##                TCS([RngCruise[izbre] <= z_bre[izbre]*LD[icruise2]*V[icruise2]/(TSFCcr2[iclimb1])]),
-                TCS([RngCruise[0] <= z_bre[0]*LD[4]*V[4]/(TSFCcr21)]),
-                TCS([RngCruise[1] <= z_bre[1]*LD[5]*V[5]/(TSFCcr22)]),
+##                TCS([RngCruise[izbre] <= z_brec2[izbre]*LD[icruise2]*V[icruise2]/(TSFCcr2[iclimb1])]),
+                TCS([RngCruise[0] <= z_brec2[0]*LD[4]*V[4]/(TSFCcr21)]),
+                TCS([RngCruise[1] <= z_brec2[1]*LD[5]*V[5]/(TSFCcr22)]),
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
@@ -482,6 +478,7 @@ class CommercialAircraft(Model):
             'S': 124.58,
 ##            'c1': 1.1,
             'h_{toc}': 30000,
+            'speedlimit': 250,
 ##            'thrust': 40000*units('lbf'),
 
             #substitutions for global engine variables
