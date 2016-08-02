@@ -32,7 +32,7 @@ class EngineOnDesign(Model):
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
         m6opt = 1
-        m8opt = 1
+        m8opt = 0
         
         lpc = FanAndLPC()
         combustor = CombustorCooling()

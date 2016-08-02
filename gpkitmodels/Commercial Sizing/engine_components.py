@@ -515,6 +515,14 @@ class OnDesignSizing(ConstraintSet):
 
         #heat of combustion of jet fuel
         hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
+
+        #engine weight
+        W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
+
+        pilc = Variable('\pi_{lc}', '-', 'LPC Pressure Ratio')
+        pihc = Variable('\pi_{hc}', '-', 'HPC Pressure Ratio')
+
+        alpha = Variable('alpha', '-', 'By Pass Ratio')
         
         with SignomialsEnabled():
             constraints = [
@@ -567,6 +575,10 @@ class OnDesignSizing(ConstraintSet):
                 #constrain the exit exhaust exit speeds
                 u6 >= u0,
                 u8 >= u0,
+
+                #calculate the engine weight
+                #using drela's original model from TASOPT source code
+                W_engine >= (mCore/45.35)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')
                 ]
             
             if m6opt == 0:

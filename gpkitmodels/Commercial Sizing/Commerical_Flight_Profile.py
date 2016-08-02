@@ -109,6 +109,7 @@ W_ftotal = Variable('W_{f_{total}}', 'lbf', 'Total Fuel Weight')
 W_end = VectorVariable(Nseg, 'W_{end}', 'lbf', 'Segment End Weight')
 W_payload = Variable('W_{payload}', 'lbf', 'Aircraft Payload Weight')
 W_total = Variable('W_{total}', 'lbf', 'Total Aircraft Weight')
+W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
 
 #aero
 LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
@@ -183,7 +184,12 @@ class CommericalMissionConstraints(Model):
             tmin  == thours ,
             
             #constraints on the various weights
+            #with engine weight
+##            TCS([W_e + W_payload + W_ftotal + W_engine <= W_total]),
+            #without engine weight
             TCS([W_e + W_payload + W_ftotal <= W_total]),
+
+            
             W_start[0]  == W_total,
             TCS([W_e + W_payload <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
@@ -250,8 +256,6 @@ class Climb1(Model):
 
         constraints.extend([            
             #set the velocity limits
-
-            #NOT WHAT'S RUNNING IN THE PYTHON TERMINAL
             
 ##            V[iclimb1] <= speedlimit,
             V[iclimb1] <= 250*units('knots'),
@@ -472,7 +476,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 20000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 1150,
+            'ReqRng': 2000,
             'C_{d_0}': .05,
             'K': 0.1,
             'S': 124.58,
