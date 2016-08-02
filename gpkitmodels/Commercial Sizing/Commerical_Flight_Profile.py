@@ -171,9 +171,9 @@ class CommericalMissionConstraints(Model):
             
             #constraints on the various weights
             #with engine weight
-##            TCS([W_e + W_payload + W_ftotal + W_engine <= W_total]),
+            TCS([W_e + W_payload + W_ftotal + W_engine <= W_total]),
             #without engine weight
-            TCS([W_e + W_payload + W_ftotal <= W_total]),
+##            TCS([W_e + W_payload + W_ftotal <= W_total]),
 
             
             W_start[0]  == W_total,
@@ -220,7 +220,7 @@ class CommericalMissionConstraints(Model):
             constraints.extend([
                 TCS([W_start[i] >= W_end[i] + W_fuel[i]])
                 ])
-        Model.__init__(self, W_total, constraints, **kwargs)
+        Model.__init__(self, W_ftotal, constraints, **kwargs)
         
 #---------------------------------------
 #takeoff
