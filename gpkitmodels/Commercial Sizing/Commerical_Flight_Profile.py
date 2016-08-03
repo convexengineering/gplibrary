@@ -174,7 +174,7 @@ class CommericalMissionConstraints(Model):
             
             #constraints on the various weights
             #with engine weight
-            TCS([W_e + W_payload + W_ftotal + numeng*W_engine <= W_total]),
+            TCS([W_e + W_payload + W_ftotal + numeng * W_engine <= W_total]),
             #without engine weight
 ##            TCS([W_e + W_payload + W_ftotal <= W_total]),
 
@@ -238,7 +238,7 @@ class Climb1(Model):
         speedlimit = Variable('speedlimit', 'kts', 'Speed Limit Under 10,000 ft')
 ##        TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
         TSFCc11 = Variable('TSFC_{c11}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
-        TSFCc12 = Variable('TSFC_{c12}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
+        TSFCc12 = Variable('TSFC_{c12}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 2')
 ##        thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
         thrustc11 = Variable('thrust_{c11}', 'N', 'Thrust During Climb Segment #1')
         thrustc12 = Variable('thrust_{c12}', 'N', 'Thrust During Climb Segment #1')
@@ -308,7 +308,7 @@ class Climb2(Model):
         constraints.extend([            
             #set the velocity limits
             #needs to be replaced by an actual Vne and a mach number
-            M[iclimb2]== .5,
+            M[iclimb2] <= .75,
             V[iclimb2] >= Vstall,
 
             #constraint on drag and thrust
@@ -372,6 +372,10 @@ class Cruise2(Model):
         TSFCcr22 = Variable('TSFC_{cr22}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
         D1 = Variable('D1', 'N', 'Drag for cruise part 1')
         D2 = Variable('D2', 'N', 'Drag for cruise part 2')
+
+        thrustcr21 = Variable('thrust_{cr21}', 'N', 'Thrust During Cruise Segment #2')
+        thrustcr22 = Variable('thrust_{cr22}', 'N', 'Thrust During Cruise Segment #2')
+        
         constraints = []
         
         #defined here for linking purposes
@@ -411,8 +415,10 @@ class Cruise2(Model):
 ##                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
                 SignomialEquality(D[4],(.5*S*rho[4]*V[4]**2)*(Cd0 + K*(W_start[4]/(.5*S*rho[4]*V[4]**2))**2)),
                 SignomialEquality(D[5], (.5*S*rho[5]*V[5]**2)*(Cd0 + K*(W_start[5]/(.5*S*rho[5]*V[5]**2))**2)),
-                D[4] == D1,
-                D[5] == D2,
+##                D[4] == D1,
+##                D[5] == D2,
+                D[4] == numeng * thrustcr21,
+                D[5] == numeng * thrustcr22,
                 #constrain the climb rate by holding altitude constant
                 hft[icruise2]  == htoc,
                 
@@ -505,15 +511,15 @@ class CommercialAircraft(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign', 'thrust_{c11}_Climb1': 'F__EngineOffDesign',
+        constraints.subinplace({'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign', 'thrust_{c11}_Climb1': 'F_EngineOffDesign',
                                 'TSFC_{c12}_Climb1': 'TSFC_E2_EngineOffDesign2', 'thrust_{c12}_Climb1': 'F_2_EngineOffDesign2',
                                 'thrust_{c21}_Climb2': 'F_3_EngineOffDesign3','TSFC_{c21}_Climb2': 'TSFC_E3_EngineOffDesign3',
                                 'thrust_{c22}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4',
-                                'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'D1_Cruise2': 'F_{spec5}_EngineOffDesign5',
-                                'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'D2_Cruise2': 'F_{spec6}_EngineOffDesign6'})
+                                'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'thrust_{cr21}': 'F_{spec5}_EngineOffDesign5',
+                                'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
-                                                       'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}'
+                                                       'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}',
                                                        'h_{t_2.1}', 'P_{t_2.5}', 'T_{t_2.5}', 'h_{t_2.5}', 'P_{t_3}', 'T_{t_3}',
                                                        'h_{t_3}','P_{t_7}', 'T_{t_7}', 'h_{t_7}', '\pi_f','\pi_{lc}','\pi_{hc}', 'P_{t_4}'
                                                        ,'h_{t_4}','T_{t_4}','P_{t_4.1}','T_{t_4.1}','h_{t_4.1}','f','h_{t_4.5}',
