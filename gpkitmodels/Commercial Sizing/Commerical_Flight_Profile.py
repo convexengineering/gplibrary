@@ -138,6 +138,9 @@ c1 = Variable('c1', '-', 'Constant')
 #defien thrust variable
 thrust = Variable('thrust', 'N', 'Engine Thrust')
 
+#number of engines
+numeng = Variable('numeng', '-', 'Number of Engines')
+
 #temporary args
 #pass in a 1 for testing climb segment 1
 
@@ -171,7 +174,7 @@ class CommericalMissionConstraints(Model):
             
             #constraints on the various weights
             #with engine weight
-            TCS([W_e + W_payload + W_ftotal + W_engine <= W_total]),
+            TCS([W_e + W_payload + W_ftotal + numeng*W_engine <= W_total]),
             #without engine weight
 ##            TCS([W_e + W_payload + W_ftotal <= W_total]),
 
@@ -250,12 +253,12 @@ class Climb1(Model):
 
             #constraint on drag and thrust
 ##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
-            thrustc11 >= D[0] + W_start[0]*theta[0],
-            thrustc12 >= D[1] + W_start[1]*theta[1],
+            numeng*thrustc11 >= D[0] + W_start[0]*theta[0],
+            numeng*thrustc12 >= D[1] + W_start[1]*theta[1],
             #climb rate constraints
 ##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
-            TCS([excessP[0]+V[0]*D[0] <= V[0]*thrustc11]),
-            TCS([excessP[1]+V[1]*D[1] <= V[1]*thrustc12]),
+            TCS([excessP[0]+V[0]*D[0] <= V[0]*numeng*thrustc11]),
+            TCS([excessP[1]+V[1]*D[1] <= V[1]*numeng*thrustc12]),
             
             TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*(W_start[iclimb1]/(.5*S*rho[iclimb1]*V[iclimb1]**2))**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_start[iclimb1],
@@ -271,8 +274,8 @@ class Climb1(Model):
             
             #compute fuel burn from TSFC
 ##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
-            W_fuel[0]  == TSFCc11 * thours[0] * thrustc11,
-            W_fuel[1]  == TSFCc12 * thours[1] * thrustc12,
+            W_fuel[0]  == numeng*TSFCc11 * thours[0] * thrustc11,
+            W_fuel[1]  == numeng*TSFCc12 * thours[1] * thrustc12,
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
 
@@ -310,13 +313,13 @@ class Climb2(Model):
 
             #constraint on drag and thrust
 ##            thrustc21 >= D[iclimb2] + W_start[iclimb2]*theta[iclimb2],
-            thrustc21 >= D[2] + W_start[2]*theta[2],
-            thrustc22 >= D[3] + W_start[3]*theta[3],
+            numeng*thrustc21 >= D[2] + W_start[2]*theta[2],
+            numeng*thrustc22 >= D[3] + W_start[3]*theta[3],
             
             #climb rate constraints
 ##            TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrustc21]),
-            TCS([excessP[2]+V[2]*D[2] <= V[2]*thrustc21]),
-            TCS([excessP[3]+V[3]*D[3] <= V[3]*thrustc22]),
+            TCS([excessP[2]+V[2]*D[2] <= V[2]*numeng*thrustc21]),
+            TCS([excessP[3]+V[3]*D[3] <= V[3]*numeng*thrustc22]),
             TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*(W_start[iclimb2]/(.5*S*rho[iclimb2]*V[iclimb2]**2))**2)]),
             RC[iclimb2] == excessP[iclimb2]/W_start[iclimb2],
             RC[iclimb2] >= 500*units('ft/min'),
@@ -330,8 +333,8 @@ class Climb2(Model):
             TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
             
             #compute fuel burn from TSFC
-            W_fuel[2]  == TSFCc21 * thours[2] * thrustc21,
-            W_fuel[3]  == TSFCc22 * thours[3] * thrustc22,
+            W_fuel[2]  == numeng*TSFCc21 * thours[2] * thrustc21,
+            W_fuel[3]  == numeng*TSFCc22 * thours[3] * thrustc22,
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
@@ -398,7 +401,7 @@ class Cruise2(Model):
                 T0 == T[Nclimb],
                 
                  #climb rate constraints for engine sizing at TOC
-                SignomialEquality(excessPtoc+Vtoc*Dtoc, Fd*Vtoc),
+                SignomialEquality(excessPtoc+Vtoc*Dtoc, numeng*Fd*Vtoc),
                 RCtoc == excessPtoc/W_start[Nclimb],
                 RCtoc == 500*units('ft/min'),
                 Vtoc == V[icruise2],
@@ -418,8 +421,8 @@ class Cruise2(Model):
 
                 #breguet range eqn
 ##                TCS([RngCruise[izbre] <= z_brec2[izbre]*LD[icruise2]*V[icruise2]/(TSFCcr2[iclimb1])]),
-                TCS([RngCruise[0] <= z_brec2[0]*LD[4]*V[4]/(TSFCcr21)]),
-                TCS([RngCruise[1] <= z_brec2[1]*LD[5]*V[5]/(TSFCcr22)]),
+                TCS([RngCruise[0] <= z_brec2[0]*LD[4]*V[4]/(numeng*TSFCcr21)]),
+                TCS([RngCruise[1] <= z_brec2[1]*LD[5]*V[5]/(numeng*TSFCcr22)]),
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
 
@@ -479,6 +482,7 @@ class CommercialAircraft(Model):
 ##            'c1': 1.1,
             'h_{toc}': 30000,
             'speedlimit': 250,
+            'numeng': 2,
 ##            'thrust': 40000*units('lbf'),
 
             #substitutions for global engine variables
@@ -568,7 +572,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(kktsolver="ldl", verbosity = 4, iteration_limit=1000)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=1000)
     
 ##    sol = m.determine_unbounded_variables(m,verbosity=4, iteration_limit=50)
     

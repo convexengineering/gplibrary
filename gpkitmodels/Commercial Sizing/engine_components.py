@@ -1,5 +1,5 @@
 import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled, units, SignomialEquality, ConstraintSet
+from gpkit import Model, Variable, SignomialsEnabled, units, ConstraintSet, SignomialEquality
 from gpkit.constraints.tight import TightConstraintSet as TCS
 
 #Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/propeRy_tables/air/air_Cp_Cv.html

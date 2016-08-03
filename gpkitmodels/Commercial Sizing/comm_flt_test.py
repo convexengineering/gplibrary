@@ -213,7 +213,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(kktsolver = "ldl", verbosity = 4)
+    sol = m.localsolve(solver="mosek", verbosity = 4)
     
     plt.plot(np.cumsum(sol('tmin')), sol('hft'))
     plt.title('Altitude vs Time')
