@@ -578,7 +578,8 @@ class OnDesignSizing(ConstraintSet):
 
                 #calculate the engine weight
                 #using drela's original model from TASOPT source code
-                W_engine >= (mCore/45.35)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')
+                TCS([W_engine >= (mCore*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
+##                TCS([W_engine >= (mCore/45.35)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
                 ]
             
             if m6opt == 0:

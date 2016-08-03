@@ -175,9 +175,6 @@ class CommericalMissionConstraints(Model):
             #constraints on the various weights
             #with engine weight
             TCS([W_e + W_payload + W_ftotal + numeng * W_engine <= W_total]),
-            #without engine weight
-##            TCS([W_e + W_payload + W_ftotal <= W_total]),
-
             
             W_start[0]  == W_total,
             TCS([W_e + W_payload <= W_end[Nseg-1]]),
@@ -185,9 +182,9 @@ class CommericalMissionConstraints(Model):
 
             rho[iclimb1] == 1.225*units('kg/m^3'),
             T[iclimb1] == 273*units('K'),
-            rho[iclimb2] == .7*units('kg/m^3'),
+            rho[iclimb2] == 1.12*units('kg/m^3'),
             T[iclimb2] == 250*units('K'),
-            rho[icruise2] == .3*units('kg/m^3'),
+            rho[icruise2] == 1*units('kg/m^3'),
             T[icruise2] == 230*units('K'),
             ])
         
@@ -196,7 +193,9 @@ class CommericalMissionConstraints(Model):
                 constraints.extend([
                     #range constraints
                     TCS([sum(RngClimb) + ReqRngCruise >= ReqRng]),
-                    TCS([dhClimb2 + alt10k >= htoc])
+##                    dhClimb2==20001*units('ft'),
+                    TCS([dhClimb2 + alt10k >= htoc]),
+##                    SignomialEquality(dhClimb2 + alt10k, htoc),
                     ])
             if test ==1:
                  constraints.extend([
@@ -214,15 +213,18 @@ class CommericalMissionConstraints(Model):
                     SignomialEquality(hft[i+Nclimb1], 10000*units('ft')+(i+1)*dhft[i+Nclimb1])
                     ])
 
+            for i in range(0, Nseg):
+                constraints.extend([
+                    TCS([W_start[i] >= W_end[i] + W_fuel[i]])
+##                    SignomialEquality(W_start[i], W_end[i] + W_fuel[i])
+                    ])
+
         #constrain the segment weights in a loop
         for i in range(1, Nseg):
             constraints.extend([
                 W_start[i] == W_end[i-1] 
                 ])
-        for i in range(0, Nseg):
-            constraints.extend([
-                TCS([W_start[i] >= W_end[i] + W_fuel[i]])
-                ])
+        
         Model.__init__(self, W_ftotal, constraints, **kwargs)
         
 #---------------------------------------
@@ -482,8 +484,8 @@ class CommercialAircraft(Model):
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
             'ReqRng': 2000,
-            'C_{d_0}': .05,
-            'K': 0.1,
+            'C_{d_0}': .025,
+            'K': 0.05,
             'S': 124.58,
 ##            'c1': 1.1,
             'h_{toc}': 30000,
@@ -533,7 +535,7 @@ class CommercialAircraft(Model):
                                                        'm_{tild_f}','p_{tildf}','N_f','m_{{tild}_sf}','p_{{tild}_sf}','N_1','m_{lc}',
                                                         'm_{hc}','u_7','M_7','\rho_7','P_{5}','T_{5}','M_5','u_5','\rho_5','T_{t_{4spec}}'
                                                         ,'m_{tild_hc}','p_{tild_lc}','N_2','m_{{tild}_shc}','p_{{tild}_shc}','m_{tild_lc}'
-                                                        ,'p_{tild_lc}','m_{{tild}_slc}','p_{{tild}_slc}','P_{7}'})
+                                                        ,'p_{tild_lc}','m_{{tild}_slc}','p_{{tild}_slc}','P_{7}', 'F_{spec}'})
 
         Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
 
