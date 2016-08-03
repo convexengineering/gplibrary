@@ -106,7 +106,7 @@ class EngineOffDesign(Model):
         if res7 ==0:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         else:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
             
         with SignomialsEnabled():
 
@@ -140,7 +140,7 @@ class EngineOffDesign2(Model):
         if res7 ==0:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         else:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
             
         constraints = ConstraintSet([self.submodels])
 
@@ -177,7 +177,7 @@ class EngineOffDesign3(Model):
         if res7 ==0:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         else:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
             
         constraints = ConstraintSet([self.submodels])
 
@@ -214,7 +214,7 @@ class EngineOffDesign4(Model):
         if res7 ==0:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         else:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
 
         constraints = ConstraintSet([self.submodels])
 
@@ -240,7 +240,7 @@ class EngineOffDesign5(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
         m7opt = 1
         
@@ -276,7 +276,7 @@ class EngineOffDesign6(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         m5opt = 0
         m7opt = 1
         

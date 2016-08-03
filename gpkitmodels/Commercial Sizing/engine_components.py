@@ -962,7 +962,7 @@ class OffDesign(ConstraintSet):
                     #residual 7
                     #option #1, constrain the engine's thrust
                     F == Fspec,
-                    Tt4 <= 2000*units('K'),
+                    Tt4 <= 2500*units('K'),
                     Tt4 >= 500*units('K'),
                     ])
             

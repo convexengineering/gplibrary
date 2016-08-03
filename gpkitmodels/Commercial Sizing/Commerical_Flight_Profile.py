@@ -193,8 +193,8 @@ class CommericalMissionConstraints(Model):
                 constraints.extend([
                     #range constraints
                     TCS([sum(RngClimb) + ReqRngCruise >= ReqRng]),
-##                    dhClimb2==20001*units('ft'),
-                    TCS([dhClimb2 + alt10k >= htoc]),
+                    dhClimb2==20000*units('ft'),
+##                    TCS([dhClimb2 + alt10k >= htoc]),
 ##                    SignomialEquality(dhClimb2 + alt10k, htoc),
                     ])
             if test ==1:
@@ -400,8 +400,7 @@ class Cruise2(Model):
         with gpkit.SignomialsEnabled():
             
             constraints.extend([
-                #constrain flight speeds with drag
-##                TCS([thrust >= D[icruise2]]),
+                M[icruise2] == 0.8,
                 
 ##                P0 == p[Nclimb],
                 T0 == T[Nclimb],
@@ -447,7 +446,7 @@ class Cruise2(Model):
         constraints.extend([
             #substitue these values later
             LD[icruise2]  == 10,
-            M[icruise2] == 0.8
+            
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -496,7 +495,7 @@ class CommercialAircraft(Model):
             #substitutions for global engine variables
             'G_f': 1,
             'N_{{bar}_Df}': 1,
-            'T_{t_{4spec}}': 2000,
+            'T_{t_{4spec}}': 1100,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
             '\pi_{d}': .99,
@@ -560,6 +559,7 @@ class CommercialAircraft(Model):
         "Returns labeled dictionary of unbounded variables."
         m = self.bound_all_variables(model, eps, lower, upper)
         sol = m.localsolve(solver, verbosity, **kwargs)
+        solhold = sol
         lam = sol["sensitivities"]["la"][1:]
         out = defaultdict(list)
         for i, varkey in enumerate(m.bound_all["varkeys"]):
@@ -575,14 +575,14 @@ class CommercialAircraft(Model):
                 out["value near lower bound"].append(varkey)
             elif distance_above <= 3:  # arbitrary threshold
                 out["value near upper bound"].append(varkey)
-        return out
+        return out, solhold
 
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=1000)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=1000)
     
-##    sol = m.determine_unbounded_variables(m,verbosity=4, iteration_limit=50)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=50)
     
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
