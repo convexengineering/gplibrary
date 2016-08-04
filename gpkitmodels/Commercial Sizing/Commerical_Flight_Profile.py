@@ -193,6 +193,7 @@ class CommericalMissionConstraints(Model):
                 constraints.extend([
                     #range constraints
                     TCS([sum(RngClimb) + ReqRngCruise >= ReqRng]),
+##                    SignomialEquality(sum(RngClimb) + ReqRngCruise, ReqRng),
                     dhClimb2==20000*units('ft'),
 ##                    TCS([dhClimb2 + alt10k >= htoc]),
 ##                    SignomialEquality(dhClimb2 + alt10k, htoc),
@@ -246,7 +247,7 @@ class Climb1(Model):
         thrustc12 = Variable('thrust_{c12}', 'N', 'Thrust During Climb Segment #1')
         #Climb #1 (sub 10K subject to 250KTS speed limit)
         constraints = []
-
+            
         constraints.extend([            
             #set the velocity limits
             
@@ -272,7 +273,8 @@ class Climb1(Model):
             dhft[iclimb1]  == tmin[iclimb1] * RC[iclimb1],
             #compute the distance traveled for each segment
             #takes into account two terms of a cosine expansion
-            TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
+##            TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 >= thours[iclimb1]*V[iclimb1]]),
+            RngClimb[iclimb1] == thours[iclimb1]*V[iclimb1],
             
             #compute fuel burn from TSFC
 ##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
@@ -280,12 +282,14 @@ class Climb1(Model):
             W_fuel[1]  == numeng*TSFCc12 * thours[1] * thrustc12,
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
-
-##            TSFCc11==c1*units('1/hr')*.5,
-##            TSFCc12==c1*units('1/hr')*.5,
-##            thrustc11 == 30000*units('lbf'),
-##            thrustc12 == 30000*units('lbf'),
             ])
+        
+##        with gpkit.SignomialsEnabled():
+##            constraints.extend([
+##                SignomialEquality(RngClimb[0] + .5*thours[0]*V[0]*theta[0]**2, thours[0]*V[0]),
+##                SignomialEquality(RngClimb[1] + .5*thours[1]*V[1]*theta[1]**2, thours[1]*V[1]),
+##                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
+##                ])
             
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -332,7 +336,8 @@ class Climb2(Model):
             dhft[iclimb2]  == tmin[iclimb2] * RC[iclimb2],
             #compute the distance traveled for each segment
             #takes into account two terms of a cosine expansion
-            TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
+##            TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
+             RngClimb[iclimb2] == thours[iclimb2]*V[iclimb2],
             
             #compute fuel burn from TSFC
             W_fuel[2]  == numeng*TSFCc21 * thours[2] * thrustc21,
@@ -340,12 +345,14 @@ class Climb2(Model):
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
-
-##            thrustc21 == 30000*units('lbf'),
-##            thrustc22 == 30000*units('lbf'),
-##            TSFCc21 == c1*units('1/hr')*.5,
-##            TSFCc22 == c1*units('1/hr')*.5,
             ])
+
+##        with gpkit.SignomialsEnabled():
+##            constraints.extend([
+##                SignomialEquality(RngClimb[2] + .5*thours[2]*V[2]*theta[2]**2, thours[2]*V[2]),
+##                SignomialEquality(RngClimb[3] + .5*thours[3]*V[3]*theta[3]**2, thours[3]*V[3]),
+##                TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
+##                ])
         Model.__init__(self, None, constraints, **kwargs)
         
 #--------------------------------------
@@ -416,8 +423,6 @@ class Cruise2(Model):
 ##                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
                 SignomialEquality(D[4],(.5*S*rho[4]*V[4]**2)*(Cd0 + K*(W_start[4]/(.5*S*rho[4]*V[4]**2))**2)),
                 SignomialEquality(D[5], (.5*S*rho[5]*V[5]**2)*(Cd0 + K*(W_start[5]/(.5*S*rho[5]*V[5]**2))**2)),
-##                D[4] == D1,
-##                D[5] == D2,
                 D[4] == numeng * thrustcr21,
                 D[5] == numeng * thrustcr22,
                 #constrain the climb rate by holding altitude constant
@@ -432,9 +437,6 @@ class Cruise2(Model):
                 TCS([RngCruise[1] <= z_brec2[1]*LD[5]*V[5]/(numeng*TSFCcr22)]),
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
-
-##                TSFCcr21 ==c1*units('1/hr')*.5,
-##                TSFCcr22 == c1*units('1/hr')*.5,
                 ])
         
         #constraint on the aircraft meeting the required range
@@ -446,7 +448,6 @@ class Cruise2(Model):
         constraints.extend([
             #substitue these values later
             LD[icruise2]  == 10,
-            
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -482,7 +483,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 20000*9.8*units('N'),
             'V_{stall}': 120,
             '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 2000,
+            'ReqRng': 500,
             'C_{d_0}': .025,
             'K': 0.05,
             'S': 124.58,
@@ -544,8 +545,8 @@ class CommercialAircraft(Model):
         freevks = tuple(vk for vk in model.varkeys if "value" not in vk.descr)
         for varkey in freevks:
             units = varkey.descr.get("units", 1)
-            constraints.append([ub*units >= Variable(**varkey.descr),
-                                Variable(**varkey.descr) >= lb*units])
+            constraints.append([Variable(**varkey.descr) >= lb*units])#ub*units >= Variable(**varkey.descr),
+##                                Variable(**varkey.descr) >= lb*units])
         m = Model(model.cost, [constraints, model], model.substitutions)
         m.bound_all = {"lb": lb, "ub": ub, "varkeys": freevks}
         return m
@@ -578,9 +579,9 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=1000)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=50)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=1001)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=500)
     
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))

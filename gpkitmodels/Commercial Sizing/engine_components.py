@@ -268,7 +268,7 @@ class ExhaustAndThrust(ConstraintSet):
         #gas propeRies
         Cptex =Variable('Cp_tex', 1029, 'J/kg/K', "Cp Value for Combustion Products at Core Exhaust") #500K, gamma = 1.387
         Cpfanex = Variable('Cp_fex', 1005, 'J/kg/K', "Cp Value for Air at 300K") #gamma =1.4
-        
+        R = Variable('R', 287, 'J/kg/K', 'R for Air')
         #gravity
         g = Variable('g', 9.81, 'm/(s^2)', 'Gravitational Acceleration')
         
@@ -309,6 +309,8 @@ class ExhaustAndThrust(ConstraintSet):
         #exhaust speeds
         u6 = Variable('u_6', 'm/s', 'Core Exhaust Velocity')
         u8 = Variable('u_8', 'm/s', 'Fan Exhaust Velocity')
+        u7 = Variable('u_7', 'm/s', 'Station 7 Exhaust Velocity')
+        u5 = Variable('u_5', 'm/s', 'Station 5 Exhaust Velocity')
 
         #BPR
         alpha = Variable('alpha', '-', 'By Pass Ratio')
@@ -320,6 +322,10 @@ class ExhaustAndThrust(ConstraintSet):
         #flow faction f
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
         fp1 = Variable('fp1', '-', 'f + 1')
+
+        #mach numbers
+        M8 = Variable('M_8', '-', 'Fan Exhaust Mach Number')
+        M6 = Variable('M_6', '-', 'Core Exhaust Mach Number')
         
         with SignomialsEnabled():
             constraints = [
@@ -343,12 +349,19 @@ class ExhaustAndThrust(ConstraintSet):
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
+                #mach nubmers for post processing of the data
+                M8 == u8/((T8*Cpfanex*R/(781*units('J/kg/K')))**.5),
+                M6 == u6/((T6*Cptex*R/(781*units('J/kg/K')))**.5),
+
                 #overall thrust values
 ##                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
 ##                TCS([F6/mCore + u0 <= u6]),      #B.189
 
                 #SIGNOMIAL
 ##                TCS([F  <= F6 + F8]),
+
+                u6 >= u0,
+                u8 >= u0,
 
                 F + alphap1*mCore*u0 <= mCore*u6+mCore*alpha*u8, 
 
@@ -409,8 +422,7 @@ class OnDesignSizing(ConstraintSet):
         h25 = Variable('h_{2.5}', 'J/kg', 'Static Enthalpy at the LPC Exit (2.5)')
 
         #mach numbers
-        M8 = Variable('M_8', '-', 'Fan Exhaust Mach Number')
-        M6 = Variable('M_6', '-', 'Core Exhaust Mach Number')
+ 
         M5 = Variable('M_5', '-', 'Station 5 Mach Number')
         M7 = Variable('M_7', '-', 'Station 7 Mach Number')
 
@@ -549,9 +561,7 @@ class OnDesignSizing(ConstraintSet):
                 u25 == M25*(Cp2*R*T25/(781*units('J/kg/K')))**.5,   #B.202
                 A25 == mCore/(rho25*u25),     #B.203
 
-                #mach nubmers for post processing of the data
-                M8 == u8/((T8*Cpair*R/(781*units('J/kg/K')))**.5),
-                M6 == u6/((T6*Cpt*R/(781*units('J/kg/K')))**.5),
+               
 
                 #compute on design normalized turbine mass flows
                 mhtD == fp1*mCore*((Tt41/Tref)**.5)/(Pt41/Pref), #B.225
@@ -572,14 +582,10 @@ class OnDesignSizing(ConstraintSet):
                 rho5 == P5/(R*T5),
                 A5 == mCore/(rho5*u5),
 
-                #constrain the exit exhaust exit speeds
-                u6 >= u0,
-                u8 >= u0,
-
+                
                 #calculate the engine weight
                 #using drela's original model from TASOPT source code
                 TCS([W_engine >= (mCore*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
-##                TCS([W_engine >= (mCore/45.35)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
                 ]
             
             if m6opt == 0:
@@ -959,10 +965,8 @@ class OffDesign(ConstraintSet):
                 Pt49*pitn == Pt5, #B.269
 
                 #constrain the exit exhaust exit speeds
-                u6 >= u0,
-                u8 >= u0,
-                u5 >= u0,
-                u7 >= u0,
+##                u5 >= u0,
+##                u7 >= u0,
                 ]
                 
             if res7 == 0:
@@ -987,7 +991,7 @@ class OffDesign(ConstraintSet):
 ##                    (P5/Pt5) == (T5/Tt5)**(3.583979),
 ##                    M5 == u5/((T5*Cptex*R/(781*units('J/kg/K')))**.5),
 
-                    P5 <= P0,
+                    P5 >= P0,
                     (P5/Pt5) == (T5/Tt5)**(3.583979),
 ##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
                     (T5/Tt5)**-1 >= 1 + .2 * M5**2,
@@ -1000,7 +1004,7 @@ class OffDesign(ConstraintSet):
 ##                    P5 == Pt5*(1.1935)**(-3.583979),
 ##                    T5 == Tt5*1.1935**(-1)
 
-                    P5 <= P0,
+                    P5 >= P0,
                     (P5/Pt5) == (T5/Tt5)**(3.583979),
 ##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
                     (T5/Tt5)**-1 >= 1 + .2 * M5**2,
@@ -1014,12 +1018,14 @@ class OffDesign(ConstraintSet):
 ##                    (P7/Pt7) == (T7/Tt7)**(3.5),
 ##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
 
-                    P7 <= P0,
+                    P7 >= P0,
                     (P7/Pt7) == (T7/Tt7)**(3.5),
 ##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
                     (T7/Tt7)**-1 >= 1 + .2 * M7**2,
 ##                    SignomialEquality((T7/Tt7)**-1, 1 + .2 * M7**2),
                     M7 <= 1,
+##                    M7>=0.5
+                    u7>=u0
                     ])
                 
             if m7opt == 1:
@@ -1029,15 +1035,18 @@ class OffDesign(ConstraintSet):
 ##                     P7 == Pt7*(1.2)**(-1.4/.4),
 ##                     T7 == Tt7*1.2**(-1)
 
-                    P7 <= P0,
+                    P7 >= P0,
                     (P7/Pt7) == (T7/Tt7)**(3.5),
 ##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
 ##                    SignomialEquality((T7/Tt7)**-1, 1 + .2 * M7**2),
                     (T7/Tt7)**-1 >= 1 + .2 * M7**2,
                     M7 <= 1,
+                    u7>=u0
                     ])
                  
 ##        Model.__init__(self, 1/u7, constraints, **kwargs)
         ConstraintSet.__init__(self, constraints, **kwargs)
+
+
         
 
