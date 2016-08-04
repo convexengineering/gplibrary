@@ -17,10 +17,10 @@ class Wing(Model):
         CD = Variable("C_D", "-", "drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
 
+        self.unused_variables = [W]
         Model.__init__(self, None, [b**2 == S/A,
                                     CD >= 0.02 + CL**2/np.pi/e/A,
                                     W == W])
-        # self.varkeys.add(W)
 
 
 class SteadyFlight(Model):
@@ -64,6 +64,5 @@ class CommercialAircraft(Model):
 
 
 m = CommercialAircraft()
-print m.substitutions
-sol = m.solve()
+sol = m.solve(verbosity=0)
 print sol.table()
