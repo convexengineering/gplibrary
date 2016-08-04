@@ -327,8 +327,8 @@ class ExhaustAndThrust(ConstraintSet):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpfanex * T8,
-##                TCS([u8**2 + 2*h8 <= 2*ht8]),
-                SignomialEquality(u8**2 + 2*h8, 2*ht8),
+                TCS([u8**2 + 2*h8 <= 2*ht8]),
+##                SignomialEquality(u8**2 + 2*h8, 2*ht8),
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -344,13 +344,13 @@ class ExhaustAndThrust(ConstraintSet):
                 ht6 == Cptex * Tt6,
 
                 #overall thrust values
-##                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-##                TCS([F6/mCore + u0 <= u6]),      #B.189
+                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
+                TCS([F6/mCore + u0 <= u6]),      #B.189
 
                 #SIGNOMIAL
-##                TCS([F  <= F6 + F8]),
+                TCS([F  <= F6 + F8]),
 
-                F + alphap1*mCore*u0 <= mCore*u6+mCore*alpha*u8, 
+##                F + alphap1*mCore*u0 <= mCore*u6+mCore*alpha*u8, 
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -982,9 +982,9 @@ class OffDesign(ConstraintSet):
                  
             if m5opt == 1:
                  constraints.extend([
-##                    M5 == 1,
-##                    P5 == Pt5*(1.1935)**(-3.583979),
-##                    T5 == Tt5*1.1935**(-1)
+                    M5 == 1,
+                    P5 == Pt5*(1.1935)**(-3.583979),
+                    T5 == Tt5*1.1935**(-1)
                     ])
                  
             if m7opt == 0:

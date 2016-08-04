@@ -486,16 +486,14 @@ class CommercialAircraft(Model):
             'C_{d_0}': .025,
             'K': 0.05,
             'S': 124.58,
-##            'c1': 1.1,
             'h_{toc}': 30000,
             'speedlimit': 250,
             'numeng': 2,
-##            'thrust': 40000*units('lbf'),
 
             #substitutions for global engine variables
             'G_f': 1,
             'N_{{bar}_Df}': 1,
-            'T_{t_{4spec}}': 1100,
+            'T_{t_{4spec}}': 1200,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
             '\pi_{d}': .99,
@@ -580,9 +578,9 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=1000)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=1000)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=50)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=50)
     
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))

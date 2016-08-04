@@ -167,7 +167,7 @@ class EngineOffDesign3(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 0
+        res7 = 1
         m5opt = 0
         m7opt = 0
         
@@ -204,9 +204,9 @@ class EngineOffDesign4(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 0
+        res7 = 1
         m5opt = 0
-        m7opt = 0
+        m7opt = 1
         
         offD = OffDesign(res7, m5opt, m7opt)
 
