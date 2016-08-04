@@ -578,9 +578,9 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=1000)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=1000)
     
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=50)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=1001)
     
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
