@@ -910,6 +910,8 @@ class OffDesign(ConstraintSet):
         #heat of combustion of jet fuel
         hf = Variable('h_f', 42.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
 
+        a5 = Variable('a_5', 'm/s', 'Speed of Sound at Station 5')
+        a7 = Variable('a_7', 'm/s', 'Speed of Sound at Station 7')
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
@@ -932,12 +934,16 @@ class OffDesign(ConstraintSet):
                 TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
-                SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),
+##                SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),
+                a7 == (1.4*R*T7)**.5,
+                a7*M7==u7,
                 rho7 == P7/(R*T7),
                 TCS([mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7]),
                 
                 #residual 5 core nozzle mass flow
-                SignomialEquality(u5**2 +2*Cptex*T5, 2*Cptex*Tt5),
+##                SignomialEquality(u5**2 +2*Cptex*T5, 2*Cptex*Tt5),
+                a5 == (1.387*R*T5)**.5,
+                a5*M5 == u5,
                 rho5 == P5/(R*T5),
                 
                 #compute core mass flux
@@ -975,32 +981,56 @@ class OffDesign(ConstraintSet):
                 
             if m5opt == 0:
                  constraints.extend([
-                    P5 == P0,
+##                    P5 == P0,
+##                    (P5/Pt5) == (T5/Tt5)**(3.583979),
+##                    M5 == u5/((T5*Cptex*R/(781*units('J/kg/K')))**.5),
+
+                    P5 <= P0,
                     (P5/Pt5) == (T5/Tt5)**(3.583979),
-                    M5 == u5/((T5*Cptex*R/(781*units('J/kg/K')))**.5),
+##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
+                    (T5/Tt5)**-1 >= 1 + .2 * M5**2,
+                    M5 <= 1,
                     ])
                  
             if m5opt == 1:
                  constraints.extend([
-                    M5 == 1,
-                    P5 == Pt5*(1.1935)**(-3.583979),
-                    T5 == Tt5*1.1935**(-1)
+##                    M5 == 1,
+##                    P5 == Pt5*(1.1935)**(-3.583979),
+##                    T5 == Tt5*1.1935**(-1)
+
+                    P5 <= P0,
+                    (P5/Pt5) == (T5/Tt5)**(3.583979),
+##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
+                    (T5/Tt5)**-1 >= 1 + .2 * M5**2,
+                    M5 <= 1,
                     ])
                  
             if m7opt == 0:
                 constraints.extend([
                     #additional constraints on residual 4 for M7 < 1
-                    P7 == P0,
+##                    P7 == P0,
+##                    (P7/Pt7) == (T7/Tt7)**(3.5),
+##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
+
+                    P7 <= P0,
                     (P7/Pt7) == (T7/Tt7)**(3.5),
-                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
+##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
+                    (T7/Tt7)**-1 >= 1 + .2 * M7**2,
+                    M7 <= 1,
                     ])
                 
             if m7opt == 1:
                  constraints.extend([
                      #additional constraints on residual 4 for M7 >= 1
-                     M7 == 1,
-                     P7 == Pt7*(1.2)**(-1.4/.4),
-                     T7 == Tt7*1.2**(-1)
+##                     M7 == 1,
+##                     P7 == Pt7*(1.2)**(-1.4/.4),
+##                     T7 == Tt7*1.2**(-1)
+
+                    P7 <= P0,
+                    (P7/Pt7) == (T7/Tt7)**(3.5),
+##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
+                    (T7/Tt7)**-1 >= 1 + .2 * M7**2,
+                    M7 <= 1,
                     ])
                  
 ##        Model.__init__(self, 1/u7, constraints, **kwargs)
