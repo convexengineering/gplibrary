@@ -344,13 +344,13 @@ class ExhaustAndThrust(ConstraintSet):
                 ht6 == Cptex * Tt6,
 
                 #overall thrust values
-                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-                TCS([F6/mCore + u0 <= u6]),      #B.189
+##                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
+##                TCS([F6/mCore + u0 <= u6]),      #B.189
 
                 #SIGNOMIAL
-                TCS([F  <= F6 + F8]),
+##                TCS([F  <= F6 + F8]),
 
-##                F + alphap1*mCore*u0 <= mCore*u6+mCore*alpha*u8, 
+                F + alphap1*mCore*u0 <= mCore*u6+mCore*alpha*u8, 
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -961,6 +961,8 @@ class OffDesign(ConstraintSet):
                 #constrain the exit exhaust exit speeds
                 u6 >= u0,
                 u8 >= u0,
+                u5 >= u0,
+                u7 >= u0,
                 ]
                 
             if res7 == 0:
@@ -1016,6 +1018,7 @@ class OffDesign(ConstraintSet):
                     (P7/Pt7) == (T7/Tt7)**(3.5),
 ##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
                     (T7/Tt7)**-1 >= 1 + .2 * M7**2,
+##                    SignomialEquality((T7/Tt7)**-1, 1 + .2 * M7**2),
                     M7 <= 1,
                     ])
                 
@@ -1029,6 +1032,7 @@ class OffDesign(ConstraintSet):
                     P7 <= P0,
                     (P7/Pt7) == (T7/Tt7)**(3.5),
 ##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
+##                    SignomialEquality((T7/Tt7)**-1, 1 + .2 * M7**2),
                     (T7/Tt7)**-1 >= 1 + .2 * M7**2,
                     M7 <= 1,
                     ])
