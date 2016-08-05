@@ -216,7 +216,7 @@ class CommericalMissionConstraints(Model):
 
             for i in range(0, Nseg):
                 constraints.extend([
-                    TCS([W_start[i] >= W_end[i] + W_fuel[i]])
+                    TCS([W_start[i] <= W_end[i] + W_fuel[i]])
                     ])
 
         #constrain the segment weights in a loop
