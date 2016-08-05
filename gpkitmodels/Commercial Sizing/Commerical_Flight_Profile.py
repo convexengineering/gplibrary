@@ -195,7 +195,7 @@ class CommericalMissionConstraints(Model):
                     #range constraints
                     TCS([sum(RngClimb) + ReqRngCruise >= ReqRng]),
 ##                    SignomialEquality(sum(RngClimb) + ReqRngCruise, ReqRng),
-                    dhClimb2==20000*units('ft'),
+##                    dhClimb2==20000*units('ft'),
 ##                    TCS([dhClimb2 + alt10k >= htoc]),
 ##                    SignomialEquality(dhClimb2 + alt10k, htoc),
                     ])
@@ -490,6 +490,7 @@ class CommercialAircraft(Model):
             'h_{toc}': 30000,
             'speedlimit': 250,
             'numeng': 2,
+            'dh_{climb2}': 20000,
 
             #substitutions for global engine variables
             'G_f': 1,
