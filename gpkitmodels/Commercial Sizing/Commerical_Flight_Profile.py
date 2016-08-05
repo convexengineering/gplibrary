@@ -177,7 +177,8 @@ class CommericalMissionConstraints(Model):
             TCS([W_e + W_payload + W_ftotal + numeng * W_engine <= W_total]),
             
             W_start[0]  == W_total,
-            TCS([W_e + W_payload <= W_end[Nseg-1]]),
+            W_end[5] <= W_total,
+            TCS([W_e + W_payload + numeng * W_engine <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
 
             rho[iclimb1] == 1.225*units('kg/m^3'),
@@ -216,7 +217,7 @@ class CommericalMissionConstraints(Model):
 
             for i in range(0, Nseg):
                 constraints.extend([
-                    TCS([W_start[i] <= W_end[i] + W_fuel[i]])
+                    TCS([W_start[i] >= W_end[i] + W_fuel[i]])
                     ])
 
         #constrain the segment weights in a loop
