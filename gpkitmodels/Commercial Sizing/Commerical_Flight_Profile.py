@@ -103,10 +103,10 @@ ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
 ReqRng = Variable('ReqRng', 'miles', 'Required Mission Range')
 
 #aircraft weights
-W_start = VectorVariable(Nseg, 'W_{start}', 'lbf', 'Segment Start Weight')
-W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'lbf', 'Segment Fuel Weight')
-W_end = VectorVariable(Nseg, 'W_{end}', 'lbf', 'Segment End Weight')
-W_total = Variable('W_{total}', 'lbf', 'Total Aircraft Weight')
+W_start = VectorVariable(Nseg, 'W_{start}', 'N', 'Segment Start Weight')
+W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'N', 'Segment Fuel Weight')
+W_end = VectorVariable(Nseg, 'W_{end}', 'N', 'Segment End Weight')
+W_total = Variable('W_{total}', 'N', 'Total Aircraft Weight')
 
 #aero
 LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
@@ -151,10 +151,10 @@ class CommericalMissionConstraints(Model):
     def __init__(self, test=0, **kwargs):
         #variable local to this model
         alt10k = Variable('alt10k', 10000, 'feet', '10,000 feet')
-        W_payload = Variable('W_{payload}', 'lbf', 'Aircraft Payload Weight')
-        W_e = Variable('W_{e}', 'lbf', 'Empty Weight of Aircraft')
+        W_payload = Variable('W_{payload}', 'N', 'Aircraft Payload Weight')
+        W_e = Variable('W_{e}', 'N', 'Empty Weight of Aircraft')
         W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
-        W_ftotal = Variable('W_{f_{total}}', 'lbf', 'Total Fuel Weight')
+        W_ftotal = Variable('W_{f_{total}}', 'N', 'Total Fuel Weight')
 
         htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
         
@@ -182,9 +182,9 @@ class CommericalMissionConstraints(Model):
 
             rho[iclimb1] == 1.225*units('kg/m^3'),
             T[iclimb1] == 273*units('K'),
-            rho[iclimb2] == 1.12*units('kg/m^3'),
+            rho[iclimb2] == .7*units('kg/m^3'),
             T[iclimb2] == 250*units('K'),
-            rho[icruise2] == 1*units('kg/m^3'),
+            rho[icruise2] == .4*units('kg/m^3'),
             T[icruise2] == 230*units('K'),
             ])
         
@@ -447,7 +447,7 @@ class Cruise2(Model):
             
         constraints.extend([
             #substitue these values later
-            LD[icruise2]  == 10,
+            LD[icruise2]  == 18,
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -479,12 +479,12 @@ class CommercialAircraft(Model):
             None
         
         substitutions = {      
-            'W_{e}': 44000*9.8*units('N'),
-            'W_{payload}': 20000*9.8*units('N'),
+            'W_{e}': 40000*9.8*units('N'),
+            'W_{payload}': 10000*9.8*units('N'),
             'V_{stall}': 120,
-            '\\frac{L}{D}_{max}': 15,
-            'ReqRng': 500,
-            'C_{d_0}': .025,
+##            '\\frac{L}{D}_{max}': 25,
+            'ReqRng': 3000,
+            'C_{d_0}': .02,
             'K': 0.05,
             'S': 124.58,
             'h_{toc}': 30000,
@@ -545,8 +545,8 @@ class CommercialAircraft(Model):
         freevks = tuple(vk for vk in model.varkeys if "value" not in vk.descr)
         for varkey in freevks:
             units = varkey.descr.get("units", 1)
-            constraints.append([Variable(**varkey.descr) >= lb*units])#ub*units >= Variable(**varkey.descr),
-##                                Variable(**varkey.descr) >= lb*units])
+            constraints.append([ub*units >= Variable(**varkey.descr),
+                                Variable(**varkey.descr) >= lb*units])
         m = Model(model.cost, [constraints, model], model.substitutions)
         m.bound_all = {"lb": lb, "ub": ub, "varkeys": freevks}
         return m
@@ -579,9 +579,9 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=50)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=50)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=500)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=500)
     
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
