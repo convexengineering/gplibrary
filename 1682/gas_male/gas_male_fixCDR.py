@@ -6,15 +6,14 @@ from gpkit.tools import te_exp_minus1
 
 PLOT = True
 fixed = True
-WIND = False
 payloadPower = True
 
-class GasPoweredHALE(Model):
+class GasMALEFixedEngine(Model):
     """
     This class was used to generate the model and performance characteristics
     used in the CDR
     """
-    def __init__(self, h_station=15000, **kwargs):
+    def __init__(self, h_station=15000, WIND=False, **kwargs):
         """
         Arguments
         ---------
@@ -390,7 +389,9 @@ class GasPoweredHALE(Model):
 
 if __name__ == '__main__':
 
-    M = GasPoweredHALE()
+    WIND = False
+
+    M = GasMALEFixedEngine(WIND=WIND)
     sol = M.solve('mosek')
 
     if fixed:
@@ -483,7 +484,7 @@ if __name__ == '__main__':
             V = []
 
             for h in h_station:
-                M = GasPoweredHALE(h)
+                M = GasMALEFixedEngine(h)
                 M.substitutions.update({'S': S_fix})
                 #M.substitutions.update({'S_{fuse}': Sfuse_fix})
                 M.substitutions.update({'b': b_fix})
