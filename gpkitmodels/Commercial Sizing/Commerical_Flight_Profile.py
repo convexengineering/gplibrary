@@ -217,7 +217,6 @@ class CommericalMissionConstraints(Model):
             for i in range(0, Nseg):
                 constraints.extend([
                     TCS([W_start[i] >= W_end[i] + W_fuel[i]])
-##                    SignomialEquality(W_start[i], W_end[i] + W_fuel[i])
                     ])
 
         #constrain the segment weights in a loop
@@ -483,7 +482,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 10000*9.8*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
-            'ReqRng': 500,
+            'ReqRng': 3000,
             'C_{d_0}': .02,
             'K': 0.05,
             'S': 124.58,
