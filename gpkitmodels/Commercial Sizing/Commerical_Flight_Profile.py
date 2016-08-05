@@ -483,7 +483,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 10000*9.8*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
-            'ReqRng': 3000,
+            'ReqRng': 500,
             'C_{d_0}': .02,
             'K': 0.05,
             'S': 124.58,
@@ -579,9 +579,9 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=50)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100)
     
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=500)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
