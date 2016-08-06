@@ -148,7 +148,7 @@ class EngineOffDesign2(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E2', 'F': 'F_2'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E2', 'F': 'F_2', 'M_0': 'M_0_2'})
     
 
         lc = LinkedConstraintSet(constraints)
@@ -156,7 +156,7 @@ class EngineOffDesign2(Model):
         substitutions = {
             'T_0': 230,   #36K feet
             'P_0': 19.8,  
-            'M_0': 0.8,
+##            'M_0_2': 0.8,
         }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)
@@ -185,7 +185,7 @@ class EngineOffDesign3(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E3', 'F': 'F_3'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E3', 'F': 'F_3', 'M_0': 'M_0_3'})
     
 
         lc = LinkedConstraintSet(constraints)
@@ -193,7 +193,7 @@ class EngineOffDesign3(Model):
         substitutions = {
             'T_0': 230,   #36K feet
             'P_0': 19.8,  
-            'M_0': 0.8,
+            'M_0_3': 0.8,
         }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)
@@ -222,14 +222,14 @@ class EngineOffDesign4(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E4', 'F': 'F_4'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E4', 'F': 'F_4', 'M_0': 'M_0_4'})
 
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
             'T_0': 230,   #36K feet
             'P_0': 19.8,  
-            'M_0': 0.8,
+            'M_0_4': 0.8,
         }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)
@@ -258,7 +258,7 @@ class EngineOffDesign5(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E5', 'F_{spec}': 'F_{spec5}'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E5', 'F_{spec}': 'F_{spec5}', 'M_0': 'M_0_5'})
     
 
         lc = LinkedConstraintSet(constraints)
@@ -266,7 +266,7 @@ class EngineOffDesign5(Model):
         substitutions = {
             'T_0': 230,   #36K feet
             'P_0': 19.8,  
-            'M_0': 0.8,
+            'M_0_5': 0.8,
         }
         Model.__init__(self, None, lc, substitutions, **kwargs)
 
@@ -294,7 +294,7 @@ class EngineOffDesign6(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E6', 'F_{spec}': 'F_{spec6}'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E6', 'F_{spec}': 'F_{spec6}', 'M_0': 'M_0_6'})
     
 
         lc = LinkedConstraintSet(constraints)
@@ -302,7 +302,7 @@ class EngineOffDesign6(Model):
         substitutions = {
             'T_0': 230,   #36K feet
             'P_0': 19.8,  
-            'M_0': 0.8,
+            'M_0_6': 0.8,
         }
         Model.__init__(self, None, lc, substitutions, **kwargs)
    

@@ -26,19 +26,10 @@ hvec = [3625, 7875, .5*(hcruise-10000)+10000, hcruise-.5*(hcruise-10000), hcruis
 #convert from ft to m for atmosphere model
 hvec = [x * 0.3048 for x in hvec]
 #get the actual atmosphere values
-##rhovec = [1.225,1.225,.7,.7,.4,.4] * units('kg/m^3')
-##Tvec = [273,273,250,250,230,230] * units('K')
-##pvec = [] * units('kPa')
-##muvec = []
-
 atmdict = get_atmosphere_vec(hvec)
 Tvec = atmdict['T']  * units('K')
 rhovec = atmdict['rho'] * units('kg/m^3')
 pvec = atmdict['p'] * units('Pa')
-
-print rhovec
-print Tvec
-print pvec
 
 #TODO
 #link in with engine
@@ -167,6 +158,25 @@ numeng = Variable('numeng', '-', 'Number of Engines')
 #temporary mach hold variables for engine linking
 mhold1 = Variable('mhold1', '-', 'segment 1 mach number')
 mhold2 = Variable('mhold2', '-', 'segment 2 mach number')
+mhold3 = Variable('mhold3', '-', 'segment 3 mach number')
+mhold4 = Variable('mhold4', '-', 'segment 4 mach number')
+mhold5 = Variable('mhold5', '-', 'segment 5 mach number')
+mhold6 = Variable('mhold6', '-', 'segment 6 mach number')
+
+Thold1 = Variable('Thold1', '-', 'segment 1 T')
+Thold2 = Variable('Thold2', '-', 'segment 2 T ')
+Thold3 = Variable('Thold3', '-', 'segment 3 T')
+Thold4 = Variable('Thold4', '-', 'segment 4 T')
+Thold5 = Variable('Thold5', '-', 'segment 5 T')
+Thold6 = Variable('Thold6', '-', 'segment 6 T')
+
+phold1 = Variable('phold1', '-', 'segment 1 p')
+phold2 = Variable('phold2', '-', 'segment 2 p')
+phold3 = Variable('phold3', '-', 'segment 3 p')
+phold4 = Variable('phold4', '-', 'segment 4 p')
+phold5 = Variable('phold5', '-', 'segment 5 p')
+phold6 = Variable('phold6', '-', 'segment 6 p')
+
 
 #temporary args
 #pass in a 1 for testing climb segment 1
@@ -187,9 +197,6 @@ class CommericalMissionConstraints(Model):
         
         constraints = []
         constraints.extend([
-            #speed of sound
-            a  == (gamma * R * T)**.5,
-
             #comptue the mach number
             M == V/a,
             
@@ -209,6 +216,12 @@ class CommericalMissionConstraints(Model):
             TCS([W_ftotal >= sum(W_fuel)]),
 
             #hold pressure values for linking with engine pressures
+            phold1 == p[0]
+            phold2 == p[1]
+            phold3 == p[2]
+            phold4 == p[3]
+            phold5 == p[4]
+            phold6 == p[5]
             ])
 
         for i in range(Nseg):
@@ -216,6 +229,8 @@ class CommericalMissionConstraints(Model):
                 rho[i] == rhovec[i],
                 T[i] == Tvec[i],
                 p[i] == pvec[i],
+                #speed of sound
+                a[i]  == (gamma * R * T[i])**.5,
                 ])
         
         with gpkit.SignomialsEnabled():
@@ -339,6 +354,9 @@ class Climb2(Model):
             #needs to be replaced by an actual Vne and a mach number
             M[iclimb2] <= .75,
             V[iclimb2] >= Vstall,
+            
+            M[2] == mhold3,
+            M[3] == mhold4,
 
             #constraint on drag and thrust
 ##            thrustc21 >= D[iclimb2] + W_start[iclimb2]*theta[iclimb2],
@@ -503,7 +521,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 10000*9.8*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
-            'ReqRng': 6000,
+            'ReqRng': 3000,
             'C_{d_0}': .02,
             'K': 0.05,
             'S': 124.58,
@@ -538,7 +556,7 @@ class CommercialAircraft(Model):
                                 'thrust_{c22}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4',
                                 'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'thrust_{cr21}': 'F_{spec5}_EngineOffDesign5',
                                 'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6',
-                                'mhold1': 'M_0_1'})
+                                'mhold1': 'M_0_1', 'mhold2': 'M_0_2'})#, 'mhold3': 'M_0_3', 'mhold4': 'M_0_4'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}',
