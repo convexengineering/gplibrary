@@ -493,7 +493,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 10000*9.8*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
-            'ReqRng': 3000,
+            'ReqRng': 6000,
             'C_{d_0}': .02,
             'K': 0.05,
             'S': 124.58,
