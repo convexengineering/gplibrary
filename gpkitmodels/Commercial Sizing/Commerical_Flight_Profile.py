@@ -31,6 +31,8 @@ Tvec = atmdict['T']  * units('K')
 rhovec = atmdict['rho'] * units('kg/m^3')
 pvec = atmdict['p'] * units('Pa')
 
+print Tvec
+
 #TODO
 #link in with engine
 #fix indicies on the TSFC vector variables
@@ -222,6 +224,13 @@ class CommericalMissionConstraints(Model):
             phold4 == p[3],
             phold5 == p[4],
             phold6 == p[5],
+
+            Thold1 == T[0],
+            Thold2 == T[1],
+            Thold3 == T[2],
+            Thold4 == T[3],
+            Thold5 == T[4],
+            Thold6 == T[5],
             ])
 
         for i in range(Nseg):
@@ -556,7 +565,8 @@ class CommercialAircraft(Model):
                                 'thrust_{c22}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4',
                                 'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'thrust_{cr21}': 'F_{spec5}_EngineOffDesign5',
                                 'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6',
-                                'mhold1': 'M_0_1', 'mhold2': 'M_0_2', 'mhold3': 'M_0_3', 'mhold4': 'M_0_4'})
+                                'mhold1': 'M_0_1', 'mhold2': 'M_0_2', 'mhold3': 'M_0_3', 'mhold4': 'M_0_4'})#, 'Thold1': 'T_0_1'})#,
+##                                'Thold2': 'T_0_2','Thold3': 'T_0_3','Thold4': 'T_0_4','Thold5': 'T_0_5','Thold6': 'T_0_6',})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}',
