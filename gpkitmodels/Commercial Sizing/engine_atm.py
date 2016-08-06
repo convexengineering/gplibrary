@@ -45,7 +45,7 @@ class EngineOnDesign(Model):
         with SignomialsEnabled():
 
             substitutions = {
-                'P_0': 19.8,  
+                'P_0': 30,  
                 'M_0': 0.8,
                 'T_{t_4}': 1400,
                 '\pi_f': 1.5,
@@ -112,13 +112,14 @@ class EngineOffDesign(Model):
 
             constraints = ConstraintSet([self.submodels])
 
-            constraints.subinplace({'M_0': 'M_0_1', 'T_0': 'T_0_1'})
+            constraints.subinplace({'M_0': 'M_0_1', 'T_0': 'T_0_1', 'P_0':'P_0_1'})
 
             lc = LinkedConstraintSet([self.submodels])
 
             substitutions = {
-                'T_0_1': 280,   #36K feet
-                'P_0': 19.8,  
+                'T_0_1': 230,   #36K feet
+                'T_{t_{4spec}}': 1000,
+                'P_0_1': 88,  
 ##                'M_0': 0.8,
             }
         
@@ -148,14 +149,16 @@ class EngineOffDesign2(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E2', 'F': 'F_2', 'M_0': 'M_0_2', 'T_0': 'T_0_2'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E2', 'F': 'F_2', 'M_0': 'M_0_2', 'T_0': 'T_0_2',
+                                'P_0':'P_0_2'})
     
 
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
-            'T_0_2': 272,   #36K feet
-            'P_0': 19.8,  
+            'T_0_2': 230,   #36K feet
+            'T_{t_{4spec}}': 1000,
+            'P_0_2': 76,  
 ##            'M_0_2': 0.8,
         }
         
@@ -185,14 +188,16 @@ class EngineOffDesign3(Model):
             
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E3', 'F': 'F_3', 'M_0': 'M_0_3', 'T_0': 'T_0_3'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E3', 'F': 'F_3', 'M_0': 'M_0_3', 'T_0': 'T_0_3',
+                                'P_0':'P_0_3'})
     
 
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
-            'T_0_3': 248,   #36K feet
-            'P_0': 19.8,  
+            'T_0_3': 230,   #36K feet
+            'T_{t_{4spec}}': 1000,
+            'P_0_3': 57,  
 ##            'M_0_3': 0.8,
         }
         
@@ -222,13 +227,15 @@ class EngineOffDesign4(Model):
 
         constraints = ConstraintSet([self.submodels])
 
-        constraints.subinplace({'TSFC_E': 'TSFC_E4', 'F': 'F_4', 'M_0': 'M_0_4', 'T_0': 'T_0_4'})
+        constraints.subinplace({'TSFC_E': 'TSFC_E4', 'F': 'F_4', 'M_0': 'M_0_4', 'T_0': 'T_0_4',
+                                'P_0':'P_0_4'})
 
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
-            'T_0_4': 248,   #36K feet
-            'P_0': 19.8,  
+            'T_0_4': 230,   #36K feet
+            'T_{t_{4spec}}': 1000,
+            'P_0_4': 37,  
 ##            'M_0_4': 0.8,
         }
         
@@ -259,14 +266,14 @@ class EngineOffDesign5(Model):
         constraints = ConstraintSet([self.submodels])
 
         constraints.subinplace({'TSFC_E': 'TSFC_E5', 'F_{spec}': 'F_{spec5}', 'M_0': 'M_0_5',
-                                'T_0': 'T_0_5'})
+                                'T_0': 'T_0_5', 'P_0':'P_0_5'})
     
 
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
             'T_0_5': 230,   #36K feet
-            'P_0': 19.8,  
+            'P_0_5': 30,  
             'M_0_5': 0.8,
         }
         Model.__init__(self, None, lc, substitutions, **kwargs)
@@ -296,14 +303,14 @@ class EngineOffDesign6(Model):
         constraints = ConstraintSet([self.submodels])
 
         constraints.subinplace({'TSFC_E': 'TSFC_E6', 'F_{spec}': 'F_{spec6}', 'M_0': 'M_0_6',
-                                'T_0': 'T_0_6'})
+                                'T_0': 'T_0_6', 'P_0':'P_0_6'})
     
 
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
             'T_0_6': 230,   #36K feet
-            'P_0': 19.8,  
+            'P_0_6': 30,  
             'M_0_6': 0.8,
         }
         Model.__init__(self, None, lc, substitutions, **kwargs)

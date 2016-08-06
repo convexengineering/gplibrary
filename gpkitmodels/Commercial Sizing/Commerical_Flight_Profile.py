@@ -22,16 +22,14 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 #select the cruise altitude
 hcruise = 30000
 #develop the list of altitudes
-hvec = [3625, 7875, .5*(hcruise-10000)+10000, hcruise-.5*(hcruise-10000), hcruise, hcruise]
+hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
 #convert from ft to m for atmosphere model
 hvec = [x * 0.3048 for x in hvec]
 #get the actual atmosphere values
 atmdict = get_atmosphere_vec(hvec)
 Tvec = atmdict['T']  * units('K')
 rhovec = atmdict['rho'] * units('kg/m^3')
-pvec = atmdict['p'] * units('Pa')
-
-print Tvec
+pvec = atmdict['p'] * units('kPa')
 
 #TODO
 #link in with engine
@@ -93,7 +91,7 @@ R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
 #air properties
 a = VectorVariable(Nseg, 'a', 'm/s', 'Speed of Sound')
 rho = VectorVariable(Nseg, '\rho', 'kg/m^3', 'Air Density')
-p = VectorVariable(Nseg, 'p', 'Pa', 'Pressure')
+p = VectorVariable(Nseg, 'p', 'kPa', 'Pressure')
 mu = VectorVariable(Nseg, '\mu', 'kg/m/s', 'Air Kinematic Viscosity')
 T = VectorVariable(Nseg, 'T', 'K', 'Air Temperature')
 
@@ -172,12 +170,12 @@ Thold4 = Variable('Thold4', 'K', 'segment 4 T')
 Thold5 = Variable('Thold5', 'K', 'segment 5 T')
 Thold6 = Variable('Thold6', 'K', 'segment 6 T')
 
-phold1 = Variable('phold1', 'Pa', 'segment 1 p')
-phold2 = Variable('phold2', 'Pa', 'segment 2 p')
-phold3 = Variable('phold3', 'Pa', 'segment 3 p')
-phold4 = Variable('phold4', 'Pa', 'segment 4 p')
-phold5 = Variable('phold5', 'Pa', 'segment 5 p')
-phold6 = Variable('phold6', 'Pa', 'segment 6 p')
+phold1 = Variable('phold1', 'kPa', 'segment 1 p')
+phold2 = Variable('phold2', 'kPa', 'segment 2 p')
+phold3 = Variable('phold3', 'kPa', 'segment 3 p')
+phold4 = Variable('phold4', 'kPa', 'segment 4 p')
+phold5 = Variable('phold5', 'kPa', 'segment 5 p')
+phold6 = Variable('phold6', 'kPa', 'segment 6 p')
 
 
 #temporary args
@@ -542,7 +540,6 @@ class CommercialAircraft(Model):
             #substitutions for global engine variables
             'G_f': 1,
             'N_{{bar}_Df}': 1,
-            'T_{t_{4spec}}': 1200,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
             '\pi_{d}': .99,
@@ -565,7 +562,8 @@ class CommercialAircraft(Model):
                                 'thrust_{c22}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4',
                                 'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'thrust_{cr21}': 'F_{spec5}_EngineOffDesign5',
                                 'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6',
-                                'mhold1': 'M_0_1', 'mhold2': 'M_0_2', 'mhold3': 'M_0_3', 'mhold4': 'M_0_4'})#, 'Thold1': 'T_0_1'})#,
+                                'mhold1': 'M_0_1', 'mhold2': 'M_0_2', 'mhold3': 'M_0_3', 'mhold4': 'M_0_4'})#, 'phold1': 'P_0_1',
+##                                'phold2': 'P_0_2','phold3': 'P_0_3','phold4': 'P_0_4','phold5': 'P_0_5','phold6': 'P_0_6',})#, 'Thold1': 'T_0_1'})#,
 ##                                'Thold2': 'T_0_2','Thold3': 'T_0_3','Thold4': 'T_0_4','Thold5': 'T_0_5','Thold6': 'T_0_6',})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',

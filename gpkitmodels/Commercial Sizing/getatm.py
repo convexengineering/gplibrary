@@ -15,15 +15,15 @@ def get_atmosphere(h):
     if h <= 11000:
         th = g/(R*L)          # [-]
         T = T_0 - L*h          # [K]
-        p = p_0*(T/T_0)**th  # [Pa]
+        p = .001*p_0*(T/T_0)**th  # [kPa]
     elif h <= 20000:
         T = 216.7   # [K]
         p_1 = 22630 # [Pa]
-        p = p_1*np.exp(-g/(R*T)*(h-11000)) # [Pa]
+        p = .001*p_1*np.exp(-g/(R*T)*(h-11000)) # [kPa]
     else:
         raise Exception('Model only valid up to 20km')
 
-    rho = p/(R*T)         # [kg/m^3]
+    rho = 1000*p/(R*T)         # [kg/m^3]
     mu = C_1*T**1.5/(T+S) # [kg/(m*s)]
 
     return T, p, rho, mu
