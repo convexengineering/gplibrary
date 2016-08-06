@@ -10,6 +10,7 @@ from atmosphere import Atmosphere
 from collections import defaultdict
 from gpkit.small_scripts import mag
 from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2, EngineOffDesign3, EngineOffDesign4, EngineOffDesign5, EngineOffDesign6
+from getatm import get_atmosphere_vec
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -18,9 +19,26 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 """
 
 #altitude precomputation
-rhovec = [1.225,1.225,.7,.7,.4,.4] * units('kg/m^3')
-Tvec = [273,273,250,250,230,230] * units('K')
+#select the cruise altitude
+hcruise = 30000
+#develop the list of altitudes
+hvec = [3625, 7875, .5*(hcruise-10000)+10000, hcruise-.5*(hcruise-10000), hcruise, hcruise]
+#convert from ft to m for atmosphere model
+hvec = [x * 0.3048 for x in hvec]
+#get the actual atmosphere values
+##rhovec = [1.225,1.225,.7,.7,.4,.4] * units('kg/m^3')
+##Tvec = [273,273,250,250,230,230] * units('K')
 ##pvec = [] * units('kPa')
+##muvec = []
+
+atmdict = get_atmosphere_vec(hvec)
+Tvec = atmdict['T']  * units('K')
+rhovec = atmdict['rho'] * units('kg/m^3')
+pvec = atmdict['p'] * units('Pa')
+
+print rhovec
+print Tvec
+print pvec
 
 #TODO
 #link in with engine
@@ -185,13 +203,6 @@ class CommericalMissionConstraints(Model):
             W_end[5] <= W_total,
             TCS([W_e + W_payload + numeng * W_engine <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
-
-##            rho[iclimb1] == 1.225*units('kg/m^3'),
-##            T[iclimb1] == 273*units('K'),
-##            rho[iclimb2] == .7*units('kg/m^3'),
-##            T[iclimb2] == 250*units('K'),
-##            rho[icruise2] == .4*units('kg/m^3'),
-##            T[icruise2] == 230*units('K'),
             ])
 
         for i in range(Nseg):
@@ -205,10 +216,8 @@ class CommericalMissionConstraints(Model):
                 constraints.extend([
                     #range constraints
                     TCS([sum(RngClimb) + ReqRngCruise >= ReqRng]),
-##                    SignomialEquality(sum(RngClimb) + ReqRngCruise, ReqRng),
 ##                    dhClimb2==20000*units('ft'),
 ##                    TCS([dhClimb2 + alt10k >= htoc]),
-##                    SignomialEquality(dhClimb2 + alt10k, htoc),
                     ])
             if test ==1:
                  constraints.extend([
@@ -295,13 +304,6 @@ class Climb1(Model):
             dhft[iclimb1] == dhClimb1/Nclimb1,
             ])
         
-##        with gpkit.SignomialsEnabled():
-##            constraints.extend([
-##                SignomialEquality(RngClimb[0] + .5*thours[0]*V[0]*theta[0]**2, thours[0]*V[0]),
-##                SignomialEquality(RngClimb[1] + .5*thours[1]*V[1]*theta[1]**2, thours[1]*V[1]),
-##                TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 <= thours[iclimb1]*V[iclimb1]]),
-##                ])
-            
         Model.__init__(self, None, constraints, **kwargs)
         
 #--------------------------------------
@@ -345,6 +347,7 @@ class Climb2(Model):
             theta[iclimb2]*V[iclimb2]  == RC[iclimb2],
            
             dhft[iclimb2]  == tmin[iclimb2] * RC[iclimb2],
+            
             #compute the distance traveled for each segment
             #takes into account two terms of a cosine expansion
 ##            TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
@@ -357,13 +360,7 @@ class Climb2(Model):
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
             ])
-
-##        with gpkit.SignomialsEnabled():
-##            constraints.extend([
-##                SignomialEquality(RngClimb[2] + .5*thours[2]*V[2]*theta[2]**2, thours[2]*V[2]),
-##                SignomialEquality(RngClimb[3] + .5*thours[3]*V[3]*theta[3]**2, thours[3]*V[3]),
-##                TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
-##                ])
+        
         Model.__init__(self, None, constraints, **kwargs)
         
 #--------------------------------------
@@ -436,6 +433,7 @@ class Cruise2(Model):
                 SignomialEquality(D[5], (.5*S*rho[5]*V[5]**2)*(Cd0 + K*(W_start[5]/(.5*S*rho[5]*V[5]**2))**2)),
                 D[4] == numeng * thrustcr21,
                 D[5] == numeng * thrustcr22,
+                
                 #constrain the climb rate by holding altitude constant
                 hft[icruise2]  == htoc,
                 
@@ -446,6 +444,7 @@ class Cruise2(Model):
 ##                TCS([RngCruise[izbre] <= z_brec2[izbre]*LD[icruise2]*V[icruise2]/(TSFCcr2[iclimb1])]),
                 TCS([RngCruise[0] <= z_brec2[0]*LD[4]*V[4]/(numeng*TSFCcr21)]),
                 TCS([RngCruise[1] <= z_brec2[1]*LD[5]*V[5]/(numeng*TSFCcr22)]),
+                
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
                 ])
@@ -498,10 +497,10 @@ class CommercialAircraft(Model):
             'C_{d_0}': .02,
             'K': 0.05,
             'S': 124.58,
-            'h_{toc}': 30000,
+            'h_{toc}': hcruise,
             'speedlimit': 250,
             'numeng': 2,
-            'dh_{climb2}': 20000,
+            'dh_{climb2}': hcruise-10000,
 
             #substitutions for global engine variables
             'G_f': 1,
