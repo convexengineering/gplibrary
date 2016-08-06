@@ -17,6 +17,11 @@ we are minimizing the fuel weight
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
 
+#altitude precomputation
+rhovec = [1.225,1.225,.7,.7,.4,.4] * units('kg/m^3')
+Tvec = [273,273,250,250,230,230] * units('K')
+##pvec = [] * units('kPa')
+
 #TODO
 #link in with engine
 #fix indicies on the TSFC vector variables
@@ -181,13 +186,19 @@ class CommericalMissionConstraints(Model):
             TCS([W_e + W_payload + numeng * W_engine <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
 
-            rho[iclimb1] == 1.225*units('kg/m^3'),
-            T[iclimb1] == 273*units('K'),
-            rho[iclimb2] == .7*units('kg/m^3'),
-            T[iclimb2] == 250*units('K'),
-            rho[icruise2] == .4*units('kg/m^3'),
-            T[icruise2] == 230*units('K'),
+##            rho[iclimb1] == 1.225*units('kg/m^3'),
+##            T[iclimb1] == 273*units('K'),
+##            rho[iclimb2] == .7*units('kg/m^3'),
+##            T[iclimb2] == 250*units('K'),
+##            rho[icruise2] == .4*units('kg/m^3'),
+##            T[icruise2] == 230*units('K'),
             ])
+
+        for i in range(Nseg):
+            constraints.extend([
+                rho[i] == rhovec[i],
+                T[i] == Tvec[i],
+                ])
         
         with gpkit.SignomialsEnabled():
             if test != 1:
