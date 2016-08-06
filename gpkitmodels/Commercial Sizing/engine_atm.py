@@ -119,7 +119,7 @@ class EngineOffDesign(Model):
             substitutions = {
                 'T_0_1': 230,   #36K feet
                 'T_{t_{4spec}}': 1000,
-                'P_0_1': 88,  
+##                'P_0_1': 88,  
 ##                'M_0': 0.8,
             }
         
@@ -158,7 +158,7 @@ class EngineOffDesign2(Model):
         substitutions = {
             'T_0_2': 230,   #36K feet
             'T_{t_{4spec}}': 1000,
-            'P_0_2': 76,  
+##            'P_0_2': 76,  
 ##            'M_0_2': 0.8,
         }
         
@@ -197,7 +197,7 @@ class EngineOffDesign3(Model):
         substitutions = {
             'T_0_3': 230,   #36K feet
             'T_{t_{4spec}}': 1000,
-            'P_0_3': 57,  
+##            'P_0_3': 57,  
 ##            'M_0_3': 0.8,
         }
         
@@ -235,7 +235,7 @@ class EngineOffDesign4(Model):
         substitutions = {
             'T_0_4': 230,   #36K feet
             'T_{t_{4spec}}': 1000,
-            'P_0_4': 37,  
+##            'P_0_4': 37,  
 ##            'M_0_4': 0.8,
         }
         
@@ -273,7 +273,7 @@ class EngineOffDesign5(Model):
 
         substitutions = {
             'T_0_5': 230,   #36K feet
-            'P_0_5': 30,  
+##            'P_0_5': 30,  
             'M_0_5': 0.8,
         }
         Model.__init__(self, None, lc, substitutions, **kwargs)
@@ -310,7 +310,7 @@ class EngineOffDesign6(Model):
 
         substitutions = {
             'T_0_6': 230,   #36K feet
-            'P_0_6': 30,  
+##            'P_0_6': 30,  
             'M_0_6': 0.8,
         }
         Model.__init__(self, None, lc, substitutions, **kwargs)
