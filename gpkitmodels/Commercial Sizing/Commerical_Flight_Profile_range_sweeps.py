@@ -12,11 +12,16 @@ from gpkit.small_scripts import mag
 from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2, EngineOffDesign3, EngineOffDesign4, EngineOffDesign5, EngineOffDesign6
 from getatm import get_atmosphere_vec
 
+#packages just needed for plotting since this is for sweeps
+import matplotlib.pyplot as plt
+
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
 we are minimizing the fuel weight
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
+#declare the range vector
+rangevec = np.linspace(500,5000,5)
 
 #altitude precomputation
 #select the cruise altitude
@@ -522,7 +527,7 @@ class CommercialAircraft(Model):
         eoffD6 = EngineOffDesign6()
         for i in range(Nseg):
             None
-        rangevec = np.linspace(500,5000,5)
+ 
         substitutions = {      
             'W_{e}': 40000*9.8*units('N'),
             'W_{payload}': 10000*9.8*units('N'),
@@ -609,19 +614,19 @@ class CommercialAircraft(Model):
         solhold = sol
         lam = sol["sensitivities"]["la"][1:]
         out = defaultdict(list)
-        for i, varkey in enumerate(m.bound_all["varkeys"]):
-            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
-            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
-                out["sensitive to upper bound"].append(varkey)
-            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
-                out["sensitive to lower bound"].append(varkey)
-            value = mag(sol["variables"][varkey])
-            distance_below = np.log(value/m.bound_all["lb"])
-            distance_above = np.log(m.bound_all["ub"]/value)
-            if distance_below <= 3:  # arbitrary threshold
-                out["value near lower bound"].append(varkey)
-            elif distance_above <= 3:  # arbitrary threshold
-                out["value near upper bound"].append(varkey)
+##        for i, varkey in enumerate(m.bound_all["varkeys"]):
+##            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
+##            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
+##                out["sensitive to upper bound"].append(varkey)
+##            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
+##                out["sensitive to lower bound"].append(varkey)
+##            value = mag(sol["variables"][varkey])
+##            distance_below = np.log(value/m.bound_all["lb"])
+##            distance_above = np.log(m.bound_all["ub"]/value)
+##            if distance_below <= 3:  # arbitrary threshold
+##                out["value near lower bound"].append(varkey)
+##            elif distance_above <= 3:  # arbitrary threshold
+##                out["value near upper bound"].append(varkey)
         return out, solhold
 
     
@@ -630,18 +635,68 @@ if __name__ == '__main__':
 ##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100)
     
     sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+
+##    #plot the fan pressure ratio sensitivity
+##    plt.plot(rangevec,)
+##    plt.xlabel('Mission Range')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to ')
+##    plt.show()
+##    
+##    #plot the sensitivy of numeng
+##    plt.plot(rangevec,)
+##    plt.xlabel('Mission Range')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to ')
+##    plt.show()
+##    
+##    #plot the sensitivty of S
+##    plt.plot(rangevec,)
+##    plt.xlabel('Mission Range')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to ')
+##    plt.show()
+##    
+##    #plot the sensitiby of dhclimb 2
+##    plt.plot(rangevec,)
+##    plt.xlabel('Mission Range')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to ')
+##    plt.show()
+##    
+##    #plot the sensitivity of cd0
+##    plt.plot(rangevec,)
+##    plt.xlabel('Mission Range')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to ')
+##    plt.show()
+##    
+##    #plot the sensitivty of Tt4 for engine 1
+##    plt.plot(rangevec,)
+##    plt.xlabel('Mission Range')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to ')
+##    plt.show()
+##    
+##    #plto the sensitivity of Tt4 for engine 4
+##    plt.plot(rangevec,)
+##    plt.xlabel('Mission Range')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to ')
+##    plt.show()
+##    
+##    #plot the sensitivity to the fan pressure ratio
+##    plt.plot(rangevec,)
+##    plt.xlabel('Mission Range')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to ')
+##    plt.show()
+##    
+##    #plo the lpc pressure rat sensititvy
+##    plt.plot(rangevec,)
+##    plt.xlabel('Mission Range')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to ')
+##    plt.show()
+
     
-#full flight profile
-##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
-##        iclimb1 = map(int, np.linspace(Ntakeoff, itakeoff[len(itakeoff)-1]+Nclimb1, Nclimb1))
-##        itrans = map(int, np.linspace(iclimb1[len(iclimb1)-1] + 1, Ntrans + iclimb1[len(iclimb1)-1], Ntrans))
-##        iclimb2 = map(int, np.linspace(itrans[len(itrans)-1] + 1, Nclimb2 + itrans[len(itrans)-1], Nclimb2))
-##        icruise1 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise1 + iclimb2[len(iclimb2)-1], Ncruise1))
-##        icruiseclimb = map(int, np.linspace(icruise1[len(icruise1)-1] + 1, Ncruiseclimb + icruise1[len(icruise1)-1], Ncruiseclimb))
-##        icruise2 = map(int, np.linspace(icruiseclimb[len(icruiseclimb)-1] + 1, Ncruise2 + icruiseclimb[len(icruiseclimb)-1], Ncruise2))
-##        idecent = map(int, np.linspace(icruise2[len(icruise2)-1] + 1, Ndecent + icruise2[len(icruise2)-1], Ndecent))
-##        ilanding = map(int, np.linspace(idecent[len(idecent)-1] + 1, Nlanding + idecent[len(idecent)-1], Nlanding))
-##        iresclimb = map(int, np.linspace(ilanding[len(ilanding)-1] + 1, Nresclimb + ilanding[len(ilanding)-1], Nresclimb))
-##        iresdecent = map(int, np.linspace(iresclimb[len(iresclimb)-1] + 1, Nresdecent + iresclimb[len(iresclimb)-1], Nresdecent))
-##        ireslanding = map(int, np.linspace(iresdecent[len(iresdecent)-1] + 1, Nreslanding + iresdecent[len(iresdecent)-1], Nreslanding))
-##        ireshold = map(int, np.linspace(ireslanding[len(ireslanding)-1] + 1, Nreshold + ireslanding[len(ireslanding)-1], Nresdecent))
