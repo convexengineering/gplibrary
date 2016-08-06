@@ -164,6 +164,10 @@ thrust = Variable('thrust', 'N', 'Engine Thrust')
 #number of engines
 numeng = Variable('numeng', '-', 'Number of Engines')
 
+#temporary mach hold variables for engine linking
+mhold1 = Variable('mhold1', '-', 'segment 1 mach number')
+mhold2 = Variable('mhold2', '-', 'segment 2 mach number')
+
 #temporary args
 #pass in a 1 for testing climb segment 1
 
@@ -203,12 +207,15 @@ class CommericalMissionConstraints(Model):
             W_end[5] <= W_total,
             TCS([W_e + W_payload + numeng * W_engine <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
+
+            #hold pressure values for linking with engine pressures
             ])
 
         for i in range(Nseg):
             constraints.extend([
                 rho[i] == rhovec[i],
                 T[i] == Tvec[i],
+                p[i] == pvec[i],
                 ])
         
         with gpkit.SignomialsEnabled():
@@ -273,6 +280,9 @@ class Climb1(Model):
             
             V[iclimb1] <= speedlimit,
             V[iclimb1] >= Vstall,
+
+            M[0] == mhold1,
+            M[1] == mhold2,
 
             #constraint on drag and thrust
 ##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
@@ -527,7 +537,8 @@ class CommercialAircraft(Model):
                                 'thrust_{c21}_Climb2': 'F_3_EngineOffDesign3','TSFC_{c21}_Climb2': 'TSFC_E3_EngineOffDesign3',
                                 'thrust_{c22}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4',
                                 'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'thrust_{cr21}': 'F_{spec5}_EngineOffDesign5',
-                                'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6'})
+                                'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6',
+                                'mhold1': 'M_0_1'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}',

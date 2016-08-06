@@ -110,12 +110,16 @@ class EngineOffDesign(Model):
             
         with SignomialsEnabled():
 
+            constraints = ConstraintSet([self.submodels])
+
+            constraints.subinplace({'M_0': 'M_0_1'})
+
             lc = LinkedConstraintSet([self.submodels])
 
             substitutions = {
                 'T_0': 230,   #36K feet
                 'P_0': 19.8,  
-                'M_0': 0.8,
+##                'M_0': 0.8,
             }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)
