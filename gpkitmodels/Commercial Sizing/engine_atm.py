@@ -193,7 +193,7 @@ class EngineOffDesign3(Model):
         substitutions = {
             'T_0': 230,   #36K feet
             'P_0': 19.8,  
-            'M_0_3': 0.8,
+##            'M_0_3': 0.8,
         }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)
@@ -229,7 +229,7 @@ class EngineOffDesign4(Model):
         substitutions = {
             'T_0': 230,   #36K feet
             'P_0': 19.8,  
-            'M_0_4': 0.8,
+##            'M_0_4': 0.8,
         }
         
         Model.__init__(self, None, lc, substitutions, **kwargs)

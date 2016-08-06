@@ -163,19 +163,19 @@ mhold4 = Variable('mhold4', '-', 'segment 4 mach number')
 mhold5 = Variable('mhold5', '-', 'segment 5 mach number')
 mhold6 = Variable('mhold6', '-', 'segment 6 mach number')
 
-Thold1 = Variable('Thold1', '-', 'segment 1 T')
-Thold2 = Variable('Thold2', '-', 'segment 2 T ')
-Thold3 = Variable('Thold3', '-', 'segment 3 T')
-Thold4 = Variable('Thold4', '-', 'segment 4 T')
-Thold5 = Variable('Thold5', '-', 'segment 5 T')
-Thold6 = Variable('Thold6', '-', 'segment 6 T')
+Thold1 = Variable('Thold1', 'K', 'segment 1 T')
+Thold2 = Variable('Thold2', 'K', 'segment 2 T ')
+Thold3 = Variable('Thold3', 'K', 'segment 3 T')
+Thold4 = Variable('Thold4', 'K', 'segment 4 T')
+Thold5 = Variable('Thold5', 'K', 'segment 5 T')
+Thold6 = Variable('Thold6', 'K', 'segment 6 T')
 
-phold1 = Variable('phold1', '-', 'segment 1 p')
-phold2 = Variable('phold2', '-', 'segment 2 p')
-phold3 = Variable('phold3', '-', 'segment 3 p')
-phold4 = Variable('phold4', '-', 'segment 4 p')
-phold5 = Variable('phold5', '-', 'segment 5 p')
-phold6 = Variable('phold6', '-', 'segment 6 p')
+phold1 = Variable('phold1', 'Pa', 'segment 1 p')
+phold2 = Variable('phold2', 'Pa', 'segment 2 p')
+phold3 = Variable('phold3', 'Pa', 'segment 3 p')
+phold4 = Variable('phold4', 'Pa', 'segment 4 p')
+phold5 = Variable('phold5', 'Pa', 'segment 5 p')
+phold6 = Variable('phold6', 'Pa', 'segment 6 p')
 
 
 #temporary args
@@ -216,12 +216,12 @@ class CommericalMissionConstraints(Model):
             TCS([W_ftotal >= sum(W_fuel)]),
 
             #hold pressure values for linking with engine pressures
-            phold1 == p[0]
-            phold2 == p[1]
-            phold3 == p[2]
-            phold4 == p[3]
-            phold5 == p[4]
-            phold6 == p[5]
+            phold1 == p[0],
+            phold2 == p[1],
+            phold3 == p[2],
+            phold4 == p[3],
+            phold5 == p[4],
+            phold6 == p[5],
             ])
 
         for i in range(Nseg):
@@ -556,7 +556,7 @@ class CommercialAircraft(Model):
                                 'thrust_{c22}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4',
                                 'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'thrust_{cr21}': 'F_{spec5}_EngineOffDesign5',
                                 'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6',
-                                'mhold1': 'M_0_1', 'mhold2': 'M_0_2'})#, 'mhold3': 'M_0_3', 'mhold4': 'M_0_4'})
+                                'mhold1': 'M_0_1', 'mhold2': 'M_0_2', 'mhold3': 'M_0_3', 'mhold4': 'M_0_4'})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}',
@@ -619,9 +619,9 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100)
     
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
 #full flight profile
 ##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
