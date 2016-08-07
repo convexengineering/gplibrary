@@ -468,12 +468,13 @@ class CommercialAircraft(Model):
         return out, solhold
 
 #create the altitude vector
-altvec = np.linspace(20000,40000,5)
+altvec = np.linspace(20000,40000,10)
 tt4offD = []
 Ssens = []
 BPRsens = []
 onDfprsens = []
 onDlpcsens = []
+costvec = []
 for i in range(len(altvec)):
         
     hcruise = altvec[i]
@@ -644,35 +645,48 @@ for i in range(len(altvec)):
     BPRsens.append(solhold["sensitivities"]["constants"]['alpha'])
     onDlpcsens.append(solhold["sensitivities"]["constants"]['\pi_{lc}_EngineOnDesign, CommercialAircraft'])
     onDfprsens.append(solhold["sensitivities"]["constants"]['\pi_f_EngineOnDesign, CommercialAircraft'])
+    costvec.append(solhold['cost'])
 
 plt.plot(altvec,tt4offD)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to Tt4 During Climb Segment 1')
 plt.show()
+plt.savefig('Tt4_Climb1_sens_alt.jpg')
 
 plt.plot(altvec,Ssens)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to Wing Planform Area')
 plt.show()
+plt.savefig('S_sens_alt.jpg')
 
 plt.plot(altvec,BPRsens)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to BPR')
 plt.show()
+plt.savefig('BPR_sens_alt.jpg')
 
 plt.plot(altvec,onDfprsens)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to FPR @ On Design Point')
 plt.show()
+plt.savefig('OnD_FPR_sens_alt.jpg')
 
 plt.plot(altvec,onDlpcsens)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to LPC Pressure Ratio @ On Design Point')
 plt.show()
+plt.savefig('LPC_OnD_prat_sens_alt.jpg')
+
+plt.plot(altvec, costvec)
+plt.xlabel('Cruise Altitude [ft]')
+plt.ylabel('Total Fuel Weight [N]')
+plt.title('Total Fuel vs Cruise Altitude')
+plt.show()
+plt.savefig('fuel_weight_alt.jpg')
 
 
