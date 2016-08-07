@@ -522,13 +522,13 @@ class CommercialAircraft(Model):
         eoffD6 = EngineOffDesign6()
         for i in range(Nseg):
             None
-        rangevec = np.linspace(500,5000,5)
+ 
         substitutions = {      
-            'W_{e}': 40000*9.8*units('N'),
-            'W_{payload}': 10000*9.8*units('N'),
+            'W_{e}': 37000*9.8*units('N'),
+            'W_{payload}': 9250*9.8*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
-            'ReqRng': ('sweep', rangevec),
+            'ReqRng': 1000,
             'C_{d_0}': .02,
             'K': 0.05,
             'S': 124.58,

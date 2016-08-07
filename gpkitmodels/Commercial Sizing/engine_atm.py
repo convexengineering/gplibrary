@@ -117,8 +117,8 @@ class EngineOffDesign(Model):
             lc = LinkedConstraintSet([self.submodels])
 
             substitutions = {
-                'T_0_1': 230,   #36K feet
-                'T_{t_{4spec}}': 1000,
+                'T_0_1': 240,#260,   #36K feet
+                'T_{t_{4spec}}': 1400,
 ##                'P_0_1': 88,  
 ##                'M_0': 0.8,
             }
@@ -156,8 +156,8 @@ class EngineOffDesign2(Model):
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
-            'T_0_2': 230,   #36K feet
-            'T_{t_{4spec}}': 1000,
+            'T_0_2': 240,#260,   #36K feet
+            'T_{t_{4spec}}': 1350,
 ##            'P_0_2': 76,  
 ##            'M_0_2': 0.8,
         }
@@ -195,8 +195,8 @@ class EngineOffDesign3(Model):
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
-            'T_0_3': 230,   #36K feet
-            'T_{t_{4spec}}': 1000,
+            'T_0_3': 240,#250,   #36K feet
+            'T_{t_{4spec}}': 1300,
 ##            'P_0_3': 57,  
 ##            'M_0_3': 0.8,
         }
@@ -233,8 +233,8 @@ class EngineOffDesign4(Model):
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
-            'T_0_4': 230,   #36K feet
-            'T_{t_{4spec}}': 1000,
+            'T_0_4': 240,#245,   #36K feet
+            'T_{t_{4spec}}': 1250,
 ##            'P_0_4': 37,  
 ##            'M_0_4': 0.8,
         }
@@ -272,7 +272,7 @@ class EngineOffDesign5(Model):
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
-            'T_0_5': 230,   #36K feet
+            'T_0_5': 240,   #36K feet
 ##            'P_0_5': 30,  
             'M_0_5': 0.8,
         }
@@ -309,7 +309,7 @@ class EngineOffDesign6(Model):
         lc = LinkedConstraintSet(constraints)
 
         substitutions = {
-            'T_0_6': 230,   #36K feet
+            'T_0_6': 240,   #36K feet
 ##            'P_0_6': 30,  
             'M_0_6': 0.8,
         }

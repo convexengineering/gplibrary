@@ -12,7 +12,6 @@ from gpkit.small_scripts import mag
 from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2, EngineOffDesign3, EngineOffDesign4, EngineOffDesign5, EngineOffDesign6
 from getatm import get_atmosphere_vec
 
-#packages just needed for plotting since this is for sweeps
 import matplotlib.pyplot as plt
 
 """
@@ -20,167 +19,6 @@ minimizes the aircraft total weight, must specify all weights except fuel weight
 we are minimizing the fuel weight
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
-#declare the range vector
-rangevec = np.linspace(500,5000,10)
-
-#altitude precomputation
-#select the cruise altitude
-hcruise = 37000
-#develop the list of altitudes
-hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
-#convert from ft to m for atmosphere model
-hvec = [x * 0.3048 for x in hvec]
-#get the actual atmosphere values
-atmdict = get_atmosphere_vec(hvec)
-Tvec = atmdict['T']  * units('K')
-rhovec = atmdict['rho'] * units('kg/m^3')
-pvec = atmdict['p'] * units('kPa')
-
-#TODO
-#link in with engine
-#fix indicies on the TSFC vector variables
-
-#figure out if minimizing total weight is the same as minimizing fuel weight
-
-#-----------------------------------------------------------
-#defining the number of segments
-Ntakeoff = 0
-Nclimb1 = 2
-Nclimb2 = 2
-Ncruise1 = 0
-Ncruiseclimb = 0
-Ncruise2 = 2
-Ndecent = 0
-Nlanding = 0
-
-#segments below here that start with res --> fuel reserves
-Nresclimb = 0
-Nresdecent = 0
-Nreslanding = 0
-Nreshold = 0
-
-#total number of flight segments in each category, possibly useful
-Nclimb = Nclimb1 + Nclimb2 + Ncruiseclimb
-Ncruise = Ncruise1 + Ncruise2
-Nres = Nresclimb + Nresdecent + Nreslanding + Nreshold
-
-Nseg = Nclimb + Ncruise + Nres + Ntakeoff + Ndecent + Nlanding
-
-#create index lists for the vector variables
-
-#partial flight profile for use during development
-if Nclimb1 != 0:
-    iclimb1 = map(int, np.linspace(0, Nclimb1 - 1, Nclimb1))
-else:
-    iclimb1 = 0
-if Nclimb2 != 0:
-    iclimb2 = map(int, np.linspace(iclimb1[len(iclimb1)-1] + 1, Nclimb2 + iclimb1[len(iclimb1)-1], Nclimb2))
-else:
-    iclimb2 =0
-    
-if Ncruise2 != 0:
-    icruise2 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise2 + iclimb2[len(iclimb2)-1], Ncruise2))
-##    icruise2 = map(int, np.linspace(0, Ncruise2-1, Ncruise2))
-else:
-    icruise2 = 0
-
-izbre = map(int, np.linspace(0, Ncruise - 1, Ncruise))
-
-#---------------------------------------------------------------------
-#Variable definitions that apply to multiple classes
-#physical constants
-g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
-gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
-R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
-
-#air properties
-a = VectorVariable(Nseg, 'a', 'm/s', 'Speed of Sound')
-rho = VectorVariable(Nseg, '\rho', 'kg/m^3', 'Air Density')
-p = VectorVariable(Nseg, 'p', 'kPa', 'Pressure')
-mu = VectorVariable(Nseg, '\mu', 'kg/m/s', 'Air Kinematic Viscosity')
-T = VectorVariable(Nseg, 'T', 'K', 'Air Temperature')
-
-#altitude
-if Nclimb != 0:
-    dhft = VectorVariable(Nclimb, 'dhft', 'feet', 'Change in Altitude Per Climb Segment [feet]') 
-h = VectorVariable(Nseg, 'h', 'm', 'Altitude [meters]')
-hft = VectorVariable(Nseg, 'hft', 'feet', 'Altitude [feet]')
-dhClimb1 = Variable('dh_{climb1}', 8500, 'feet', 'Total Altitude Change Required in Climb 1')
-dhClimb2 = Variable('dh_{climb2}', 'feet', 'Total Altitude Change Required in Climb 2')
-dhTakeoff = Variable('dh_{takeoff}', 1500, 'feet', 'Total Altitude Change During Takeoff Profile')
-
-#time
-tmin = VectorVariable(Nseg, 'tmin', 'min', 'Flight Time in Minutes')
-thours = VectorVariable(Nseg, 'thr', 'hour', 'Flight Time in Hours')
-
-#Range
-if Nclimb != 0:
-    RngClimb = VectorVariable(Nclimb, 'RngClimb', 'miles', 'Segment Range During Climb')
-if Ncruise !=0:
-    RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCruise', 'miles', 'Segment Range During Cruise')
-ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
-ReqRng = Variable('ReqRng', 'miles', 'Required Mission Range')
-
-#aircraft weights
-W_start = VectorVariable(Nseg, 'W_{start}', 'N', 'Segment Start Weight')
-W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'N', 'Segment Fuel Weight')
-W_end = VectorVariable(Nseg, 'W_{end}', 'N', 'Segment End Weight')
-W_total = Variable('W_{total}', 'N', 'Total Aircraft Weight')
-
-#aero
-LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
-LDmax = Variable('\\frac{L}{D}_{max}', '-', 'Maximum Lift to Drag')
-
-Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
-K = Variable('K', '-', 'K for Parametric Drag Model')
-
-if Nclimb != 0:
-    excessP = VectorVariable(Nclimb, 'Excess Power', 'W', 'Excess Power During Climb')
-D = VectorVariable(Nseg, 'Drag', 'N', 'Drag')
-
-#aircraft geometry
-S = Variable('S', 'm^2', 'Wing Planform Area')
-
-#velocitites and mach numbers
-V = VectorVariable(Nseg, 'V', 'knots', 'Aircraft Flight Speed')
-M = VectorVariable(Nseg, 'M', '-', 'Aircraft Mach Number')
-Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
-
-#Climb/Decent Rate
-if Nclimb != 0:
-    RC = VectorVariable(Nclimb, 'RC', 'feet/min', 'Rate of Climb/Decent')
-    theta = VectorVariable(Nclimb, '\\theta', '-', 'Aircraft Climb Angle')
-
-#currently sets the value of TSFC, just a place holder
-c1 = Variable('c1', '-', 'Constant')
-
-#defien thrust variable
-thrust = Variable('thrust', 'N', 'Engine Thrust')
-
-#number of engines
-numeng = Variable('numeng', '-', 'Number of Engines')
-
-#temporary mach hold variables for engine linking
-mhold1 = Variable('mhold1', '-', 'segment 1 mach number')
-mhold2 = Variable('mhold2', '-', 'segment 2 mach number')
-mhold3 = Variable('mhold3', '-', 'segment 3 mach number')
-mhold4 = Variable('mhold4', '-', 'segment 4 mach number')
-mhold5 = Variable('mhold5', '-', 'segment 5 mach number')
-mhold6 = Variable('mhold6', '-', 'segment 6 mach number')
-
-Thold1 = Variable('Thold1', 'K', 'segment 1 T')
-Thold2 = Variable('Thold2', 'K', 'segment 2 T ')
-Thold3 = Variable('Thold3', 'K', 'segment 3 T')
-Thold4 = Variable('Thold4', 'K', 'segment 4 T')
-Thold5 = Variable('Thold5', 'K', 'segment 5 T')
-Thold6 = Variable('Thold6', 'K', 'segment 6 T')
-
-phold1 = Variable('phold1', 'kPa', 'segment 1 p')
-phold2 = Variable('phold2', 'kPa', 'segment 2 p')
-phold3 = Variable('phold3', 'kPa', 'segment 3 p')
-phold4 = Variable('phold4', 'kPa', 'segment 4 p')
-phold5 = Variable('phold5', 'kPa', 'segment 5 p')
-phold6 = Variable('phold6', 'kPa', 'segment 6 p')
 
 
 #temporary args
@@ -527,13 +365,13 @@ class CommercialAircraft(Model):
         eoffD6 = EngineOffDesign6()
         for i in range(Nseg):
             None
- 
+        rangevec = np.linspace(500,5000,5)
         substitutions = {      
             'W_{e}': 40000*9.8*units('N'),
             'W_{payload}': 10000*9.8*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
-            'ReqRng': ('sweep', rangevec),
+            'ReqRng': 2500,
             'C_{d_0}': .02,
             'K': 0.05,
             'S': 124.58,
@@ -614,83 +452,227 @@ class CommercialAircraft(Model):
         solhold = sol
         lam = sol["sensitivities"]["la"][1:]
         out = defaultdict(list)
-##        for i, varkey in enumerate(m.bound_all["varkeys"]):
-##            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
-##            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
-##                out["sensitive to upper bound"].append(varkey)
-##            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
-##                out["sensitive to lower bound"].append(varkey)
-##            value = mag(sol["variables"][varkey])
-##            distance_below = np.log(value/m.bound_all["lb"])
-##            distance_above = np.log(m.bound_all["ub"]/value)
-##            if distance_below <= 3:  # arbitrary threshold
-##                out["value near lower bound"].append(varkey)
-##            elif distance_above <= 3:  # arbitrary threshold
-##                out["value near upper bound"].append(varkey)
+        for i, varkey in enumerate(m.bound_all["varkeys"]):
+            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
+            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to upper bound"].append(varkey)
+            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to lower bound"].append(varkey)
+            value = mag(sol["variables"][varkey])
+            distance_below = np.log(value/m.bound_all["lb"])
+            distance_above = np.log(m.bound_all["ub"]/value)
+            if distance_below <= 3:  # arbitrary threshold
+                out["value near lower bound"].append(varkey)
+            elif distance_above <= 3:  # arbitrary threshold
+                out["value near upper bound"].append(varkey)
         return out, solhold
 
-    
-if __name__ == '__main__':
+#create the altitude vector
+altvec = np.linspace(20000,40000,5)
+tt4offD = []
+Ssens = []
+BPRsens = []
+onDfprsens = []
+onDlpcsens = []
+for i in range(len(altvec)):
+        
+    hcruise = altvec[i]
+
+    #develop the list of altitudes
+    hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
+    #convert from ft to m for atmosphere model
+    hvec = [x * 0.3048 for x in hvec]
+    #get the actual atmosphere values
+    atmdict = get_atmosphere_vec(hvec)
+    Tvec = atmdict['T']  * units('K')
+    rhovec = atmdict['rho'] * units('kg/m^3')
+    pvec = atmdict['p'] * units('kPa')
+
+    #TODO
+    #link in with engine
+    #fix indicies on the TSFC vector variables
+
+    #figure out if minimizing total weight is the same as minimizing fuel weight
+
+    #-----------------------------------------------------------
+    #defining the number of segments
+    Ntakeoff = 0
+    Nclimb1 = 2
+    Nclimb2 = 2
+    Ncruise1 = 0
+    Ncruiseclimb = 0
+    Ncruise2 = 2
+    Ndecent = 0
+    Nlanding = 0
+
+    #segments below here that start with res --> fuel reserves
+    Nresclimb = 0
+    Nresdecent = 0
+    Nreslanding = 0
+    Nreshold = 0
+
+    #total number of flight segments in each category, possibly useful
+    Nclimb = Nclimb1 + Nclimb2 + Ncruiseclimb
+    Ncruise = Ncruise1 + Ncruise2
+    Nres = Nresclimb + Nresdecent + Nreslanding + Nreshold
+
+    Nseg = Nclimb + Ncruise + Nres + Ntakeoff + Ndecent + Nlanding
+
+    #create index lists for the vector variables
+
+    #partial flight profile for use during development
+    if Nclimb1 != 0:
+        iclimb1 = map(int, np.linspace(0, Nclimb1 - 1, Nclimb1))
+    else:
+        iclimb1 = 0
+    if Nclimb2 != 0:
+        iclimb2 = map(int, np.linspace(iclimb1[len(iclimb1)-1] + 1, Nclimb2 + iclimb1[len(iclimb1)-1], Nclimb2))
+    else:
+        iclimb2 =0
+        
+    if Ncruise2 != 0:
+        icruise2 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise2 + iclimb2[len(iclimb2)-1], Ncruise2))
+    ##    icruise2 = map(int, np.linspace(0, Ncruise2-1, Ncruise2))
+    else:
+        icruise2 = 0
+
+    izbre = map(int, np.linspace(0, Ncruise - 1, Ncruise))
+
+    #---------------------------------------------------------------------
+    #Variable definitions that apply to multiple classes
+    #physical constants
+    g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
+    gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
+    R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
+
+    #air properties
+    a = VectorVariable(Nseg, 'a', 'm/s', 'Speed of Sound')
+    rho = VectorVariable(Nseg, '\rho', 'kg/m^3', 'Air Density')
+    p = VectorVariable(Nseg, 'p', 'kPa', 'Pressure')
+    mu = VectorVariable(Nseg, '\mu', 'kg/m/s', 'Air Kinematic Viscosity')
+    T = VectorVariable(Nseg, 'T', 'K', 'Air Temperature')
+
+    #altitude
+    if Nclimb != 0:
+        dhft = VectorVariable(Nclimb, 'dhft', 'feet', 'Change in Altitude Per Climb Segment [feet]') 
+    h = VectorVariable(Nseg, 'h', 'm', 'Altitude [meters]')
+    hft = VectorVariable(Nseg, 'hft', 'feet', 'Altitude [feet]')
+    dhClimb1 = Variable('dh_{climb1}', 8500, 'feet', 'Total Altitude Change Required in Climb 1')
+    dhClimb2 = Variable('dh_{climb2}', 'feet', 'Total Altitude Change Required in Climb 2')
+    dhTakeoff = Variable('dh_{takeoff}', 1500, 'feet', 'Total Altitude Change During Takeoff Profile')
+
+    #time
+    tmin = VectorVariable(Nseg, 'tmin', 'min', 'Flight Time in Minutes')
+    thours = VectorVariable(Nseg, 'thr', 'hour', 'Flight Time in Hours')
+
+    #Range
+    if Nclimb != 0:
+        RngClimb = VectorVariable(Nclimb, 'RngClimb', 'miles', 'Segment Range During Climb')
+    if Ncruise !=0:
+        RngCruise = VectorVariable(Ncruise2 + Ncruise1, 'RngCruise', 'miles', 'Segment Range During Cruise')
+    ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
+    ReqRng = Variable('ReqRng', 'miles', 'Required Mission Range')
+
+    #aircraft weights
+    W_start = VectorVariable(Nseg, 'W_{start}', 'N', 'Segment Start Weight')
+    W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'N', 'Segment Fuel Weight')
+    W_end = VectorVariable(Nseg, 'W_{end}', 'N', 'Segment End Weight')
+    W_total = Variable('W_{total}', 'N', 'Total Aircraft Weight')
+
+    #aero
+    LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
+    LDmax = Variable('\\frac{L}{D}_{max}', '-', 'Maximum Lift to Drag')
+
+    Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+    K = Variable('K', '-', 'K for Parametric Drag Model')
+
+    if Nclimb != 0:
+        excessP = VectorVariable(Nclimb, 'Excess Power', 'W', 'Excess Power During Climb')
+    D = VectorVariable(Nseg, 'Drag', 'N', 'Drag')
+
+    #aircraft geometry
+    S = Variable('S', 'm^2', 'Wing Planform Area')
+
+    #velocitites and mach numbers
+    V = VectorVariable(Nseg, 'V', 'knots', 'Aircraft Flight Speed')
+    M = VectorVariable(Nseg, 'M', '-', 'Aircraft Mach Number')
+    Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
+
+    #Climb/Decent Rate
+    if Nclimb != 0:
+        RC = VectorVariable(Nclimb, 'RC', 'feet/min', 'Rate of Climb/Decent')
+        theta = VectorVariable(Nclimb, '\\theta', '-', 'Aircraft Climb Angle')
+
+    #currently sets the value of TSFC, just a place holder
+    c1 = Variable('c1', '-', 'Constant')
+
+    #defien thrust variable
+    thrust = Variable('thrust', 'N', 'Engine Thrust')
+
+    #number of engines
+    numeng = Variable('numeng', '-', 'Number of Engines')
+
+    #temporary mach hold variables for engine linking
+    mhold1 = Variable('mhold1', '-', 'segment 1 mach number')
+    mhold2 = Variable('mhold2', '-', 'segment 2 mach number')
+    mhold3 = Variable('mhold3', '-', 'segment 3 mach number')
+    mhold4 = Variable('mhold4', '-', 'segment 4 mach number')
+    mhold5 = Variable('mhold5', '-', 'segment 5 mach number')
+    mhold6 = Variable('mhold6', '-', 'segment 6 mach number')
+
+    Thold1 = Variable('Thold1', 'K', 'segment 1 T')
+    Thold2 = Variable('Thold2', 'K', 'segment 2 T ')
+    Thold3 = Variable('Thold3', 'K', 'segment 3 T')
+    Thold4 = Variable('Thold4', 'K', 'segment 4 T')
+    Thold5 = Variable('Thold5', 'K', 'segment 5 T')
+    Thold6 = Variable('Thold6', 'K', 'segment 6 T')
+
+    phold1 = Variable('phold1', 'kPa', 'segment 1 p')
+    phold2 = Variable('phold2', 'kPa', 'segment 2 p')
+    phold3 = Variable('phold3', 'kPa', 'segment 3 p')
+    phold4 = Variable('phold4', 'kPa', 'segment 4 p')
+    phold5 = Variable('phold5', 'kPa', 'segment 5 p')
+    phold6 = Variable('phold6', 'kPa', 'segment 6 p')
+
     m = CommercialAircraft()
 ##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100)
-    
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100, skipsweepfailures=True)
+        
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
 
-    #plot the fan pressure ratio sensitivity
-    plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['\pi_f_EngineOnDesign, CommercialAircraft'])
-    plt.xlabel('Mission Range')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to on Design Fan Pressure Ratio')
-    plt.show()
-    
-    #plot the sensitivy of numeng
-    plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['numeng'])
-    plt.xlabel('Mission Range')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to the Number of Engines')
-    plt.show()
-    
-    #plot the sensitivty of S
-    plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['S'])
-    plt.xlabel('Mission Range')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to S (Planform Area)')
-    plt.show()
-    
-    #plot the sensitiby of dhclimb 2
-    plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['dh_{climb2}_Climb2, CommercialAircraft'])
-    plt.xlabel('Mission Range')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to Climb Segment 2 Length')
-    plt.show()
-    
-    #plot the sensitivity of cd0
-    plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['C_{d_0}'])
-    plt.xlabel('Mission Range')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to Mission Range')
-    plt.show()
-    
-    #plot the sensitivty of Tt4 for engine 1
-    plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign, CommercialAircraft'])
-    plt.xlabel('Mission Range')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to Tt4 During Climb 1')
-    plt.show()
-    
-    #plto the sensitivity of Tt4 for engine 4
-    plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign4, CommercialAircraft'])
-    plt.xlabel('Mission Range')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to Tt4 During Climb 4')
-    plt.show()
-    
-    
-    #plo the lpc pressure rat sensititvy
-    plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['\pi_{hc_D}'])
-    plt.xlabel('Mission Range')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to HPC Design Pressure Ratio')
-    plt.show()
+    tt4offD.append(solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign, CommercialAircraft'])
+    Ssens.append(solhold["sensitivities"]["constants"]['S'])
+    BPRsens.append(solhold["sensitivities"]["constants"]['alpha'])
+    onDlpcsens.append(solhold["sensitivities"]["constants"]['\pi_{lc}_EngineOnDesign, CommercialAircraft'])
+    onDfprsens.append(solhold["sensitivities"]["constants"]['\pi_f_EngineOnDesign, CommercialAircraft'])
 
-    
+plt.plot(altvec,tt4offD)
+plt.xlabel('Cruise Altitude [ft]')
+plt.ylabel('Sensitivity')
+plt.title('Sensitivity to Tt4 During Climb Segment 1')
+plt.show()
+
+plt.plot(altvec,Ssens)
+plt.xlabel('Cruise Altitude [ft]')
+plt.ylabel('Sensitivity')
+plt.title('Sensitivity to Wing Planform Area')
+plt.show()
+
+plt.plot(altvec,BPRsens)
+plt.xlabel('Cruise Altitude [ft]')
+plt.ylabel('Sensitivity')
+plt.title('Sensitivity to BPR')
+plt.show()
+
+plt.plot(altvec,onDfprsens)
+plt.xlabel('Cruise Altitude [ft]')
+plt.ylabel('Sensitivity')
+plt.title('Sensitivity to FPR @ On Design Point')
+plt.show()
+
+plt.plot(altvec,onDlpcsens)
+plt.xlabel('Cruise Altitude [ft]')
+plt.ylabel('Sensitivity')
+plt.title('Sensitivity to LPC Pressure Ratio @ On Design Point')
+plt.show()
+
+
