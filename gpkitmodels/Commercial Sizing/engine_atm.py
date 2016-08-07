@@ -45,7 +45,7 @@ class EngineOnDesign(Model):
         with SignomialsEnabled():
 
             substitutions = {
-                'P_0': 30,  
+##                'P_0': 30,  
                 'M_0': 0.8,
                 'T_{t_4}': 1400,
                 '\pi_f': 1.5,

@@ -530,7 +530,7 @@ class CommercialAircraft(Model):
  
         substitutions = {      
             'W_{e}': 40000*9.8*units('N'),
-            'W_{payload}': 10000*9.8*units('N'),
+            'W_{payload}': 40000*9.8*.15*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
             'ReqRng': ('sweep', rangevec),
@@ -568,7 +568,8 @@ class CommercialAircraft(Model):
                                 'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'thrust_{cr21}': 'F_{spec5}_EngineOffDesign5',
                                 'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6',
                                 'mhold1': 'M_0_1', 'mhold2': 'M_0_2', 'mhold3': 'M_0_3', 'mhold4': 'M_0_4', 'phold1': 'P_0_1',
-                                'phold2': 'P_0_2','phold3': 'P_0_3','phold4': 'P_0_4','phold5': 'P_0_5','phold6': 'P_0_6',})#, 'Thold1': 'T_0_1'})#,
+                                'phold2': 'P_0_2','phold3': 'P_0_3','phold4': 'P_0_4','phold5': 'P_0_5','phold6': 'P_0_6',
+                                'P_0': 'P_0_6'})#, 'Thold1': 'T_0_1'})#,
 ##                                'Thold2': 'T_0_2','Thold3': 'T_0_3','Thold4': 'T_0_4','Thold5': 'T_0_5','Thold6': 'T_0_6',})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
@@ -641,71 +642,70 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to on Design Fan Pressure Ratio')
+    plt.savefig('\pi_f_sens_range.png')
     plt.show()
-    plt.savefig('\pi_f_sens_alt.jpg')
     
     #plot the sensitivy of numeng
     plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['numeng'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to the Number of Engines')
+    plt.savefig('numeng_sens_range.png')
     plt.show()
-    plt.savefig('numeng_sens_alt.jpg')
     
     #plot the sensitivty of S
     plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['S'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to S (Planform Area)')
+    plt.savefig('ReqRng_sens_range.png')
     plt.show()
-    plt.savefig('ReqRng_sens_alt.jpg')
     
     #plot the sensitiby of dhclimb 2
     plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['dh_{climb2}_Climb2, CommercialAircraft'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Climb Segment 2 Length')
+    plt.savefig('dhClimb2_sens_range.png')
     plt.show()
-    plt.savefig('dhClimb2_sens_alt.jpg')
     
     #plot the sensitivity of cd0
     plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['C_{d_0}'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Mission Range')
+    plt.savefig('Cd0_sens_range.png')
     plt.show()
-    plt.savefig('Cd0_sens_alt.jpg')
     
     #plot the sensitivty of Tt4 for engine 1
     plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign, CommercialAircraft'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Tt4 During Climb 1')
+    plt.savefig('Tt4_climb1_sens_range.png')
     plt.show()
-    plt.savefig('Tt4_climb1_sens_alt.jpg')
     
     #plto the sensitivity of Tt4 for engine 4
     plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign4, CommercialAircraft'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Tt4 During Climb 4')
+    plt.savefig('Tt4_climb4_sens_range.png')
     plt.show()
-    plt.savefig('Tt4_climb4_sens_alt.jpg')
-    
     
     #plo the lpc pressure rat sensititvy
     plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['\pi_{hc_D}'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to HPC Design Pressure Ratio')
+    plt.savefig('pi_{hc_D}_sens_range.png')
     plt.show()
-    plt.savefig('pi_{hc_D}_sens_alt.jpg')
 
+    solvec = [x / 9.81*2.2 for x in solhold['cost']]
     #plot the cost
-    plt.plot(solhold('ReqRng'), solhold['cost'])
+    plt.plot(solhold('ReqRng'), solvec)
     plt.xlabel('Mission Range [mi]')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to HPC Design Pressure Ratio')
+    plt.ylabel('Total Fuel Weight [lb]')
+    plt.title('Total Fuel Weight vs Mission Range')
+    plt.savefig('total_fuel_weight_range.png')
     plt.show()
-    plt.savefig('pi_{hc_D}_sens_alt.jpg')
-    

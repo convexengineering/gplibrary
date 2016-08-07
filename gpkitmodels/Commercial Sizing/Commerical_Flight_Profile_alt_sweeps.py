@@ -368,7 +368,7 @@ class CommercialAircraft(Model):
         rangevec = np.linspace(500,5000,5)
         substitutions = {      
             'W_{e}': 40000*9.8*units('N'),
-            'W_{payload}': 10000*9.8*units('N'),
+            'W_{payload}': 10000*9.8*.15*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
             'ReqRng': 2500,
@@ -406,7 +406,8 @@ class CommercialAircraft(Model):
                                 'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'thrust_{cr21}': 'F_{spec5}_EngineOffDesign5',
                                 'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6',
                                 'mhold1': 'M_0_1', 'mhold2': 'M_0_2', 'mhold3': 'M_0_3', 'mhold4': 'M_0_4', 'phold1': 'P_0_1',
-                                'phold2': 'P_0_2','phold3': 'P_0_3','phold4': 'P_0_4','phold5': 'P_0_5','phold6': 'P_0_6',})#, 'Thold1': 'T_0_1'})#,
+                                'phold2': 'P_0_2','phold3': 'P_0_3','phold4': 'P_0_4','phold5': 'P_0_5','phold6': 'P_0_6',
+                                'P_0': 'P_0_6'})#, 'Thold1': 'T_0_1'})#,
 ##                                'Thold2': 'T_0_2','Thold3': 'T_0_3','Thold4': 'T_0_4','Thold5': 'T_0_5','Thold6': 'T_0_6',})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
@@ -468,7 +469,7 @@ class CommercialAircraft(Model):
         return out, solhold
 
 #create the altitude vector
-altvec = np.linspace(20000,40000,10)
+altvec = np.linspace(20000,38000,8)
 tt4offD = []
 Ssens = []
 BPRsens = []
@@ -651,42 +652,42 @@ plt.plot(altvec,tt4offD)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to Tt4 During Climb Segment 1')
+plt.savefig('Tt4_Climb1_sens_alt.png')
 plt.show()
-plt.savefig('Tt4_Climb1_sens_alt.jpg')
 
 plt.plot(altvec,Ssens)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to Wing Planform Area')
+plt.savefig('S_sens_alt.png')
 plt.show()
-plt.savefig('S_sens_alt.jpg')
 
 plt.plot(altvec,BPRsens)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to BPR')
+plt.savefig('BPR_sens_alt.png')
 plt.show()
-plt.savefig('BPR_sens_alt.jpg')
 
 plt.plot(altvec,onDfprsens)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to FPR @ On Design Point')
+plt.savefig('OnD_FPR_sens_alt.png')
 plt.show()
-plt.savefig('OnD_FPR_sens_alt.jpg')
 
 plt.plot(altvec,onDlpcsens)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to LPC Pressure Ratio @ On Design Point')
+plt.savefig('LPC_OnD_prat_sens_alt.png')
 plt.show()
-plt.savefig('LPC_OnD_prat_sens_alt.jpg')
 
-plt.plot(altvec, costvec)
+solvec = [x / 9.81*2.2 for x in costvec]
+plt.plot(altvec, solvec)
 plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Total Fuel Weight [N]')
 plt.title('Total Fuel vs Cruise Altitude')
+plt.savefig('fuel_weight_alt.png')
 plt.show()
-plt.savefig('fuel_weight_alt.jpg')
-
 
