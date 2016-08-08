@@ -673,7 +673,7 @@ if __name__ == '__main__':
     plt.plot(solhold('ReqRng'), solhold["sensitivities"]["constants"]['C_{d_0}'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to Mission Range')
+    plt.title('Sensitivity to Drag Coefficient')
     plt.savefig('Cd0_sens_range.png')
     plt.show()
     

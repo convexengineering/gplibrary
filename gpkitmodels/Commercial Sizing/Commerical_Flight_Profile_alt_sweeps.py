@@ -335,7 +335,7 @@ class Cruise2(Model):
             
         constraints.extend([
             #substitue these values later
-            LD[icruise2]  == 18,
+            LD[icruise2]  == W_start[icruise2]/D[icruise2],
             ])
         Model.__init__(self, None, constraints, **kwargs)
         
@@ -371,7 +371,7 @@ class CommercialAircraft(Model):
             'W_{payload}': 10000*9.8*.15*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
-            'ReqRng': 2500,
+            'ReqRng': 3000,
             'C_{d_0}': .02,
             'K': 0.05,
             'S': 124.58,
@@ -469,7 +469,8 @@ class CommercialAircraft(Model):
         return out, solhold
 
 #create the altitude vector
-altvec = np.linspace(20000,38000,8)
+##altvec = np.linspace(20000,38000,8)
+altvec = np.linspace(30010,30010,1)    
 tt4offD = []
 Ssens = []
 BPRsens = []
@@ -637,16 +638,16 @@ for i in range(len(altvec)):
     phold6 = Variable('phold6', 'kPa', 'segment 6 p')
 
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=1500)
         
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
 
-    tt4offD.append(solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign, CommercialAircraft'])
-    Ssens.append(solhold["sensitivities"]["constants"]['S'])
-    BPRsens.append(solhold["sensitivities"]["constants"]['alpha'])
-    onDlpcsens.append(solhold["sensitivities"]["constants"]['\pi_{lc}_EngineOnDesign, CommercialAircraft'])
-    onDfprsens.append(solhold["sensitivities"]["constants"]['\pi_f_EngineOnDesign, CommercialAircraft'])
-    costvec.append(solhold['cost'])
+##    tt4offD.append(solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign, CommercialAircraft'])
+##    Ssens.append(solhold["sensitivities"]["constants"]['S'])
+##    BPRsens.append(solhold["sensitivities"]["constants"]['alpha'])
+##    onDlpcsens.append(solhold["sensitivities"]["constants"]['\pi_{lc}_EngineOnDesign, CommercialAircraft'])
+##    onDfprsens.append(solhold["sensitivities"]["constants"]['\pi_f_EngineOnDesign, CommercialAircraft'])
+##    costvec.append(solhold['cost'])
 
 plt.plot(altvec,tt4offD)
 plt.xlabel('Cruise Altitude [ft]')
