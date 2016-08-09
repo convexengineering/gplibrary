@@ -12,6 +12,9 @@ from gpkit.small_scripts import mag
 from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2, EngineOffDesign3, EngineOffDesign4, EngineOffDesign5, EngineOffDesign6
 from getatm import get_atmosphere_vec
 
+#packages just needed for plotting since this is for sweeps
+import matplotlib.pyplot as plt
+
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
 we are minimizing the fuel weight
@@ -121,10 +124,13 @@ W_start = VectorVariable(Nseg, 'W_{start}', 'N', 'Segment Start Weight')
 W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'N', 'Segment Fuel Weight')
 W_end = VectorVariable(Nseg, 'W_{end}', 'N', 'Segment End Weight')
 W_total = Variable('W_{total}', 'N', 'Total Aircraft Weight')
+W_avg = VectorVariable(Nseg, 'W_{avg}', 'N', 'Geometric Average of Segment Start and End Weight')
+W_wing = Variable('W_{wing}', 'N', 'Wing Weight')
 
 #aero
-LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
-LDmax = Variable('\\frac{L}{D}_{max}', '-', 'Maximum Lift to Drag')
+CL = VectorVariable(Nseg, 'C_{L}', '-', 'Lift Coefficient')
+WLoad = VectorVariable(Nseg, 'W_{Load}', 'N/m^2', 'Wing Loading')
+WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
 
 Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
 K = Variable('K', '-', 'K for Parametric Drag Model')
@@ -145,9 +151,6 @@ Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
 if Nclimb != 0:
     RC = VectorVariable(Nclimb, 'RC', 'feet/min', 'Rate of Climb/Decent')
     theta = VectorVariable(Nclimb, '\\theta', '-', 'Aircraft Climb Angle')
-
-#currently sets the value of TSFC, just a place holder
-c1 = Variable('c1', '-', 'Constant')
 
 #defien thrust variable
 thrust = Variable('thrust', 'N', 'Engine Thrust')
@@ -208,12 +211,21 @@ class CommericalMissionConstraints(Model):
             
             #constraints on the various weights
             #with engine weight
-            TCS([W_e + W_payload + W_ftotal + numeng * W_engine <= W_total]),
-            
+            TCS([W_e + W_payload + W_ftotal + numeng * W_engine + W_wing <= W_total]),
+ 
             W_start[0]  == W_total,
             W_end[5] <= W_total,
-            TCS([W_e + W_payload + numeng * W_engine <= W_end[Nseg-1]]),
+            TCS([W_e + W_payload + numeng * W_engine + W_wing <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
+
+            #wing weight constraint
+            #based off of a raymer weight and 737 data from TASOPT output file
+            (S/(124.58*units('m^2')))**.65 == W_wing/(105384.1524*units('N')),
+
+            #constrain the max wing loading
+            WLoad <= WLoadmax,
+
+            W_e == .75*W_payload,
 
             #hold pressure values for linking with engine pressures
             phold1 == p[0],
@@ -231,13 +243,16 @@ class CommericalMissionConstraints(Model):
             Thold6 == T[5],
             ])
 
-        for i in range(Nseg):
+        for i in range(0, Nseg):
             constraints.extend([
                 rho[i] == rhovec[i],
                 T[i] == Tvec[i],
                 p[i] == pvec[i],
                 #speed of sound
                 a[i]  == (gamma * R * T[i])**.5,
+
+                #constrain the geometric weight average
+                W_avg[i] == (W_start[i]*W_end[i])**.5,
                 ])
         
         with gpkit.SignomialsEnabled():
@@ -315,8 +330,8 @@ class Climb1(Model):
             TCS([excessP[0]+V[0]*D[0] <= V[0]*numeng*thrustc11]),
             TCS([excessP[1]+V[1]*D[1] <= V[1]*numeng*thrustc12]),
             
-            TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*(W_start[iclimb1]/(.5*S*rho[iclimb1]*V[iclimb1]**2))**2)]),
-            RC[iclimb1] == excessP[iclimb1]/W_start[iclimb1],
+            TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*CL[iclimb1]**2)]),
+            RC[iclimb1] == excessP[iclimb1]/W_avg[iclimb1],
             RC[iclimb1] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
@@ -327,6 +342,9 @@ class Climb1(Model):
             #takes into account two terms of a cosine expansion
 ##            TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 >= thours[iclimb1]*V[iclimb1]]),
             RngClimb[iclimb1] == thours[iclimb1]*V[iclimb1],
+
+            W_avg[iclimb1] == .5*CL[iclimb1]*S*rho[iclimb1]*V[iclimb1]**2,
+            WLoad[iclimb1] == .5*CL[iclimb1]*S*rho[iclimb1]*V[iclimb1]**2/S,
             
             #compute fuel burn from TSFC
 ##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
@@ -367,15 +385,15 @@ class Climb2(Model):
 
             #constraint on drag and thrust
 ##            thrustc21 >= D[iclimb2] + W_start[iclimb2]*theta[iclimb2],
-            numeng*thrustc21 >= D[2] + W_start[2]*theta[2],
-            numeng*thrustc22 >= D[3] + W_start[3]*theta[3],
+            numeng*thrustc21 >= D[2] + W_avg[2]*theta[2],
+            numeng*thrustc22 >= D[3] + W_avg[3]*theta[3],
             
             #climb rate constraints
 ##            TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrustc21]),
             TCS([excessP[2]+V[2]*D[2] <= V[2]*numeng*thrustc21]),
             TCS([excessP[3]+V[3]*D[3] <= V[3]*numeng*thrustc22]),
-            TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*(W_start[iclimb2]/(.5*S*rho[iclimb2]*V[iclimb2]**2))**2)]),
-            RC[iclimb2] == excessP[iclimb2]/W_start[iclimb2],
+            TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*CL[iclimb2]**2)]),
+            RC[iclimb2] == excessP[iclimb2]/W_avg[iclimb2],
             RC[iclimb2] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
@@ -386,7 +404,10 @@ class Climb2(Model):
             #compute the distance traveled for each segment
             #takes into account two terms of a cosine expansion
 ##            TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
-             RngClimb[iclimb2] == thours[iclimb2]*V[iclimb2],
+            RngClimb[iclimb2] == thours[iclimb2]*V[iclimb2],
+
+            W_avg[iclimb2] == .5*CL[iclimb2]*S*rho[iclimb2]*V[iclimb2]**2,      
+            WLoad[iclimb2] == .5*CL[iclimb2]*S*rho[iclimb2]*V[iclimb2]**2/S,
             
             #compute fuel burn from TSFC
             W_fuel[2]  == numeng*TSFCc21 * thours[2] * thrustc21,
@@ -427,7 +448,7 @@ class Cruise2(Model):
 
         thrustcr21 = Variable('thrust_{cr21}', 'N', 'Thrust During Cruise Segment #2')
         thrustcr22 = Variable('thrust_{cr22}', 'N', 'Thrust During Cruise Segment #2')
-        
+
         constraints = []
         
         #defined here for linking purposes
@@ -446,11 +467,12 @@ class Cruise2(Model):
         excessPtoc = Variable('Excess Power @ TOC', 'W', 'Excess Power at Top Of Climb')
         Vtoc = Variable('V @ TOC', 'knots', 'Aircraft Flight Speed at TOC')
         htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
+        CLtoc = Variable('C_{Ltoc}', '-', 'Lift Coefficient @ TOC')
                   
         with gpkit.SignomialsEnabled():
             
             constraints.extend([
-                M[icruise2] == 0.85,
+                M[icruise2] == 0.8,
                 
 ##                P0 == p[Nclimb],
                 T0 == 280*units('K'),
@@ -461,13 +483,18 @@ class Cruise2(Model):
                 RCtoc == 500*units('ft/min'),
                 Vtoc == V[icruise2],
 
+                W_end[Nclimb] == .5*CLtoc*S*rho[Nclimb]*V[Nclimb]**2,
+
                 #compute the drag
-                SignomialEquality(Dtoc, (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(W_start[Nclimb]/(.5*S*rho[Ncruise2]*Vtoc**2))**2)),
+                TCS([Dtoc >= (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(W_end[Nclimb]/(.5*S*rho[Ncruise2]*Vtoc**2))**2)]),
 ##                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
-                SignomialEquality(D[4],(.5*S*rho[4]*V[4]**2)*(Cd0 + K*(W_start[4]/(.5*S*rho[4]*V[4]**2))**2)),
-                SignomialEquality(D[5], (.5*S*rho[5]*V[5]**2)*(Cd0 + K*(W_start[5]/(.5*S*rho[5]*V[5]**2))**2)),
+                TCS([D[4] >= (.5*S*rho[4]*V[4]**2)*(Cd0 + K*(W_avg[4]/(.5*S*rho[4]*V[4]**2))**2)]),
+                TCS([D[5] >= (.5*S*rho[5]*V[5]**2)*(Cd0 + K*(W_avg[5]/(.5*S*rho[5]*V[5]**2))**2)]),
                 D[4] == numeng * thrustcr21,
                 D[5] == numeng * thrustcr22,
+
+                W_avg[icruise2] == .5*CL[icruise2]*S*rho[icruise2]*V[icruise2]**2,
+                WLoad[icruise2] == .5*CL[icruise2]*S*rho[icruise2]*V[icruise2]**2/S,
                 
                 #constrain the climb rate by holding altitude constant
                 hft[icruise2]  == htoc,
@@ -476,10 +503,9 @@ class Cruise2(Model):
                 TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_brec2[izbre], nterm=3)]),
 
                 #breguet range eqn
-##                TCS([RngCruise[izbre] <= z_brec2[izbre]*LD[icruise2]*V[icruise2]/(TSFCcr2[iclimb1])]),
-                TCS([RngCruise[0] <= z_brec2[0]*LD[4]*V[4]/(numeng*TSFCcr21)]),
-                TCS([RngCruise[1] <= z_brec2[1]*LD[5]*V[5]/(numeng*TSFCcr22)]),
-                
+                TCS([z_brec2[0] >= (numeng*TSFCcr21*thours[4]*D[4])/W_avg[4]]),
+                TCS([z_brec2[1] >= (numeng*TSFCcr22*thours[5]*D[5])/W_avg[5]]),
+ 
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
                 ])
@@ -490,10 +516,6 @@ class Cruise2(Model):
                 TCS([RngCruise[i] == ReqRngCruise/(Ncruise2)])
                 ])
             
-        constraints.extend([
-            #substitue these values later
-            LD[icruise2]  == 18,
-            ])
         Model.__init__(self, None, constraints, **kwargs)
         
 #---------------------------------------
@@ -524,18 +546,16 @@ class CommercialAircraft(Model):
             None
  
         substitutions = {      
-            'W_{e}': 37000*9.8*units('N'),
-            'W_{payload}': 9250*9.8*units('N'),
+            'W_{payload}': .6*44000*9.8*units('N'),
             'V_{stall}': 120,
-##            '\\frac{L}{D}_{max}': 25,
-            'ReqRng': 1000,
+            'ReqRng': 1500,
             'C_{d_0}': .02,
             'K': 0.05,
-            'S': 124.58,
             'h_{toc}': hcruise,
             'speedlimit': 250,
             'numeng': 2,
             'dh_{climb2}': hcruise-10000,
+            'W_{Load_max}': 1200*9.8,
 
             #substitutions for global engine variables
             'G_f': 1,
@@ -628,21 +648,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
-#full flight profile
-##        itakeoff = map(int, np.linspace(0, Ntakeoff - 1, Ntakeoff))
-##        iclimb1 = map(int, np.linspace(Ntakeoff, itakeoff[len(itakeoff)-1]+Nclimb1, Nclimb1))
-##        itrans = map(int, np.linspace(iclimb1[len(iclimb1)-1] + 1, Ntrans + iclimb1[len(iclimb1)-1], Ntrans))
-##        iclimb2 = map(int, np.linspace(itrans[len(itrans)-1] + 1, Nclimb2 + itrans[len(itrans)-1], Nclimb2))
-##        icruise1 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise1 + iclimb2[len(iclimb2)-1], Ncruise1))
-##        icruiseclimb = map(int, np.linspace(icruise1[len(icruise1)-1] + 1, Ncruiseclimb + icruise1[len(icruise1)-1], Ncruiseclimb))
-##        icruise2 = map(int, np.linspace(icruiseclimb[len(icruiseclimb)-1] + 1, Ncruise2 + icruiseclimb[len(icruiseclimb)-1], Ncruise2))
-##        idecent = map(int, np.linspace(icruise2[len(icruise2)-1] + 1, Ndecent + icruise2[len(icruise2)-1], Ndecent))
-##        ilanding = map(int, np.linspace(idecent[len(idecent)-1] + 1, Nlanding + idecent[len(idecent)-1], Nlanding))
-##        iresclimb = map(int, np.linspace(ilanding[len(ilanding)-1] + 1, Nresclimb + ilanding[len(ilanding)-1], Nresclimb))
-##        iresdecent = map(int, np.linspace(iresclimb[len(iresclimb)-1] + 1, Nresdecent + iresclimb[len(iresclimb)-1], Nresdecent))
-##        ireslanding = map(int, np.linspace(iresdecent[len(iresdecent)-1] + 1, Nreslanding + iresdecent[len(iresdecent)-1], Nreslanding))
-##        ireshold = map(int, np.linspace(ireslanding[len(ireslanding)-1] + 1, Nreshold + ireslanding[len(ireslanding)-1], Nresdecent))
