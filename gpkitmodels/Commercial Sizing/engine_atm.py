@@ -47,7 +47,7 @@ class EngineOnDesign(Model):
             substitutions = {
 ##                'P_0': 30,  
                 'M_0': 0.8,
-                'T_{t_4}': 1300,
+                'T_{t_4}': 1250,
                 '\pi_f': 1.5,
                 '\pi_{lc}': 3,
                 '\pi_{hc}': 10,
@@ -157,7 +157,7 @@ class EngineOffDesign2(Model):
 
         substitutions = {
             'T_0_2': 240,#260,   #36K feet
-            'T_{t_{4spec}}': 1250,
+            'T_{t_{4spec}}': 1275,
 ##            'P_0_2': 76,  
 ##            'M_0_2': 0.8,
         }
@@ -196,7 +196,7 @@ class EngineOffDesign3(Model):
 
         substitutions = {
             'T_0_3': 240,#250,   #36K feet
-            'T_{t_{4spec}}': 1200,
+            'T_{t_{4spec}}': 1275,
 ##            'P_0_3': 57,  
 ##            'M_0_3': 0.8,
         }
