@@ -21,11 +21,11 @@ we are minimizing the fuel weight
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
 #declare the range vector
-rangevec = np.linspace(300,4500,10)
+rangevec = np.linspace(500,3000,5)
 
 #altitude precomputation
 #select the cruise altitude
-hcruise = 37000
+hcruise = 30000
 #develop the list of altitudes
 hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
 #convert from ft to m for atmosphere model
@@ -327,8 +327,8 @@ class Climb1(Model):
 
             #constraint on drag and thrust
 ##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
-            numeng*thrustc11 >= D[0] + W_start[0]*theta[0],
-            numeng*thrustc12 >= D[1] + W_start[1]*theta[1],
+            numeng*thrustc11 >= D[0] + W_avg[0]*theta[0],
+            numeng*thrustc12 >= D[1] + W_avg[1]*theta[1],
             #climb rate constraints
 ##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
             TCS([excessP[0]+V[0]*D[0] <= V[0]*numeng*thrustc11]),
@@ -336,7 +336,7 @@ class Climb1(Model):
             
             TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*CL[iclimb1]**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_avg[iclimb1],
-            RC[iclimb1] >= 500*units('ft/min'),
+            RC[iclimb1] >= 100*units('ft/min'),
             
             #make the small angle approximation and compute theta
             theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
@@ -550,7 +550,7 @@ class CommercialAircraft(Model):
             None
  
         substitutions = {      
-            'W_{payload}': 6*44000*9.8*units('N'),
+            'W_{payload}': .6*44000*9.8*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
             'ReqRng': ('sweep', rangevec),
@@ -561,7 +561,7 @@ class CommercialAircraft(Model):
             'speedlimit': 250,
             'numeng': 2,
             'dh_{climb2}': hcruise-10000,
-            'W_{Load_max}': 1200*9.8,
+            'W_{Load_max}': 6664,
 
             #substitutions for global engine variables
             'G_f': 1,
@@ -665,7 +665,7 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to on Design Fan Pressure Ratio')
-    plt.savefig('\pi_f_sens_range.png')
+    plt.savefig('\pi_f_sens_range_low.png')
     plt.show()
     
     #plot the sensitivy of numeng
@@ -673,7 +673,7 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to the Number of Engines')
-    plt.savefig('numeng_sens_range.png')
+    plt.savefig('numeng_sens_range_low.png')
     plt.show()
     
     
@@ -682,7 +682,7 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Climb Segment 2 Length')
-    plt.savefig('dhClimb2_sens_range.png')
+    plt.savefig('dhClimb2_sens_range_low.png')
     plt.show()
     
     #plot the sensitivity of cd0
@@ -690,7 +690,7 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Drag Coefficient')
-    plt.savefig('Cd0_sens_range.png')
+    plt.savefig('Cd0_sens_range_low.png')
     plt.show()
     
     #plot the sensitivty of Tt4 for engine 1
@@ -698,7 +698,7 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Tt4 During Climb 1')
-    plt.savefig('Tt4_climb1_sens_range.png')
+    plt.savefig('Tt4_climb1_sens_range_low.png')
     plt.show()
     
     #plto the sensitivity of Tt4 for engine 4
@@ -706,7 +706,7 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Tt4 During Climb 4')
-    plt.savefig('Tt4_climb4_sens_range.png')
+    plt.savefig('Tt4_climb4_sens_range_low.png')
     plt.show()
     
     #plo the lpc pressure rat sensititvy
@@ -714,7 +714,7 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to HPC Design Pressure Ratio')
-    plt.savefig('pi_{hc_D}_sens_range.png')
+    plt.savefig('pi_{hc_D}_sens_range_low.png')
     plt.show()
 
     solvec = [x / 9.81*2.2 for x in solhold['cost']]
@@ -723,7 +723,7 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Total Fuel Weight [lb]')
     plt.title('Total Fuel Weight vs Mission Range')
-    plt.savefig('total_fuel_weight_range.png')
+    plt.savefig('total_fuel_weight_range_low.png')
     plt.show()
 
     #plot the cost
@@ -731,7 +731,7 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Mission Range')
-    plt.savefig('range_sens_range.png')
+    plt.savefig('range_sens_range_low.png')
     plt.show()
 
     #plot the cost
@@ -739,19 +739,26 @@ if __name__ == '__main__':
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Payload Weight')
-    plt.savefig('payload_sens_range.png')
+    plt.savefig('payload_sens_range_low.png')
     plt.show()
 
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['W_{Load_max}'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Max Wing Loading')
-    plt.savefig('max_wing_load_sens_range.png')
+    plt.savefig('max_wing_load_sens_range_low.png')
     plt.show()
 
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['G_f'])
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Fan Gear Ratio')
-    plt.savefig('fna_gear_ratio_sens_range.png')
+    plt.savefig('fna_gear_ratio_sens_range_low.png')
+    plt.show()
+
+    plt.plot(rangevec, solhold('S'))
+    plt.xlabel('Mission Range [mi]')
+    plt.ylabel('Wing Area [m^2]')
+    plt.title('Wing Area vs Mission Range')
+    plt.savefig('wing_area_range_low.png')
     plt.show()

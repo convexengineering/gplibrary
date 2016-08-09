@@ -23,7 +23,7 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 
 #altitude precomputation
 #select the cruise altitude
-hcruise = 37000
+hcruise = 20000
 #develop the list of altitudes
 hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
 #convert from ft to m for atmosphere model
@@ -281,13 +281,13 @@ class CommericalMissionConstraints(Model):
 
             for i in range(0, Nseg):
                 constraints.extend([
-                    TCS([W_start[i] >= W_end[i] + W_fuel[i]])
+                    TCS([W_start[i] >= W_end[i] + W_fuel[i]]),
                     ])
 
         #constrain the segment weights in a loop
         for i in range(1, Nseg):
             constraints.extend([
-                W_start[i] == W_end[i-1] 
+                W_start[i] == W_end[i-1],
                 ])
         
         Model.__init__(self, W_ftotal, constraints, **kwargs)
@@ -323,8 +323,8 @@ class Climb1(Model):
 
             #constraint on drag and thrust
 ##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
-            numeng*thrustc11 >= D[0] + W_start[0]*theta[0],
-            numeng*thrustc12 >= D[1] + W_start[1]*theta[1],
+            numeng*thrustc11 >= D[0] + W_avg[0]*theta[0],
+            numeng*thrustc12 >= D[1] + W_avg[1]*theta[1],
             #climb rate constraints
 ##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
             TCS([excessP[0]+V[0]*D[0] <= V[0]*numeng*thrustc11]),
@@ -332,7 +332,7 @@ class Climb1(Model):
             
             TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*CL[iclimb1]**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_avg[iclimb1],
-            RC[iclimb1] >= 500*units('ft/min'),
+            RC[iclimb1] >= 100*units('ft/min'),
             
             #make the small angle approximation and compute theta
             theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
@@ -394,7 +394,8 @@ class Climb2(Model):
             TCS([excessP[3]+V[3]*D[3] <= V[3]*numeng*thrustc22]),
             TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*CL[iclimb2]**2)]),
             RC[iclimb2] == excessP[iclimb2]/W_avg[iclimb2],
-            RC[iclimb2] >= 500*units('ft/min'),
+            RC[2] >= 500*units('ft/min'),
+            RC[3] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
             theta[iclimb2]*V[iclimb2]  == RC[iclimb2],
@@ -404,7 +405,7 @@ class Climb2(Model):
             #compute the distance traveled for each segment
             #takes into account two terms of a cosine expansion
 ##            TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
-            RngClimb[iclimb2] == thours[iclimb2]*V[iclimb2],
+            RngClimb[iclimb2] <= thours[iclimb2]*V[iclimb2],
 
             W_avg[iclimb2] == .5*CL[iclimb2]*S*rho[iclimb2]*V[iclimb2]**2,      
             WLoad[iclimb2] == .5*CL[iclimb2]*S*rho[iclimb2]*V[iclimb2]**2/S,
@@ -483,10 +484,10 @@ class Cruise2(Model):
                 RCtoc == 500*units('ft/min'),
                 Vtoc == V[icruise2],
 
-                W_end[Nclimb] == .5*CLtoc*S*rho[Nclimb]*V[Nclimb]**2,
+                W_avg[Nclimb] == .5*CLtoc*S*rho[Nclimb]*V[Nclimb]**2,
 
                 #compute the drag
-                TCS([Dtoc >= (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(W_end[Nclimb]/(.5*S*rho[Ncruise2]*Vtoc**2))**2)]),
+                TCS([Dtoc >= (.5*S*rho[Ncruise2]*Vtoc**2)*(Cd0 + K*(W_avg[Nclimb]/(.5*S*rho[Ncruise2]*Vtoc**2))**2)]),
 ##                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
                 TCS([D[4] >= (.5*S*rho[4]*V[4]**2)*(Cd0 + K*(W_avg[4]/(.5*S*rho[4]*V[4]**2))**2)]),
                 TCS([D[5] >= (.5*S*rho[5]*V[5]**2)*(Cd0 + K*(W_avg[5]/(.5*S*rho[5]*V[5]**2))**2)]),
@@ -548,14 +549,14 @@ class CommercialAircraft(Model):
         substitutions = {      
             'W_{payload}': .6*44000*9.8*units('N'),
             'V_{stall}': 120,
-            'ReqRng': 1500,
+            'ReqRng': 500,
             'C_{d_0}': .02,
             'K': 0.05,
             'h_{toc}': hcruise,
             'speedlimit': 250,
             'numeng': 2,
             'dh_{climb2}': hcruise-10000,
-            'W_{Load_max}': 1200*9.8,
+            'W_{Load_max}': 6664,
 
             #substitutions for global engine variables
             'G_f': 1,

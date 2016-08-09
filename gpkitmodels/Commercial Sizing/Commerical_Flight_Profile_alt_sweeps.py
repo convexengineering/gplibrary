@@ -491,7 +491,7 @@ class CommercialAircraft(Model):
 ##altvec = np.linspace(20000,38000,5)
 altvec = np.linspace(20000,40000,10)
 tt4offD = []
-Ssens = []
+svec = []
 BPRsens = []
 onDfprsens = []
 onDlpcsens = []
@@ -676,6 +676,7 @@ for i in range(len(altvec)):
     wlmaxvec.append(solhold["sensitivities"]["constants"]['W_{Load_max}'])
     payloadvec.append(solhold["sensitivities"]["constants"]['W_{payload}'])
     reqrngvec.append(solhold["sensitivities"]["constants"]['ReqRng'])
+    svec.append(mag(solhold('S')))
 
 plt.plot(altvec,tt4offD)
 plt.xlabel('Cruise Altitude [ft]')
@@ -739,4 +740,11 @@ plt.xlabel('Cruise Altitude [ft]')
 plt.ylabel('Sensitivity')
 plt.title('Sensitivity to Range')
 plt.savefig('req_rng_sens_alt.png')
+plt.show()
+
+plt.plot(altvec,svec)
+plt.xlabel('Cruise Altitude [ft]')
+plt.ylabel('Wing Area [m^2]')
+plt.title('Wing Area vs Cruise Altitude')
+plt.savefig('wing_area_alt.png')
 plt.show()

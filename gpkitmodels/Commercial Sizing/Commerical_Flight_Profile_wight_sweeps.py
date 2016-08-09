@@ -325,8 +325,8 @@ class Climb1(Model):
 
             #constraint on drag and thrust
 ##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
-            numeng*thrustc11 >= D[0] + W_start[0]*theta[0],
-            numeng*thrustc12 >= D[1] + W_start[1]*theta[1],
+            numeng*thrustc11 >= D[0] + W_avg[0]*theta[0],
+            numeng*thrustc12 >= D[1] + W_avg[1]*theta[1],
             #climb rate constraints
 ##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
             TCS([excessP[0]+V[0]*D[0] <= V[0]*numeng*thrustc11]),
@@ -560,7 +560,7 @@ class CommercialAircraft(Model):
             'speedlimit': 250,
             'numeng': 2,
             'dh_{climb2}': hcruise-10000,
-            'W_{Load_max}': 1200*9.8,
+            'W_{Load_max}': 6664,
 
             #substitutions for global engine variables
             'G_f': 1,
@@ -763,4 +763,12 @@ if __name__ == '__main__':
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Engine Gear Ratio')
     plt.savefig('sens_to_gear_ratio_weight.png')
+    plt.show()
+
+    #plot the sensitivity to the empty weight
+    plt.plot(weightvec, mag(sol('S')))
+    plt.xlabel('Payload Weight [lbs]')
+    plt.ylabel('Wing Area')
+    plt.title('Wing Area vs Payload Weight')
+    plt.savefig('wing_area_weight.png')
     plt.show()
