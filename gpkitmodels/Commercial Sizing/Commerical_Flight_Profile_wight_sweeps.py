@@ -21,7 +21,7 @@ we are minimizing the fuel weight
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
 #declare the range vector
-weightvec = np.linspace(20000*9.8,120000*9.8,10)
+weightvec = np.linspace(20000*9.8,120000*9.8,1)
 
 #altitude precomputation
 #select the cruise altitude
@@ -126,6 +126,7 @@ W_start = VectorVariable(Nseg, 'W_{start}', 'N', 'Segment Start Weight')
 W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'N', 'Segment Fuel Weight')
 W_end = VectorVariable(Nseg, 'W_{end}', 'N', 'Segment End Weight')
 W_total = Variable('W_{total}', 'N', 'Total Aircraft Weight')
+W_avg = VectorVariable(Nseg, 'W_{avg}', 'N', 'Geometric Average of Segment Start and End Weight')
 
 #aero
 LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
@@ -239,13 +240,16 @@ class CommericalMissionConstraints(Model):
             Thold6 == T[5],
             ])
 
-        for i in range(Nseg):
+        for i in range(0, Nseg):
             constraints.extend([
                 rho[i] == rhovec[i],
                 T[i] == Tvec[i],
                 p[i] == pvec[i],
                 #speed of sound
                 a[i]  == (gamma * R * T[i])**.5,
+
+                #constrain the geometric weight average
+                W_avg[i] == (W_start[i]*W_end[i])**.5,
                 ])
         
         with gpkit.SignomialsEnabled():
@@ -485,9 +489,9 @@ class Cruise2(Model):
 
                 #breguet range eqn
 ##                TCS([RngCruise[izbre] <= z_brec2[izbre]*LD[icruise2]*V[icruise2]/(TSFCcr2[iclimb1])]),
-                TCS([RngCruise[0] <= z_brec2[0]*LD[4]*V[4]/(numeng*TSFCcr21)]),
-                TCS([RngCruise[1] <= z_brec2[1]*LD[5]*V[5]/(numeng*TSFCcr22)]),
-                
+                TCS([z_brec2[0] >= (numeng*TSFCcr21*thours[4]*D[4])/W_avg[4]]),
+                TCS([z_brec2[1] >= (numeng*TSFCcr22*thours[5]*D[5])/W_avg[5]]),
+ 
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
                 ])
@@ -532,7 +536,7 @@ class CommercialAircraft(Model):
             None
  
         substitutions = {      
-            'W_{e}': ('sweep',weightvec),
+            'W_{e}': 40000*9.8*units('N'),#('sweep',weightvec),
 ##            'W_{payload}': 25000*9.8*units('N'),
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
@@ -618,106 +622,114 @@ class CommercialAircraft(Model):
         solhold = sol
         lam = sol["sensitivities"]["la"][1:]
         out = defaultdict(list)
-##        for i, varkey in enumerate(m.bound_all["varkeys"]):
-##            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
-##            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
-##                out["sensitive to upper bound"].append(varkey)
-##            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
-##                out["sensitive to lower bound"].append(varkey)
-##            value = mag(sol["variables"][varkey])
-##            distance_below = np.log(value/m.bound_all["lb"])
-##            distance_above = np.log(m.bound_all["ub"]/value)
-##            if distance_below <= 3:  # arbitrary threshold
-##                out["value near lower bound"].append(varkey)
-##            elif distance_above <= 3:  # arbitrary threshold
-##                out["value near upper bound"].append(varkey)
+        for i, varkey in enumerate(m.bound_all["varkeys"]):
+            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
+            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to upper bound"].append(varkey)
+            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to lower bound"].append(varkey)
+            value = mag(sol["variables"][varkey])
+            distance_below = np.log(value/m.bound_all["lb"])
+            distance_above = np.log(m.bound_all["ub"]/value)
+            if distance_below <= 3:  # arbitrary threshold
+                out["value near lower bound"].append(varkey)
+            elif distance_above <= 3:  # arbitrary threshold
+                out["value near upper bound"].append(varkey)
         return out, solhold
 
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
 
     #plot the fan pressure ratio sensitivity
-    plt.plot(weightvec,solhold["sensitivities"]["constants"]['\pi_{f_D}'])
-    plt.xlabel('Empty Weight Excluding Engine [N]')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to On Design FPR (FPR in Compressor Maps)')
-    plt.savefig('OnD_FPR_comp_map_sens_weight.png')
-    plt.show()
-    
-    #plot the sensitivy of numeng
-    plt.plot(weightvec, solhold["sensitivities"]["constants"]['numeng'])
-    plt.xlabel('Empty Weight Excluding Engine [N]')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to the Number of Engines')
-    plt.savefig('numeng_sens_weight.png')
-    plt.show()
-    
-    #plot the sensitivty of S
-    plt.plot(weightvec, solhold["sensitivities"]["constants"]['S'])
-    plt.xlabel('Empty Weight Excluding Engine')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to Wing Planform Area')
-    plt.savefig('S_sens_weight.png')
-    plt.show()
-    
-    #plot the sensitiby of dhclimb 2
-    plt.plot(weightvec, solhold["sensitivities"]["constants"]['dh_{climb2}_Climb2, CommercialAircraft'])
-    plt.xlabel('Empty Weight Excluding Engine [N]')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to the Size of Climb 2')
-    plt.savefig('dhclimb2_sens_weight.png')
-    plt.show()
-    
-    #plot the sensitivity of cd0
-    plt.plot(weightvec,solhold["sensitivities"]["constants"]['C_{d_0}'])
-    plt.xlabel('Empty Weight Excluding Engine [N]')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to Cd0')
-    plt.show()
-    plt.savefig('Cd0_sens_weight.png')
-    plt.show()
-    
-    #plot the sensitivty of Tt4 for engine 1
-    plt.plot(weightvec,solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign, CommercialAircraft'])
-    plt.xlabel('Empty Weight Excluding Engine [N]')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to Tt4 During Climb 1')
-    plt.savefig('Tt4_Climb1_sens_weight.png')
-    plt.show()
-    
-    #plto the sensitivity of Tt4 for engine 4
-    plt.plot(weightvec,solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign4, CommercialAircraft'])
-    plt.xlabel('Empty Weight Excluding Engine [N]')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to Tt4 During Climb 4')
-    plt.savefig('Tt4_Climb4_sens_weight.png')
-    plt.show()
-    
-    #plot the sensitivity to the fan pressure ratio
-    plt.plot(weightvec,solhold["sensitivities"]["constants"]['\pi_f_EngineOnDesign, CommercialAircraft'])
-    plt.xlabel('Empty Weight Excluding Engine [N]')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to FPR @ Engine Sizing Point')
-    plt.savefig('FPR_on_Dpoint_sens_weight.png')
-    plt.show()
-    
-    #plot the lpc pressure rat sensititvy
-    plt.plot(weightvec,solhold["sensitivities"]["constants"]['\pi_{lc_D}'])
-    plt.xlabel('Empty Weight Excluding Engine [N]')
-    plt.ylabel('Sensitivity')
-    plt.title('Sensitivity to On Design LPC Pressure Ratio (appears in compressor maps)')
-    plt.savefig('LPC_FPR_D_sens_weight.png')
-    plt.show()
-
-    #plot the cost
-    solvec = [x / 9.81*2.2 for x in solhold['cost']]
-    plt.plot(weightvec,solvec)
-    plt.xlabel('Empty Weight Excluding Engine [N]')
-    plt.ylabel('Total Fuel Weight [N]')
-    plt.title('Total Fuel Weight vs Empty Weight')
-    plt.savefig('cost_weight.png')
-    plt.show()
+##    plt.plot(weightvec,solhold["sensitivities"]["constants"]['\pi_{f_D}'])
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to On Design FPR (FPR in Compressor Maps)')
+##    plt.savefig('OnD_FPR_comp_map_sens_weight.png')
+##    plt.show()
+##    
+##    #plot the sensitivy of numeng
+##    plt.plot(weightvec, solhold["sensitivities"]["constants"]['numeng'])
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to the Number of Engines')
+##    plt.savefig('numeng_sens_weight.png')
+##    plt.show()
+##    
+##    #plot the sensitivty of S
+##    plt.plot(weightvec, solhold["sensitivities"]["constants"]['S'])
+##    plt.xlabel('Empty Weight Excluding Engine')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to Wing Planform Area')
+##    plt.savefig('S_sens_weight.png')
+##    plt.show()
+##    
+##    #plot the sensitiby of dhclimb 2
+##    plt.plot(weightvec, solhold["sensitivities"]["constants"]['dh_{climb2}_Climb2, CommercialAircraft'])
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to the Size of Climb 2')
+##    plt.savefig('dhclimb2_sens_weight.png')
+##    plt.show()
+##    
+##    #plot the sensitivity of cd0
+##    plt.plot(weightvec,solhold["sensitivities"]["constants"]['C_{d_0}'])
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to Cd0')
+##    plt.show()
+##    plt.savefig('Cd0_sens_weight.png')
+##    plt.show()
+##    
+##    #plot the sensitivty of Tt4 for engine 1
+##    plt.plot(weightvec,solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign, CommercialAircraft'])
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to Tt4 During Climb 1')
+##    plt.savefig('Tt4_Climb1_sens_weight.png')
+##    plt.show()
+##    
+##    #plto the sensitivity of Tt4 for engine 4
+##    plt.plot(weightvec,solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign4, CommercialAircraft'])
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to Tt4 During Climb 4')
+##    plt.savefig('Tt4_Climb4_sens_weight.png')
+##    plt.show()
+##    
+##    #plot the sensitivity to the fan pressure ratio
+##    plt.plot(weightvec,solhold["sensitivities"]["constants"]['\pi_f_EngineOnDesign, CommercialAircraft'])
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to FPR @ Engine Sizing Point')
+##    plt.savefig('FPR_on_Dpoint_sens_weight.png')
+##    plt.show()
+##    
+##    #plot the lpc pressure rat sensititvy
+##    plt.plot(weightvec,solhold["sensitivities"]["constants"]['\pi_{lc_D}'])
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to On Design LPC Pressure Ratio (appears in compressor maps)')
+##    plt.savefig('LPC_FPR_D_sens_weight.png')
+##    plt.show()
+##
+##    #plot the cost
+##    solvec = [x / 9.81*2.2 for x in solhold['cost']]
+##    plt.plot(weightvec,solvec)
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Total Fuel Weight [lb]')
+##    plt.title('Total Fuel Weight vs Empty Weight')
+##    plt.savefig('cost_weight.png')
+##    plt.show()
+##
+##    #plot the sensitivity to the empty weight
+##    plt.plot(weightvec, solhold["sensitivities"]["constants"]['W_{e}'])
+##    plt.xlabel('Empty Weight Excluding Engine [N]')
+##    plt.ylabel('Sensitivity')
+##    plt.title('Sensitivity to Empty Weight')
+##    plt.savefig('sens_to_empty_weight_weight.png')
+##    plt.show()
