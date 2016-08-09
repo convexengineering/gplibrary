@@ -127,6 +127,7 @@ W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'N', 'Segment Fuel Weight')
 W_end = VectorVariable(Nseg, 'W_{end}', 'N', 'Segment End Weight')
 W_total = Variable('W_{total}', 'N', 'Total Aircraft Weight')
 W_avg = VectorVariable(Nseg, 'W_{avg}', 'N', 'Geometric Average of Segment Start and End Weight')
+W_wing = Variable('W_{wing}', 'N', 'Wing Weight')
 
 #aero
 LD = VectorVariable(Nseg, '\\frac{L}{D}', '-', 'Lift to Drag')
@@ -214,15 +215,19 @@ class CommericalMissionConstraints(Model):
             
             #constraints on the various weights
             #with engine weight
-            TCS([W_e + W_payload + W_ftotal + numeng * W_engine <= W_total]),
+            TCS([W_e + W_payload + W_ftotal + numeng * W_engine + W_wing <= W_total]),
             
             #variable only appearing for sweeps
             W_payload == .15 * W_e,
 
             W_start[0]  == W_total,
             W_end[5] <= W_total,
-            TCS([W_e + W_payload + numeng * W_engine <= W_end[Nseg-1]]),
+            TCS([W_e + W_payload + numeng * W_engine + W_wing <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
+
+            #wing weight constraint
+            #based off of a raymer weight and 737 data from TASOPT output file
+            (S/(124.58*units('m^2')))**.65 == W_wing/(105384.1524*units('N')),
 
             #hold pressure values for linking with engine pressures
             phold1 == p[0],
@@ -327,7 +332,7 @@ class Climb1(Model):
             TCS([excessP[0]+V[0]*D[0] <= V[0]*numeng*thrustc11]),
             TCS([excessP[1]+V[1]*D[1] <= V[1]*numeng*thrustc12]),
             
-            TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*(W_start[iclimb1]/(.5*S*rho[iclimb1]*V[iclimb1]**2))**2)]),
+            TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*(W_avg[iclimb1]/(.5*S*rho[iclimb1]*V[iclimb1]**2))**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_start[iclimb1],
             RC[iclimb1] >= 500*units('ft/min'),
             
@@ -386,7 +391,7 @@ class Climb2(Model):
 ##            TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrustc21]),
             TCS([excessP[2]+V[2]*D[2] <= V[2]*numeng*thrustc21]),
             TCS([excessP[3]+V[3]*D[3] <= V[3]*numeng*thrustc22]),
-            TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*(W_start[iclimb2]/(.5*S*rho[iclimb2]*V[iclimb2]**2))**2)]),
+            TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*(W_avg[iclimb2]/(.5*S*rho[iclimb2]*V[iclimb2]**2))**2)]),
             RC[iclimb2] == excessP[iclimb2]/W_start[iclimb2],
             RC[iclimb2] >= 500*units('ft/min'),
             
