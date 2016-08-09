@@ -23,7 +23,7 @@ Rate of climb equation taken from John Anderson's Aircraft Performance and Desig
 
 #altitude precomputation
 #select the cruise altitude
-hcruise = 20000
+hcruise = 30000
 #develop the list of altitudes
 hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
 #convert from ft to m for atmosphere model
@@ -332,7 +332,7 @@ class Climb1(Model):
             
             TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*CL[iclimb1]**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_avg[iclimb1],
-            RC[iclimb1] >= 100*units('ft/min'),
+            RC[iclimb1] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
             theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
@@ -649,7 +649,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     

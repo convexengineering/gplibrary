@@ -21,7 +21,7 @@ we are minimizing the fuel weight
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
 #declare the range vector
-rangevec = np.linspace(500,3000,5)
+rangevec = np.linspace(500,3000,10)
 
 #altitude precomputation
 #select the cruise altitude
@@ -336,7 +336,7 @@ class Climb1(Model):
             
             TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*CL[iclimb1]**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_avg[iclimb1],
-            RC[iclimb1] >= 100*units('ft/min'),
+            RC[iclimb1] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
             theta[iclimb1]*V[iclimb1]  == RC[iclimb1],
