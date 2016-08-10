@@ -549,7 +549,7 @@ class CommercialAircraft(Model):
         substitutions = {      
             'W_{payload}': .6*44000*9.8*units('N'),
             'V_{stall}': 120,
-            'ReqRng': 500,
+            'ReqRng': 3000,
             'C_{d_0}': .02,
             'K': 0.05,
             'h_{toc}': hcruise,

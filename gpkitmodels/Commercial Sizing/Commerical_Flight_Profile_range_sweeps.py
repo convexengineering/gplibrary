@@ -21,20 +21,20 @@ we are minimizing the fuel weight
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
 #declare the range vector
-rangevec = np.linspace(500,3000,10)
+rangevec = np.linspace(500,2500,5)
 
-#altitude precomputation
-#select the cruise altitude
-hcruise = 30000
-#develop the list of altitudes
-hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
-#convert from ft to m for atmosphere model
-hvec = [x * 0.3048 for x in hvec]
-#get the actual atmosphere values
-atmdict = get_atmosphere_vec(hvec)
-Tvec = atmdict['T']  * units('K')
-rhovec = atmdict['rho'] * units('kg/m^3')
-pvec = atmdict['p'] * units('kPa')
+###altitude precomputation
+###select the cruise altitude
+##hcruise = 30000
+###develop the list of altitudes
+##hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
+###convert from ft to m for atmosphere model
+##hvec = [x * 0.3048 for x in hvec]
+###get the actual atmosphere values
+##atmdict = get_atmosphere_vec(hvec)
+##Tvec = atmdict['T']  * units('K')
+##rhovec = atmdict['rho'] * units('kg/m^3')
+##pvec = atmdict['p'] * units('kPa')
 
 #TODO
 #link in with engine
@@ -184,6 +184,13 @@ phold4 = Variable('phold4', 'kPa', 'segment 4 p')
 phold5 = Variable('phold5', 'kPa', 'segment 5 p')
 phold6 = Variable('phold6', 'kPa', 'segment 6 p')
 
+rhold1 = Variable('rhold1', 'kg/m^3', 'segment 1 r')
+rhold2 = Variable('rhold2', 'kg/m^3', 'segment 2 r')
+rhold3 = Variable('rhold3', 'kg/m^3', 'segment 3 r')
+rhold4 = Variable('rhold4', 'kg/m^3', 'segment 4 r')
+rhold5 = Variable('rhold5', 'kg/m^3', 'segment 5 r')
+rhold6 = Variable('rhold6', 'kg/m^3', 'segment 6 r')
+
 
 #temporary args
 #pass in a 1 for testing climb segment 1
@@ -245,13 +252,20 @@ class CommericalMissionConstraints(Model):
             Thold4 == T[3],
             Thold5 == T[4],
             Thold6 == T[5],
+
+            rhold1 == rho[0],
+            rhold2 == rho[1],
+            rhold3 == rho[2],
+            rhold4 == rho[3],
+            rhold5 == rho[4],
+            rhold6 == rho[5],
             ])
 
         for i in range(0, Nseg):
             constraints.extend([
-                rho[i] == rhovec[i],
-                T[i] == Tvec[i],
-                p[i] == pvec[i],
+##                rho[i] == rhovec[i],
+##                T[i] == Tvec[i],
+##                p[i] == pvec[i],
                 #speed of sound
                 a[i]  == (gamma * R * T[i])**.5,
 
@@ -532,7 +546,20 @@ class CommercialAircraft(Model):
     """
     class to link all models needed to simulate a commercial flight
     """
-    def __init__(self, **kwargs):
+    def __init__(self, htoc, **kwargs):
+        #altitude precomputation
+        #select the cruise altitude
+        hcruise = htoc
+        #develop the list of altitudes
+        hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
+        #convert from ft to m for atmosphere model
+        hvec = [x * 0.3048 for x in hvec]
+        #get the actual atmosphere values
+        atmdict = get_atmosphere_vec(hvec)
+        Tvec = atmdict['T']  * units('K')
+        rhovec = atmdict['rho'] * units('kg/m^3')
+        pvec = atmdict['p'] * units('kPa')
+
         #define all the submodels
         cmc = CommericalMissionConstraints(0)
         climb1 = Climb1()
@@ -554,14 +581,35 @@ class CommercialAircraft(Model):
             'V_{stall}': 120,
 ##            '\\frac{L}{D}_{max}': 25,
             'ReqRng': ('sweep', rangevec),
-            'C_{d_0}': .02,
-            'K': 0.05,
+            'C_{d_0}': .015,
+            'K': 0.04,
 ##            'S': 124.58,
             'h_{toc}': hcruise,
             'speedlimit': 250,
             'numeng': 2,
             'dh_{climb2}': hcruise-10000,
             'W_{Load_max}': 6664,
+
+            'phold1': pvec[0],
+            'phold2':pvec[1],
+            'phold3':pvec[2],
+            'phold4':pvec[3],
+            'phold5':pvec[4],
+            'phold6':pvec[5],
+
+            'Thold1':Tvec[0],
+            'Thold2':Tvec[1],
+            'Thold3':Tvec[2],
+            'Thold4':Tvec[3],
+            'Thold5':Tvec[4],
+            'Thold6':Tvec[5],
+
+            'rhold1':rhovec[0],
+            'rhold2':rhovec[1],
+            'rhold3':rhovec[2],
+            'rhold4':rhovec[3],
+            'rhold5':rhovec[4],
+            'rhold6':rhovec[5],
 
             #substitutions for global engine variables
             'G_f': 1,
@@ -653,112 +701,153 @@ class CommercialAircraft(Model):
 
     
 if __name__ == '__main__':
-    m = CommercialAircraft()
+    m = CommercialAircraft(30000)
+    m2 = CommercialAircraft(37000)
 ##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
     sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100, skipsweepfailures=True)
 
+    sol2, solhold2 = m2.determine_unbounded_variables(m2, solver="mosek",verbosity=4, iteration_limit=100, skipsweepfailures=True)
+    
     rangevec = [x for x in mag(solhold('ReqRng'))]
-
+    rangevec2 = [x for x in mag(solhold2('ReqRng'))]
+    
     #plot the fan pressure ratio sensitivity
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['\pi_f_EngineOnDesign, CommercialAircraft'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['\pi_f_EngineOnDesign, CommercialAircraft'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to on Design Fan Pressure Ratio')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=1)
+    plt.ylim(-1,1.4)
     plt.savefig('\pi_f_sens_range_low.png')
     plt.show()
     
     #plot the sensitivy of numeng
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['numeng'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['numeng'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to the Number of Engines')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.savefig('numeng_sens_range_low.png')
     plt.show()
     
-    
     #plot the sensitiby of dhclimb 2
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['dh_{climb2}_Climb2, CommercialAircraft'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['dh_{climb2}_Climb2, CommercialAircraft'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Climb Segment 2 Length')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.savefig('dhClimb2_sens_range_low.png')
     plt.show()
     
     #plot the sensitivity of cd0
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['C_{d_0}'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['C_{d_0}'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Drag Coefficient')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.savefig('Cd0_sens_range_low.png')
     plt.show()
     
     #plot the sensitivty of Tt4 for engine 1
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign, CommercialAircraft'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign, CommercialAircraft'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Tt4 During Climb 1')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.savefig('Tt4_climb1_sens_range_low.png')
     plt.show()
     
     #plto the sensitivity of Tt4 for engine 4
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign4, CommercialAircraft'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['T_{t_{4spec}}_EngineOffDesign4, CommercialAircraft'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Tt4 During Climb 4')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.savefig('Tt4_climb4_sens_range_low.png')
     plt.show()
     
     #plo the lpc pressure rat sensititvy
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['\pi_{hc_D}'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['\pi_{hc_D}'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to HPC Design Pressure Ratio')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.savefig('pi_{hc_D}_sens_range_low.png')
     plt.show()
 
     solvec = [x / 9.81*2.2 for x in solhold['cost']]
+    solvec2 = [x / 9.81*2.2 for x in solhold2['cost']]
     #plot the cost
     plt.plot(rangevec, solvec)
+    plt.plot(rangevec2, solvec2,'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Total Fuel Weight [lb]')
     plt.title('Total Fuel Weight vs Mission Range')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
     plt.savefig('total_fuel_weight_range_low.png')
     plt.show()
 
     #plot the cost
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['ReqRng'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['ReqRng'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Mission Range')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.savefig('range_sens_range_low.png')
     plt.show()
 
     #plot the cost
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['W_{payload}'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['W_{payload}'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Payload Weight')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.savefig('payload_sens_range_low.png')
     plt.show()
 
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['W_{Load_max}'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['W_{Load_max}'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Max Wing Loading')
     plt.savefig('max_wing_load_sens_range_low.png')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.show()
 
     plt.plot(rangevec, solhold["sensitivities"]["constants"]['G_f'])
+    plt.plot(rangevec2, solhold2["sensitivities"]["constants"]['G_f'],'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Sensitivity')
     plt.title('Sensitivity to Fan Gear Ratio')
     plt.savefig('fna_gear_ratio_sens_range_low.png')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
+    plt.ylim(-1,1.4)
     plt.show()
 
     plt.plot(rangevec, solhold('S'))
+    plt.plot(rangevec2, solhold2('S'),'-r')
     plt.xlabel('Mission Range [mi]')
     plt.ylabel('Wing Area [m^2]')
     plt.title('Wing Area vs Mission Range')
     plt.savefig('wing_area_range_low.png')
+    plt.legend(['30,000 ft', '37,000 ft'],loc=4)
     plt.show()
