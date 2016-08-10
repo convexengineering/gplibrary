@@ -4,7 +4,8 @@ from gpkit import Model, Variable, SignomialsEnabled, units
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from engine_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap, HPCMap
-
+from collections import defaultdict
+from gpkit.small_scripts import mag
 #TODO
 #get jet fuel Cp
 
@@ -28,8 +29,8 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        m6opt = 1
-        m8opt = 1
+        m6opt = 0
+        m8opt = 0
         cooling = False
         tstages = 1
         
@@ -54,18 +55,18 @@ class EngineOnDesign(Model):
             'T_0': 216.5,   #36K feet
             'P_0': 22.8,    #36K feet
             'M_0': 0.8,
-            'T_{t_4}': 1400,
+            'T_{t_4}': 1600,
             '\pi_f': 1.5,
-            '\pi_{lc}': 4,
+            '\pi_{lc}': 3.28,
             '\pi_{hc}': 10,
-            '\pi_{d}': 1,
-            '\pi_{fn}': 1,
-            '\pi_{tn}': 1,
+            '\pi_{d}': .98,
+            '\pi_{fn}': .98,
+            '\pi_{tn}': .98,
             '\pi_{b}': .94,
-            'alpha': 8,
-            'alphap1': 9,
+            'alpha': 5.5,
+            'alphap1': 6.5,
             'M_{4a}': M4a,    #choked turbines
-            'F_D': 10.67*1000, #737 max thrust in N
+            'F_D': 86.7*1000, #737 max thrust in N
             'M_2': M2,
             'M_{2.5}':M25,
             'hold_{2}': 1+.5*(1.398-1)*M2**2,
@@ -86,7 +87,46 @@ class EngineOnDesign(Model):
             }
 
             #temporary objective is to minimize the core mass flux 
-            Model.__init__(self, thrust.cost, lc, substitutions)
+            Model.__init__(self, size.cost, lc, substitutions)
+
+    def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
+            "Returns model with additional constraints bounding all free variables"
+            lb = lower if lower else eps
+            ub = upper if upper else 1/eps
+            constraints = []
+            freevks = tuple(vk for vk in model.varkeys if "value" not in vk.descr)
+            for varkey in freevks:
+                units = varkey.descr.get("units", 1)
+                constraints.append([ub*units >= Variable(**varkey.descr),
+                                    Variable(**varkey.descr) >= lb*units])
+            m = Model(model.cost, [constraints, model], model.substitutions)
+            m.bound_all = {"lb": lb, "ub": ub, "varkeys": freevks}
+            return m
+
+
+        # pylint: disable=too-many-locals
+    def determine_unbounded_variables(self, model, solver=None, verbosity=0,
+                                          eps=1e-30, lower=None, upper=None, **kwargs):
+            "Returns labeled dictionary of unbounded variables."
+            m = self.bound_all_variables(model, eps, lower, upper)
+            sol = m.localsolve(solver, verbosity, **kwargs)
+            solhold = sol
+            lam = sol["sensitivities"]["la"][1:]
+            out = defaultdict(list)
+            for i, varkey in enumerate(m.bound_all["varkeys"]):
+                lam_gt, lam_lt = lam[2*i], lam[2*i+1]
+                if abs(lam_gt) >= 1e-7:  # arbitrary threshold
+                    out["sensitive to upper bound"].append(varkey)
+                if abs(lam_lt) >= 1e-7:  # arbitrary threshold
+                    out["sensitive to lower bound"].append(varkey)
+                value = mag(sol["variables"][varkey])
+                distance_below = np.log(value/m.bound_all["lb"])
+                distance_above = np.log(m.bound_all["ub"]/value)
+                if distance_below <= 3:  # arbitrary threshold
+                    out["value near lower bound"].append(varkey)
+                elif distance_above <= 3:  # arbitrary threshold
+                    out["value near upper bound"].append(varkey)
+            return out, solhold
 
 class EngineOffDesign(Model):
     """
@@ -110,7 +150,7 @@ class EngineOffDesign(Model):
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
     def __init__(self, sol):
-        cooling = True
+        cooling = False
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(cooling)
@@ -128,9 +168,9 @@ class EngineOffDesign(Model):
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         else:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
             
         with SignomialsEnabled():
 
@@ -192,9 +232,11 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-    solOn = engineOnD.localsolve(verbosity = 4, kktsolver="ldl")
+    solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
+##    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
     
-    engineOffD = EngineOffDesign(solOn)
+##    engineOffD = EngineOffDesign(solOn)
     
-    solOff = engineOffD.localsolve(verbosity = 4, kktsolver="ldl",iteration_limit=200)
-    print solOff('F')
+##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=200)
+##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
+##    print solOff('F')
