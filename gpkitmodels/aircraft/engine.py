@@ -29,8 +29,6 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        m6opt = 0
-        m8opt = 0
         cooling = False
         tstages = 1
         
@@ -38,7 +36,7 @@ class EngineOnDesign(Model):
         combustor = CombustorCooling(cooling)
         turbine = Turbine()
         thrust = ExhaustAndThrust()
-        size = OnDesignSizing(m6opt, m8opt, cooling, tstages)
+        size = OnDesignSizing(cooling, tstages)
 
         self.submodels = [lpc, combustor, turbine, thrust, size]
 
@@ -161,10 +159,8 @@ class EngineOffDesign(Model):
         hpcmap = HPCMap()
 
         res7 = 1
-        m5opt = 0
-        m7opt = 1
         
-        offD = OffDesign(res7, m5opt, m7opt)
+        offD = OffDesign(res7)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
@@ -209,17 +205,15 @@ class EngineOffDesign(Model):
                 'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
                 'm_{hc_D}': sol('m_{hc_D}'),
                 '\pi_{hc_D}': sol('\pi_{hc}'),
-
-                'T_{t_f}': sol('T_{t_f}'),
             }
+            
         if cooling == True:
             substitutions.update({
                 'M_{4a}': .6,#sol('M_{4a}'),
                 'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
                 'r_{uc}': 0.5,
                 '\alpca_c': .5,
-
-                
+                'T_{t_f}': sol('T_{t_f}'),
                 'T_{m_TO}': 1000,
                 'M_{t_exit}': .6,
                 'chold_2': (1+.5*(1.318-1)*.6**2)**-1,
@@ -235,8 +229,8 @@ if __name__ == "__main__":
     solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
 ##    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
     
-##    engineOffD = EngineOffDesign(solOn)
+    engineOffD = EngineOffDesign(solOn)
     
-##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=200)
+    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=200)
 ##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
 ##    print solOff('F')

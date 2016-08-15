@@ -488,7 +488,7 @@ class OnDesignSizing(Model):
     tstages is the number of air cooled turbine stages in the HPT. It can assume
     a value of either 
     """
-    def __init__(self, m6opt, m8opt, cooling, tstages, **kwargs):
+    def __init__(self, cooling, tstages, **kwargs):
         #new variables
         a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
         
@@ -701,13 +701,30 @@ class OnDesignSizing(Model):
                 mlcD == mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
                 mhcD == mCore*((Tt25/Tref)**.5)/(Pt25/Pref), #B.226
 
+                #exhasut nozzle constraints at station 7
+                P7 >= P0,
+                (P7/Pt7) == (T7/Tt7)**(3.5),
+                (T7/Tt7)**-1 >= 1 + .2 * M7**2,
+                M7 <= 1,
+                u7>=u0,
+                a7 == (1.4*R*T7)**.5,
+                a7*M7==u7,
+
                 #compute the fan exaust speed and size the nozzle
-##                SignomialEquality(u7**2, (2*Cpfanex*(Tt7-T7))),
                 rho7 == P7/(R*T7),
                 A7 == alpha*mCore/(rho7*u7),
 
+                #exhaust nozzle constraints at station 5
+                P5 >= P0,
+                (P5/Pt5) == (T5/Tt5)**(3.583979),
+                (T5/Tt5)**-1 >= 1 + .2 * M5**2,
+                M5 <= 1,
+                u5 >= u0,
+
+                a5 == (1.387*R*T5)**.5,
+                a5*M5 == u5,
+
                 #compute the core exhaust speed and size the nozzle
-##                SignomialEquality(u5**2, (2*Cptex*(Tt5-T5))),
                 rho5 == P5/(R*T5),
                 A5 == mCore/(rho5*u5),
 
@@ -742,59 +759,7 @@ class OnDesignSizing(Model):
                     SignomialEquality(e2**-1, (theta2*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta2)))),
                     SignomialEquality(ac, e1 +e2),
                     ])
-            
-            if m6opt == 0:
-                #if M6 is less than one add these constraints
-                 constraints.extend([
-##                    P5 == P0,
-##                    T5 == Tt5*(P5/Pt5)**(.387/1.387)
 
-                    P5 >= P0,
-                    (P5/Pt5) == (T5/Tt5)**(3.583979),
-    ##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
-                    (T5/Tt5)**-1 >= 1 + .2 * M5**2,
-                    M5 <= 1,
-                    u5>=u0,
-
-                    a5 == (1.387*R*T5)**.5,
-                    a5*M5 == u5,
-                    a7 == (1.4*R*T7)**.5,
-                    a7*M7==u7,
-                    ])
-                
-            if m6opt == 1:
-                #if M6 is greather than or equal to 1 add these constraints
-                constraints.extend([
-                    M5 == 1,
-                    P5 == Pt5*(1.1935)**(-3.583987),
-                    T5 == Tt5*(1.1935)**-1
-                    ])
-                
-            if m8opt == 0:
-                #if M8 is less than one add these constraints
-                constraints.extend([
-##                    P7 == P0,
-##                    T7 == Tt7*(P7/Pt7)**(.4/1.4)
-
-                    P7 >= P0,
-                    (P7/Pt7) == (T7/Tt7)**(3.5),
-    ##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
-                    (T7/Tt7)**-1 >= 1 + .2 * M7**2,
-    ##                    SignomialEquality((T7/Tt7)**-1, 1 + .2 * M7**2),
-                    M7 <= 1,
-    ##                    M7>=0.5
-                    u7>=u0
-                    ])
-                
-            if m8opt == 1:
-                #if M8 is greather than or equal to 1 add these constraints
-                constraints.extend([
-                    M7 == 1,
-                    P7 == Pt7*(1.2)**(-3.5),
-                    T7 == Tt7*(1.2)**-1
-                    ])
-
-                
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
         Model.__init__(self, TSFC + (units('1/hr'))*(W_engine/units('N'))**.001, constraints, **kwargs)
@@ -970,7 +935,7 @@ class OffDesign(Model):
     m7opt of zero gives the constriants for M7 < 1, m7opt of 1 gives constraints
     for M7 >= 1
     """
-    def __init__(self, res7, m5opt, m7opt, **kwargs):
+    def __init__(self, res7, **kwargs):
         #define all the variables
         #gas propeRies
         R = Variable('R', 287, 'J/kg/K', 'R')
@@ -1106,14 +1071,21 @@ class OffDesign(Model):
                 TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
-##                SignomialEquality(u7**2 +2*Cpfanex*T7, 2*Cpfanex*Tt7),
+                P7 >= P0,
+                (P7/Pt7) == (T7/Tt7)**(3.5),
+                (T7/Tt7)**-1 >= 1 + .2 * M7**2,
+                M7 <= 1,
+                u7>=u0,
                 a7 == (1.4*R*T7)**.5,
                 a7*M7==u7,
                 rho7 == P7/(R*T7),
                 TCS([mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7]),
                 
                 #residual 5 core nozzle mass flow
-##                SignomialEquality(u5**2 +2*Cptex*T5, 2*Cptex*Tt5),
+                P5 >= P0,
+                (P5/Pt5) == (T5/Tt5)**(3.583979),
+                (T5/Tt5)**-1 >= 1 + .2 * M5**2,
+                M5 <= 1,
                 a5 == (1.387*R*T5)**.5,
                 a5*M5 == u5,
                 rho5 == P5/(R*T5),
@@ -1151,65 +1123,5 @@ class OffDesign(Model):
                 #option #2 constrain the burner exit temperature
                 Tt4 == Tt4spec,  #B.265
                 ])
-            
-        if m5opt == 0:
-             constraints.extend([
-##                    P5 == P0,
-##                    (P5/Pt5) == (T5/Tt5)**(3.583979),
-##                    M5 == u5/((T5*Cptex*R/(781*units('J/kg/K')))**.5),
-
-                P5 >= P0,
-                (P5/Pt5) == (T5/Tt5)**(3.583979),
-##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
-                (T5/Tt5)**-1 >= 1 + .2 * M5**2,
-                M5 <= 1,
-                ])
-             
-        if m5opt == 1:
-             constraints.extend([
-##                    M5 == 1,
-##                    P5 == Pt5*(1.1935)**(-3.583979),
-##                    T5 == Tt5*1.1935**(-1)
-
-                P5 >= P0,
-                (P5/Pt5) == (T5/Tt5)**(3.583979),
-##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
-                (T5/Tt5)**-1 >= 1 + .2 * M5**2,
-                M5 <= 1,
-                ])
-             
-        if m7opt == 0:
-            constraints.extend([
-                #additional constraints on residual 4 for M7 < 1
-##                    P7 == P0,
-##                    (P7/Pt7) == (T7/Tt7)**(3.5),
-##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
-
-                P7 >= P0,
-                (P7/Pt7) == (T7/Tt7)**(3.5),
-##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
-                (T7/Tt7)**-1 >= 1 + .2 * M7**2,
-##                    SignomialEquality((T7/Tt7)**-1, 1 + .2 * M7**2),
-                M7 <= 1,
-##                    M7>=0.5
-                u7>=u0
-                ])
-            
-        if m7opt == 1:
-             constraints.extend([
-                 #additional constraints on residual 4 for M7 >= 1
-##                     M7 == 1,
-##                     P7 == Pt7*(1.2)**(-1.4/.4),
-##                     T7 == Tt7*1.2**(-1)
-
-                P7 >= P0,
-                (P7/Pt7) == (T7/Tt7)**(3.5),
-##                    M7 == u7/((T7*Cpfanex*R/(781*units('J/kg/K')))**.5),
-##                    SignomialEquality((T7/Tt7)**-1, 1 + .2 * M7**2),
-                (T7/Tt7)**-1 >= 1 + .2 * M7**2,
-                M7 <= 1,
-                u7>=u0
-                ])
-
                  
         Model.__init__(self, 1/u7, constraints, **kwargs)
