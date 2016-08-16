@@ -262,94 +262,20 @@ class Turbine(Model):
         pitn = Variable('\pi_{tn}', '-', 'Turbine Nozzle Pressure Ratio')
 
         #shaft power transmission efficiencies
-        etaHPshaft = Variable('\eta_{HPshaft}', '-', 'Power Transmission Efficiency of High Pressure Shaft')
-        etaLPshaft = Variable('\eta_{LPshaft}', '-', 'Power Transmission Efficiency of Low Pressure Shaft')
+        etaHPshaft = Variable('\eta_{HPshaft}', '-', 'Power Transmission Efficiency of High Pressure Shaft, Smears in Losses for Electrical Power')
+        etaLPshaft = Variable('\eta_{LPshaft}', '-', 'Power Transmission Efficiency of Low Pressure Shaft, Smeras in Losses for Electrical Power')
+
+        Mtakeoff = Variable('M_{takeoff}', '-', '1 Minus Percent mass flow loss for de-ice, pressurization, etc.')
 
         with SignomialsEnabled():
             constraints = [
                 #HPT shafter power balance
                 #SIGNOMIAL   
-                SignomialEquality(etaHPshaft*(1+f)*(ht41-ht45),ht3 - ht25),    #B.161
+                SignomialEquality(Mtakeoff*etaHPshaft*(1+f)*(ht41-ht45),ht3 - ht25),    #B.161
 
                 #LPT shaft power balance
                 #SIGNOMIAL  
-                SignomialEquality(etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
-
-                #HPT Exit states (station 4.5)
-                Pt45 == pihpt * Pt41,
-                pihpt == (Tt45/Tt41)**(4.60517),      #turbine efficiency is 0.9
-                ht45 == Cpt1 * Tt45,
-
-                #LPT Exit States
-                Pt49 == pilpt * Pt45,
-                pilpt == (Tt49/Tt45)**(4.2498431),    #turbine efficiency is 0.9
-                ht49 == Cpt2 * Tt49,
-
-                #turbine nozzle exit states
-                Pt5 == pitn * Pt49, #B.167
-                Tt5 == Tt49,    #B.168
-                ht5 == ht49     #B.169
-                ]
-        Model.__init__(self, 1/ht49, constraints, **kwargs)
-
-class Turbine_losses(Model):
-    """
-    classs to represent the engine's turbine
-    """
-    def __init__(self, **kwargs):
-        #gas propeRies
-        Cpt1 =Variable('Cp_t1', 1190, 'J/kg/K', "Cp Value for Combustion Products in HP Turbine") #1300K gamma = 1.318
-        Cpt2 =Variable('Cp_t2', 1099, 'J/kg/K', "Cp Value for Combustion Products in LP Turbine") #800K gamma = 1.354
-        
-        #new variables
-        ht45 = Variable('h_{t_4.5}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (4.5)')
-        Pt45 = Variable('P_{t_4.5}', 'kPa', 'Stagnation Pressure at the HPT Exit (4.5)')
-        Tt45 = Variable('T_{t_4.5}', 'K', 'Stagnation Temperature at the HPT Exit (4.5)')
-
-        #enthalpies used in shaft power balances
-        ht18 = Variable('h_{t_1.8}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
-        ht2 = Variable('h_{t_2}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2)')
-        ht21 = Variable('h_{t_2.1}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2.1)')
-        ht25 = Variable('h_{t_2.5}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
-        ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
-
-        #Turbine inlet state variables (station 4.1)
-        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
-        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
-        ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
-
-        #HPT exit states
-        Pt49 = Variable('P_{t_4.9}', 'kPa', 'Stagnation Pressure at the HPTExit (49)')
-        Tt49 = Variable('T_{t_4.9}', 'K', 'Stagnation Temperature at the HPT Exit (49)')
-        ht49 = Variable('h_{t_4.9}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (49)')
-        
-        #turbine nozzle exit states
-        Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
-        Tt5 = Variable('T_{t_5}', 'K', 'Stagnation Temperature at the Turbine Nozzle Exit (5)')
-        ht5 = Variable('h_{t_5}', 'J/kg', 'Stagnation Enthalpy at the Turbine Nozzle Exit (5)')
-
-        #pressure ratios
-        pihpt = Variable('\pi_{HPT}', '-', 'HPT Pressure Ratio')
-        pilpt = Variable('\pi_{LPT}', '-', 'LPT Pressure Ratio')
-        
-        #flow faction f
-        f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
-
-        #BPR
-        alpha = Variable('alpha', '-', 'By Pass Ratio')
-
-        #relavent pressure ratio
-        pitn = Variable('\pi_{tn}', '-', 'Turbine Nozzle Pressure Ratio')
-
-        with SignomialsEnabled():
-            constraints = [
-                #HPT shafter power balance
-                #SIGNOMIAL   
-                SignomialEquality((1+f)*(ht41-ht45),ht3 - ht25),    #B.161
-
-                #LPT shaft power balance
-                #SIGNOMIAL  
-                SignomialEquality((1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
+                SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
@@ -436,6 +362,8 @@ class ExhaustAndThrust(Model):
         #flow faction f
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
+        Mtakeoff = Variable('M_{takeoff}', '-', '1 Minus Percent mass flow loss for de-ice, pressurization, etc.')
+
         with SignomialsEnabled():
             constraints = [
                 Pt8 == Pt7, #B.179
@@ -462,7 +390,7 @@ class ExhaustAndThrust(Model):
 ##                #SIGNOMIAL
 ##                TCS([F <= F6 + F8]),
 
-                F + alphap1*mCore*u0 <= mCore*u6+mCore*alpha*u8, 
+                TCS([F + alphap1*mCore*u0 <= Mtakeoff*mCore*u6+mCore*alpha*u8]), 
 
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
@@ -666,14 +594,16 @@ class OnDesignSizing(Model):
         a7 = Variable('a_7', 'm/s', 'Speed of Sound at Station 7')
 
         u0 = Variable('u_0', 'm/s', 'Free Stream Speed')
-        
+
+        Mtakeoff = Variable('M_{takeoff}', '-', '1 Minus Percent mass flow loss for de-ice, pressurization, etc.')
+
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
                 SignomialEquality(fp1,f+1),
                 
                 #mass flow sizing
-                mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
+                Mtakeoff*mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
 
                 #component area sizing
                 #fan area
@@ -697,8 +627,8 @@ class OnDesignSizing(Model):
                 M6 == u6/((T6*Cpt*R/(781*units('J/kg/K')))**.5),
 
                 #compute on design normalized turbine mass flows
-                mhtD == fp1*mCore*((Tt41/Tref)**.5)/(Pt41/Pref), #B.225
-                mltD == fp1*mCore*((Tt45/Tref)**.5)/(Pt45/Pref), #B.226
+                mhtD == Mtakeoff*fp1*mCore*((Tt41/Tref)**.5)/(Pt41/Pref), #B.225
+                mltD == Mtakeoff*fp1*mCore*((Tt45/Tref)**.5)/(Pt45/Pref), #B.226
 
                 #on design normalized mass flows
                 mFanBarD == alpha*mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
@@ -730,7 +660,7 @@ class OnDesignSizing(Model):
 
                 #compute the core exhaust speed and size the nozzle
                 rho5 == P5/(R*T5),
-                A5 == mCore/(rho5*u5),
+                A5 == Mtakeoff*mCore/(rho5*u5),
 
                 #calculate the engine weight
                 #using drela's original model from TASOPT source code
@@ -1052,7 +982,9 @@ class OffDesign(Model):
 
         a5 = Variable('a_5', 'm/s', 'Speed of Sound at Station 5')
         a7 = Variable('a_7', 'm/s', 'Speed of Sound at Station 7')
-             
+
+        Mtakeoff = Variable('M_{takeoff}', '-', '1 Minus Percent mass flow loss for de-ice, pressurization, etc.')
+
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
@@ -1096,7 +1028,7 @@ class OffDesign(Model):
                 
                 
                 #compute core mass flux
-                mCore == rho5 * A5 * u5/(fp1),
+                Mtakeoff * mCore == rho5 * A5 * u5/(fp1),
 
                 #compute fan mas flow
                 mFan == rho7*A7*u7,

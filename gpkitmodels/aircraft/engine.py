@@ -71,8 +71,9 @@ class EngineOnDesign(Model):
             'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
             'T_{ref}': 288.15,
             'P_{ref}': 101.325,
-            '\eta_{HPshaft}': .98,
-            '\eta_{LPshaft}': .99,
+            '\eta_{HPshaft}': .99,
+            '\eta_{LPshaft}': .98,
+            'M_{takeoff}': .95,
 
             #new subs for cooling flow losses
             'T_{t_f}': 600,
@@ -200,6 +201,7 @@ class EngineOffDesign(Model):
 
                 '\eta_{HPshaft}': sol('\eta_{HPshaft}'),
                 '\eta_{LPshaft}': sol('\eta_{LPshaft}'),
+                'M_{takeoff}': sol('M_{takeoff}'),
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
