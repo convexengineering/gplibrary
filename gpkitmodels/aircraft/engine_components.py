@@ -261,15 +261,19 @@ class Turbine(Model):
         #relavent pressure ratio
         pitn = Variable('\pi_{tn}', '-', 'Turbine Nozzle Pressure Ratio')
 
+        #shaft power transmission efficiencies
+        etaHPshaft = Variable('\eta_{HPshaft}', '-', 'Power Transmission Efficiency of High Pressure Shaft')
+        etaLPshaft = Variable('\eta_{LPshaft}', '-', 'Power Transmission Efficiency of Low Pressure Shaft')
+
         with SignomialsEnabled():
             constraints = [
                 #HPT shafter power balance
                 #SIGNOMIAL   
-                SignomialEquality((1+f)*(ht41-ht45),ht3 - ht25),    #B.161
+                SignomialEquality(etaHPshaft*(1+f)*(ht41-ht45),ht3 - ht25),    #B.161
 
                 #LPT shaft power balance
                 #SIGNOMIAL  
-                SignomialEquality((1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
+                SignomialEquality(etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
