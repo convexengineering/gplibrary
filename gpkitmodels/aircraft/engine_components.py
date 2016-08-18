@@ -122,8 +122,9 @@ class CombustorCooling(Model):
     def __init__(self, cooling, **kwargs):
         #new vars
         #gas propeRies
-        Cpc = Variable('Cp_c', 1204, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K
+        Cpc = Variable('Cp_c', 1204, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K, gamma equals 1.312
         R = Variable('R', 287, 'J/kg/K', 'R')
+        Cpfuel = Variable('Cp_{fuel}', 2010, 'J/kg/K', 'Specific Heat Capacity of Kerosene (~Jet Fuel)')
         
         #HPC exit state variables (station 3)
         Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
@@ -170,6 +171,9 @@ class CombustorCooling(Model):
         #variables for cooling flow velocity
         ruc = Variable('r_{uc}', '-', 'User Specified Cooling Flow Velocity Ratio')
         uc = Variable('u_c', 'm/s', 'Cooling Airflow Speed at Station 4a')
+
+        #variable thats a constant in the stagnation equation for station 41
+        stag41 = Variable('stag41', '-', 'Constant in Stagnation Relation at Station 4.1')
         
         with SignomialsEnabled():
         
@@ -180,24 +184,26 @@ class CombustorCooling(Model):
 
                 #fuel flow fraction f
                 #THIS IS AN OVERESTIMATION IF THERE IS COOLING
-##                TCS([f*hf >= ht4-ht3+Cpc*f*(Tt4-Ttf)]),
-                TCS([f*hf + ht3 >= ht4]),
+                TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3+Cpfuel*f*(Tt4-Ttf)]),
+##                TCS([f*hf + ht3 >= ht4]),
                 #making f+1 GP compatible --> needed for convergence
                 SignomialEquality(fp1,f+1),
                 
                 #flow at turbine inlet
-##                SignomialEquality(Tt41, (f*hf/Cpc + Tt3 + Ttf*f)/fp1),
-                Tt41 == Tt4,
+                SignomialEquality(Tt41, (f*hf/Cpc + Tt3 + Ttf*f)/fp1),
+##                Tt41 == Tt4,
                 ht41 == Cpc * Tt41,
                 ]
             
             if cooling == True:
                 constraints.extend([
                     #comptue the rest of the station 4.1 variables
-##                    SignomialEquality(u41, (1/fp1)*(u4a*(fp1-ac)+ac*uc)),
-                    TCS([u41 <= (1/fp1)*(u4a*(fp1-ac)+ac*uc)]),
+                    SignomialEquality(u41, (1/fp1)*(u4a*(fp1-ac)+ac*uc)),
+##                    TCS([u41 >= (1/fp1)*(u4a*(fp1-ac)+ac*uc)]),
 ##                    SignomialEquality(T41 + .5*(u41**2)/Cpc, Tt41),
-                    TCS([T41 + .5*(u41**2)/Cpc <= Tt41]),
+                    
+                    #this is a stagnation relation...need to fix it to not be signomial
+                    T41 == Tt41*stag41**-1,
                     #here we assume no pressure loss in mixing so P41=P4a
                     Pt41 == P4a*(Tt41/T41)**(1.313/.313),
                     #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
@@ -370,7 +376,8 @@ class ExhaustAndThrust(Model):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpfanex * T8,
-                TCS([u8**2 + 2*h8 <= 2*ht8]),
+##                TCS([u8**2 + 2*h8 <= 2*ht8]),
+                SignomialEquality(u8**2 + 2*h8, 2*ht8),
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -597,6 +604,9 @@ class OnDesignSizing(Model):
 
         Mtakeoff = Variable('M_{takeoff}', '-', '1 Minus Percent mass flow loss for de-ice, pressurization, etc.')
 
+        coolRat1 = Variable('coolRat1', '-', 'Non-physical hold variable in cooling flow calcs')
+        coolQuant1 = Variable('coolQuant1', '-', 'Non-physical hold variable in cooling flow calcs')
+
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
@@ -670,26 +680,40 @@ class OnDesignSizing(Model):
                 constraints.extend([
                     #take off estimates, assume standard day air temperature outside, assumes Cp value for 500K
                     #further assume gamma is 1.387 (500K value) and polytropic efficiency is 0.9
-                    Tt3TO == 288.15*units('K')*(pihc*pilc)**.31,
+##                    Tt3TO == 288.15*units('K')*(pihc*pilc)**.31,
 
                     #comptue the first e value
-##                    SignomialEquality(Tg1, Tt4TO + DTstreak),
-##                    Tg1 >= Tt4TO + DTstreak,
+
+                    #absorbing DTstreak into the specified Tt4TO
+                    
+##                    TCS([Tg1 == Tt4TO]),
 ##                    TCS([theta1*(Tg1 - Tt3TO) >= (Tg1 - TmTO)]),
+##                    theta1*(Tg1 - Tt3TO) >= (Tg1 - TmTO),
 ##                    SignomialEquality(theta1*(Tg1 - Tt3TO), (Tg1 - TmTO)),
+
+                    #approximate Tc1 as Tt3TO
+
+##                    theta1 == coolRat1/coolQuant1,
+##                    TCS([1 >= coolRat1 + TmTO/Tg1]),
+##                    TCS([1 >= coolQuant1 + Tt3TO/Tg1]),
+##                    SignomialEquality(1, coolRat1 + TmTO/Tg1),
+##                    SignomialEquality(1 , coolQuant1 + Tt3TO/Tg1),
+                    
 ##                    SignomialEquality(e1**-1, (theta1*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta1)))),
-##                    e1**-1 >= (theta1*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta1)))
+##                    TCS([e1*eta >= Sta*theta1*(1-thetaf)-thetaf*(1-eta)+e1*eta*theta1]),
+##                    SignomialEquality(e1*eta, Sta*theta1*(1-thetaf)-thetaf*(1-eta)+e1*eta*theta1),
                     ])
                 
-            if tstages == 1 and cooling == True:
-                constraints.extend([
+##            if tstages == 1 and cooling == True:
+##                constraints.extend([
 ##                    ac == e1,
-                    ])
+##                    ])
                 
             if tstages == 2 and cooling == True:
                 constraints.extend([
                     Tg2 == Tt4TO*chold2,
-                    TCS([theta2*(Tg2 - Tt3TO) >= (Tg2 - TmTO)]),
+##                    TCS([theta2*(Tg2 - Tt3TO) >= (Tg2 - TmTO)]),
+                    SignomialEquality(theta2*(Tg2 - Tt3TO) , (Tg2 - TmTO)),
                     SignomialEquality(e2**-1, (theta2*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta2)))),
                     SignomialEquality(ac, e1 +e2),
                     ])
@@ -735,6 +759,11 @@ class LPCMap(Model):
 
         with SignomialsEnabled():
             constraints = [
+##                 TCS([pilc**(-.163) >= ( 5.28e-10 * (N1)**-88.8 * (mlc/units('kg/s'))**2.05
+##                        + 0.0115 * (N1)**-16.5 * (mlc/units('kg/s'))**4.89
+##                        + 0.575 * (N1)**-0.491 * (mlc/units('kg/s'))**-0.0789
+##                        + 7.99e-15 * (N1)**2.07e+04 * (mlc/units('kg/s'))**592
+##                        + 1.22e-50 * (N1)**-2.84e+03 * (mlc/units('kg/s'))**598)])
                 #define mbar..technially not needed b/c constrained in res 2 and/or 3
                 TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
 
@@ -788,6 +817,12 @@ class HPCMap(Model):
 
         with SignomialsEnabled():
             constraints = [
+##                TCS([pihc**(-.163) >= ( 5.28e-10 * (N2)**-88.8 * (mhc/units('kg/s'))**2.05
+##                        + 0.0115 * (N2)**-16.5 * (mhc/units('kg/s'))**4.89
+##                        + 0.575 * (N2)**-0.491 * (mhc/units('kg/s'))**-0.0789
+##                        + 7.99e-15 * (N2)**2.07e+04 * (mhc/units('kg/s'))**592
+##                        + 1.22e-50 * (N2)**-2.84e+03 * (mhc/units('kg/s'))**598)])
+                
                 #define mtild
                 mtildhc == mhc/mhcD,   #B.282
 

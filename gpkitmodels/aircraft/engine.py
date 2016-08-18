@@ -29,7 +29,7 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        cooling = False
+        cooling = True
         tstages = 1
         
         lpc = FanAndLPC()
@@ -74,6 +74,8 @@ class EngineOnDesign(Model):
             '\eta_{HPshaft}': .99,
             '\eta_{LPshaft}': .98,
             'M_{takeoff}': .95,
+            'stag41': 1+.5*(.312)*M4a**2,
+            '\alpca_c': .1,
 
             #new subs for cooling flow losses
             'T_{t_f}': 600,
@@ -84,7 +86,6 @@ class EngineOnDesign(Model):
             'chold_2': (1+.5*(1.318-1)*Mexit**2)**-1,
             'chold_3': (1+.5*(1.318-1)*Mexit**2)**-2,
             'T_{t_4TO}': 1600,
-            '\alpca_c': .5
             }
 
             #temporary objective is to minimize the core mass flux 
@@ -202,6 +203,7 @@ class EngineOffDesign(Model):
                 '\eta_{HPshaft}': sol('\eta_{HPshaft}'),
                 '\eta_{LPshaft}': sol('\eta_{LPshaft}'),
                 'M_{takeoff}': sol('M_{takeoff}'),
+                'stag41': 1+.5*(.312)*M4a**2,
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
@@ -233,11 +235,11 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-    solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
-##    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
+##    solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
+    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
     
-    engineOffD = EngineOffDesign(solOn)
+##    engineOffD = EngineOffDesign(solOn)
     
-    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=200)
+##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=200)
 ##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
 ##    print solOff('F')
