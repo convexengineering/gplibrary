@@ -184,13 +184,16 @@ class CombustorCooling(Model):
 
                 #fuel flow fraction f
                 #THIS IS AN OVERESTIMATION IF THERE IS COOLING
+
+                #this is where the bug is in the off design
+                
                 TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3+Cpfuel*f*(Tt4-Ttf)]),
 ##                TCS([f*hf + ht3 >= ht4]),
                 #making f+1 GP compatible --> needed for convergence
                 SignomialEquality(fp1,f+1),
                 
                 #flow at turbine inlet
-                SignomialEquality(Tt41, (f*hf/Cpc + Tt3 + Ttf*f)/fp1),
+                Tt41 <= (f*hf/Cpc + Tt3 + Ttf*f)/fp1,
 ##                Tt41 == Tt4,
                 ht41 == Cpc * Tt41,
                 ]
@@ -198,12 +201,12 @@ class CombustorCooling(Model):
             if cooling == True:
                 constraints.extend([
                     #comptue the rest of the station 4.1 variables
-                    SignomialEquality(u41, (1/fp1)*(u4a*(fp1-ac)+ac*uc)),
-##                    TCS([u41 >= (1/fp1)*(u4a*(fp1-ac)+ac*uc)]),
+                    SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),
+##                    TCS([fp1*u41 <= (u4a*(1-ac)+f*u4a+ac*uc)]),
 ##                    SignomialEquality(T41 + .5*(u41**2)/Cpc, Tt41),
                     
                     #this is a stagnation relation...need to fix it to not be signomial
-                    T41 == Tt41*stag41**-1,
+                    TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
                     #here we assume no pressure loss in mixing so P41=P4a
                     Pt41 == P4a*(Tt41/T41)**(1.313/.313),
                     #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
@@ -676,47 +679,6 @@ class OnDesignSizing(Model):
                 #using drela's original model from TASOPT source code
                 TCS([W_engine >= (mCore*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
                 ]
-            if cooling == True:
-                constraints.extend([
-                    #take off estimates, assume standard day air temperature outside, assumes Cp value for 500K
-                    #further assume gamma is 1.387 (500K value) and polytropic efficiency is 0.9
-##                    Tt3TO == 288.15*units('K')*(pihc*pilc)**.31,
-
-                    #comptue the first e value
-
-                    #absorbing DTstreak into the specified Tt4TO
-                    
-##                    TCS([Tg1 == Tt4TO]),
-##                    TCS([theta1*(Tg1 - Tt3TO) >= (Tg1 - TmTO)]),
-##                    theta1*(Tg1 - Tt3TO) >= (Tg1 - TmTO),
-##                    SignomialEquality(theta1*(Tg1 - Tt3TO), (Tg1 - TmTO)),
-
-                    #approximate Tc1 as Tt3TO
-
-##                    theta1 == coolRat1/coolQuant1,
-##                    TCS([1 >= coolRat1 + TmTO/Tg1]),
-##                    TCS([1 >= coolQuant1 + Tt3TO/Tg1]),
-##                    SignomialEquality(1, coolRat1 + TmTO/Tg1),
-##                    SignomialEquality(1 , coolQuant1 + Tt3TO/Tg1),
-                    
-##                    SignomialEquality(e1**-1, (theta1*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta1)))),
-##                    TCS([e1*eta >= Sta*theta1*(1-thetaf)-thetaf*(1-eta)+e1*eta*theta1]),
-##                    SignomialEquality(e1*eta, Sta*theta1*(1-thetaf)-thetaf*(1-eta)+e1*eta*theta1),
-                    ])
-                
-##            if tstages == 1 and cooling == True:
-##                constraints.extend([
-##                    ac == e1,
-##                    ])
-                
-            if tstages == 2 and cooling == True:
-                constraints.extend([
-                    Tg2 == Tt4TO*chold2,
-##                    TCS([theta2*(Tg2 - Tt3TO) >= (Tg2 - TmTO)]),
-                    SignomialEquality(theta2*(Tg2 - Tt3TO) , (Tg2 - TmTO)),
-                    SignomialEquality(e2**-1, (theta2*((1-eta*thetaf)-thetaf*(1-eta))+(1/Sta)*(eta*(1-theta2)))),
-                    SignomialEquality(ac, e1 +e2),
-                    ])
 
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
@@ -1050,7 +1012,7 @@ class OffDesign(Model):
                 a7 == (1.4*R*T7)**.5,
                 a7*M7==u7,
                 rho7 == P7/(R*T7),
-                TCS([mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7]),
+                mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7,
                 
                 #residual 5 core nozzle mass flow
                 P5 >= P0,
@@ -1069,7 +1031,7 @@ class OffDesign(Model):
                 mFan == rho7*A7*u7,
                 
                 #residual 6 LPC/HPC mass flow constraint
-                TCS([mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mCore]),
+                mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mCore,
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
