@@ -40,48 +40,6 @@ pvec = atmdict['p'] * units('kPa')
 
 #figure out if minimizing total weight is the same as minimizing fuel weight
 
-#-----------------------------------------------------------
-#defining the number of segments
-Ntakeoff = 0
-Nclimb1 = 2
-Nclimb2 = 2
-Ncruise1 = 0
-Ncruiseclimb = 0
-Ncruise2 = 2
-Ndecent = 0
-Nlanding = 0
-
-#segments below here that start with res --> fuel reserves
-Nresclimb = 0
-Nresdecent = 0
-Nreslanding = 0
-Nreshold = 0
-
-#total number of flight segments in each category, possibly useful
-Nclimb = Nclimb1 + Nclimb2 + Ncruiseclimb
-Ncruise = Ncruise1 + Ncruise2
-Nres = Nresclimb + Nresdecent + Nreslanding + Nreshold
-
-Nseg = Nclimb + Ncruise + Nres + Ntakeoff + Ndecent + Nlanding
-
-#create index lists for the vector variables
-
-#partial flight profile for use during development
-if Nclimb1 != 0:
-    iclimb1 = map(int, np.linspace(0, Nclimb1 - 1, Nclimb1))
-else:
-    iclimb1 = 0
-if Nclimb2 != 0:
-    iclimb2 = map(int, np.linspace(iclimb1[len(iclimb1)-1] + 1, Nclimb2 + iclimb1[len(iclimb1)-1], Nclimb2))
-else:
-    iclimb2 =0
-    
-if Ncruise2 != 0:
-    icruise2 = map(int, np.linspace(iclimb2[len(iclimb2)-1] + 1, Ncruise2 + iclimb2[len(iclimb2)-1], Ncruise2))
-##    icruise2 = map(int, np.linspace(0, Ncruise2-1, Ncruise2))
-else:
-    icruise2 = 0
-
 #---------------------------------------------------------------------
 
 #temporary args
@@ -91,7 +49,7 @@ class CommericalMissionConstraints(Model):
     """
     class that is general constraints that apply across the mission
     """
-    def __init__(self, test=0, **kwargs):
+    def __init__(self, Nclimb1, Nclimb2, Ncruise2, signomial=0, **kwargs):
         #variable local to this model
         #10,000 foot altitude
         alt10k = Variable('alt10k', 10000, 'feet', '10,000 feet')
@@ -132,11 +90,6 @@ class CommericalMissionConstraints(Model):
         W_endCruise2 = VectorVariable(Ncruise2, 'W_{endCruise2}', 'N', 'Segment End Weight')
         W_avgCruise2 = VectorVariable(Ncruise2, 'W_{avgCruise2}', 'N', 'Geometric Average of Segment Start and End Weight')
 
-        #aero
-        CL = VectorVariable(Nseg, 'C_{L}', '-', 'Lift Coefficient')
-        WLoad = VectorVariable(Nseg, 'W_{Load}', 'N/m^2', 'Wing Loading')
-        WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
-
         #aircraft geometry
         S = Variable('S', 'm^2', 'Wing Planform Area')
 
@@ -170,8 +123,6 @@ class CommericalMissionConstraints(Model):
             W_startClimb1[0]  == W_total,
    
             TCS([W_e + W_payload + numeng * W_engine + W_wing <= W_endCruise2[Ncruise2-1]]),
-##            TCS([W_e + W_payload + numeng * W_engine + W_wing <= W_endClimb1[Nclimb1-1]]),
-##            TCS([W_ftotal >= sum(W_fuelClimb1) + sum(W_fuelClimb2)]),
             TCS([W_ftotal >= sum(W_fuelClimb1) + sum(W_fuelClimb2) + sum(W_fuelCruise2)]),
 
             W_startClimb2[0] == W_endClimb1[Nclimb1-1],
@@ -185,16 +136,17 @@ class CommericalMissionConstraints(Model):
             ])
         
         with gpkit.SignomialsEnabled():
-            if test != 1:
+            if signomial != 1:
                 constraints.extend([
                     #range constraints
                     TCS([sum(RngClimb1) + sum(RngClimb2) + ReqRngCruise >= ReqRng]),
 ##                    dhClimb2==20000*units('ft'),
 ##                    TCS([dhClimb2 + alt10k >= htoc]),
                     ])
-            if test ==1:
+            if signomial ==1:
                  constraints.extend([
-                    TCS([sum(RngClimb1) + sum(RngClimb2) >= ReqRng]),
+                     excessPtoc+Vtoc*Dtoc, numeng*Fd*Vtoc
+##                    TCS([sum(RngClimb1) + sum(RngClimb2) >= ReqRng]),
 ##                    TCS([ReqRngCruise   >= sum(RngCruise)]),
 ##                    TCS([dhClimb2 + alt10k >= htoc])
                     ])
@@ -244,7 +196,7 @@ class Climb1(Model):
     class to model the climb portion of a flight, applies to all climbs below
     10,000'
     """
-    def __init__(self,**kwargs):
+    def __init__(self, Nclimb1, **kwargs):
         #set the speed limit under 10,000'
         speedlimit = Variable('speedlimit', 'kts', 'Speed Limit Under 10,000 ft')
 
@@ -397,7 +349,7 @@ class Climb2(Model):
     """
     class to model the climb portion above 10,000'
     """
-    def __init__(self, **kwargs):
+    def __init__(self, Nclimb2, **kwargs):
         #aero
         CLClimb2 = VectorVariable(Nclimb2, 'C_{L_{Climb2}}', '-', 'Lift Coefficient')
         WLoadClimb2 = VectorVariable(Nclimb2, 'W_{Load_{Climb2}}', 'N/m^2', 'Wing Loading')
@@ -554,13 +506,12 @@ class Cruise2(Model):
     long enough to mandate two cruise portions)
     Model is based off of a discretized Breguet Range equation
     """
-    def __init__(self, **kwargs):
+    def __init__(self, Nclimb2, Ncruise2, **kwargs):
         """
     class to model the second cruise portion of a flight (if the flight is
     long enough to mandate two cruise portions)
     Model is based off of a discretized Breguet Range equation
     """
-    def __init__(self, **kwargs):
         #aero
         CLCruise2 = VectorVariable(Ncruise2, 'C_{L_{Cruise2}}', '-', 'Lift Coefficient')
         WLoadCruise2 = VectorVariable(Ncruise2, 'W_{Load_{Cruise2}}', 'N/m^2', 'Wing Loading')
@@ -729,11 +680,34 @@ class CommercialAircraft(Model):
     class to link all models needed to simulate a commercial flight
     """
     def __init__(self, **kwargs):
+        #defining the number of segments
+        Ntakeoff = 0
+        Nclimb1 = 2
+        Nclimb2 = 2
+        Ncruise1 = 0
+        Ncruiseclimb = 0
+        Ncruise2 = 2
+        Ndecent = 0
+        Nlanding = 0
+
+        #segments below here that start with res --> fuel reserves
+        Nresclimb = 0
+        Nresdecent = 0
+        Nreslanding = 0
+        Nreshold = 0
+
+        #total number of flight segments in each category, possibly useful
+        Nclimb = Nclimb1 + Nclimb2 + Ncruiseclimb
+        Ncruise = Ncruise1 + Ncruise2
+        Nres = Nresclimb + Nresdecent + Nreslanding + Nreshold
+
+        Nseg = Nclimb + Ncruise + Nres + Ntakeoff + Ndecent + Nlanding
+
         #define all the submodels
-        cmc = CommericalMissionConstraints(0)
-        climb1 = Climb1()
-        climb2 = Climb2()
-        cruise2 = Cruise2()
+        cmc = CommericalMissionConstraints(Nclimb1, Nclimb2, Ncruise2, 0)
+        climb1 = Climb1(Nclimb1)
+        climb2 = Climb2(Nclimb2)
+        cruise2 = Cruise2(Nclimb2, Ncruise2)
 ##        atm = Atmosphere(Nseg)
         eonD = EngineOnDesign()
         eoffD = EngineOffDesign()
