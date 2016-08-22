@@ -182,13 +182,6 @@ class CommericalMissionConstraints(Model):
             (S/(124.58*units('m^2')))**.65 == W_wing/(105384.1524*units('N')),
 
             W_e == .75*W_payload,
-
-
-
-
-
-
-##            W_engine == 1000*units('N')
             ])
         
         with gpkit.SignomialsEnabled():
@@ -378,10 +371,6 @@ class Climb1(Model):
 
             #constrain the max wing loading
             WLoadClimb1 <= WLoadmax,
-
-
-##            TSFCc11 == .5*units('1/hr'),
-##            TSFCc12 == .5*units('1/hr'),
             ])
 
         for i in range(0, Nclimb1):
@@ -533,9 +522,6 @@ class Climb2(Model):
 
             #constrain the max wing loading
             WLoadClimb2 <= WLoadmax,
-
-##            TSFCc21 == .5*units('1/hr'),
-##            TSFCc22 == .5*units('1/hr'),
             ])
 
         for i in range(0, Nclimb2):
@@ -666,55 +652,49 @@ class Cruise2(Model):
         #non-GPkit variables
         #cruise 2 lsit
         izbre = map(int, np.linspace(0, Ncruise2 - 1, Ncruise2))
-                  
-        with gpkit.SignomialsEnabled():
             
-            constraints.extend([
-                MCruise2[izbre] == 0.8,
+        constraints.extend([
+            MCruise2[izbre] == 0.8,
 
-                MCruise2 * aCruise2 == VCruise2,
-                
+            MCruise2 * aCruise2 == VCruise2,
+            
 ##                P0 == p[Nclimb],
-                T0 == 280*units('K'),
-                
-                 #climb rate constraints for engine sizing at TOC
-                SignomialEquality(excessPtoc+Vtoc*Dtoc, numeng*Fd*Vtoc),
-                RCtoc == excessPtoc/W_avgClimb2[Nclimb2-1],
-                RCtoc == 500*units('ft/min'),
-                Vtoc == VCruise2[0],
+            T0 == 280*units('K'),
+            
+             #climb rate constraints for engine sizing at TOC
+            excessPtoc+Vtoc*Dtoc  <= numeng*Fd*Vtoc,
+            RCtoc == excessPtoc/W_avgClimb2[Nclimb2-1],
+            RCtoc == 500*units('ft/min'),
+            Vtoc == VCruise2[0],
 
-                #compute the drag
-                TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
+            #compute the drag
+            TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
 ##                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
-                TCS([DCruise2[0] >= (.5*S*rhoCruise2[0]*VCruise2[0]**2)*(Cd0 + K*(W_avgCruise2[0]/(.5*S*rhoCruise2[0]*VCruise2[0]**2))**2)]),
-                TCS([DCruise2[1] >= (.5*S*rhoCruise2[1]*VCruise2[1]**2)*(Cd0 + K*(W_avgCruise2[1]/(.5*S*rhoCruise2[1]*VCruise2[1]**2))**2)]),
-                DCruise2[0] == numeng * thrustcr21,
-                DCruise2[1] == numeng * thrustcr22,
+            TCS([DCruise2[0] >= (.5*S*rhoCruise2[0]*VCruise2[0]**2)*(Cd0 + K*(W_avgCruise2[0]/(.5*S*rhoCruise2[0]*VCruise2[0]**2))**2)]),
+            TCS([DCruise2[1] >= (.5*S*rhoCruise2[1]*VCruise2[1]**2)*(Cd0 + K*(W_avgCruise2[1]/(.5*S*rhoCruise2[1]*VCruise2[1]**2))**2)]),
+            DCruise2[0] == numeng * thrustcr21,
+            DCruise2[1] == numeng * thrustcr22,
 
-                W_avgCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2,
-                WLoadCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2/S,
-                
-                #constrain the climb rate by holding altitude constant
-                hftCruise2[izbre]  == htoc,
-                
-                #taylor series expansion to get the weight term
-                TCS([W_fuelCruise2[izbre]/W_endCruise2[izbre] >= te_exp_minus1(z_brec2[izbre], nterm=3)]),
+            W_avgCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2,
+            WLoadCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2/S,
+            
+            #constrain the climb rate by holding altitude constant
+            hftCruise2[izbre]  == htoc,
+            
+            #taylor series expansion to get the weight term
+            TCS([W_fuelCruise2[izbre]/W_endCruise2[izbre] >= te_exp_minus1(z_brec2[izbre], nterm=3)]),
 
-                #breguet range eqn
-                TCS([z_brec2[0] >= (numeng*TSFCcr21*thoursCruise2[0]*DCruise2[0])/W_avgCruise2[0]]),
-                TCS([z_brec2[1] >= (numeng*TSFCcr22*thoursCruise2[1]*DCruise2[1])/W_avgCruise2[1]]),
- 
-                #time
-                thoursCruise2[izbre]*VCruise2[izbre]  == RngCruise2[izbre],
-                tminCruise2 == thoursCruise2,
+            #breguet range eqn
+            TCS([z_brec2[0] >= (numeng*TSFCcr21*thoursCruise2[0]*DCruise2[0])/W_avgCruise2[0]]),
+            TCS([z_brec2[1] >= (numeng*TSFCcr22*thoursCruise2[1]*DCruise2[1])/W_avgCruise2[1]]),
 
-                #constrain the max wing loading
-                WLoadCruise2 <= WLoadmax,
+            #time
+            thoursCruise2[izbre]*VCruise2[izbre]  == RngCruise2[izbre],
+            tminCruise2 == thoursCruise2,
 
-
-##                TSFCcr21 == .5*units('1/hr'),
-##                TSFCcr22 == .5*units('1/hr'),
-                ])
+            #constrain the max wing loading
+            WLoadCruise2 <= WLoadmax,
+            ])
         
         #constraint on the aircraft meeting the required range
         for i in range(min(izbre), max(izbre)+1):
@@ -868,7 +848,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
