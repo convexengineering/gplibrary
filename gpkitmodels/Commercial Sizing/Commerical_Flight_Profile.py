@@ -118,7 +118,6 @@ W_fuel = VectorVariable(Nseg, 'W_{fuel}', 'N', 'Segment Fuel Weight')
 W_end = VectorVariable(Nseg, 'W_{end}', 'N', 'Segment End Weight')
 W_total = Variable('W_{total}', 'N', 'Total Aircraft Weight')
 W_avg = VectorVariable(Nseg, 'W_{avg}', 'N', 'Geometric Average of Segment Start and End Weight')
-W_wing = Variable('W_{wing}', 'N', 'Wing Weight')
 
 Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
 K = Variable('K', '-', 'K for Parametric Drag Model')
@@ -191,6 +190,7 @@ class CommericalMissionConstraints(Model):
         W_e = Variable('W_{e}', 'N', 'Empty Weight of Aircraft')
         W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
         W_ftotal = Variable('W_{f_{total}}', 'N', 'Total Fuel Weight')
+        W_wing = Variable('W_{wing}', 'N', 'Wing Weight')
 
         #aero
         CL = VectorVariable(Nseg, 'C_{L}', '-', 'Lift Coefficient')
@@ -204,7 +204,6 @@ class CommericalMissionConstraints(Model):
         g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
         gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
         R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
-
 
         
         constraints = []
@@ -221,7 +220,7 @@ class CommericalMissionConstraints(Model):
             #constraints on the various weights
             #with engine weight
             TCS([W_e + W_payload + W_ftotal + numeng * W_engine + W_wing <= W_total]),
- 
+            W_end[Nseg-1] <= W_total,
             W_start[0]  == W_total,
    
             TCS([W_e + W_payload + numeng * W_engine + W_wing <= W_end[Nseg-1]]),
@@ -540,7 +539,7 @@ class Cruise2(Model):
                   
 ##        with gpkit.SignomialsEnabled():
             
-            constraints.extend([
+        constraints.extend([
                 M[icruise2] == 0.8,
                 
 ##                P0 == p[Nclimb],
@@ -620,7 +619,7 @@ class CommercialAircraft(Model):
         substitutions = {      
             'W_{payload}': .6*44000*9.8*units('N'),
             'V_{stall}': 120,
-            'ReqRng': 3000,
+            'ReqRng': 30,
             'C_{d_0}': .02,
             'K': 0.05,
             'h_{toc}': hcruise,
@@ -720,7 +719,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
