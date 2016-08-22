@@ -21,7 +21,7 @@ we are minimizing the fuel weight
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
 #declare the range vector
-rangevec = np.linspace(500,2500,5)
+rangevec = np.linspace(500,2500,1)
 
 ###altitude precomputation
 ###select the cruise altitude

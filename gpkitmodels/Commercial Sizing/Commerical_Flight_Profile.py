@@ -35,15 +35,7 @@ rhovec = atmdict['rho'] * units('kg/m^3')
 pvec = atmdict['p'] * units('kPa')
 
 #TODO
-#link in with engine
-#fix indicies on the TSFC vector variables
-
-#figure out if minimizing total weight is the same as minimizing fuel weight
-
 #---------------------------------------------------------------------
-
-#temporary args
-#pass in a 1 for testing climb segment 1
 
 class CommericalMissionConstraints(Model):
     """
