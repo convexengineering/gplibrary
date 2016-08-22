@@ -44,10 +44,10 @@ pvec = atmdict['p'] * units('kPa')
 #defining the number of segments
 Ntakeoff = 0
 Nclimb1 = 2
-Nclimb2 = 2
+Nclimb2 = 0
 Ncruise1 = 0
 Ncruiseclimb = 0
-Ncruise2 = 2
+Ncruise2 = 0
 Ndecent = 0
 Nlanding = 0
 
@@ -82,15 +82,8 @@ if Ncruise2 != 0:
 else:
     icruise2 = 0
 
-izbre = map(int, np.linspace(0, Ncruise - 1, Ncruise))
-
 #---------------------------------------------------------------------
 #Variable definitions that apply to multiple classes
-#physical constants
-g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
-gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
-R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
-
 #air properties
 a = VectorVariable(Nseg, 'a', 'm/s', 'Speed of Sound')
 rho = VectorVariable(Nseg, '\rho', 'kg/m^3', 'Air Density')
@@ -105,7 +98,7 @@ h = VectorVariable(Nseg, 'h', 'm', 'Altitude [meters]')
 hft = VectorVariable(Nseg, 'hft', 'feet', 'Altitude [feet]')
 dhClimb1 = Variable('dh_{climb1}', 8500, 'feet', 'Total Altitude Change Required in Climb 1')
 dhClimb2 = Variable('dh_{climb2}', 'feet', 'Total Altitude Change Required in Climb 2')
-dhTakeoff = Variable('dh_{takeoff}', 1500, 'feet', 'Total Altitude Change During Takeoff Profile')
+
 
 #time
 tmin = VectorVariable(Nseg, 'tmin', 'min', 'Flight Time in Minutes')
@@ -127,11 +120,6 @@ W_total = Variable('W_{total}', 'N', 'Total Aircraft Weight')
 W_avg = VectorVariable(Nseg, 'W_{avg}', 'N', 'Geometric Average of Segment Start and End Weight')
 W_wing = Variable('W_{wing}', 'N', 'Wing Weight')
 
-#aero
-CL = VectorVariable(Nseg, 'C_{L}', '-', 'Lift Coefficient')
-WLoad = VectorVariable(Nseg, 'W_{Load}', 'N/m^2', 'Wing Loading')
-WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
-
 Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
 K = Variable('K', '-', 'K for Parametric Drag Model')
 
@@ -139,8 +127,7 @@ if Nclimb != 0:
     excessP = VectorVariable(Nclimb, 'Excess Power', 'W', 'Excess Power During Climb')
 D = VectorVariable(Nseg, 'Drag', 'N', 'Drag')
 
-#aircraft geometry
-S = Variable('S', 'm^2', 'Wing Planform Area')
+
 
 #velocitites and mach numbers
 V = VectorVariable(Nseg, 'V', 'knots', 'Aircraft Flight Speed')
@@ -190,13 +177,35 @@ class CommericalMissionConstraints(Model):
     """
     def __init__(self, test=0, **kwargs):
         #variable local to this model
+        #10,000 foot altitude
         alt10k = Variable('alt10k', 10000, 'feet', '10,000 feet')
+
+        #altitude after takeoff
+        dhTakeoff = Variable('dh_{takeoff}', 1500, 'feet', 'Total Altitude Change During Takeoff Profile')
+
+        #alttidue at the top of climb
+        htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
+
+        #weight variables
         W_payload = Variable('W_{payload}', 'N', 'Aircraft Payload Weight')
         W_e = Variable('W_{e}', 'N', 'Empty Weight of Aircraft')
         W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
         W_ftotal = Variable('W_{f_{total}}', 'N', 'Total Fuel Weight')
 
-        htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
+        #aero
+        CL = VectorVariable(Nseg, 'C_{L}', '-', 'Lift Coefficient')
+        WLoad = VectorVariable(Nseg, 'W_{Load}', 'N/m^2', 'Wing Loading')
+        WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
+
+        #aircraft geometry
+        S = Variable('S', 'm^2', 'Wing Planform Area')
+
+        #physical constants
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
+        gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
+        R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
+
+
         
         constraints = []
         constraints.extend([
@@ -214,7 +223,7 @@ class CommericalMissionConstraints(Model):
             TCS([W_e + W_payload + W_ftotal + numeng * W_engine + W_wing <= W_total]),
  
             W_start[0]  == W_total,
-            W_end[5] <= W_total,
+   
             TCS([W_e + W_payload + numeng * W_engine + W_wing <= W_end[Nseg-1]]),
             TCS([W_ftotal >= sum(W_fuel)]),
 
@@ -222,25 +231,22 @@ class CommericalMissionConstraints(Model):
             #based off of a raymer weight and 737 data from TASOPT output file
             (S/(124.58*units('m^2')))**.65 == W_wing/(105384.1524*units('N')),
 
-            #constrain the max wing loading
-            WLoad <= WLoadmax,
-
             W_e == .75*W_payload,
 
             #hold pressure values for linking with engine pressures
             phold1 == p[0],
             phold2 == p[1],
-            phold3 == p[2],
-            phold4 == p[3],
-            phold5 == p[4],
-            phold6 == p[5],
+##            phold3 == p[2],
+##            phold4 == p[3],
+##            phold5 == p[4],
+##            phold6 == p[5],
 
             Thold1 == T[0],
             Thold2 == T[1],
-            Thold3 == T[2],
-            Thold4 == T[3],
-            Thold5 == T[4],
-            Thold6 == T[5],
+##            Thold3 == T[2],
+##            Thold4 == T[3],
+##            Thold5 == T[4],
+##            Thold6 == T[5],
             ])
 
         for i in range(0, Nseg):
@@ -267,7 +273,7 @@ class CommericalMissionConstraints(Model):
                  constraints.extend([
                     TCS([sum(RngClimb) >= ReqRng]),
 ##                    TCS([ReqRngCruise   >= sum(RngCruise)]),
-                    TCS([dhClimb2 + alt10k >= htoc])
+##                    TCS([dhClimb2 + alt10k >= htoc])
                     ])
             for i in range(0, Nclimb1):
                 constraints.extend([
@@ -303,13 +309,34 @@ class Climb1(Model):
     def __init__(self,**kwargs):
         #set the speed limit under 10,000'
         speedlimit = Variable('speedlimit', 'kts', 'Speed Limit Under 10,000 ft')
+
+        #aero
+        CLClimb1 = VectorVariable(Nclimb1, 'C_{L_{Climb1}}', '-', 'Lift Coefficient')
+        WLoadClimb1 = VectorVariable(Nclimb1, 'W_{Load_{Climb1}}', 'N/m^2', 'Wing Loading')
+        WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
+
+        #aircraft geometry
+        S = Variable('S', 'm^2', 'Wing Planform Area')
+
+        #physical constants
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
+        gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
+        R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
+
+        #thrust
+        thrustClimb1 = Variable('thrustClimb1', 'N', 'Engine Thrust')
+
 ##        TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
         TSFCc11 = Variable('TSFC_{c11}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
         TSFCc12 = Variable('TSFC_{c12}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 2')
 ##        thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
         thrustc11 = Variable('thrust_{c11}', 'N', 'Thrust During Climb Segment #1')
         thrustc12 = Variable('thrust_{c12}', 'N', 'Thrust During Climb Segment #1')
-        #Climb #1 (sub 10K subject to 250KTS speed limit)
+
+        #non-GPkit variables
+        #cruise 2 lsit
+        icl1 = map(int, np.linspace(0, Nclimb1 - 1, Nclimb1))
+        print icl1
         constraints = []
             
         constraints.extend([            
@@ -330,7 +357,7 @@ class Climb1(Model):
             TCS([excessP[0]+V[0]*D[0] <= V[0]*numeng*thrustc11]),
             TCS([excessP[1]+V[1]*D[1] <= V[1]*numeng*thrustc12]),
             
-            TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*CL[iclimb1]**2)]),
+            TCS([D[iclimb1] >= (.5*S*rho[iclimb1]*V[iclimb1]**2)*(Cd0 + K*CLClimb1[icl1]**2)]),
             RC[iclimb1] == excessP[iclimb1]/W_avg[iclimb1],
             RC[iclimb1] >= 500*units('ft/min'),
             
@@ -343,8 +370,8 @@ class Climb1(Model):
 ##            TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 >= thours[iclimb1]*V[iclimb1]]),
             RngClimb[iclimb1] == thours[iclimb1]*V[iclimb1],
 
-            W_avg[iclimb1] == .5*CL[iclimb1]*S*rho[iclimb1]*V[iclimb1]**2,
-            WLoad[iclimb1] == .5*CL[iclimb1]*S*rho[iclimb1]*V[iclimb1]**2/S,
+            W_avg[iclimb1] == .5*CLClimb1[icl1]*S*rho[iclimb1]*V[iclimb1]**2,
+            WLoadClimb1[icl1] == .5*CLClimb1[icl1]*S*rho[iclimb1]*V[iclimb1]**2/S,
             
             #compute fuel burn from TSFC
 ##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
@@ -352,6 +379,9 @@ class Climb1(Model):
             W_fuel[1]  == numeng*TSFCc12 * thours[1] * thrustc12,
             #compute the dh required for each climb 1 segment
             dhft[iclimb1] == dhClimb1/Nclimb1,
+
+            #constrain the max wing loading
+            WLoadClimb1 <= WLoadmax,
             ])
         
         Model.__init__(self, None, constraints, **kwargs)
@@ -365,12 +395,32 @@ class Climb2(Model):
     class to model the climb portion above 10,000'
     """
     def __init__(self, **kwargs):
+        #aero
+        CLClimb2 = VectorVariable(Nclimb2, 'C_{L_{Climb2}}', '-', 'Lift Coefficient')
+        WLoadClimb2 = VectorVariable(Nclimb2, 'W_{Load_{Climb2}}', 'N/m^2', 'Wing Loading')
+        WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
+
+        #aircraft geometry
+        S = Variable('S', 'm^2', 'Wing Planform Area')
+
+        #physical constants
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
+        gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
+        R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
+
+        #thrust
+        thrustClimb2 = Variable('thrustClimb2', 'N', 'Engine Thrust')
+        
 ##        TSFCc2 = VectorVariable(Nclimb2, 'TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
         TSFCc21 = Variable('TSFC_{c21}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
         TSFCc22 = Variable('TSFC_{c22}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
 ##        thrustc2 = VectorVariable(Nclimb1, 'thrust_{c2}', 'N', 'Thrust During Climb Segment #2')
         thrustc21 = Variable('thrust_{c21}', 'N', 'Thrust During Climb Segment #2')
         thrustc22 = Variable('thrust_{c22}', 'N', 'Thrust During Climb Segment #2')
+
+        #non-GPkit variables
+        #climb 2 lsit
+        icl2 = map(int, np.linspace(0, Nclimb2 - 1, Nclimb2))
 
         constraints = []
         
@@ -392,7 +442,7 @@ class Climb2(Model):
 ##            TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrustc21]),
             TCS([excessP[2]+V[2]*D[2] <= V[2]*numeng*thrustc21]),
             TCS([excessP[3]+V[3]*D[3] <= V[3]*numeng*thrustc22]),
-            TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*CL[iclimb2]**2)]),
+            TCS([D[iclimb2] >= (.5*S*rho[iclimb2]*V[iclimb2]**2)*(Cd0 + K*CLClimb2[icr2]**2)]),
             RC[iclimb2] == excessP[iclimb2]/W_avg[iclimb2],
             RC[2] >= 500*units('ft/min'),
             RC[3] >= 500*units('ft/min'),
@@ -407,8 +457,8 @@ class Climb2(Model):
 ##            TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
             RngClimb[iclimb2] <= thours[iclimb2]*V[iclimb2],
 
-            W_avg[iclimb2] == .5*CL[iclimb2]*S*rho[iclimb2]*V[iclimb2]**2,      
-            WLoad[iclimb2] == .5*CL[iclimb2]*S*rho[iclimb2]*V[iclimb2]**2/S,
+            W_avg[iclimb2] == .5*CLClimb2[icl2]*S*rho[iclimb2]*V[iclimb2]**2,      
+            WLoad[iclimb2] == .5*CLClimb2[icl2]*S*rho[iclimb2]*V[iclimb2]**2/S,
             
             #compute fuel burn from TSFC
             W_fuel[2]  == numeng*TSFCc21 * thours[2] * thrustc21,
@@ -416,6 +466,9 @@ class Climb2(Model):
 
             #compute the dh required for each climb 1 segment
             dhft[iclimb2] == dhClimb2/Nclimb2,
+
+            #constrain the max wing loading
+            WLoadClimb2 <= WLoadmax,
             ])
         
         Model.__init__(self, None, constraints, **kwargs)
@@ -441,6 +494,17 @@ class Cruise2(Model):
     Model is based off of a discretized Breguet Range equation
     """
     def __init__(self, **kwargs):
+        #aero
+        CLCruise2 = VectorVariable(Ncruise2, 'C_{L_{Cruise2}}', '-', 'Lift Coefficient')
+        WLoadCruise2 = VectorVariable(Ncruise2, 'W_{Load_{Cruise2}}', 'N/m^2', 'Wing Loading')
+        WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
+
+        #aircraft geometry
+        S = Variable('S', 'm^2', 'Wing Planform Area')
+
+        #thrust
+        thrustCruise2 = Variable('thrustCruise2', 'N', 'Engine Thrust')
+        
 ##        TSFCcr2 = VectorVariable(Ncruise2, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
         TSFCcr21 = Variable('TSFC_{cr21}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
         TSFCcr22 = Variable('TSFC_{cr22}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
@@ -469,8 +533,12 @@ class Cruise2(Model):
         Vtoc = Variable('V @ TOC', 'knots', 'Aircraft Flight Speed at TOC')
         htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
         CLtoc = Variable('C_{Ltoc}', '-', 'Lift Coefficient @ TOC')
+
+        #non-GPkit variables
+        #cruise 2 lsit
+        icr2 = map(int, np.linspace(0, Ncruise2 - 1, Ncruise2))
                   
-        with gpkit.SignomialsEnabled():
+##        with gpkit.SignomialsEnabled():
             
             constraints.extend([
                 M[icruise2] == 0.8,
@@ -494,14 +562,14 @@ class Cruise2(Model):
                 D[4] == numeng * thrustcr21,
                 D[5] == numeng * thrustcr22,
 
-                W_avg[icruise2] == .5*CL[icruise2]*S*rho[icruise2]*V[icruise2]**2,
-                WLoad[icruise2] == .5*CL[icruise2]*S*rho[icruise2]*V[icruise2]**2/S,
+                W_avg[icruise2] == .5*CLCruise2[icr2]*S*rho[icruise2]*V[icruise2]**2,
+                WLoad[icruise2] == .5*CLCruise2[icr2]*S*rho[icruise2]*V[icruise2]**2/S,
                 
                 #constrain the climb rate by holding altitude constant
                 hft[icruise2]  == htoc,
                 
                 #taylor series expansion to get the weight term
-                TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_brec2[izbre], nterm=3)]),
+                TCS([W_fuel[icruise2]/W_end[icruise2] >= te_exp_minus1(z_brec2[icr2], nterm=3)]),
 
                 #breguet range eqn
                 TCS([z_brec2[0] >= (numeng*TSFCcr21*thours[4]*D[4])/W_avg[4]]),
@@ -509,6 +577,9 @@ class Cruise2(Model):
  
                 #time
                 thours[icruise2]*V[icruise2]  == RngCruise[izbre],
+
+                #constrain the max wing loading
+                WLoadCruise2 <= WLoadmax,
                 ])
         
         #constraint on the aircraft meeting the required range
@@ -531,10 +602,10 @@ class CommercialAircraft(Model):
     """
     def __init__(self, **kwargs):
         #define all the submodels
-        cmc = CommericalMissionConstraints(0)
+        cmc = CommericalMissionConstraints(1)
         climb1 = Climb1()
-        climb2 = Climb2()
-        cruise2 = Cruise2()
+##        climb2 = Climb2()
+##        cruise2 = Cruise2()
 ##        atm = Atmosphere(Nseg)
         eonD = EngineOnDesign()
         eoffD = EngineOffDesign()
@@ -573,7 +644,7 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
+        self.submodels = [cmc, climb1]#, climb2, cruise2, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
 
         constraints = ConstraintSet([self.submodels])
 
@@ -649,7 +720,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
