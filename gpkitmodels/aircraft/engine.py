@@ -162,7 +162,7 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 0
+        res7 = 1
         
         offD = OffDesign(res7, cooling)
 
@@ -204,7 +204,7 @@ class EngineOffDesign(Model):
                 '\eta_{LPshaft}': sol('\eta_{LPshaft}'),
                 'M_{takeoff}': sol('M_{takeoff}'),
                 '\alpca_c': sol('\alpca_c'),
-                'T_{t_f}': sol('T_{t_f}'),
+##                'T_{t_f}': sol('T_{t_f}'),
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
@@ -235,5 +235,5 @@ if __name__ == "__main__":
     
     engineOffD = EngineOffDesign(solOn)
     
-    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
-##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
+##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
+    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
