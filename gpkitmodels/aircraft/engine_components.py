@@ -189,21 +189,20 @@ class CombustorCooling(Model):
                 
                 TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3+Cpfuel*f*(Tt4-Ttf)]),
 ##                TCS([f*hf + ht3 >= ht4]),
+                
                 #making f+1 GP compatible --> needed for convergence
                 SignomialEquality(fp1,f+1),
                 
-                #flow at turbine inlet
-                Tt41 <= (f*hf/Cpc + Tt3 + Ttf*f)/fp1,
-##                Tt41 == Tt4,
                 ht41 == Cpc * Tt41,
                 ]
             
             if cooling == True:
                 constraints.extend([
+                    #compute Tt41...mixing causes a temperature drop
+                    TCS([ht41 <= (f*hf + ht3 + Cpfuel*Ttf*f)/fp1]),
+                
                     #comptue the rest of the station 4.1 variables
-                    SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),
-##                    TCS([fp1*u41 <= (u4a*(1-ac)+f*u4a+ac*uc)]),
-##                    SignomialEquality(T41 + .5*(u41**2)/Cpc, Tt41),
+                    SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
                     
                     #this is a stagnation relation...need to fix it to not be signomial
                     TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
@@ -216,7 +215,8 @@ class CombustorCooling(Model):
                     ])
             else:
                 constraints.extend([
-                    Pt41 == Pt4
+                    Pt41 == Pt4,
+                    Tt41 == Tt4,
                     ])
             
         Model.__init__(self, 1/f, constraints, **kwargs)
@@ -866,7 +866,7 @@ class OffDesign(Model):
     m7opt of zero gives the constriants for M7 < 1, m7opt of 1 gives constraints
     for M7 >= 1
     """
-    def __init__(self, res7, **kwargs):
+    def __init__(self, res7, cooling, **kwargs):
         #define all the variables
         #gas propeRies
         R = Variable('R', 287, 'J/kg/K', 'R')
@@ -982,6 +982,8 @@ class OffDesign(Model):
 
         Mtakeoff = Variable('M_{takeoff}', '-', '1 Minus Percent mass flow loss for de-ice, pressurization, etc.')
 
+        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
@@ -1051,10 +1053,17 @@ class OffDesign(Model):
                     ])
         
         if res7 == 1:
-            constraints.extend([
-                #residual 7
-                #option #2 constrain the burner exit temperature
-                Tt4 == Tt4spec,  #B.265
-                ])
+            if cooling == True:
+                constraints.extend([
+                    #residual 7
+                    #option #2 constrain the burner exit temperature
+                    Tt41 == Tt4spec,  #B.265
+                    ])
+            if cooling == False:
+                constraints.extend([
+                    #residual 7
+                    #option #2 constrain the burner exit temperature
+                    Tt4 == Tt4spec,  #B.265
+                    ])
                  
         Model.__init__(self, 1/u7, constraints, **kwargs)

@@ -164,7 +164,7 @@ class EngineOffDesign(Model):
 
         res7 = 1
         
-        offD = OffDesign(res7)
+        offD = OffDesign(res7, cooling)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
@@ -198,7 +198,7 @@ class EngineOffDesign(Model):
                 'alphap1': sol('alphap1'),
                 
                 'F_{spec}': 8.0e+04 ,
-                'T_{t_{4spec}}': 1600,
+                'T_{t_{4spec}}': 1200,
 
                 '\eta_{HPshaft}': sol('\eta_{HPshaft}'),
                 '\eta_{LPshaft}': sol('\eta_{LPshaft}'),
@@ -214,22 +214,14 @@ class EngineOffDesign(Model):
                 'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
                 'm_{hc_D}': sol('m_{hc_D}'),
                 '\pi_{hc_D}': sol('\pi_{hc}'),
-            }
-            
-        if cooling == True:
-            substitutions.update({
+
                 'M_{4a}': sol('M_{4a}'),
                 'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
                 'r_{uc}': sol('r_{uc}'),
                 '\alpca_c': sol('\alpca_c'),
                 'T_{t_f}': sol('T_{t_f}'),
-                'T_{m_TO}': 1000,
-                'M_{t_exit}': 1,
-                'chold_2': (1+.5*(1.318-1)*.6**2)**-1,
-                'chold_3': (1+.5*(1.318-1)*.6**2)**-2,
-                'T_{t_4TO}': 1600,
-                })
-        
+            }
+            
         Model.__init__(self, thrust.cost, lc, substitutions)
    
 if __name__ == "__main__":
