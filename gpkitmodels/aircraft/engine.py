@@ -29,7 +29,7 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        cooling = True
+        cooling = False
         tstages = 1
         
         lpc = FanAndLPC()
@@ -53,7 +53,7 @@ class EngineOnDesign(Model):
             'T_0': 216.5,   #36K feet
             'P_0': 22.8,    #36K feet
             'M_0': 0.8,
-            'T_{t_4}': 1600,
+            'T_{t_4}': 1400,
             '\pi_f': 1.5,
             '\pi_{lc}': 3.28,
             '\pi_{hc}': 10,
@@ -152,7 +152,7 @@ class EngineOffDesign(Model):
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
     def __init__(self, sol):
-        cooling = True
+        cooling = False
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(cooling)
@@ -162,7 +162,7 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         
         offD = OffDesign(res7, cooling)
 
@@ -203,7 +203,8 @@ class EngineOffDesign(Model):
                 '\eta_{HPshaft}': sol('\eta_{HPshaft}'),
                 '\eta_{LPshaft}': sol('\eta_{LPshaft}'),
                 'M_{takeoff}': sol('M_{takeoff}'),
-                'stag41': 1+.5*(.312)*sol('M_{4a}')**2,
+                '\alpca_c': sol('\alpca_c'),
+                'T_{t_f}': sol('T_{t_f}'),
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
@@ -215,12 +216,14 @@ class EngineOffDesign(Model):
                 'm_{hc_D}': sol('m_{hc_D}'),
                 '\pi_{hc_D}': sol('\pi_{hc}'),
 
-                'M_{4a}': sol('M_{4a}'),
-                'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
-                'r_{uc}': sol('r_{uc}'),
-                '\alpca_c': sol('\alpca_c'),
-                'T_{t_f}': sol('T_{t_f}'),
             }
+            if cooling == True:
+                substitutions.update({
+                    'stag41': 1+.5*(.312)*sol('M_{4a}')**2,
+                    'M_{4a}': sol('M_{4a}'),
+                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
+                    'r_{uc}': sol('r_{uc}'),
+                })
             
         Model.__init__(self, thrust.cost, lc, substitutions)
    
@@ -232,5 +235,5 @@ if __name__ == "__main__":
     
     engineOffD = EngineOffDesign(solOn)
     
-    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=200)
+    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
 ##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)

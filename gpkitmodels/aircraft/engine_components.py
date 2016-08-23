@@ -727,17 +727,22 @@ class LPCMap(Model):
 ##                        + 7.99e-15 * (N1)**2.07e+04 * (mlc/units('kg/s'))**592
 ##                        + 1.22e-50 * (N1)**-2.84e+03 * (mlc/units('kg/s'))**598)])
                 #define mbar..technially not needed b/c constrained in res 2 and/or 3
+                TCS([(pilc*10)**.41 >= (1.99 * (N1)**0.611 + 1.83 * (N1)**6.25)]),
+                TCS([pilc*10 <= (1.38 * (mlc/units('kg/s'))**0.122)**10]),
+##                SignomialEquality(pilc*10, (1.38 * (mlc/units('kg/s'))**0.122)**10),
+##                N1<=5,
+##                N1<=1,
                 TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
-
-                #define mtild
-                mtildlc == mlc/mlcD,   #B.282
-
-                #define ptild
-                #SIGNOMIAL
-                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
-                
-                #constrain the "knee" shape of the map, monomial is from gpfit
-                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
+##                pilc>=1,
+##                #define mtild
+##                mtildlc == mlc/mlcD,   #B.282
+##
+##                #define ptild
+##                #SIGNOMIAL
+##                SignomialEquality(ptildlc * (pilcD-1), (pilc-1)),    #B.281
+##                
+##                #constrain the "knee" shape of the map, monomial is from gpfit
+##                ptildlc == ((N1**.28)*(mtildlc**-.00011))**10,
                 ]
                 
             Model.__init__(self, 1/pilc, constraints, **kwargs)
@@ -755,7 +760,7 @@ class HPCMap(Model):
         Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
 
         #Mass Flow Variables
-        mhc = Variable('m_{lc}', 'kg/s', 'HPC Corrected Mass Flow')
+        mhc = Variable('m_{hc}', 'kg/s', 'HPC Corrected Mass Flow')
         mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
         mtildhc = Variable('m_{tild_hc}', '-', 'HPC Normalized Mass Flow')
         mhcD = Variable('m_{hc_D}', 'kg/s', 'On Design HPC Corrected Mass Flow')
@@ -784,16 +789,23 @@ class HPCMap(Model):
 ##                        + 0.575 * (N2)**-0.491 * (mhc/units('kg/s'))**-0.0789
 ##                        + 7.99e-15 * (N2)**2.07e+04 * (mhc/units('kg/s'))**592
 ##                        + 1.22e-50 * (N2)**-2.84e+03 * (mhc/units('kg/s'))**598)])
-                
-                #define mtild
-                mtildhc == mhc/mhcD,   #B.282
 
-                #define ptild
-                #SIGNOMIAL
-                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
-               
-                #constrain the "knee" shape of the map, monomial is from gpfit
-                ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
+##                TCS([pihc*3 >= (1.35 * (N2)**0.383)**10]),
+                TCS([pihc*3 <= (1.38 * (mhc/units('kg/s'))**0.122)**10]),
+##                SignomialEquality(pihc*3 , (1.38 * (mhc/units('kg/s'))**0.122)**10),
+##                N2 <=5,
+##                N2 >= 1,
+                TCS([mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref)]),    #B.280
+##                pihc>=1,
+                #define mtild
+##                mtildhc == mhc/mhcD,   #B.282
+##
+##                #define ptild
+##                #SIGNOMIAL
+##                SignomialEquality(ptildhc * (pihcD-1), (pihc-1)),    #B.281
+##               
+##                #constrain the "knee" shape of the map, monomial is from gpfit
+##                ptildhc == ((N2**.28)*(mtildhc**-.00011))**10,
                 ]
                 
             Model.__init__(self, 1/pihc, constraints, **kwargs)
@@ -837,18 +849,36 @@ class FanMap(Model):
 
         with SignomialsEnabled():
             constraints = [
+##                SignomialEquality(pif**(-.187), (0.179 * (Nf)**-0.14 * (mf/units('kg/s'))**0.0288
+##                        + 0.187 * (Nf)**-0.136 * (mf/units('kg/s'))**0.0253
+##                        + 0.02 * (Nf)**-6.58 * (mf/units('kg/s'))**10.3
+##                        + 0.176 * (Nf)**-0.0569 * (mf/units('kg/s'))**-0.0665
+##                        + 0.179 * (Nf)**-0.131 * (mf/units('kg/s'))**0.0189
+##                        + 0.174 * (Nf)**-0.124 * (mf/units('kg/s'))**0.0104)),
+
+##                pif**(-.187) <= (0.179 * (Nf)**-0.14 * (mf/units('kg/s'))**0.0288
+##                        + 0.187 * (Nf)**-0.136 * (mf/units('kg/s'))**0.0253
+##                        + 0.02 * (Nf)**-6.58 * (mf/units('kg/s'))**10.3
+##                        + 0.176 * (Nf)**-0.0569 * (mf/units('kg/s'))**-0.0665
+##                        + 0.179 * (Nf)**-0.131 * (mf/units('kg/s'))**0.0189
+##                        + 0.174 * (Nf)**-0.124 * (mf/units('kg/s'))**0.0104),
+
+                TCS([pif <= (1.05*Nf**.0614)**10]),
+                TCS([pif**.957 <= (0.978 * (mf/units('kg/s'))**-0.00977 + 0.736 * (mf/units('kg/s'))**4.74)]),
+##                SignomialEquality(pif**.957 ,(0.978 * (mf/units('kg/s'))**-0.00977 + 0.736 * (mf/units('kg/s'))**4.74)),
+##                pif>=1,
                 #define mbar
                 mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-
-                #define mtild
-                mtildf == mf/mFanBarD,   #B.282
+##
+##                #define mtild
+##                mtildf == mf/mFanBarD,   #B.282
 
                 #define ptild
                 #SIGNOMIAL
-                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
+##                SignomialEquality(ptildf * (piFanD-1), (pif-1)),    #B.281
 
                 #constrain the "knee" shape of the map, monomial is from gpfit
-                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
+##                ptildf == ((Nf**.28)*(mtildf**-.00011))**10,
                 ]
               
             Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -1037,10 +1067,6 @@ class OffDesign(Model):
                 
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
-
-                #constrain the exit exhaust exit speeds
-##                u5 >= u0,
-##                u7 >= u0,
             ]
             
         if res7 == 0:
