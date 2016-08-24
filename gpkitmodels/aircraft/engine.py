@@ -235,5 +235,5 @@ if __name__ == "__main__":
     
     engineOffD = EngineOffDesign(solOn)
     
-##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
-    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
+    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
+##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
