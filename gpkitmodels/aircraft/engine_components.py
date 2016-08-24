@@ -189,7 +189,8 @@ class CombustorCooling(Model):
                 
                 TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3+Cpfuel*f*(Tt4-Ttf)]),
 ##                TCS([f*hf + ht3 >= ht4]),
-                
+  
+##                f*hf + ht3 >= ht4,
                 #making f+1 GP compatible --> needed for convergence
                 SignomialEquality(fp1,f+1),
                 
@@ -393,6 +394,9 @@ class ExhaustAndThrust(Model):
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
+                u6 >= u0,
+                u8 >= u0,
+
                 #overall thrust values
 ##                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
 ##                TCS([F6/mCore + u0 <= (1+f)*u6]),      #B.189
@@ -409,7 +413,8 @@ class ExhaustAndThrust(Model):
                 Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
 
                 #TSFC
-                TSFC == 1/Isp                   #B.193
+##                TSFC == 1/Isp                   #B.193
+                TSFC == f*g*mCore/F,
                 ]
         Model.__init__(self, TSFC, constraints, **kwargs)
   
@@ -721,23 +726,30 @@ class LPCMap(Model):
 
         with SignomialsEnabled():
             constraints = [
-                 TCS([pilc**(-.163) <= ( 5.28e-10 * (N1)**-88.8 * (mlc/units('kg/s'))**2.05
-                        + 0.0115 * (N1)**-16.5 * (mlc/units('kg/s'))**4.89
-                        + 0.575 * (N1)**-0.491 * (mlc/units('kg/s'))**-0.0789
-                        + 7.99e-15 * (N1)**2.07e+04 * (mlc/units('kg/s'))**592
-                        + 1.22e-50 * (N1)**-2.84e+03 * (mlc/units('kg/s'))**598)]),
+##                 TCS([pilc**(-.163) <= ( 5.28e-10 * (N1)**-88.8 * (mtildlc)**2.05
+##                        + 0.0115 * (N1)**-16.5 * (mtildlc)**4.89
+##                        + 0.575 * (N1)**-0.491 * (mtildlc)**-0.0789
+##                        + 7.99e-15 * (N1)**2.07e+04 * (mtildlc)**592
+##                        + 1.22e-50 * (N1)**-2.84e+03 * (mtildlc)**598)]),
+##                SignomialEquality((10*pilc)**(-.163) , ( 5.28e-10 * (N1)**-88.8 * (mtildlc)**2.05
+##                        + 0.0115 * (N1)**-16.5 * (mtildlc)**4.89
+##                        + 0.575 * (N1)**-0.491 * (mtildlc)**-0.0789
+##                        + 7.99e-15 * (N1)**2.07e+04 * (mtildlc)**592
+##                        + 1.22e-50 * (N1)**-2.84e+03 * (mtildlc)**598)),
                 #define mbar..technially not needed b/c constrained in res 2 and/or 3
 ##                TCS([(pilc*10)**.41 >= (1.99 * (N1)**0.611 + 1.83 * (N1)**6.25)]),
-##                pilc*10 <= (1.38 * (N1)**0.566)**10,
-##                pilc*10 <= (1.38 * (mlc/units('kg/s'))**0.122)**10,
-##                TCS([pilc*10 <= (1.38 * (mlc/units('kg/s'))**0.122)**10]),
-##                SignomialEquality(pilc*10, (1.38 * (mlc/units('kg/s'))**0.122)**10),
+                pilc*(26/3.28) == (1.38 * (N1)**0.566)**10,
+##                pilc*10 <= 1.1*(1.38 * (N1)**0.566)**10,
+                pilc*(26/3.28) <= 1.15*(1.38 * (mtildlc)**0.122)**10,
+                pilc*(26/3.28) >= .85*(1.38 * (mtildlc)**0.122)**10,
+##                TCS([pilc*10 <= (1.38 * (mtildlc)**0.122)**10]),
+##                SignomialEquality(pilc*10, (1.38 * (mtildlc)**0.122)**10),
 ##                N1<=5,
 ##                N1<=1,
                 TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
-##                pilc>=1,
+                pilc>=1,
 ##                #define mtild
-##                mtildlc == mlc/mlcD,   #B.282
+                mtildlc == mlc/mlcD,   #B.282
 ##
 ##                #define ptild
 ##                #SIGNOMIAL
@@ -786,24 +798,32 @@ class HPCMap(Model):
 
         with SignomialsEnabled():
             constraints = [
-                TCS([pihc**(-.163) <= ( 5.28e-10 * (N2)**-88.8 * (mhc/units('kg/s'))**2.05
-                        + 0.0115 * (N2)**-16.5 * (mhc/units('kg/s'))**4.89
-                        + 0.575 * (N2)**-0.491 * (mhc/units('kg/s'))**-0.0789
-                        + 7.99e-15 * (N2)**2.07e+04 * (mhc/units('kg/s'))**592
-                        + 1.22e-50 * (N2)**-2.84e+03 * (mhc/units('kg/s'))**598)]),
+##                TCS([pihc**(-.163) <= ( 5.28e-10 * (N2)**-88.8 * (mtildhc)**2.05
+##                        + 0.0115 * (N2)**-16.5 * (mtildhc)**4.89
+##                        + 0.575 * (N2)**-0.491 * (mtildhc)**-0.0789
+##                        + 7.99e-15 * (N2)**2.07e+04 * (mtildhc)**592
+##                        + 1.22e-50 * (N2)**-2.84e+03 * (mtildhc)**598)]),
 
-##                TCS([pihc*3 >= (1.35 * (N2)**0.383)**10]),
-##                TCS([pihc*3 <= (1.38 * (mhc/units('kg/s'))**0.122)**10]),
+##                SignomialEquality((3*pihc)**(-.163) , ( 5.28e-10 * (N2)**-88.8 * (mtildhc)**2.05
+##                        + 0.0115 * (N2)**-16.5 * (mtildhc)**4.89
+##                        + 0.575 * (N2)**-0.491 * (mtildhc)**-0.0789
+##                        + 7.99e-15 * (N2)**2.07e+04 * (mtildhc)**592
+##                        + 1.22e-50 * (N2)**-2.84e+03 * (mtildhc)**598)),
+                pihc >= 1,
+##                TCS([pihc*3 >= .95*(1.35 * (N2)**0.383)**10]),
+                pihc*(26/10) == (1.35 * (N2)**0.383)**10,
+                pihc*(26/10) >= .85*(1.38 * (mtildhc)**0.122)**10,
+                TCS([pihc*(26/10) <= 1.15*(1.38 * (mtildhc)**0.122)**10]),
 ##                pihc*3 == (1.38 * (N2)**0.566)**10,
 ##                pihc >= 1,
-                N2 <= 1.15,
-##                SignomialEquality(pihc*3 , (1.38 * (mhc/units('kg/s'))**0.122)**10),
+##                N2 <= 1.15,
+##                SignomialEquality(pihc*3 , (1.38 * (mtildhc)**0.122)**10),
 ##                N2 <=5,
 ##                N2 >= 1,
                 TCS([mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref)]),    #B.280
 ##                pihc>=1,
                 #define mtild
-##                mtildhc == mhc/mhcD,   #B.282
+                mtildhc == mhc/mhcD,   #B.282
 ##
 ##                #define ptild
 ##                #SIGNOMIAL
@@ -854,32 +874,35 @@ class FanMap(Model):
 
         with SignomialsEnabled():
             constraints = [
-##                SignomialEquality(pif**(-.187), (0.179 * (Nf)**-0.14 * (mf/units('kg/s'))**0.0288
-##                        + 0.187 * (Nf)**-0.136 * (mf/units('kg/s'))**0.0253
-##                        + 0.02 * (Nf)**-6.58 * (mf/units('kg/s'))**10.3
-##                        + 0.176 * (Nf)**-0.0569 * (mf/units('kg/s'))**-0.0665
-##                        + 0.179 * (Nf)**-0.131 * (mf/units('kg/s'))**0.0189
-##                        + 0.174 * (Nf)**-0.124 * (mf/units('kg/s'))**0.0104)),
+##                SignomialEquality(pif**(-.187), (0.179 * (Nf)**-0.14 * (mtildf)**0.0288
+##                        + 0.187 * (Nf)**-0.136 * (mtildf)**0.0253
+##                        + 0.02 * (Nf)**-6.58 * (mtildf)**10.3
+##                        + 0.176 * (Nf)**-0.0569 * (mtildf)**-0.0665
+##                        + 0.179 * (Nf)**-0.131 * (mtildf)**0.0189
+##                        + 0.174 * (Nf)**-0.124 * (mtildf)**0.0104)),
 
-                pif**(-.187) <= (0.179 * (Nf)**-0.14 * (mf/units('kg/s'))**0.0288
-                        + 0.187 * (Nf)**-0.136 * (mf/units('kg/s'))**0.0253
-                        + 0.02 * (Nf)**-6.58 * (mf/units('kg/s'))**10.3
-                        + 0.176 * (Nf)**-0.0569 * (mf/units('kg/s'))**-0.0665
-                        + 0.179 * (Nf)**-0.131 * (mf/units('kg/s'))**0.0189
-                        + 0.174 * (Nf)**-0.124 * (mf/units('kg/s'))**0.0104),
-##               TCS([pif*15 <= (1.38 * (mf/units('kg/s'))**0.122)**10]),
-##               TCS([pif*15 <= (1.38 * (Nf)**0.566)**10]),                           
-##                TCS([pif == (1.05*Nf**.0614)**10]),
-##                TCS([pif**.957 <= (0.978 * (mf/units('kg/s'))**-0.00977 + 0.736 * (mf/units('kg/s'))**4.74)]),
-##                pif <= (1.04 * ((mf/units('kg/s'))**0.022))**10,
-##                SignomialEquality(pif**.957 ,(0.978 * (mf/units('kg/s'))**-0.00977 + 0.736 * (mf/units('kg/s'))**4.74)),
+##                pif**(-.187) <= (0.179 * (Nf)**-0.14 * (mtildf)**0.0288
+##                        + 0.187 * (Nf)**-0.136 * (mtildf)**0.0253
+##                        + 0.02 * (Nf)**-6.58 * (mtildf)**10.3
+##                        + 0.176 * (Nf)**-0.0569 * (mtildf)**-0.0665
+##                        + 0.179 * (Nf)**-0.131 * (mtildf)**0.0189
+##                        + 0.174 * (Nf)**-0.124 * (mtildf)**0.0104),
+##               TCS([pif*15 <= (1.38 * (mtildf)**0.122)**10]),
+##               TCS([pif*15 >= .9*(1.38 * (Nf)**0.566)**10]),
+##               TCS([pif*15 <= 1.1*(1.38 * (Nf)**0.566)**10]),
+##                TCS([pif <= 1.1*(1.05*Nf**.0614)**10]),
+                TCS([pif*(1.7/1.5) == (1.05*Nf**.0614)**10]),
+##                TCS([pif**.957 <= (0.978 * (mtildf)**-0.00977 + 0.736 * (mtildf)**4.74)]),
+                pif*(1.7/1.5) >= .85*(1.04 * ((mtildf)**0.022))**10,
+                pif*(1.7/1.5) <= 1.15*(1.04 * ((mtildf)**0.022))**10,
+##                SignomialEquality(pif**.957 ,(0.978 * (mtildf)**-0.00977 + 0.736 * (mtildf)**4.74)),
 ##                pif>=1,
                 #define mbar
                 mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
 ##                pif >= 1,
 ##
 ##                #define mtild
-##                mtildf == mf/mFanBarD,   #B.282
+                mtildf == mf/mFanBarD,   #B.282
 
                 #define ptild
                 #SIGNOMIAL
@@ -1028,9 +1051,9 @@ class OffDesign(Model):
                 SignomialEquality(fp1,f+1),
                 
                 #residual 1 Fan/LPC speed
-                Nf*Gf >= .9*N1,
-                Nf*Gf <= 1.1*N1,
-          
+##                Nf*Gf >= .9*N1,
+                Nf*Gf == N1,
+##                N1 <= 10000,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity
 ##                N1 >= .1,

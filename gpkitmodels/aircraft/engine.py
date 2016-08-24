@@ -75,7 +75,7 @@ class EngineOnDesign(Model):
             '\eta_{LPshaft}': .98,
             'M_{takeoff}': .95,
             'stag41': 1+.5*(.312)*M4a**2,
-            '\alpca_c': .1,
+            '\alpca_c': .05,
 
             #new subs for cooling flow losses
             'T_{t_f}': 600,
@@ -162,7 +162,7 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap()
         hpcmap = HPCMap()
 
-        res7 = 1
+        res7 = 0
         
         offD = OffDesign(res7, cooling)
 
@@ -204,7 +204,7 @@ class EngineOffDesign(Model):
                 '\eta_{LPshaft}': sol('\eta_{LPshaft}'),
                 'M_{takeoff}': sol('M_{takeoff}'),
                 '\alpca_c': sol('\alpca_c'),
-##                'T_{t_f}': sol('T_{t_f}'),
+                'T_{t_f}': sol('T_{t_f}'),
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
                 'N_{{bar}_Df}': 1,
