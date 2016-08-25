@@ -2,6 +2,7 @@ import numpy as np
 import numpy as np
 from gasmale import GasPoweredMALE
 import plot
+from plotting import fix_vars, plot_mission_var
 
 fixed = False
 # PLOTS #
@@ -12,73 +13,45 @@ W_pay = False
 P_pay = False
 altitude = False
 
-NLoiter = 20
-NClimb1, NClimb2 = 10, 10
-NCruise1, NCruise2 = 5, 5
-NClimb = NClimb1 + NClimb2
-NCruise = NCruise1 + NCruise2
-NSeg = NLoiter + NClimb + NCruise
-mStart = 0
-mEndClimb = NClimb1
-mEndCruise = NClimb1 + NCruise1
-mEndClimb2 = NClimb1 + NCruise1 + NClimb2
-mEndLoiter = NSeg - NCruise2
-mEnd = NSeg
-iClimb1 = range(0, mEndClimb)
-iClimb2 = range(mEndCruise, mEndClimb2)
-iClimb = range(0, mEndClimb) + range(mEndCruise, mEndClimb2)
-iCruise = range(mEndClimb, mEndCruise) + range(mEndLoiter, mEnd)
-iCruise1 = range(mEndClimb, mEndCruise)
-iCruise2 = range(mEndLoiter, mEnd)
-iLoiter = range(mEndClimb2, mEndLoiter)
-t = np.linspace(0,NSeg-1,NSeg)
+M = GasPoweredMALE()
+sol_fix = M.solve('mosek')
 
-M = GasPoweredMALE(NLoiter=NLoiter, NClimb1=NClimb1, NClimb2=NClimb2, NCruise1=NCruise1, NCruise2=NCruise2, wind=wind)
-sol = M.solve('mosek')
+vars_to_fix = {"S":0.0, "b":0.0, "Vol_{fuse}":0.0001}
+fix_vars(M, sol_fix, vars_to_fix)
 
-if fixed:
-    S_fix = sol('S').magnitude
-    Sfuse_fix = sol('S_{fuse}').magnitude
-    b_fix = sol('b').magnitude
-    lfuse_fix = sol('l_{fuse}').magnitude
-    Volfuse_fix = sol('Vol_{fuse}').magnitude
-    hspar_fix = sol('h_{spar}').magnitude
-    Volfuel_fix = sol('Vol_{fuel}').magnitude
+fig, ax = plot_mission_var(M, "V", [0, 40])
+fig.savefig("profile_t_vs_velocity.pdf")
 
-    #wind = True
-    M = GasPoweredMALE(NLoiter=NLoiter, NClimb1=NClimb1, NClimb2=NClimb2, NCruise1=NCruise1, NCruise2=NCruise2, wind=wind)
+fig, ax = plot_mission_var(M, "\\eta_{prop}", [0, 1])
+fig.savefig("profile_t_vs_etaprop.pdf")
 
-    M.substitutions.update({'S': S_fix})
-    #M.substitutions.update({'V_{wind}': 5})
-    #M.substitutions.update({'S_{fuse}': Sfuse_fix})
-    M.substitutions.update({'b': b_fix})
-    #M.substitutions.update({'l_{fuse}': lfuse_fix})
-    M.substitutions.update({'Vol_{fuse}': Volfuse_fix+0.0001})
-    M.substitutions.update({'Vol_{fuel}': Volfuel_fix+0.0001})
-    #M.substitutions.update({'h_{spar}': hspar_fix})
-    sol = M.solve('mosek', verbosity=0)
-    V = sol('V')
+fig, ax = plot_mission_var(M, "BSFC", [0, 2])
+fig.savefig("profile_t_vs_BSFC.pdf")
 
-    if fixedPLOTS:
-        plot.fixed(t, V, NSeg, NClimb1, NCruise1, NClimb2, NLoiter, NCruise2,
-                   mStart, mEndClimb, mEndCruise, mEndClimb2, mEndLoiter)
+fig, ax = plot_mission_var(M, "P_{shaft-max}", [0, 5])
+fig.savefig("profile_t_vs_Pshaftmax.pdf")
 
-if missionPLOTS:
-    plot.mission(sol, t, V, NSeg, NClimb1, NCruise1, NClimb2, NLoiter, NCruise2,
-                 mStart, mEndClimb, mEndCruise, mEndClimb2, mEndLoiter)
+fig, ax = plot_mission_var(M, "P_{shaft-tot}", [0, 5])
+fig.savefig("profile_t_vs_Pshafttot.pdf")
 
-numplots = sum([wind, P_pay, W_pay, altitude])
-if numplots > 1:
-    raise ValueError("more than one is true, but there can only be one!")
-elif numplots == 1:
-    if "t_{station}" in M.substitutions:
-        del M.substitutions["t_{station}"]
-    M.cost = 1/M["t_{station}"]
-    if wind:
-        plot.wind(M)
-    elif P_pay:
-        plot.P_pay(M)
-    elif W_pay:
-        plot.W_pay(M)
-    elif altitude:
-        plot.altitude(M)
+fig, ax = plot_mission_var(M, "RPM", [0, 9000])
+fig.savefig("profile_t_vs_RPM.pdf")
+
+fig, ax = plot_mission_var(M, "W_{end}", [0, 150], "aircraft weight [lbf]")
+fig.savefig("profile_t_vs_weight.pdf")
+
+#numplots = sum([wind, P_pay, W_pay, altitude])
+#if numplots > 1:
+#    raise ValueError("more than one is true, but there can only be one!")
+#elif numplots == 1:
+#    if "t_{station}" in M.substitutions:
+#        del M.substitutions["t_{station}"]
+#    M.cost = 1/M["t_{station}"]
+#    if wind:
+#        plot.wind(M)
+#    elif P_pay:
+#        plot.P_pay(M)
+#    elif W_pay:
+#        plot.W_pay(M)
+#    elif altitude:
+#        plot.altitude(M)

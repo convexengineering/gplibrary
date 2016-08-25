@@ -11,28 +11,32 @@ class GasPoweredMALE(Model):
     def __init__(self, h_station=15000, NLoiter=20, NClimb1=10, NClimb2=10,
                        NCruise1=5, NCruise2=5, wind=False, **kwargs):
 
+        self.NLoiter = NLoiter
+        self.NClimb1 = NClimb1
+        self.NClimb2 = NClimb2
+        self.NCruise1 = NCruise1
+        self.NCruise2 = NCruise2
+
         # define number of segments
-        NLoiter = 20
-        NClimb1 = 10
-        NClimb2 = 10
-        NCruise1 = 5
-        NCruise2 = 5
         NClimb = NClimb1 + NClimb2
         NCruise = NCruise1 + NCruise2
         NSeg = NLoiter + NClimb + NCruise
-        mStart = 0
-        mEndClimb = NClimb1
-        mEndCruise = NClimb1 + NCruise1
-        mEndClimb2 = NClimb1 + NCruise1 + NClimb2
-        mEndLoiter = NSeg - NCruise2
-        mEnd = NSeg
-        iClimb1 = range(0, mEndClimb)
-        iClimb2 = range(mEndCruise, mEndClimb2)
-        iClimb = range(0, mEndClimb) + range(mEndCruise, mEndClimb2)
-        iCruise = range(mEndClimb, mEndCruise) + range(mEndLoiter, mEnd)
-        iCruise1 = range(mEndClimb, mEndCruise)
-        iCruise2 = range(mEndLoiter, mEnd)
-        iLoiter = range(mEndClimb2, mEndLoiter)
+        self.mStart = 0
+        self.mEndClimb = NClimb1
+        self.mEndCruise = NClimb1 + NCruise1
+        self.mEndClimb2 = NClimb1 + NCruise1 + NClimb2
+        self.mEndLoiter = NSeg - NCruise2
+        self.mEnd = NSeg
+        iClimb1 = range(0, self.mEndClimb)
+        iClimb2 = range(self.mEndCruise, self.mEndClimb2)
+        iClimb = range(0, self.mEndClimb) + range(self.mEndCruise,
+                                                  self.mEndClimb2)
+        iCruise = range(self.mEndClimb, self.mEndCruise) + \
+                  range(self.mEndLoiter, self.mEnd)
+        iCruise1 = range(self.mEndClimb, self.mEndCruise)
+        iCruise2 = range(self.mEndLoiter, self.mEnd)
+        iLoiter = range(self.mEndClimb2, self.mEndLoiter)
+        self.NSeg = NSeg
 
         constraints = []
 
@@ -47,23 +51,23 @@ class GasPoweredMALE(Model):
         h = []
         h = np.array(h)
         currenth = 0
-        for i in range(0,NClimb1):
+        for i in range(0, NClimb1):
             currenth += h_cruise.value/NClimb1
             curh = Variable('curh', currenth, 'ft')
             h = np.append(h, curh)
-        for i in range(NClimb1,NClimb1+NCruise1):
+        for i in range(NClimb1, NClimb1+NCruise1):
             currenth = h_cruise.value
             curh = Variable('curh', currenth, 'ft')
             h = np.append(h, curh)
-        for i in range(NClimb1+NCruise1,NClimb1+NCruise1+NClimb2):
+        for i in range(NClimb1+NCruise1, NClimb1+NCruise1+NClimb2):
             currenth += deltah.value/NClimb2
             curh = Variable('curh', currenth, 'ft')
             h = np.append(h, curh)
-        for i in range(NClimb1+NCruise1+NClimb2,NSeg-NCruise2):
+        for i in range(NClimb1+NCruise1+NClimb2, NSeg-NCruise2):
             currenth = h_station.value
             curh = Variable('curh', currenth, 'ft')
             h = np.append(h, curh)
-        for i in range(NSeg-NCruise2,NSeg):
+        for i in range(NSeg-NCruise2, NSeg):
             currenth = h_cruise.value
             curh = Variable('curh', currenth, 'ft')
             h = np.append(h, curh)

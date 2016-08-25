@@ -11,7 +11,8 @@ def fix_vars(model, solution, var_names):
     ---------
     model: Model
     solution: soluation - initial solution with values of vars to be fixed
-    var_names: String - variable names of vars to be fixed
+    var_names: Dict - variable names of vars to be fixed and value of added
+                      tolerance
     """
     for name in var_names:
         value = solution(name).magnitude
@@ -92,3 +93,58 @@ def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
         plt.grid()
         fig.savefig("altitude_vs_%s.pdf" %
                     M[yvarname].descr["label"].replace(" ", ""))
+
+def plot_mission_var(model, yvarname, ylim, yaxis_name=None):
+    """
+    Plots a mission varible against mission time.
+
+    Arguments
+    ---------
+    model: must be GasPoweredMALE from gasmale.py
+    yvarname: String - variable string name
+
+    Returns:
+    fig, ax: matplotlib figure and axis - time not to scale, labeled
+             by mission profile inhereint in model.
+    """
+
+    # solve model
+    sol = model.solve("mosek")
+
+    y = sol(yvarname).magnitude
+
+    # define tick step on plot
+    t = np.linspace(0, model.NSeg - 1, model.NSeg)
+
+    # create plot
+    fig, ax = plt.subplots()
+    line, = ax.plot(t, y)
+
+    # label time axis
+    ax.xaxis.set_ticks(np.arange(0, model.NSeg-1, 1))
+    labels = [item.get_text() for item in ax.get_xticklabels()]
+    labels[model.mStart + np.round(model.NClimb1/2)] = 'Climb'
+    labels[model.mEndClimb + np.round(model.NCruise1/2)] = 'Cruise'
+    labels[model.mEndCruise + np.round(model.NClimb2/2)] = 'Climb'
+    labels[model.mEndClimb2 + np.round(model.NLoiter/2)] = 'Loiter'
+    labels[model.mEndLoiter + np.round(model.NCruise2/2)] = 'Cruise'
+    ax.set_xticklabels(labels)
+
+    # mark mission profile changes
+    ax.set_ylim([ylim[0], ylim[1]])
+    if yaxis_name:
+        ax.set_ylabel(yaxis_name)
+    else:
+        ax.set_ylabel("%s [%s]" % (model[yvarname][0].descr["label"],
+                                   unitstr(model[yvarname][0].units)))
+    ax.grid()
+    ax.plot([model.mEndClimb - 1, model.mEndClimb - 1],
+            [ylim[0], ylim[1]], '--', color='r')
+    ax.plot([model.mEndCruise - 1, model.mEndCruise - 1],
+            [ylim[0], ylim[1]], '--', color='r')
+    ax.plot([model.mEndClimb2 - 1, model.mEndClimb2 - 1],
+            [ylim[0], ylim[1]], '--', color='r')
+    ax.plot([model.mEndLoiter - 1, model.mEndLoiter - 1],
+            [ylim[0], ylim[1]], '--', color='r')
+
+    return fig, ax
