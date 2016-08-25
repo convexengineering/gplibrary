@@ -323,13 +323,22 @@ class Climb1(Model):
 
             #constrain the max wing loading
             WLoadClimb1 <= WLoadmax,
+
+
+            TSFCc11 == .5*units('1/hr'),
+            TSFCc12 == .5*units('1/hr'),
+            thrustc11 == 100000*units('N'),
+            thrustc12 == 100000*units('N'),
             ])
 
         for i in range(0, Nclimb1):
             constraints.extend([
-                rhoClimb1[i] == rhovec[i],
-                TClimb1[i] == Tvec[i],
-                pClimb1[i] == pvec[i],
+##                rhoClimb1[i] == rhovec[i],
+##                TClimb1[i] == Tvec[i],
+##                pClimb1[i] == pvec[i],
+                rhoClimb1[i] == 1*units('kg/m^3'),
+                TClimb1[i] == pClimb1[i]/(rhovec[i]*R),
+                pClimb1[i] == 100000*units('Pa'),
                 #speed of sound
                 aClimb1[i]  == (gamma * R * TClimb1[i])**.5,
 
@@ -474,6 +483,12 @@ class Climb2(Model):
 
             #constrain the max wing loading
             WLoadClimb2 <= WLoadmax,
+
+
+            TSFCc21 == .5*units('1/hr'),
+            TSFCc22 == .5*units('1/hr'),
+            thrustc21 == 100000*units('N'),
+            thrustc22 == 100000*units('N'),
             ])
 
         for i in range(0, Nclimb2):
@@ -613,18 +628,18 @@ class Cruise2(Model):
             T0 == 280*units('K'),
             
              #climb rate constraints for engine sizing at TOC
-            excessPtoc+Vtoc*Dtoc  <= numeng*Fd*Vtoc,
-            RCtoc == excessPtoc/W_avgClimb2[Nclimb2-1],
-            RCtoc == 500*units('ft/min'),
-            Vtoc == VCruise2[0],
+##            excessPtoc+Vtoc*Dtoc  <= numeng*Fd*Vtoc,
+##            RCtoc == excessPtoc/W_avgClimb2[Nclimb2-1],
+##            RCtoc == 500*units('ft/min'),
+##            Vtoc == VCruise2[0],
 
             #compute the drag
-            TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
+##            TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
 ##                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
-            TCS([DCruise2[0] >= (.5*S*rhoCruise2[0]*VCruise2[0]**2)*(Cd0 + K*(W_avgCruise2[0]/(.5*S*rhoCruise2[0]*VCruise2[0]**2))**2)]),
-            TCS([DCruise2[1] >= (.5*S*rhoCruise2[1]*VCruise2[1]**2)*(Cd0 + K*(W_avgCruise2[1]/(.5*S*rhoCruise2[1]*VCruise2[1]**2))**2)]),
-            DCruise2[0] == numeng * thrustcr21,
-            DCruise2[1] == numeng * thrustcr22,
+##            TCS([DCruise2[0] >= (.5*S*rhoCruise2[0]*VCruise2[0]**2)*(Cd0 + K*(W_avgCruise2[0]/(.5*S*rhoCruise2[0]*VCruise2[0]**2))**2)]),
+##            TCS([DCruise2[1] >= (.5*S*rhoCruise2[1]*VCruise2[1]**2)*(Cd0 + K*(W_avgCruise2[1]/(.5*S*rhoCruise2[1]*VCruise2[1]**2))**2)]),
+##            DCruise2[0] == numeng * thrustcr21,
+##            DCruise2[1] == numeng * thrustcr22,
 
             W_avgCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2,
             WLoadCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2/S,
@@ -645,6 +660,11 @@ class Cruise2(Model):
 
             #constrain the max wing loading
             WLoadCruise2 <= WLoadmax,
+
+            TSFCcr21 == .5*units('1/hr'),
+            TSFCcr22 == .5*units('1/hr'),
+            thrustcr21 == 100000*units('N'),
+            thrustcr22 == 100000*units('N'),
             ])
         
         #constraint on the aircraft meeting the required range
@@ -668,6 +688,10 @@ class Cruise2(Model):
                 ])
             
         Model.__init__(self, None, constraints, **kwargs)
+
+
+        
+        Model.__init__(self, None, constraints, **kwargs)
         
 #---------------------------------------
 #decent
@@ -675,6 +699,163 @@ class Cruise2(Model):
 #----------------------------------------
 #landing
 
+#------------------------------------------
+#reserve mission
+#reserve under 10K climb
+class ResClimb1(Model):
+    """
+    class to model the climb portion of a flight, applies to all climbs below
+    10,000'
+    this particular class is part of the reserve mission
+    """
+    def __init__(self, Nresclimb1, **kwargs):
+        #set the speed limit under 10,000'
+        speedlimit = Variable('speedlimit', 'kts', 'Speed Limit Under 10,000 ft')
+
+        #atmosphere
+        aResClimb1 = VectorVariable(Nresclimb1, 'aResClimb1', 'm/s', 'Speed of Sound')
+        rhoResClimb1 = VectorVariable(Nresclimb1, '\rhoResClimb1', 'kg/m^3', 'Air Density')
+        pResClimb1 = VectorVariable(Nresclimb1, 'pResClimb1', 'kPa', 'Pressure')
+        muResClimb1 = VectorVariable(Nresclimb1, '\muResClimb1', 'kg/m/s', 'Air Kinematic Viscosity')
+        TResClimb1 = VectorVariable(Nresclimb1, 'TResClimb1', 'K', 'Air Temperature')
+
+        #aero
+        CLResClimb1 = VectorVariable(Nresclimb1, 'C_{L_{ResClimb1}}', '-', 'Lift Coefficient')
+        WLoadResClimb1 = VectorVariable(Nresclimb1, 'W_{Load_{ResClimb1}}', 'N/m^2', 'Wing Loading')
+        WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
+        DResClimb1 = VectorVariable(Nresclimb1, 'DragResClimb1', 'N', 'Drag')
+        Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
+        Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+        K = Variable('K', '-', 'K for Parametric Drag Model')
+
+        #aircraft geometry
+        S = Variable('S', 'm^2', 'Wing Planform Area')
+
+        #number of engines
+        numeng = Variable('numeng', '-', 'Number of Engines')
+
+        #physical constants
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
+        gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
+        R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
+
+        #excess power during climb
+        excessPResclimb1 = VectorVariable(Nresclimb1, 'Excess Power ResClimb1', 'W', 'Excess Power During Climb')
+
+        #climb rate and angle
+        RCResClimb1 = VectorVariable(Nresclimb1, 'RCResClimb1', 'feet/min', 'Rate of Climb/Decent')
+        thetaResClimb1 = VectorVariable(Nresclimb1, '\\thetaResClimb1', '-', 'Aircraft Climb Angle')
+
+        #time
+        tmiNresclimb1 = VectorVariable(Nresclimb1, 'tmiNresclimb1', 'min', 'Flight Time in Minutes')
+        thoursResClimb1 = VectorVariable(Nresclimb1, 'thrResClimb1', 'hour', 'Flight Time in Hours')
+
+        #range
+        RngResClimb1 = VectorVariable(Nresclimb1, 'RngResClimb1', 'miles', 'Segment Range During Climb1')
+
+        #velocitites and mach numbers
+        VResClimb1 = VectorVariable(Nresclimb1, 'VClimb1', 'knots', 'Aircraft Flight Speed')
+        MResClimb1 = VectorVariable(Nresclimb1, 'MClimb1', '-', 'Aircraft Mach Number')
+
+        #altitude
+        dhftResClimb1 = VectorVariable(Nresclimb1, 'dhftClimb1', 'feet', 'Change in Altitude Per Climb Segment [feet]') 
+        dhClimb1 = Variable('dh_{climb1}', 8500, 'feet', 'Total Altitude Change Required in Climb 1')
+
+        W_avgResClimb1 = VectorVariable(Nresclimb1, 'W_{avgResClimb1}', 'N', 'Geometric Average of Segment Start and End Weight')
+        W_fuelResClimb1 = VectorVariable(Nresclimb1, 'W_{fuelResClimb1}', 'N', 'Segment Fuel Weight')
+
+        
+        #TEMPORARY
+        mhold1 = Variable('mhold1', '-', 'segment 1 mach number')
+        mhold2 = Variable('mhold2', '-', 'segment 2 mach number')
+        Thold1 = Variable('Thold1', 'K', 'segment 1 T')
+        Thold2 = Variable('Thold2', 'K', 'segment 2 T ')
+        phold1 = Variable('phold1', 'kPa', 'segment 1 p')
+        phold2 = Variable('phold2', 'kPa', 'segment 2 p')
+
+##        TSFCc1 = VectorVariable(Nresclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
+        TSFCc11 = Variable('TSFC_{c11}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
+        TSFCc12 = Variable('TSFC_{c12}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 2')
+##        thrustc1 = VectorVariable(Nresclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
+        thrustc11 = Variable('thrust_{c11}', 'N', 'Thrust During Climb Segment #1')
+        thrustc12 = Variable('thrust_{c12}', 'N', 'Thrust During Climb Segment #1')
+
+        #non-GPkit variables
+        #cruise 2 lsit
+        irescl1 = map(int, np.linspace(0, Nresclimb1 - 1, Nresclimb1))
+        
+        constraints = []
+            
+        constraints.extend([            
+            #set the velocity limits
+            VResClimb1[irescl1] <= speedlimit,
+            VResClimb1[irescl1] >= Vstall,
+
+            MResClimb1[0] == mhold1,
+            MResClimb1[1] == mhold2,
+
+            MResClimb1 * aResClimb1 == VResClimb1,
+
+            #constraint on drag and thrust
+##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
+            numeng*thrustc11 >= DResClimb1[0] + W_avgResClimb1[0]*thetaResClimb1[0],
+            numeng*thrustc12 >= DResClimb1[1] + W_avgResClimb1[1]*thetaResClimb1[1],
+            #climb rate constraints
+##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
+            TCS([excessPResclimb1[0]+VResClimb1[0]*DResClimb1[0] <= VResClimb1[0]*numeng*thrustc11]),
+            TCS([excessPResclimb1[1]+VResClimb1[1]*DResClimb1[1] <= VResClimb1[1]*numeng*thrustc12]),
+            
+            TCS([DRedClimb1[irescl1] >= (.5*S*rhoResClimb1[irescl1]*VResClimb1[irescl1]**2)*(Cd0 + K*CLResClimb1[irescl1]**2)]),
+            RCResClimb1[irescl1] == excessPResclimb1[irescl1]/W_avgResClimb1[irescl1],
+            RCResClimb1[irescl1] >= 500*units('ft/min'),
+            
+            #make the small angle approximation and compute theta
+            thetaResClimb1[irescl1]*VResClimb1[irescl1]  == RCResClimb1[irescl1],
+           
+            dhftResClimb1[irescl1]  == tmiNresclimb1[irescl1] * RCResClimb1[irescl1],
+
+            tmiNresclimb1 == thoursResClimb1,
+            #compute the distance traveled for each segment
+            #takes into account two terms of a cosine expansion
+##            TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 >= thours[iclimb1]*V[iclimb1]]),
+            RngResClimb1[irescl1] == thoursResClimb1[irescl1]*VResClimb1[irescl1],
+
+            W_avgResClimb1[irescl1] == .5*CLResClimb1[irescl1]*S*rhoResClimb1[irescl1]*VResClimb1[irescl1]**2,
+            WLoadResClimb1[irescl1] == .5*CLResClimb1[irescl1]*S*rhoResClimb1[irescl1]*VResClimb1[irescl1]**2/S,
+            
+            #compute fuel burn from TSFC
+##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
+            W_fuelResClimb1[0]  == numeng*TSFCc11 * thoursResClimb1[0] * thrustc11,
+            W_fuelResClimb1[1]  == numeng*TSFCc12 * thoursResClimb1[1] * thrustc12,
+            #compute the dh required for each climb 1 segment
+            dhftResClimb1[irescl1] == dhResClimb1/Nresclimb1,
+
+            #constrain the max wing loading
+            WLoadResClimb1 <= WLoadmax,
+
+
+            TSFCc11 == .5*units('1/hr'),
+            TSFCc12 == .5*units('1/hr'),
+            thrustc11 == 100000*units('N'),
+            thrustc12 == 100000*units('N'),
+            ])
+
+        for i in range(0, Nresclimb1):
+            constraints.extend([
+##                rhoClimb1[i] == rhovec[i],
+##                TClimb1[i] == Tvec[i],
+##                pClimb1[i] == pvec[i],
+                rhoClimb1[i] == 1*units('kg/m^3'),
+                TClimb1[i] == pClimb1[i]/(rhovec[i]*R),
+                pClimb1[i] == 100000*units('Pa'),
+                #speed of sound
+                aClimb1[i]  == (gamma * R * TClimb1[i])**.5,
+
+                phold1 == pClimb1[0],
+                phold2 == pClimb1[1],
+                Thold1 == TClimb1[0],
+                Thold2 == TClimb1[1],
+                ])
 class CommercialAircraft(Model):
     """
     class to link all models needed to simulate a commercial flight
@@ -708,7 +889,7 @@ class CommercialAircraft(Model):
         climb1 = Climb1(Nclimb1)
         climb2 = Climb2(Nclimb2)
         cruise2 = Cruise2(Nclimb2, Ncruise2)
-##        atm = Atmosphere(Nseg)
+        atm = Atmosphere(2)
         eonD = EngineOnDesign()
         eoffD = EngineOffDesign()
         eoffD2 = EngineOffDesign2()
@@ -746,7 +927,7 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
+        self.submodels = [cmc, climb1, climb2, cruise2]#, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
 
         constraints = ConstraintSet([self.submodels])
 
@@ -758,7 +939,8 @@ class CommercialAircraft(Model):
                                 'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6',
                                 'mhold1': 'M_0_1', 'mhold2': 'M_0_2', 'mhold3': 'M_0_3', 'mhold4': 'M_0_4', 'phold1': 'P_0_1',
                                 'phold2': 'P_0_2','phold3': 'P_0_3','phold4': 'P_0_4','phold5': 'P_0_5','phold6': 'P_0_6',
-                                'P_0': 'P_0_6'})#, 'Thold1': 'T_0_1'})#,
+                                'P_0': 'P_0_6'})#,'\rhoClimb1_(1,)':'\rho_(1,)',
+##                                'pClimb1_(0,)': 'p_(0,)','pClimb1_(1,)': 'p_(1,)', 'TClimb1_(0,)': 'T_(0,)', 'TClimb1_(1,)': 'T_(1,)'})#, 'Thold1': 'T_0_1'})#,
 ##                                'Thold2': 'T_0_2','Thold3': 'T_0_3','Thold4': 'T_0_4','Thold5': 'T_0_5','Thold6': 'T_0_6',})
 
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
@@ -822,7 +1004,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
