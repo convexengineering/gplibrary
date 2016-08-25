@@ -856,6 +856,306 @@ class ResClimb1(Model):
                 Thold1 == TClimb1[0],
                 Thold2 == TClimb1[1],
                 ])
+
+#non speed limited reserve climb
+class ResClimb2(Model):
+    """
+    class to model the climb portion above 10,000'
+    """
+    def __init__(self, Nresclimb2, **kwargs):
+        #aero
+        CLResClimb2 = VectorVariable(Nresclimb2, 'C_{L_{ResClimb2}}', '-', 'Lift Coefficient')
+        WLoadResClimb2 = VectorVariable(Nresclimb2, 'W_{Load_{ResClimb2}}', 'N/m^2', 'Wing Loading')
+        WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
+        DResClimb2 = VectorVariable(Nresclimb2, 'DragResClimb2', 'N', 'Drag')
+        Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
+        Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+        K = Variable('K', '-', 'K for Parametric Drag Model')
+
+        #atmosphere
+        aResClimb2 = VectorVariable(Nresclimb2, 'aResClimb2', 'm/s', 'Speed of Sound')
+        rhoResClimb2 = VectorVariable(Nresclimb2, '\rhoResClimb2', 'kg/m^3', 'Air Density')
+        pResClimb2 = VectorVariable(Nresclimb2, 'pResClimb2', 'kPa', 'Pressure')
+        TResClimb2 = VectorVariable(Nresclimb2, 'TResClimb2', 'K', 'Air Temperature')
+
+        #number of engines
+        numeng = Variable('numeng', '-', 'Number of Engines')
+
+        #aircraft geometry
+        S = Variable('S', 'm^2', 'Wing Planform Area')
+
+        #physical constants
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
+        gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
+        R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
+
+        #excess power during climb
+        excessPResClimb2 = VectorVariable(Nresclimb2, 'Excess Power ResClimb2', 'W', 'Excess Power During Climb')
+
+        #climb rate and angle
+        RCResClimb2 = VectorVariable(Nresclimb2, 'RCResClimb2', 'feet/min', 'Rate of Climb/Decent')
+        thetaResClimb2 = VectorVariable(Nresclimb2, '\\thetaResClimb2', '-', 'Aircraft Climb Angle')
+
+        #time
+        tminResClimb2 = VectorVariable(Nresclimb2, 'tminResClimb2', 'min', 'Flight Time in Minutes')
+        thoursResClimb2 = VectorVariable(Nresclimb2, 'thrResClimb2', 'hour', 'Flight Time in Hours')
+
+        #range
+        RngResClimb2 = VectorVariable(Nresclimb2, 'RngResClimb2', 'miles', 'Segment Range During Climb2')
+
+        #velocitites and mach numbers
+        VResClimb2 = VectorVariable(Nresclimb2, 'VResClimb2', 'knots', 'Aircraft Flight Speed')
+        MResClimb2 = VectorVariable(Nresclimb2, 'MResClimb2', '-', 'Aircraft Mach Number')
+
+        #altitude
+        dhftResClimb2 = VectorVariable(Nresclimb2, 'dhftResClimb2', 'feet', 'Change in Altitude Per Climb Segment [feet]') 
+        dhResClimb2 = Variable('dh_{Resclimb2}', 'feet', 'Total Altitude Change Required in Climb 2')
+
+        W_fuelResClimb2 = VectorVariable(Nresclimb2, 'W_{fuelResClimb2}', 'N', 'Segment Fuel Weight')
+        W_avgResClimb2 = VectorVariable(Nresclimb2, 'W_{ResavgClimb2}', 'N', 'Geometric Average of Segment Start and End Weight')
+
+        #TEMPORARY
+        mhold3 = Variable('mhold3', '-', 'segment 3 mach number')
+        mhold4 = Variable('mhold4', '-', 'segment 4 mach number')
+        Thold3 = Variable('Thold3', 'K', 'segment 3 T')
+        Thold4 = Variable('Thold4', 'K', 'segment 4 T')
+        phold3 = Variable('phold3', 'kPa', 'segment 3 p')
+        phold4 = Variable('phold4', 'kPa', 'segment 4 p')
+        
+##        TSFCc2 = VectorVariable(Nresclimb2, 'TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
+        TSFCc21 = Variable('TSFC_{c21}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
+        TSFCc22 = Variable('TSFC_{c22}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
+##        thrustc2 = VectorVariable(Nclimb1, 'thrust_{c2}', 'N', 'Thrust During Climb Segment #2')
+        thrustc21 = Variable('thrust_{c21}', 'N', 'Thrust During Climb Segment #2')
+        thrustc22 = Variable('thrust_{c22}', 'N', 'Thrust During Climb Segment #2')
+
+        #non-GPkit variables
+        #climb 2 lsit
+        irescl2 = map(int, np.linspace(0, Nresclimb2 - 1, Nresclimb2))
+
+        constraints = []
+        
+        constraints.extend([            
+            #set the velocity limits
+            #needs to be replaced by an actual Vne and a mach number
+            MResClimb2[irescl2] <= .75,
+            VResClimb2[irescl2] >= Vstall,
+            
+            MResClimb2[0] == mhold3,
+            MResClimb2[1] == mhold4,
+
+            VResClimb2 == MResClimb2 * aResClimb2,
+
+            #constraint on drag and thrust
+##            thrustc21 >= D[iclimb2] + W_start[iclimb2]*theta[iclimb2],
+            numeng*thrustc21 >= DResClimb2[0] + W_avgResClimb2[0]*thetaResClimb2[0],
+            numeng*thrustc22 >= DResClimb2[1] + W_avgResClimb2[1]*thetaResClimb2[1],
+            
+            #climb rate constraints
+##            TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrustc21]),
+            TCS([excessPResClimb2[0]+VResClimb2[0]*DResClimb2[0] <= VResClimb2[0]*numeng*thrustc21]),
+            TCS([excessPResClimb2[1]+VResClimb2[1]*DResClimb2[1] <= VResClimb2[1]*numeng*thrustc22]),
+            TCS([DResClimb2[irescl2] >= (.5*S*rhoResClimb2[irescl2]*VResClimb2[irescl2]**2)*(Cd0 + K*CLResClimb2[irescl2]**2)]),
+            RCClimb2[irescl2] == excessPResClimb2[irescl2]/W_avgResClimb2[irescl2],
+            RCClimb2[0] >= 500*units('ft/min'),
+            RCClimb2[1] >= 500*units('ft/min'),
+            
+            #make the small angle approximation and compute theta
+            thetaResClimb2[irescl2]*VResClimb2[irescl2]  == RCClimb2[irescl2],
+           
+            dhftResClimb2[irescl2]  == tminResClimb2[irescl2] * RCClimb2[irescl2],
+
+            tminResClimb2 == thoursResClimb2,
+            #compute the distance traveled for each segment
+            #takes into account two terms of a cosine expansion
+##            TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
+            RngResClimb2[irescl2] <= thoursResClimb2[irescl2]*VResClimb2[irescl2],
+
+            W_avgResClimb2[irescl2] == .5*CLResClimb2[irescl2]*S*rhoResClimb2[irescl2]*VResClimb2[irescl2]**2,      
+            WLoadResClimb2[irescl2] == .5*CLResClimb2[irescl2]*S*rhoResClimb2[irescl2]*VResClimb2[irescl2]**2/S,
+            
+            #compute fuel burn from TSFC
+            W_fuelResClimb2[0]  == numeng*TSFCc21 * thoursResClimb2[0] * thrustc21,
+            W_fuelResClimb2[1]  == numeng*TSFCc22 * thoursResClimb2[1] * thrustc22,
+
+            #compute the dh required for each climb 1 segment
+            dhftResClimb2[irescl2] == dhResClimb2/Nresclimb2,
+
+            #constrain the max wing loading
+            WLoadResClimb2 <= WLoadmax,
+
+
+            TSFCc21 == .5*units('1/hr'),
+            TSFCc22 == .5*units('1/hr'),
+            thrustc21 == 100000*units('N'),
+            thrustc22 == 100000*units('N'),
+            ])
+
+        for i in range(0, Nresclimb2):
+            constraints.extend([
+                rhoResClimb2[i] == rhovec[i],
+                TResClimb2[i] == Tvec[i],
+                pResClimb2[i] == pvec[i],
+                #speed of sound
+                aResClimb2[i]  == (gamma * R * TResClimb2[i])**.5,
+
+                phold3 == pResClimb2[0],
+                phold4 == pResClimb2[1],
+                Thold3 == TResClimb2[0],
+                Thold4 == TResClimb2[1],
+                ])
+        
+        Model.__init__(self, None, constraints, **kwargs)
+
+#reserve cruise
+class ResCruise(Model):
+    """
+    class to model the second cruise portion of a flight (if the flight is
+    long enough to mandate two cruise portions)
+    Model is based off of a discretized Breguet Range equation
+    """
+    def __init__(self, Nrescruise, **kwargs):
+        """
+    class to model the second cruise portion of a flight (if the flight is
+    long enough to mandate two cruise portions)
+    Model is based off of a discretized Breguet Range equation
+    """
+        #aero
+        CLResCruise = VectorVariable(Nrescruise, 'C_{L_{ResCruise}}', '-', 'Lift Coefficient')
+        WLoadResCruise = VectorVariable(Nrescruise, 'W_{Load_{ResCruise}}', 'N/m^2', 'Wing Loading')
+        WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
+        DResCruise = VectorVariable(Nrescruise, 'DragResCruise', 'N', 'Drag')
+        Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
+        Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+        K = Variable('K', '-', 'K for Parametric Drag Model')
+
+        #atmosphere
+        aResCruise = VectorVariable(Nrescruise, 'aResCruise', 'm/s', 'Speed of Sound')
+        rhoResCruise2 = VectorVariable(Nrescruise, '\rhoResCruise', 'kg/m^3', 'Air Density')
+        pResCruise = VectorVariable(Nrescruise, 'pResCruise', 'kPa', 'Pressure')
+        TResCruise = VectorVariable(Nrescruise, 'TResCruise', 'K', 'Air Temperature')
+
+        #aircraft geometry
+        S = Variable('S', 'm^2', 'Wing Planform Area')
+
+        #number of engines
+        numeng = Variable('numeng', '-', 'Number of Engines')
+
+        #time
+        tminResCruise = VectorVariable(Nrescruise, 'tminResCruise', 'min', 'Flight Time in Minutes')
+        thoursResCruise = VectorVariable(Nrescruise, 'thrResCruise', 'hour', 'Flight Time in Hours')
+
+        #velocitites and mach numbers
+        VResCruise = VectorVariable(Nrescruise, 'VResCruise', 'knots', 'Aircraft Flight Speed')
+        MResCruise = VectorVariable(Nrescruise, 'MResCruise', '-', 'Aircraft Mach Number')
+
+        #physical constants
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational Acceleration')
+        gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
+        R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
+        
+##        TSFCcr2 = VectorVariable(Nrescruise, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+        TSFCcr21 = Variable('TSFC_{cr21}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+        TSFCcr22 = Variable('TSFC_{cr22}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+        DRes1 = Variable('ResDRes1', 'N', 'Drag for reserve cruise')
+        DRes2 = Variable('ResDRes2', 'N', 'Drag for reserve cruise')
+
+        thrustcr21 = Variable('thrust_{cr21}', 'N', 'Thrust During Cruise Segment #2')
+        thrustcr22 = Variable('thrust_{cr22}', 'N', 'Thrust During Cruise Segment #2')
+
+        constraints = []
+        
+        #defined here for linking purposes
+        T0 = Variable('T_0', 'K', 'Free Stream Stagnation Temperature')
+        P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
+
+        #parameter to make breguent range eqn gp compatible
+        z_breRes = VectorVariable(Nrescruise, 'z_{breRes}', '-', 'Breguet Parameter')
+
+        #range variables
+        ReqRngResCruise = Variable('ReqRngResCruise', 'miles', 'Required Cruise Range')
+        RngResCruise = VectorVariable(Nrescruise, 'RngResCruise', 'miles', 'Segment Range During Cruise2')
+
+        #altitude
+        hResCruise = VectorVariable(Nrescruise, 'hResCruise', 'm', 'Altitude [meters]')
+        hftResCruise = VectorVariable(Nrescruise, 'hftResCruise', 'feet', 'Altitude [feet]')
+
+        W_fuelResCruise = VectorVariable(Nrescruise, 'W_{fuelResCruise}', 'N', 'Segment Fuel Weight')
+        W_avgResCruise = VectorVariable(Nrescruise, 'W_{avgResCruise}', 'N', 'Geometric Average of Segment Start and End Weight')
+        W_avgResClimb = VectorVariable(Nclimb2, 'W_{avgResClimb}', 'N', 'Geometric Average of Segment Start and End Weight')
+        W_endResCruise = VectorVariable(Nrescruise, 'W_{endResCruise}', 'N', 'Segment End Weight')
+
+        #TEMPORARY
+        mhold5 = Variable('mhold5', '-', 'segment 5 mach number')
+        mhold6 = Variable('mhold6', '-', 'segment 6 mach number')
+        Thold5 = Variable('Thold5', 'K', 'segment 5 T')
+        Thold6 = Variable('Thold6', 'K', 'segment 6 T')
+        phold5 = Variable('phold5', 'kPa', 'segment 5 p')
+        phold6 = Variable('phold6', 'kPa', 'segment 6 p')
+
+        #non-GPkit variables
+        #cruise 2 lsit
+        irescruise = map(int, np.linspace(0, Nrescruise - 1, Nrescruise))
+            
+        constraints.extend([
+            MResCruise[irescruise] == 0.8,
+
+            MResCruise * aResCruise == VResCruise,
+            
+##                P0 == p[Nclimb],
+            T0 == 280*units('K'),
+
+            W_avgResCruise[irescruise] == .5*CLResCruise[irescruise]*S*rhoResCruise2[irescruise]*VResCruise[irescruise]**2,
+            WLoadResCruise[irescruise] == .5*CLResCruise[irescruise]*S*rhoResCruise2[irescruise]*VResCruise[irescruise]**2/S,
+            
+            #constrain the climb rate by holding altitude constant
+            hftResCruise[irescruise]  == htoc,
+            
+            #taylor series expansion to get the weight term
+            TCS([W_fuelResCruise[irescruise]/W_endResCruise[irescruise] >= te_exp_minus1(z_breRes[irescruise], nterm=3)]),
+
+            #breguet range eqn
+            TCS([z_breRes[0] >= (numeng*TSFCcr21*thoursResCruise[0]*DResCruise[0])/W_avgResCruise[0]]),
+            TCS([z_breRes[1] >= (numeng*TSFCcr22*thoursResCruise[1]*DResCruise[1])/W_avgResCruise[1]]),
+
+            #time
+            thoursResCruise[irescruise]*VResCruise[irescruise]  == RngResCruise[irescruise],
+            tminResCruise == thoursResCruise,
+
+            #constrain the max wing loading
+            WLoadResCruise <= WLoadmax,
+
+            TSFCcr21 == .5*units('1/hr'),
+            TSFCcr22 == .5*units('1/hr'),
+            thrustcr21 == 100000*units('N'),
+            thrustcr22 == 100000*units('N'),
+            ])
+        
+        #constraint on the aircraft meeting the required range
+        for i in range(min(irescruise), max(irescruise)+1):
+            constraints.extend([
+                TCS([RngResCruise[i] == ReqRngResCruise/(Nrescruise)])
+                ])
+
+        for i in range(0, Nrescruise):
+            constraints.extend([
+                rhoResCruise2[i] == rhovec[i+4],
+                TResCruise[i] == Tvec[i+4],
+                pResCruise[i] == pvec[i+4],
+                #speed of sound
+                aResCruise[i]  == (gamma * R * TResCruise[i])**.5,
+
+                phold5 == pResCruise[0],
+                phold6 == pResCruise[1],
+                Thold5 == TResCruise[0],
+                Thold6 == TResCruise[1],
+                ])
+            
+        Model.__init__(self, None, constraints, **kwargs)
+
+
+#-------------------------------------
+#build the linked model
 class CommercialAircraft(Model):
     """
     class to link all models needed to simulate a commercial flight
