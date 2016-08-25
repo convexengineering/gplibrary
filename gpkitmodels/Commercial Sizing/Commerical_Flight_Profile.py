@@ -35,7 +35,15 @@ rhovec = atmdict['rho'] * units('kg/m^3')
 pvec = atmdict['p'] * units('kPa')
 
 #TODO
+#link in with engine
+#fix indicies on the TSFC vector variables
+
+#figure out if minimizing total weight is the same as minimizing fuel weight
+
 #---------------------------------------------------------------------
+
+#temporary args
+#pass in a 1 for testing climb segment 1
 
 class CommericalMissionConstraints(Model):
     """
@@ -128,16 +136,16 @@ class CommericalMissionConstraints(Model):
             ])
         
         with gpkit.SignomialsEnabled():
-            if signomial != 1:
+            if signomial == True:
                 constraints.extend([
                     #range constraints
                     TCS([sum(RngClimb1) + sum(RngClimb2) + ReqRngCruise >= ReqRng]),
 ##                    dhClimb2==20000*units('ft'),
 ##                    TCS([dhClimb2 + alt10k >= htoc]),
                     ])
-            if signomial ==1:
+            if signomial == False:
                  constraints.extend([
-                     excessPtoc+Vtoc*Dtoc, numeng*Fd*Vtoc
+                     ReqRngCruise >= ReqRng,
 ##                    TCS([sum(RngClimb1) + sum(RngClimb2) >= ReqRng]),
 ##                    TCS([ReqRngCruise   >= sum(RngCruise)]),
 ##                    TCS([dhClimb2 + alt10k >= htoc])
@@ -696,7 +704,7 @@ class CommercialAircraft(Model):
         Nseg = Nclimb + Ncruise + Nres + Ntakeoff + Ndecent + Nlanding
 
         #define all the submodels
-        cmc = CommericalMissionConstraints(Nclimb1, Nclimb2, Ncruise2, 0)
+        cmc = CommericalMissionConstraints(Nclimb1, Nclimb2, Ncruise2, False)
         climb1 = Climb1(Nclimb1)
         climb2 = Climb2(Nclimb2)
         cruise2 = Cruise2(Nclimb2, Ncruise2)
