@@ -29,14 +29,13 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        cooling = False
-        tstages = 1
+        mixing = False
         
         lpc = FanAndLPC()
-        combustor = CombustorCooling(cooling)
+        combustor = CombustorCooling(mixing)
         turbine = Turbine()
         thrust = ExhaustAndThrust()
-        size = OnDesignSizing(cooling, tstages)
+        size = OnDesignSizing()
 
         self.submodels = [lpc, combustor, turbine, thrust, size]
 
@@ -77,7 +76,7 @@ class EngineOnDesign(Model):
             'stag41': 1+.5*(.312)*M4a**2,
             '\alpca_c': .05,
 
-            #new subs for cooling flow losses
+            #new subs for mixing flow losses
             'T_{t_f}': 600,
             'hold_{4a}': 1+.5*(1.313-1)*M4a**2,
             'r_{uc}': 0.5,
@@ -152,25 +151,28 @@ class EngineOffDesign(Model):
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
     def __init__(self, sol):
-        cooling = False
+        mixing = False
+        SPmaps = False
         
         lpc = FanAndLPC()
-        combustor = CombustorCooling(cooling)
+        combustor = CombustorCooling(mixing)
         turbine = Turbine()
         thrust = ExhaustAndThrust()
-        fanmap = FanMap()
-        lpcmap = LPCMap()
-        hpcmap = HPCMap()
+        fanmap = FanMap(SPmaps)
+        lpcmap = LPCMap(SPmaps)
+        hpcmap = HPCMap(SPmaps)
 
         res7 = 1
         
-        offD = OffDesign(res7, cooling)
+        offD = OffDesign(res7, mixing)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
-        else:
+        if res7 == 1 and SPmaps == True:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
+        else:
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
             
         with SignomialsEnabled():
 
@@ -217,7 +219,7 @@ class EngineOffDesign(Model):
                 '\pi_{hc_D}': sol('\pi_{hc}'),
 
             }
-            if cooling == True:
+            if mixing == True:
                 substitutions.update({
                     'stag41': 1+.5*(.312)*sol('M_{4a}')**2,
                     'M_{4a}': sol('M_{4a}'),
@@ -235,5 +237,5 @@ if __name__ == "__main__":
     
     engineOffD = EngineOffDesign(solOn)
     
-##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
-    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
+    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
+##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
