@@ -1,5 +1,6 @@
 import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled, units, SignomialEquality
+from gpkit import Model, Variable, SignomialsEnabled, units,SignomialEquality
+##from gpkit.nomials import SignomialEquality
 from gpkit.constraints.tight import TightConstraintSet as TCS
 
 #Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/property_tables/air/air_Cp_Cv.html
@@ -192,7 +193,7 @@ class CombustorCooling(Model):
   
 ##                f*hf + ht3 >= ht4,
                 #making f+1 GP compatible --> needed for convergence
-                SignomialEquality(fp1,f+1),
+               SignomialEquality(fp1,f+1),
                 
                 ht41 == Cpc * Tt41,
                 ]
@@ -200,10 +201,13 @@ class CombustorCooling(Model):
             if cooling == True:
                 constraints.extend([
                     #compute Tt41...mixing causes a temperature drop
-                    TCS([ht41 <= (f*hf + ht3 + Cpfuel*Ttf*f)/fp1]),
-                
+
+                    #rewrite this constriant and include Tt4
+                    #had to include Tt4 here to prevent it from being pushed down to zero
+                    TCS([ht41 <= ((1-ac)*ht4 +ac*ht3+Cpfuel*f*(Tt4-Ttf) + Cpfuel*Ttf*f)/fp1]),
+                   
                     #comptue the rest of the station 4.1 variables
-                    SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
+                   SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
                     
                     #this is a stagnation relation...need to fix it to not be signomial
                     TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
@@ -281,11 +285,11 @@ class Turbine(Model):
             constraints = [
                 #HPT shafter power balance
                 #SIGNOMIAL   
-                SignomialEquality(Mtakeoff*etaHPshaft*(1+f)*(ht41-ht45),ht3 - ht25),    #B.161
+               SignomialEquality(Mtakeoff*etaHPshaft*(1+f)*(ht41-ht45),ht3 - ht25),    #B.161
 
                 #LPT shaft power balance
                 #SIGNOMIAL  
-                SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
+               SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
@@ -381,7 +385,7 @@ class ExhaustAndThrust(Model):
                 P8 == P0,
                 h8 == Cpfanex * T8,
 ##                TCS([u8**2 + 2*h8 <= 2*ht8]),
-                SignomialEquality(u8**2 + 2*h8, 2*ht8),
+               SignomialEquality(u8**2 + 2*h8, 2*ht8),
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -413,8 +417,8 @@ class ExhaustAndThrust(Model):
                 Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
 
                 #TSFC
-##                TSFC == 1/Isp                   #B.193
-                TSFC == f*g*mCore/F,
+                TSFC == 1/Isp                   #B.193
+##                TSFC == f*g*mCore/F,
                 ]
         Model.__init__(self, TSFC, constraints, **kwargs)
   
@@ -435,7 +439,7 @@ class OnDesignSizing(Model):
     tstages is the number of air cooled turbine stages in the HPT. It can assume
     a value of either 
     """
-    def __init__(self, cooling, tstages, **kwargs):
+    def __init__(self, cooling, **kwargs):
         #new variables
         a0 = Variable('a_0', 'm/s', 'Speed of Sound in Freestream')
         
@@ -618,7 +622,7 @@ class OnDesignSizing(Model):
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
-                SignomialEquality(fp1,f+1),
+               SignomialEquality(fp1,f+1),
                 
                 #mass flow sizing
                 Mtakeoff*mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
@@ -731,17 +735,21 @@ class LPCMap(Model):
 ##                        + 0.575 * (N1)**-0.491 * (mtildlc)**-0.0789
 ##                        + 7.99e-15 * (N1)**2.07e+04 * (mtildlc)**592
 ##                        + 1.22e-50 * (N1)**-2.84e+03 * (mtildlc)**598)]),
-                SignomialEquality((10*pilc)**(-.163) , ( 5.28e-10 * (N1)**-88.8 * (mtildlc)**2.05
-                        + 0.0115 * (N1)**-16.5 * (mtildlc)**4.89
-                        + 0.575 * (N1)**-0.491 * (mtildlc)**-0.0789
-                        + 7.99e-15 * (N1)**2.07e+04 * (mtildlc)**592
-                        + 1.22e-50 * (N1)**-2.84e+03 * (mtildlc)**598)),
+##               SignomialEquality((10*pilc)**(-.163) , ( 5.28e-10 * (N1)**-88.8 * (mtildlc)**2.05
+##                        + 0.0115 * (N1)**-16.5 * (mtildlc)**4.89
+##                        + 0.575 * (N1)**-0.491 * (mtildlc)**-0.0789
+##                        + 7.99e-15 * (N1)**2.07e+04 * (mtildlc)**592
+##                        + 1.22e-50 * (N1)**-2.84e+03 * (mtildlc)**598)),
                 #define mbar..technially not needed b/c constrained in res 2 and/or 3
+
+##                TCS([pilc*(26/3.28) <= 50*(1.38 * (N1)**0.566)**10]),
+####                pilc*(26/3.28) >= .1*(1.38 * (N1)**0.566)**10,
+##                pilc*(26/3.28) <= 1.02*(1.38 * (mtildlc)**0.122)**10,
+##                pilc*(26/3.28) >= .98*(1.38 * (mtildlc)**0.122)**10,
                 
-##                pilc*(26/3.28) == (1.38 * (N1)**0.566)**10,
-##
-##                pilc*(26/3.28) <= 1.15*(1.38 * (mtildlc)**0.122)**10,
-##                pilc*(26/3.28) >= .85*(1.38 * (mtildlc)**0.122)**10,
+                pilc*(26/3.28) == (1.38 * (N1)**0.566)**10,
+                pilc*(26/3.28) <= 1.15*(1.38 * (mtildlc)**0.122)**10,
+                pilc*(26/3.28) >= .85*(1.38 * (mtildlc)**0.122)**10,
 
                 TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
                 pilc>=1,
@@ -794,16 +802,21 @@ class HPCMap(Model):
 ##                        + 7.99e-15 * (N2)**2.07e+04 * (mtildhc)**592
 ##                        + 1.22e-50 * (N2)**-2.84e+03 * (mtildhc)**598)]),
 
-                SignomialEquality((3*pihc)**(-.163) , ( 5.28e-10 * (N2)**-88.8 * (mtildhc)**2.05
-                        + 0.0115 * (N2)**-16.5 * (mtildhc)**4.89
-                        + 0.575 * (N2)**-0.491 * (mtildhc)**-0.0789
-                        + 7.99e-15 * (N2)**2.07e+04 * (mtildhc)**592
-                        + 1.22e-50 * (N2)**-2.84e+03 * (mtildhc)**598)),
+##               SignomialEquality((3*pihc)**(-.163) , ( 5.28e-10 * (N2)**-88.8 * (mtildhc)**2.05
+##                        + 0.0115 * (N2)**-16.5 * (mtildhc)**4.89
+##                        + 0.575 * (N2)**-0.491 * (mtildhc)**-0.0789
+##                        + 7.99e-15 * (N2)**2.07e+04 * (mtildhc)**592
+##                        + 1.22e-50 * (N2)**-2.84e+03 * (mtildhc)**598)),
                 pihc >= 1,
-##                TCS([pihc*3 >= .95*(1.35 * (N2)**0.383)**10]),
-##                pihc*(26/10) == (1.35 * (N2)**0.383)**10,
-##                pihc*(26/10) >= .85*(1.38 * (mtildhc)**0.122)**10,
-##                pihc*(26/10) <= 1.15*(1.38 * (mtildhc)**0.122)**10,
+                
+##                TCS([pihc*(26/10) >= .1*(1.35 * (N2)**0.383)**10]),
+##                TCS([pihc*(26/10) <= 50*(1.35 * (N2)**0.383)**10]),
+##                pihc*(26/10) <= .98*(1.38 * (mtildhc)**0.122)**10,
+##                pihc*(26/10) >= 1.02*(1.38 * (mtildhc)**0.122)**10,
+                
+                pihc*(26/10) == (1.35 * (N2)**0.383)**10,
+                pihc*(26/10) >= .85*(1.38 * (mtildhc)**0.122)**10,
+                pihc*(26/10) <= 1.15*(1.38 * (mtildhc)**0.122)**10,
 
                 mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref),    #B.280
 
@@ -852,23 +865,30 @@ class FanMap(Model):
 
         with SignomialsEnabled():
             constraints = [
-##                SignomialEquality(pif**(-.187), (0.179 * (Nf)**-0.14 * (mtildf)**0.0288
+##               SignomialEquality(pif**(-.187), (0.179 * (Nf)**-0.14 * (mtildf)**0.0288
 ##                        + 0.187 * (Nf)**-0.136 * (mtildf)**0.0253
 ##                        + 0.02 * (Nf)**-6.58 * (mtildf)**10.3
 ##                        + 0.176 * (Nf)**-0.0569 * (mtildf)**-0.0665
 ##                        + 0.179 * (Nf)**-0.131 * (mtildf)**0.0189
 ##                        + 0.174 * (Nf)**-0.124 * (mtildf)**0.0104)),
 
-                pif**(-.187) <= (0.179 * (Nf)**-0.14 * (mtildf)**0.0288
-                        + 0.187 * (Nf)**-0.136 * (mtildf)**0.0253
-                        + 0.02 * (Nf)**-6.58 * (mtildf)**10.3
-                        + 0.176 * (Nf)**-0.0569 * (mtildf)**-0.0665
-                        + 0.179 * (Nf)**-0.131 * (mtildf)**0.0189
-                        + 0.174 * (Nf)**-0.124 * (mtildf)**0.0104),
-                
-##                TCS([pif*(1.7/1.5) == (1.05*Nf**.0614)**10]),
-##                pif*(1.7/1.5) >= .85*(1.04 * ((mtildf)**0.022))**10,
-##                pif*(1.7/1.5) <= 1.15*(1.04 * ((mtildf)**0.022))**10,
+##                pif**(-.187) <= (0.179 * (Nf)**-0.14 * (mtildf)**0.0288
+##                        + 0.187 * (Nf)**-0.136 * (mtildf)**0.0253
+##                        + 0.02 * (Nf)**-6.58 * (mtildf)**10.3
+##                        + 0.176 * (Nf)**-0.0569 * (mtildf)**-0.0665
+##                        + 0.179 * (Nf)**-0.131 * (mtildf)**0.0189
+##                        + 0.174 * (Nf)**-0.124 * (mtildf)**0.0104),
+
+                #won't work because it's key to have some vairation in pressure ration with each mass flow
+##                TCS([pif*(1.7/1.5) <= 50*(1.05*Nf**.0614)**10]),
+####                TCS([pif*(1.7/1.5) >= .1*(1.05*Nf**.0614)**10]),
+##                pif*(1.7/1.5) <= .98*(1.04 * ((mtildf)**0.022))**10,
+##                pif*(1.7/1.5) >= 1.02*(1.04 * ((mtildf)**0.022))**10,
+  
+
+                TCS([pif*(1.7/1.5) == (1.05*Nf**.0614)**10]),
+                pif*(1.7/1.5) >= .85*(1.04 * ((mtildf)**0.022))**10,
+                pif*(1.7/1.5) <= 1.15*(1.04 * ((mtildf)**0.022))**10,
 
                 #define mbar
                 mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
@@ -1014,11 +1034,11 @@ class OffDesign(Model):
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
-                SignomialEquality(fp1,f+1),
+               SignomialEquality(fp1,f+1),
                 
                 #residual 1 Fan/LPC speed
-##                Nf*Gf >= .9*N1,
-                Nf*Gf == N1,
+                Nf*Gf >= .9*N1,
+                Nf*Gf <= 1.1*N1,
 ##                N1 <= 10000,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity

@@ -30,13 +30,12 @@ class EngineOnDesign(Model):
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
         cooling = False
-        tstages = 1
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(cooling)
         turbine = Turbine()
         thrust = ExhaustAndThrust()
-        size = OnDesignSizing(cooling, tstages)
+        size = OnDesignSizing(cooling)
 
         self.submodels = [lpc, combustor, turbine, thrust, size]
 
@@ -170,7 +169,7 @@ class EngineOffDesign(Model):
         if res7 ==0:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         else:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
             
         with SignomialsEnabled():
 
@@ -235,5 +234,8 @@ if __name__ == "__main__":
     
     engineOffD = EngineOffDesign(solOn)
     
-##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
-    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
+    solOff = engineOffD.localsolve(verbosity = 4, x0={'m_{tild_f}}':1, '\pi_f':1, 'N_f': 1, 'N_2':1, '\pi_{hc}':1,
+                                                      'm_{tild_hc}':1,'N-1':1, '\pi_{lc}':1, 'm_{tild_lc}':1}, solver="mosek",iteration_limit=100)
+##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, x0={'m_{tild_f}}':1, '\pi_f':1, 'N_f': 1, 'N_2':1,
+##                                                                          '\pi_{hc}':1, 'm_{tild_hc}':1,'N-1':1, '\pi_{lc}':1,
+##                                                                          'm_{tild_lc}':1, 'T_{t_4}':1400}, solver="mosek",verbosity=4, iteration_limit=100)
