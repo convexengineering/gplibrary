@@ -7,7 +7,7 @@ pi = np.pi
 wind = False
 
 
-class GasPoweredMALE(Model):
+class GasMALEDiscritizedClimb(Model):
     def __init__(self, h_station=15000, NLoiter=20, NClimb1=10, NClimb2=10,
                        NCruise1=5, NCruise2=5, wind=False, **kwargs):
 

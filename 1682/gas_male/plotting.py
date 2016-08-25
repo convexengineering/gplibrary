@@ -1,4 +1,5 @@
 from gas_male_fixCDR import GasMALEFixedEngine
+from gasmale import GasMALEDiscritizedClimb
 from gpkit.small_scripts import unitstr
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,13 +56,16 @@ def plot_sweep(model, xvarname, xsweep, yvarname, ylim=[0, 10]):
 
     return fig, ax
 
-def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
+def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix, CLIMB=False):
     """
     Plots sweeps of yvarnames vs altitude. Only runs GasMALEFixedEngine().
     Arguments
     ---------
     hvals     : array, desired altitude sweep
     yvarnames : dict {variable name}, desired y variable for plotting
+    vars_to_fix: dict - name of variable to fix and tolerance fixing
+    CLIMB: boolean - True if using gasmale.py,
+                     False if using gas_male_fixCDR.py
 
     Output
     ------
@@ -70,7 +74,11 @@ def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
     """
 
     vals = np.zeros([len(hvals), len(yvarnames)])
-    M_fix = GasMALEFixedEngine()
+    if CLIMB:
+        M_fix = GasMALEDiscritizedClimb()
+    else:
+        M_fix = GasMALEFixedEngine()
+
     sol_fix = M_fix.solve("mosek", verbosity=0)
 
     for i, h in enumerate(hvals):
@@ -91,8 +99,14 @@ def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
                                    unitstr(M_fix[yvarname].units)))
         ax.set_title("CRD " + yvarname + " vs h_{station}")
         plt.grid()
-        fig.savefig("altitude_vs_%s.pdf" %
-                    M[yvarname].descr["label"].replace(" ", ""))
+        if CLIMB:
+            plot_name = "altitude_vs_%s_Climb.pdf" % \
+                       M[yvarname].descr["label"].replace(" ", "")
+        else:
+            plot_name = "altitude_vs_%s_CDR.pdf" % \
+                       M[yvarname].descr["label"].replace(" ", "")
+
+        fig.savefig(plot_name)
 
 def plot_mission_var(model, yvarname, ylim, yaxis_name=None):
     """
