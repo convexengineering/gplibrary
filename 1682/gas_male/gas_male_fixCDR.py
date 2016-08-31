@@ -1,50 +1,19 @@
 from numpy import pi
 import numpy as np
-import matplotlib.pyplot as plt
-from gpkit import VectorVariable, Variable, Model
+from gpkit import VectorVariable, Variable, Model, LinkedConstraintSet
 from gpkit.tools import te_exp_minus1
 
-PLOT = True
-fixed = True
-payloadPower = True
-
-class GasMALEFixedEngine(Model):
+class Altitude(Model):
     """
-    This class was used to generate the model and performance characteristics
-    used in the CDR
+    Model with altitude constraints
     """
-    def __init__(self, h_station=15000, WIND=False, **kwargs):
-        """
-        Arguments
-        ---------
-        h_station: defines desired altitude
+    def __init__(self, h_station, NSeg, NCruise, NLoiter, NClimb, iClimb,
+                 **kwargs):
 
-        Returns
-        -------
-        Model, minimizes MTOW
-        """
-
-        # define number of segments
-        NSeg = 9  # number of flight segments
-        NCruise = 2 # number of cruise segments
-        NClimb = 2 # number of climb segments
-        NLoiter = NSeg - NCruise - NClimb # number of loiter segments
-        iCruise = [1, -1] # cuise index
-        iLoiter = [3] # loiter index
-        for i in range(4, NSeg-1):
-            iLoiter.append(i)
-        iClimb = [0, 2] # climb index
-
-        constraints = []
-
-        #----------------------------------------------------
-        # altitude constraints
         h_station = Variable('h_{station}', h_station, 'ft',
                              'minimum altitude at station')
         h_cruise = Variable('h_{cruise}', 5000, 'ft',
                             'minimum cruise altitude')
-        h = np.array([h_cruise]*NCruise + [h_station]*(NLoiter+1) +
-                     [h_cruise])
         deltah = Variable('\\delta_h', h_station.value-h_cruise.value, 'ft',
                           'delta height')
         t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
@@ -52,14 +21,25 @@ class GasMALEFixedEngine(Model):
         h_dotmin = Variable('h_{dot-min}', 100, 'ft/min',
                             'minimum necessary climb rate')
 
-        constraints.extend([t[iClimb[0]]*h_dot[0] >= h_cruise,
-                            t[iClimb[1]]*h_dot[1] >= deltah,
-                            h_dot >= h_dotmin
-                           ])
+        constraints = [t[iClimb[0]]*h_dot[0] >= h_cruise,
+                       t[iClimb[1]]*h_dot[1] >= deltah,
+                       h_dot >= h_dotmin
+                      ]
 
-        #----------------------------------------------------
-        # Atmosphere model
-        g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Atmosphere(Model):
+    """
+    Model to capture density changes with altitude
+    """
+    def __init__(self, h_station, NSeg, NCruise, NLoiter, **kwargs):
+
+        h_station = Variable('h_{station}', h_station, 'ft',
+                             'minimum altitude at station')
+        h_cruise = Variable('h_{cruise}', 5000, 'ft',
+                            'minimum cruise altitude')
+        h = np.array([h_cruise]*NCruise + [h_station]*(NLoiter+1) +
+                     [h_cruise])
         p_sl = Variable('p_{sl}', 101325, 'Pa', 'Pressure at sea level')
         L_atm = Variable('L_{atm}', 0.0065, 'K/m', 'Temperature lapse rate')
         T_sl = Variable('T_{sl}', 288.15, 'K', 'Temperature at sea level')
@@ -76,10 +56,17 @@ class GasMALEFixedEngine(Model):
         rho = VectorVariable(NSeg, '\\rho', 'kg/m^3', 'air density')
 
         # Atmospheric variation with altitude (valid from 0-7km of altitude)
-        constraints.extend([
-            rho == p_sl*T_atm**(5.257-1)/R_spec/(T_sl**5.257),
-            (mu_atm/mu_sl)**0.1 == 0.991*(h/h_ref)**(-0.00529)
-            ])
+        constraints = [rho == p_sl*T_atm**(5.257-1)/R_spec/(T_sl**5.257),
+                       (mu_atm/mu_sl)**0.1 == 0.991*(h/h_ref)**(-0.00529)
+                      ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Fuel(Model):
+    """
+    Fuel weight model
+    """
+    def __init__(self, NSeg, **kwargs):
 
         #----------------------------------------------------
         # Fuel weight model
@@ -92,27 +79,24 @@ class GasMALEFixedEngine(Model):
         W_begin = W_end.left # define beginning of segment weight
         W_begin[0] = MTOW
 
-        # Payload model
-        W_pay = Variable('W_{pay}', 10, 'lbf', 'Payload weight')
-        Vol_pay = Variable('Vol_{pay}', 1, 'ft^3', 'Payload volume')
-
-        # Avionics model
-        W_avionics = Variable('W_{avionics}', 8, 'lbf', 'Avionics weight')
-        Vol_avionics = Variable('Vol_{avionics}', 0.125, 'ft^3',
-                                'Avionics volume')
-
         # end of first segment weight + first segment fuel weight must be
         # greater  than MTOW.  Each end of segment weight must be greater
         # than the next end of segment weight + the next segment fuel weight.
         # The last end segment weight must be greater than the zero fuel
         # weight
 
-        constraints.extend([MTOW >= W_end[0] + W_fuel[0],
-                            W_end[:-1] >= W_end[1:] + W_fuel[1:],
-                            W_end[-1] >= W_zfw])
+        constraints = [MTOW >= W_end[0] + W_fuel[0],
+                       W_end[:-1] >= W_end[1:] + W_fuel[1:],
+                       W_end[-1] >= W_zfw
+                      ]
 
-        #----------------------------------------------------
-        # Steady level flight model
+        Model.__init__(self, None, constraints, **kwargs)
+
+class SteadyLevelFlight(Model):
+    """
+    Captures steady level flight mode
+    """
+    def __init__(self, NSeg, NClimb, iClimb, **kwargs):
 
         CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
         CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
@@ -124,31 +108,49 @@ class GasMALEFixedEngine(Model):
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
+        rho = VectorVariable(NSeg, '\\rho', 'kg/m^3', 'air density')
+        W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
+        W_begin = W_end.left # define beginning of segment weight
+        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
+        W_begin[0] = MTOW
+        h_dot = VectorVariable(NClimb, 'h_{dot}', 'ft/min', 'Climb rate')
 
         # Climb model
         # Currently climb rate is being optimized to reduce fuel consumption.
         # In future, could implement min climb rate.
 
-        constraints.extend([
+        constraints = [
             P_shaft == T*V/eta_prop,
             T >= 0.5*rho*V**2*CD*S,
             T[iClimb] >= (0.5*rho[iClimb]*V[iClimb]**2*CD[iClimb]*S +
                           W_begin[iClimb]*h_dot/V[iClimb]),
             0.5*rho*CL*S*V**2 == (W_end*W_begin)**0.5,
-            ])
+            ]
         # Propulsive efficiency variation with different flight segments,
         # will change depending on propeller characteristics
 
-        #----------------------------------------------------
-        # Engine Model (DF35)
+        Model.__init__(self, None, constraints, **kwargs)
 
-        W_engtot = Variable('W_{eng-tot}', 7.1, 'lbf',
-                            'Installed engine weight')
+class Engine(Model):
+    """
+    Engine performance model for DF35
+    """
+    def __init__(self, h_station, NSeg, NCruise, NLoiter, iClimb, iCruise,
+                 iLoiter, **kwargs):
+
+        h_station = Variable('h_{station}', h_station, 'ft',
+                             'minimum altitude at station')
+        h_cruise = Variable('h_{cruise}', 5000, 'ft',
+                            'minimum cruise altitude')
+        h = np.array([h_cruise]*NCruise + [h_station]*(NLoiter+1) +
+                     [h_cruise])
+        h_ref = Variable('h_{ref}', 15000, 'ft', 'ref altitude')
         BSFC_min = Variable('BSFC_{min}', 0.3162, 'kg/kW/hr', 'Minimum BSFC')
         BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp',
                               'brake specific fuel consumption')
         RPM_max = Variable('RPM_{max}', 7698, 'rpm', 'Maximum RPM')
         RPM = VectorVariable(NSeg, 'RPM', 'rpm', 'Engine operating RPM')
+        P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         P_shaftmaxMSL = Variable('P_{shaft-maxMSL}', 5.17, 'hp',
                                  'Max shaft power at MSL')
         P_shaftmax = VectorVariable(NSeg, 'P_{shaft-max}',
@@ -165,7 +167,7 @@ class GasMALEFixedEngine(Model):
                                   'alternator efficiency')
 
         # Engine Weight Constraints
-        constraints.extend([
+        constraints = [
             P_shaftmax >= P_shafttot,
             P_shafttot[iCruise] >= P_shaft[iCruise] + P_avn/eta_alternator,
             P_shafttot[iClimb] >= P_shaft[iClimb] + P_avn/eta_alternator,
@@ -179,29 +181,50 @@ class GasMALEFixedEngine(Model):
             # (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292,
             RPM <= RPM_max,
             P_shafttot*BSFC == m_dotfuel
-            ])
+            ]
 
-        #----------------------------------------------------
-        # Breguet Range
+        Model.__init__(self, None, constraints, **kwargs)
+
+class BreguetRange(Model):
+    """
+    Discritized Breguet Range model
+    """
+    def __init__(self, NSeg, NLoiter, iCruise, iLoiter, **kwargs):
+
         z_bre = VectorVariable(NSeg, 'z_{bre}', '-', 'breguet coefficient')
         t_cruise = Variable('t_{cruise}', 1, 'days', 'time to station')
         t_station = Variable('t_{station}', 6, 'days', 'time on station')
+        t = VectorVariable(NSeg, 't', 'days', 'time per flight segment')
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         R_cruise = Variable('R_{cruise}', 180, 'nautical_miles',
                             'range to station during climb')
         f_fueloil = Variable('f_{(fuel/oil)}', 0.98, '-', 'Fuel-oil fraction')
+        P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp',
+                'total power need including power draw from avionics')
+        BSFC = VectorVariable(NSeg, 'BSFC', 'lb/hr/hp',
+                              'brake specific fuel consumption')
+        W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
+        V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
+        W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
+                                'segment-fuel weight')
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
 
-        constraints.extend([
+        constraints = [
             z_bre >= P_shafttot*t*BSFC*g/W_end,
             R_cruise <= V[iCruise[0]]*t[iCruise[0]],
             R <= V[iCruise[1]]*t[iCruise[1]],
             t[iLoiter] >= t_station/NLoiter,
             sum(t[[0, 1, 2]]) <= t_cruise,
             f_fueloil*W_fuel/W_end >= te_exp_minus1(z_bre, 3)
-            ])
+            ]
 
-        #----------------------------------------------------
-        # Aerodynamics model
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Aerodynamics(Model):
+    """
+    Aero model assuming jh01 airfoil, designed by Mark Drela
+    """
+    def __init__(self, NSeg, **kwargs):
 
         CLmax = Variable('C_{L-max}', 1.5, '-', 'Maximum lift coefficient')
         e = Variable('e', 0.95, '-', 'Spanwise efficiency')
@@ -216,13 +239,19 @@ class GasMALEFixedEngine(Model):
                                 'Fuselage skin friction coefficient')
         CDfuse = VectorVariable(NSeg, 'C_{D-fuse}', '-', 'fueslage drag')
         l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
-        l_cent = Variable('l_{cent}', 'ft', 'center fuselage length')
         Refuse = VectorVariable(NSeg, 'Re_{fuse}', '-',
                                 'fuselage Reynolds number')
         Re_ref = Variable('Re_{ref}', 3e5, '-', 'Reference Re for cdp')
         cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
 
-        constraints.extend([
+        CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
+        CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
+        V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
+        S = Variable('S', 'ft^2', 'wing area')
+        rho = VectorVariable(NSeg, '\\rho', 'kg/m^3', 'air density')
+        mu_atm = VectorVariable(NSeg, '\\mu', 'N*s/m^2', 'Dynamic viscosity')
+
+        constraints = [
             CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR),
             #jh01
             cdp >= ((0.0075 + 0.002*CL**2 + 0.00033*CL**10)*(Re/Re_ref)**-0.4),
@@ -234,26 +263,45 @@ class GasMALEFixedEngine(Model):
             CDfuse >= Kfuse*S_fuse*Cffuse/S,
             Refuse == rho*V/mu_atm*l_fuse,
             Cffuse >= 0.455/Refuse**0.3,
-            ])
+            ]
 
-        #----------------------------------------------------
-        # landing gear
-        #A_rearland = Variable('A_{rear-land}', 12, 'in^2',
-        #                      'rear landing gear frontal area')
-        #A_frontland = Variable('A_{front-land}', 18, 'in^2',
-        #                       'front landing gear frontal area')
-        #CDland = Variable('C_{D-land}', 0.2, '-',
-        #                  'drag coefficient landing gear')
-        #CDAland = Variable('CDA_{land}', '-',
-        #                   'normalized drag coefficient landing gear')
+        Model.__init__(self, None, constraints, **kwargs)
 
-        #constraints.extend([
-        #    CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR) + CDAland,
-        #    CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S
-        #    ])
+class LandingGear(Model):
+    """
+    Landing gear, with fixed dimensions.  Used for preliminary study
+    """
+    def __init__(self, NSeg, **kwargs):
 
-        #----------------------------------------------------
-        # Weight breakdown
+        A_rearland = Variable('A_{rear-land}', 12, 'in^2',
+                              'rear landing gear frontal area')
+        A_frontland = Variable('A_{front-land}', 18, 'in^2',
+                               'front landing gear frontal area')
+        CDland = Variable('C_{D-land}', 0.2, '-',
+                          'drag coefficient landing gear')
+        CDAland = Variable('CDA_{land}', '-',
+                           'normalized drag coefficient landing gear')
+
+        CD = VectorVariable(NSeg, 'C_D', '-', 'Drag coefficient')
+        CL = VectorVariable(NSeg, 'C_L', '-', 'Lift coefficient')
+        CDfuse = VectorVariable(NSeg, 'C_{D-fuse}', '-', 'fueslage drag')
+        S = Variable('S', 'ft^2', 'wing area')
+        e = Variable('e', 0.95, '-', 'Spanwise efficiency')
+        AR = Variable('AR', '-', 'Aspect ratio')
+        cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
+
+        constraints = [
+            CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR) + CDAland,
+            CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Weight(Model):
+    """
+    Weight brakedown of aircraft
+    """
+    def __init__(self, NSeg, **kwargs):
 
         W_cent = Variable('W_{cent}', 'lbf', 'Center aircraft weight')
         W_fuse = Variable('W_{fuse}', 'lbf', 'fuselage weight')
@@ -268,7 +316,17 @@ class GasMALEFixedEngine(Model):
         W_fueltank = Variable('W_{fuel-tank}', 4, 'lbf', 'fuel tank weight')
         f_fuel = Variable('f_{fuel}', '-', 'fuel weight fraction')
 
-        constraints.extend([
+        W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
+                                'segment-fuel weight')
+        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
+        W_zfw = Variable('W_{zfw}', 'lbf', 'Zero fuel weight')
+        g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
+        W_pay = Variable('W_{pay}', 10, 'lbf', 'Payload weight')
+        W_avionics = Variable('W_{avionics}', 8, 'lbf', 'Avionics weight')
+        W_engtot = Variable('W_{eng-tot}', 7.1, 'lbf',
+                            'Installed engine weight')
+
+        constraints = [
             W_wing >= m_skin*g + 1.2*m_cap*g,
             W_fuse >= m_fuse*g + m_rib*g,
             W_fueltot >= W_fuel.sum(),
@@ -277,10 +335,15 @@ class GasMALEFixedEngine(Model):
             f_fuel == W_fueltot/MTOW,
             W_zfw >= (W_pay + W_engtot + W_fuse + W_wing + m_tail*g +
                       W_avionics + W_skid + W_fueltank)
-            ])
+            ]
 
-        #----------------------------------------------------
-        # Structural model
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Structures(Model):
+    """
+    Structural wing model.  Simple beam.
+    """
+    def __init__(self, **kwargs):
 
         # Structural parameters
         rho_skin = Variable('\\rho_{skin}', 0.1, 'g/cm^2',
@@ -319,19 +382,34 @@ class GasMALEFixedEngine(Model):
         delta_tip_max = Variable('\\delta_{tip-max}', 0.2, '-',
                                  'max tip deflection ratio')
 
-        constraints.extend([m_skin >= rho_skin*S*2,
-                            F >= W_cent*N_max,
-                            c == S/b,
-                            M_cent >= b*F/8,
-                            P_cap >= M_cent/h_spar,
-                            A_capcent >= P_cap/sigma_cap,
-                            Vol_cap >= A_capcent*b/3,
-                            m_cap == rho_cap*Vol_cap,
-                            h_spar <= tau*c,
-                            w_cap == A_capcent/t_cap,
-                            LoverA == MTOW/S,
-                            delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
-                            delta_tip/b <= delta_tip_max])
+        S = Variable('S', 'ft^2', 'wing area')
+        W_cent = Variable('W_{cent}', 'lbf', 'Center aircraft weight')
+        m_skin = Variable('m_{skin}', 'kg', 'Skin mass')
+        b = Variable('b', 'ft', 'Span')
+        m_cap = Variable('m_{cap}', 'kg', 'Cap mass')
+        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
+
+        constraints = [m_skin >= rho_skin*S*2,
+                       F >= W_cent*N_max,
+                       c == S/b,
+                       M_cent >= b*F/8,
+                       P_cap >= M_cent/h_spar,
+                       A_capcent >= P_cap/sigma_cap,
+                       Vol_cap >= A_capcent*b/3,
+                       m_cap == rho_cap*Vol_cap,
+                       h_spar <= tau*c,
+                       w_cap == A_capcent/t_cap,
+                       LoverA == MTOW/S,
+                       delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
+                       delta_tip/b <= delta_tip_max]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Fuselage(Model):
+    """
+    Sizes fuselage based off of volume constraints.  Assumes elliptical shape
+    """
+    def __init__(self, NSeg, **kwargs):
 
         #----------------------------------------------------
         # Fuselage model
@@ -350,22 +428,47 @@ class GasMALEFixedEngine(Model):
         Vol_fuel = Variable('Vol_{fuel}', 'm**3', 'Fuel Volume')
         Vol_fuse = Variable('Vol_{fuse}', 'm**3', 'fuselage volume')
 
-        constraints.extend([m_fuse >= S_fuse*rho_skin,
-                            l_cent == fr*w_cent,
-                            l_fuse >= l_cent*1.1,
-                            (l_fuse/k1fuse)**3 == Vol_fuse,
-                            (S_fuse/k2fuse)**3 == Vol_fuse**2,
-                            Vol_fuse >= l_cent*w_cent**2,
-                            Vol_fuel >= W_fuel.sum()/rho_fuel,
-                            l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay
-                           ])
+        m_fuse = Variable('m_{fuse}', 'kg', 'fuselage mass')
+        rho_skin = Variable('\\rho_{skin}', 0.1, 'g/cm^2',
+                            'Wing Skin Density')
+        S_fuse = Variable('S_{fuse}', 'ft^2', 'Fuselage surface area')
+        l_fuse = Variable('l_{fuse}', 'ft', 'fuselage length')
+        W_fuel = VectorVariable(NSeg, 'W_{fuel}', 'lbf',
+                                'segment-fuel weight')
+        l_cent = Variable('l_{cent}', 'ft', 'center fuselage length')
+        Vol_avionics = Variable('Vol_{avionics}', 0.125, 'ft^3',
+                                'Avionics volume')
+        Vol_pay = Variable('Vol_{pay}', 1, 'ft^3', 'Payload volume')
 
-        #----------------------------------------------------
-        # wind speed model
-        if WIND:
+        constraints = [m_fuse >= S_fuse*rho_skin,
+                       l_cent == fr*w_cent,
+                       l_fuse >= l_cent*1.1,
+                       (l_fuse/k1fuse)**3 == Vol_fuse,
+                       (S_fuse/k2fuse)**3 == Vol_fuse**2,
+                       Vol_fuse >= l_cent*w_cent**2,
+                       Vol_fuel >= W_fuel.sum()/rho_fuel,
+                       l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay
+                      ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Wind(Model):
+    """
+    Model for wind speed
+    wind = True, wind speed has specific value
+    """
+    def __init__(self, h_station, wind, NSeg, iLoiter, iCruise, **kwargs):
+
+        V = VectorVariable(NSeg, 'V', 'm/s', 'cruise speed')
+        h_station = Variable('h_{station}', h_station, 'ft',
+                             'minimum altitude at station')
+        h_cruise = Variable('h_{cruise}', 5000, 'ft',
+                            'minimum cruise altitude')
+
+        if wind:
 
             V_wind = Variable('V_{wind}', 25, 'm/s', 'wind speed')
-            constraints.extend([V[iLoiter] >= V_wind])
+            constraints = [V[iLoiter] >= V_wind]
 
         else:
 
@@ -377,19 +480,62 @@ class GasMALEFixedEngine(Model):
                              'linear wind speed variable')
                            #13.009 is worst case, 8.845 is mean at 45deg
 
-            constraints.extend([V_wind[0] >= wd_cnst*h_station + wd_ln,
-                                V_wind[1] >= wd_cnst*h_cruise + wd_ln,
-                                V[iLoiter] >= V_wind[0],
-                                V[iCruise] >= V_wind[1]
-                               ])
+            constraints = [V_wind[0] >= wd_cnst*h_station + wd_ln,
+                           V_wind[1] >= wd_cnst*h_cruise + wd_ln,
+                           V[iLoiter] >= V_wind[0],
+                           V[iCruise] >= V_wind[1]
+                          ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class GasMALEFixedEngine(Model):
+    """
+    This class was used to generate the model and performance characteristics
+    used in the CDR
+    """
+    def __init__(self, h_station=15000, wind=False, **kwargs):
+        """
+        Arguments
+        ---------
+        h_station: defines desired altitude
+
+        Returns
+        -------
+        Model, minimizes MTOW
+        """
+
+        # define number of segments
+        NSeg = 9  # number of flight segments
+        NCruise = 2 # number of cruise segments
+        NClimb = 2 # number of climb segments
+        NLoiter = NSeg - NCruise - NClimb # number of loiter segments
+        iCruise = [1, -1] # cuise index
+        iLoiter = [3] # loiter index
+        for i in range(4, NSeg-1):
+            iLoiter.append(i)
+        iClimb = [0, 2] # climb index
+
+        MTOW = Variable('MTOW', 'lbf', 'max take off weight')
+
+        self.submodels = [
+            Altitude(h_station, NSeg, NCruise, NLoiter, NClimb, iClimb),
+            Atmosphere(h_station, NSeg, NCruise, NLoiter), Fuel(NSeg),
+            SteadyLevelFlight(NSeg, NClimb, iClimb),
+            Engine(h_station, NSeg, NCruise, NLoiter, iClimb, iCruise,
+                   iLoiter),
+            BreguetRange(NSeg, NLoiter, iCruise, iLoiter),
+            Aerodynamics(NSeg), Weight(NSeg), Structures(), Fuselage(NSeg),
+            Wind(h_station, wind, NSeg, iLoiter, iCruise)]
+
+        constraints = []
+
+        lc = LinkedConstraintSet([self.submodels, constraints])
 
         objective = MTOW
 
-        Model.__init__(self, objective, constraints, **kwargs)
+        Model.__init__(self, objective, lc, **kwargs)
 
 if __name__ == '__main__':
 
-    WIND = False
-
-    M = GasMALEFixedEngine(WIND=WIND)
+    M = GasMALEFixedEngine()
     sol = M.solve('mosek')
