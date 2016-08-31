@@ -1,12 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import pdb
-plt.rc('font', family='serif')
-plt.rc('font', serif='Times New Roman')
-plt.rcParams.update({'font.size':19})
-plt.rcParams.update({'lines.linewidth':2})
-
 
 def W_pay(M):
     M.substitutions.update({'MTOW': ('sweep', np.linspace(8+140, 18+140, 11))})

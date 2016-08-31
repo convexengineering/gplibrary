@@ -1,8 +1,9 @@
 import numpy as np
 import numpy as np
 from gasmale import GasMALEDiscritizedClimb
-import plot
+from wpay import W_pay as Wpay
 from plotting import fix_vars, plot_mission_var, plot_altitude_sweeps
+from plotting import plot_sweep
 
 fixed = False
 # PLOTS #
@@ -45,21 +46,24 @@ fig.savefig("profile_t_vs_weight.pdf")
 plot_altitude_sweeps(np.linspace(14000, 24000, 20), {"t_{station}"},
                      vars_to_fix, CLIMB=True)
 
+# plot other sweeps
+del M.substitutions["t_{station}"]
+M.cost = 1/M["t_{station}"]
 
+fig, ax = plot_sweep(M, "P_{pay}", np.linspace(5, 200, 20), "t_{station}")
+fig.savefig("Ppay_vs_tstation_climb.pdf")
 
+M_wind = GasMALEDiscritizedClimb(wind=True)
+sol_windfix = M_wind.solve("mosek", verbosity=0)
 
-#numplots = sum([wind, P_pay, W_pay, altitude])
-#if numplots > 1:
-#    raise ValueError("more than one is true, but there can only be one!")
-#elif numplots == 1:
-#    if "t_{station}" in M.substitutions:
-#        del M.substitutions["t_{station}"]
-#    M.cost = 1/M["t_{station}"]
-#    if wind:
-#        plot.wind(M)
-#    elif P_pay:
-#        plot.P_pay(M)
-#    elif W_pay:
-#        plot.W_pay(M)
-#    elif altitude:
-#        plot.altitude(M)
+fix_vars(M_wind, sol_windfix, vars_to_fix)
+
+del M_wind.substitutions["t_{station}"]
+M_wind.cost = 1/M_wind["t_{station}"]
+
+fig, ax = plot_sweep(M_wind, "V_{wind}", np.linspace(5, 40, 20),
+                     "t_{station}")
+fig.savefig("Vwind_vs_tstation_climb.pdf")
+
+# uses trim drag to calculate payload weight effects
+Wpay(M)
