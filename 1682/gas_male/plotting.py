@@ -1,5 +1,5 @@
 from gas_male_fixCDR import GasMALEFixedEngine
-from gasmale import GasMALEDiscritizedClimb
+from gas_male_discritized_climb import GasMALEDiscritizedClimb
 from gpkit.small_scripts import unitstr
 import numpy as np
 import matplotlib.pyplot as plt
