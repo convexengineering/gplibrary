@@ -4,7 +4,6 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 from gpkit.tools import te_exp_minus1
 import numpy as np
 
-
 class BreguetRange(Model):
     """Breguet Range Model
 
@@ -33,37 +32,33 @@ class BreguetRange(Model):
         S = Variable('S', 'm^2', 'Wing Planform Area')
         LD = Variable('L/D', '-', 'Lift to Drag Ratio')
         W_limit = Variable('W_limit', 'N', 'Non-Physical Weight Limit Needed for Convergence')
-        
-        
+
         constraints = []
-        
+
         #write out all required constraints
         constraints.extend([
-                #Breguet Range parameter constraints
-                TCS([W_fuel/W_end >= te_exp_minus1(z_bre,3)]),
-                TCS([z_bre >= TSFC * t * D/ W_avg]),
-                
-                #constraint on the lift coefficient, assumes steady level flight
-                W_avg == .5 * Cl * S * rho * V**2,
-                
-                #drag constraint
-                TCS([D >= (.5*S*rho*V**2)*(Cd0 + K * Cl**2)]),
-                
-                #constrain the starting weight such that the aircraft is only losing weight due to fuel burn
-                TCS([W_start >= W_end + W_fuel]),
-                
-                #average weight is the geometric mean of the start and end weights
-                W_avg == (W_start * W_end)**.5,
-                
-                #constraint on the segment time
-                t * V == Range,
-                
-                #non-physical weight limit for demonstration purposes, relevant only in the second Breguet formulation
-                W_start <= W_limit,
+            #Breguet Range parameter constraints
+            TCS([W_fuel/W_end >= te_exp_minus1(z_bre,3)]),
+            TCS([z_bre >= TSFC * t * D/ W_end]),
+
+            #constraint on the lift coefficient, assumes steady level flight
+            W_avg == .5 * Cl * S * rho * V**2,
+
+            #drag constraint
+            TCS([D >= (.5*S*rho*V**2)*(Cd0 + K * Cl**2)]),
+
+            #constrain the starting weight such that the aircraft is only losing weight due to fuel burn
+            TCS([W_start >= W_end + W_fuel]),
+
+            #average weight is the geometric mean of the start and end weights
+            W_avg == (W_start * W_end)**.5,
+
+            #constraint on the segment time
+            t * V == Range,
             ])
-        
+
         substitutions = []
-        
+
         #build the model
         Model.__init__(self, W_fuel, constraints, substitutions)
 

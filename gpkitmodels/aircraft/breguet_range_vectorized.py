@@ -60,62 +60,61 @@ class BreguetRange(Model):
 
         #set up index list
         i = map(int, np.linspace(0, n - 1, n))
-        print i
 
         with SignomialsEnabled():
             constraints = [
-                        #Segment weight constraints
-                        W_avg[i] == (W_start[i] * W_end[i])**.5,
-                        TCS([W_start[i] >= W_end[i] + W_fuel[i]]),
+                #Segment weight constraints
+                W_avg[i] == (W_start[i] * W_end[i])**.5,
+                TCS([W_start[i] >= W_end[i] + W_fuel[i]]),
 
-                        #total weight constraint
-                        SignomialEquality(W_start[0] , W_fuelTotal + W_e),
+                W_start <= 1000000*units('N'),
 
-                        #end weight constraint
-                        W_end[n-1] == W_e,
+                #total weight constraint
+                W_start[0] <= W_fuelTotal + W_e,
 
-                        #drag constraint
-                        TCS([D[i] >= (.5*S*rho*V[i]**2)*(Cd0 + K * Cl[i]**2)]),
+                #end weight constraint
+                W_end[n-1] == W_e,
 
-                        #constraint on the lift coefficient, assumes steady level flight
-                        W_avg[i] == .5 * Cl[i] * S * rho * V[i]**2,
+                #drag constraint
+                TCS([D[i] >= (.5*S*rho*V[i]**2)*(Cd0 + K * Cl[i]**2)]),
 
-                        #Breguet Range parameter constraints
-                        TCS([W_fuel[i]/W_end[i] >= te_exp_minus1(z_bre[i],3)]),
-                        TCS([z_bre[i] >= TSFC * t[i] * D[i]/ W_avg[i]]),
-                        W_e==40000*9.8*units('N'),
-                        D[i]==10000*units('N'),
-                        TSFC == .5*units('1/hr'),
-                        t[i]==.5*units('hr'),
-                        W_start[i] <= 1000000*units('N'),
-                        W_avg[i] == 80000*units('N'),
-                        #velocity constraint
-                        V[i] <= Vmax,
+                #constraint on the lift coefficient, assumes steady level flight
+                W_avg[i] == .5 * Cl[i] * S * rho * V[i]**2,
 
-                        #constraint on the segment time
-                        t[i] * V[i] == Rng[i],
+                #Breguet Range parameter constraints
+                TCS([W_fuel[i]/W_end[i] >= te_exp_minus1(z_bre[i],3)]),
+                TCS([z_bre[i] >= TSFC * t[i] * D[i]/ W_avg[i]]),
+              
+                #velocity constraint
+                V == Vmax,
 
-                        #total range is equal to the sum of the segment ranges
-                        TCS([ReqRng == sum(Rng)]),
+                #constraint on the segment time
+                t[i] * V[i] == Rng[i],
 
-                        #total fuel burn is equal to the sum of segment fuel burns
-                        TCS([W_fuelTotal >= sum(W_fuel)]),
-                          ]
+                #total range is equal to the sum of the segment ranges
+                TCS([ReqRng == sum(Rng)]),
+
+                #total fuel burn is equal to the sum of segment fuel burns
+                TCS([W_fuelTotal <= sum(W_fuel)]),
+                ]
+
+        for j in range(1,n):
+            print j
+            constraints.extend([
+                W_start[j] == W_end[j-1],
+                ])
 
         #The objective is to minimze total fuel burn
         objective = W_fuelTotal  # Minimze total fuel burn
 
-        #substitutions
-        substitutions = []
-
         #build the model
-        Model.__init__(self, objective, constraints, substitutions)
+        Model.__init__(self, objective, constraints)
         
     def test(self, BR):
         BR.substitutions.update({
             'S': 125,                 #approx a B737 wing area
             'ReqRng': 500,            #1,000 mile required range
-            'W_e': 40000*9.81,        #approx empty weight of B737 in N
+            'W_{e}': 40000*9.81,        #approx empty weight of B737 in N
             'rho': .31,               #air density at 12,000m (~40,000')
             'Cd0': .02,               #setting profile drag coefficient
             'K': .015,                #setting parametric drag model coefficient
@@ -123,21 +122,22 @@ class BreguetRange(Model):
             'V_{max}': 420,           #set the max velocity limit
         })
 
-        BR.solve(solver = "mosek", verbosity = 4)
+        BR.locaLsolve(solver = "mosek", verbosity = 4)
 
 if __name__ == '__main__':
-       m = BreguetRange()
+       m = BreguetRange(3)
 ##    m.test(m)
        m.substitutions.update({
             'S': 125,                 #approx a B737 wing area
-            'ReqRng': 500,            #1,000 mile required range
-            'W_e': 40000*9.81,        #approx empty weight of B737 in N
+            'ReqRng': 1000,            #1,000 mile required range
+##            'W_{e}': 40000*9.81,        #approx empty weight of B737 in N
             'rho': .31,               #air density at 12,000m (~40,000')
             'Cd0': .02,               #setting profile drag coefficient
             'K': .015,                #setting parametric drag model coefficient
             'TSFC': 0.5,              #setting segment TSFC
             'V_{max}': 420,           #set the max velocity limit
+##            'V': 420,
         })
 
-       sol = m.solve(solver='mosek',verbosity=4)
+       sol = m.localsolve(solver='cvxopt',verbosity=4)
        print sol.table()
