@@ -1,3 +1,4 @@
+""" gas_male_fixCDR.py """
 from numpy import pi
 import numpy as np
 from gpkit import VectorVariable, Variable, Model, LinkedConstraintSet
@@ -7,8 +8,7 @@ class Altitude(Model):
     """
     Model with altitude constraints
     """
-    def __init__(self, h_station, NSeg, NCruise, NLoiter, NClimb, iClimb,
-                 **kwargs):
+    def __init__(self, h_station, NSeg, NClimb, iClimb, **kwargs):
 
         h_station = Variable('h_{station}', h_station, 'ft',
                              'minimum altitude at station')
@@ -108,6 +108,7 @@ class SteadyLevelFlight(Model):
                                   'propulsive efficiency')
         P_shaft = VectorVariable(NSeg, 'P_{shaft}', 'hp', 'Shaft power')
         T = VectorVariable(NSeg, 'T', 'lbf', 'Thrust')
+
         rho = VectorVariable(NSeg, '\\rho', 'kg/m^3', 'air density')
         W_end = VectorVariable(NSeg, 'W_{end}', 'lbf', 'segment-end weight')
         W_begin = W_end.left # define beginning of segment weight
@@ -131,7 +132,7 @@ class SteadyLevelFlight(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class Engine(Model):
+class DF35Engine(Model):
     """
     Engine performance model for DF35
     """
@@ -198,6 +199,7 @@ class BreguetRange(Model):
         R = Variable('R', 200, 'nautical_miles', 'range to station')
         R_cruise = Variable('R_{cruise}', 180, 'nautical_miles',
                             'range to station during climb')
+
         f_fueloil = Variable('f_{(fuel/oil)}', 0.98, '-', 'Fuel-oil fraction')
         P_shafttot = VectorVariable(NSeg, 'P_{shaft-tot}', 'hp',
                 'total power need including power draw from avionics')
@@ -518,11 +520,11 @@ class GasMALEFixedEngine(Model):
         MTOW = Variable('MTOW', 'lbf', 'max take off weight')
 
         self.submodels = [
-            Altitude(h_station, NSeg, NCruise, NLoiter, NClimb, iClimb),
+            Altitude(h_station, NSeg, NClimb, iClimb),
             Atmosphere(h_station, NSeg, NCruise, NLoiter), Fuel(NSeg),
             SteadyLevelFlight(NSeg, NClimb, iClimb),
-            Engine(h_station, NSeg, NCruise, NLoiter, iClimb, iCruise,
-                   iLoiter),
+            DF35Engine(h_station, NSeg, NCruise, NLoiter, iClimb, iCruise,
+                       iLoiter),
             BreguetRange(NSeg, NLoiter, iCruise, iLoiter),
             Aerodynamics(NSeg), Weight(NSeg), Structures(), Fuselage(NSeg),
             Wind(h_station, wind, NSeg, iLoiter, iCruise)]

@@ -28,7 +28,7 @@ if __name__ == "__main__":
     fig.savefig("tvsW_pay.pdf")
 
     # wind speed vs time on station
-    M = GasMALEFixedEngine(WIND=True)
+    M = GasMALEFixedEngine(wind=True)
     fix_vars(M, sol, vars_to_fix)
     del M.substitutions["t_{station}"]
     M.cost = 1/M["t_{station}"]
