@@ -188,41 +188,60 @@ class CombustorCooling(Model):
 
                 #this is where the bug is in the off design
                 
-                TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3+Cpfuel*f*(Tt4-Ttf)]),
+                SignomialEquality(fp1,f+1),
+                SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),
 ##                TCS([f*hf + ht3 >= ht4]),
-  
+                
 ##                f*hf + ht3 >= ht4,
                 #making f+1 GP compatible --> needed for convergence
-               SignomialEquality(fp1,f+1),
+                
+                TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3+Cpfuel*f*(Tt4-Ttf)]),
+                
                 
                 ht41 == Cpc * Tt41,
+                
+                
+                #compute Tt41...mixing causes a temperature drop
+                #had to include Tt4 here to prevent it from being pushed down to zero
+                TCS([ht41 <= ((1-ac+f)*ht4 +ac*ht3)/fp1]),
+                #comptue the rest of the station 4.1 variables
+                         
+                
+                #this is a stagnation relation...need to fix it to not be signomial
+                TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
+                #here we assume no pressure loss in mixing so P41=P4a
+                Pt41 == P4a*(Tt41/T41)**(1.313/.313),
+                #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
+                u4a == M4a*((1.313*R*Tt4)**.5)/hold4a,
+                uc == ruc*u4a,
+                P4a == Pt4*hold4a**(-1.313/.313),
+  
                 ]
             
-            if cooling == True:
-                constraints.extend([
-                    #compute Tt41...mixing causes a temperature drop
-
-                    #rewrite this constriant and include Tt4
-                    #had to include Tt4 here to prevent it from being pushed down to zero
-                    TCS([ht41 <= ((1-ac)*ht4 +ac*ht3+Cpfuel*f*(Tt4-Ttf) + Cpfuel*Ttf*f)/fp1]),
-                   
-                    #comptue the rest of the station 4.1 variables
-                   SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
-                    
-                    #this is a stagnation relation...need to fix it to not be signomial
-                    TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
-                    #here we assume no pressure loss in mixing so P41=P4a
-                    Pt41 == P4a*(Tt41/T41)**(1.313/.313),
-                    #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
-                    u4a == M4a*((1.313*R*Tt4)**.5)/hold4a,
-                    uc == ruc*u4a,
-                    P4a == Pt4*hold4a**(-1.313/.313),
-                    ])
-            else:
-                constraints.extend([
-                    Pt41 == Pt4,
-                    Tt41 == Tt4,
-                    ])
+##            if cooling == True:
+##                print "true"
+##                constraints.extend([
+##                    #compute Tt41...mixing causes a temperature drop
+##                    #had to include Tt4 here to prevent it from being pushed down to zero
+####                    TCS([ht41 <= ((1-ac)*ht4 +ac*ht3+Cpfuel*f*(Tt4-Ttf) + Cpfuel*Ttf*f)/fp1]),
+##                    TCS([ht41 <= ((1-ac+f)*ht4 +ac*ht3)/fp1]),
+##                    #comptue the rest of the station 4.1 variables
+##                    SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
+##                    
+##                    #this is a stagnation relation...need to fix it to not be signomial
+##                    TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
+##                    #here we assume no pressure loss in mixing so P41=P4a
+##                    Pt41 == P4a*(Tt41/T41)**(1.313/.313),
+##                    #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
+##                    u4a == M4a*((1.313*R*Tt4)**.5)/hold4a,
+##                    uc == ruc*u4a,
+##                    P4a == Pt4*hold4a**(-1.313/.313),
+##                    ])
+##            else:
+##                constraints.extend([
+##                    Pt41 == Pt4,
+##                    Tt41 == Tt4,
+##                    ])
             
         Model.__init__(self, 1/f, constraints, **kwargs)
 
@@ -285,11 +304,11 @@ class Turbine(Model):
             constraints = [
                 #HPT shafter power balance
                 #SIGNOMIAL   
-               SignomialEquality(Mtakeoff*etaHPshaft*(1+f)*(ht41-ht45),ht3 - ht25),    #B.161
+                SignomialEquality(Mtakeoff*etaHPshaft*(1+f)*(ht41-ht45),ht3 - ht25),    #B.161
 
                 #LPT shaft power balance
                 #SIGNOMIAL  
-               SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
+                SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
@@ -411,7 +430,7 @@ class ExhaustAndThrust(Model):
                 TCS([F + alphap1*mCore*u0 <= Mtakeoff*mCore*u6+mCore*alpha*u8]), 
 
 
-                Fsp == F/((alphap1)*mCore*a0),   #B.191
+                Fsp == F/((alphap1)*Mtakeoff*mCore*a0),   #B.191
 
                 #ISP
                 Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
@@ -622,7 +641,7 @@ class OnDesignSizing(Model):
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
-               SignomialEquality(fp1,f+1),
+                SignomialEquality(fp1,f+1),
                 
                 #mass flow sizing
                 Mtakeoff*mCore == Fd/(Fsp*a0*(alphap1)),  #B.194
@@ -691,7 +710,7 @@ class OnDesignSizing(Model):
 
         #objective is None because all constraints are equality so feasability region is a
         #single point which likely will not solve
-        Model.__init__(self, TSFC + (units('1/hr'))*(W_engine/units('N'))**.001, constraints, **kwargs)
+        Model.__init__(self, TSFC * (units('1/hr'))*(W_engine/units('N'))**.00001, constraints, **kwargs)
 
 class LPCMap(Model):
     """
@@ -1058,7 +1077,6 @@ class OffDesign(Model):
                 a5 == (1.387*R*T5)**.5,
                 a5*M5 == u5,
                 rho5 == P5/(R*T5),
-                
                 
                 #compute core mass flux
                 Mtakeoff * mCore == rho5 * A5 * u5/(fp1),
