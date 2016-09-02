@@ -64,13 +64,11 @@ class BreguetRange(Model):
         with SignomialsEnabled():
             constraints = [
                 #Segment weight constraints
-                W_avg[i] == (W_start[i] * W_end[i])**.5,
-                TCS([W_start[i] >= W_end[i] + W_fuel[i]]),
-
-                W_start <= 1000000*units('N'),
+##                W_avg[i] == (W_start[i] * W_end[i])**.5,
+##                TCS([W_start[i] >= W_end[i] + W_fuel[i]]),
 
                 #total weight constraint
-                W_start[0] <= W_fuelTotal + W_e,
+##                W_start[0] <= W_fuelTotal + W_e,
 
                 #end weight constraint
                 W_end[n-1] == W_e,
