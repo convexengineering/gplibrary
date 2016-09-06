@@ -5,34 +5,45 @@ from gpkit.tools import te_exp_minus1
 import numpy as np
 
 class BreguetRange(Model):
-    """Breguet Range Model
+    """
+    Breguet Range Model
 
     Assumptions
     -----------
     Fuel burn varies linearily with thrust and is independent of velocity.
-
-    arguemnt n to init is the number of discretized segments, default value is 1
     """
     def __init__(self, **kwargs):
         #Variable definitions
         TSFC = Variable('TSFC', '1/hr', 'Thrust Specific Fuel Consumtion')
+
+        #breguet range parameter
         z_bre = Variable('z_bre', '-', 'Breguet Range Parameter')
+
+        #aero
+        Cl = Variable('Cl', '-', 'Segment Lift Coefficient')
         D = Variable('D', 'N', 'Drag')
-        rho = Variable('rho', 'kg/m^3', 'Air Density')
-        V = Variable('V', 'kts', 'Cruise Airspeed')
         Cd0 = Variable('Cd0', '-', 'Profile Drag Coefficient')
         K = Variable('K', '-', 'Parametric Drag Model Parameter')
+        S = Variable('S', 'm^2', 'Wing Planform Area')
+
+        #weights
         W_fuel = Variable('W_fuel', 'N', 'Segment Fuel Weight')
         W_end = Variable('W_end', 'N', 'Segment End Weight')
         W_avg = Variable('W_avg', 'N', 'Average Segment Weight')
         W_start = Variable('W_start', 'N', 'Segment Start Weight')
-        Range = Variable('Range', 'mi', 'Required Segment Range')
-        t = Variable('t', 'hr', 'Segment Flight Time')
-        Cl = Variable('Cl', '-', 'Segment Lift Coefficient')
-        S = Variable('S', 'm^2', 'Wing Planform Area')
-        LD = Variable('L/D', '-', 'Lift to Drag Ratio')
-        W_limit = Variable('W_limit', 'N', 'Non-Physical Weight Limit Needed for Convergence')
 
+        #atmosphere
+        rho = Variable('rho', 'kg/m^3', 'Air Density')
+
+        #speed
+        V = Variable('V', 'kts', 'Cruise Airspeed')
+        
+        #Range
+        Range = Variable('Range', 'mi', 'Required Segment Range')
+
+        #flight time
+        t = Variable('t', 'hr', 'Segment Flight Time')
+        
         constraints = []
 
         #write out all required constraints
@@ -62,23 +73,9 @@ class BreguetRange(Model):
         #build the model
         Model.__init__(self, W_fuel, constraints, substitutions)
 
-    def test(self, BR):
-        BR.substitutions.update({
-            'S': 125,                 #approx a B737 wing area
-            'ReqRng': 500,            #1,000 mile required range
-            'W_e': 40000*9.81,        #approx empty weight of B737 in N
-            'rho': .31,               #air density at 12,000m (~40,000')
-            'Cd0': .02,               #setting profile drag coefficient
-            'K': .015,                #setting parametric drag model coefficient
-            'TSFC': 0.5,              #setting segment TSFC
-            'V_{max}': 420,           #set the max velocity limit
-        })
-
-        BR.solve(solver = "mosek", verbosity = 4)
-
 if __name__ == '__main__':
        m = BreguetRange()
-##    m.test(m)
+
        m.substitutions.update({
             'S': 125,                 #approx a B737 wing area
             'Range': 1000,            #1,000 mile required range
@@ -91,5 +88,4 @@ if __name__ == '__main__':
             'W_limit': 100000*9.81,
         })
 
-       sol = m.solve(solver='mosek',verbosity=4)
-       print sol.table()
+       sol = m.solve()
