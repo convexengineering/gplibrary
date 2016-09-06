@@ -243,7 +243,7 @@ class CombustorCooling(Model):
 ##                    Tt41 == Tt4,
 ##                    ])
             
-        Model.__init__(self, 1/f, constraints, **kwargs)
+        Model.__init__(self, f*u41, constraints, **kwargs)
 
 class Turbine(Model):
     """
