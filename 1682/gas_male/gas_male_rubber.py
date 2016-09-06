@@ -4,26 +4,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units
 from gpkit import LinkedConstraintSet
+#from gpkit.tools import BoundedConstraintSet
 from gpkit.tools import te_exp_minus1
 from plotting import plot_sweep
-PLOT = True
+PLOT = False
 
 class Mission(Model):
-    def __init__(self, **kwargs):
+    def __init__(self, h_station, wind, **kwargs):
 
-        self.mission = [Climb(1, [0.5], [5000], False, False, 5000),
-                        Cruise(1, [0.6], [5000], False, False, 180),
-                        Climb(1, [0.5], [15000], False, False, 10000),
-                        Loiter(5, [0.7]*5, [15000]*5, True, False),
-                        Cruise(1, [0.6], [5000], False, False, 200)]
+        self.mission = [Climb(1, [0.5], [5000], False, wind, 5000),
+                        Cruise(1, [0.6], [5000], False, wind, 180),
+                        Climb(1, [0.5], [h_station], False, wind, 10000),
+                        Loiter(5, [0.7]*5, [h_station]*5, True, wind),
+                        Cruise(1, [0.6], [5000], False, wind, 200)]
 
         MTOW = Variable("MTOW", "lbf", "max take off weight")
         W_zfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
 
         constraints = [
-            MTOW == self.mission[0]["W_{start}"],
-            W_zfw == self.mission[-1]["W_{finish}"],
+            MTOW >= self.mission[0]["W_{start}"],
+            W_zfw <= self.mission[-1]["W_{finish}"],
             W_fueltot >= sum(fs["W_{fuel-fs}"] for fs in self.mission)
             ]
 
@@ -34,36 +35,32 @@ class Mission(Model):
 
         lc = LinkedConstraintSet(
             [fs for fs in self.mission, constraints], exclude={
-                "t_{loiter}", "h_{climb}", "h_{dot}", "h", "T_{atm}",
+                "t_{loiter}", "\\delta_h", "h_{dot}", "h", "T_{atm}",
                 "\\mu", "\\rho", "W_{start}", "W_{end}", "W_{fuel}",
-                "W_{fuel-fs}", "W_{finish}", "W_{begin}", "C_L", "C_L",
-                "V", "eta_{prop}", "P_{shaft}", "T", "BSFC", "RPM",
+                "W_{fuel-fs}", "W_{finish}", "W_{begin}", "C_L", "C_D",
+                "V", "\\eta_{prop}", "P_{shaft}", "T", "BSFC", "RPM",
                 "P_{shaft-max}", "L_factor", "P_{shaft-tot}", "t", "R",
                 "Re", "C_{f-fuse}", "C_{D-fuse}", "Re_{fuse}", "c_{dp}",
-                "V_{wind}"})
+                "V_{wind}", "z_{bre}", "h_{loss}"})
 
         Model.__init__(self, None, lc, **kwargs)
 
 class FlightSegment(Model):
-    def __init__(self, N, eta_p, h, onStation, wind, **kwargs):
+    def __init__(self, N, eta_p, alt, onStation, wind, **kwargs):
 
         self.aero = Aerodynamics(N)
         self.fuel = Fuel(N)
         self.slf = SteadyLevelFlight(N, eta_p)
-        self.engine = Engine(N, h, onStation)
-        self.atm = Atmosphere(N, h)
-        self.wind = Wind(N, h, wind)
+        self.engine = Engine(N, alt, onStation)
+        self.atm = Atmosphere(N, alt)
+        self.wind = Wind(N, alt, wind)
 
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
-                          self.atm]
-
-        #lc = LinkedConstraintSet([self.submodels])
-
-        #Model.__init__(self, None, lc, **kwargs)
+                          self.atm, self.wind]
 
 class Cruise(FlightSegment):
-    def __init__(self, N, eta_p, h, onStation, wind, R, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, h, onStation, wind)
+    def __init__(self, N, eta_p, alt, onStation, wind, R, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind)
 
         breguetrange = BreguetRange(N, R)
 
@@ -74,8 +71,8 @@ class Cruise(FlightSegment):
         Model.__init__(self, None, lc, **kwargs)
 
 class Loiter(FlightSegment):
-    def __init__(self, N, eta_p, h, onStation, wind, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, h, onStation, wind)
+    def __init__(self, N, eta_p, alt, onStation, wind, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -85,23 +82,23 @@ class Loiter(FlightSegment):
 
         self.submodels.extend([breguetendurance])
 
-        lc = LinkedConstraintSet([self.submodels])
+        lc = LinkedConstraintSet([self.submodels, constraints])
 
         Model.__init__(self, None, lc, **kwargs)
 
 class Climb(FlightSegment):
-    def __init__(self, N, eta_p, h, onStation, wind, deltah, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, h, onStation, wind)
+    def __init__(self, N, eta_p, alt, onStation, wind, dh, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind)
 
         breguetendurance = BreguetEndurance(N)
 
-        h_climb = Variable("h_{climb}", deltah, "ft", "altitude difference")
-        h_dot = VectorVariable(2, "h_{dot}", "ft/min", "climb rate")
+        deltah = Variable("\\delta_h", dh, "ft", "altitude difference")
+        h_dot = VectorVariable(N, "h_{dot}", "ft/min", "climb rate")
         h_dotmin = Variable("h_{dot-min}", 100, "ft/min",
                             "minimum climb rate")
 
         constraints = [
-            h_dot*breguetendurance["t"] >= h_climb/N,
+            h_dot*breguetendurance["t"] >= deltah/N,
             h_dot >= h_dotmin,
             self.slf["T"] >= (0.5*self.slf["\\rho"]*self.slf["V"]**2*
                               self.slf["C_D"]*self.slf["S"] +
@@ -118,9 +115,9 @@ class Atmosphere(Model):
     """
     Model to capture density changes with altitude
     """
-    def __init__(self, N, h, **kwargs):
+    def __init__(self, N, alt, **kwargs):
 
-        h = VectorVariable(N, "h", h, "ft", "altitude")
+        h = VectorVariable(N, "h", alt, "ft", "altitude")
         p_sl = Variable("p_{sl}", 101325, "Pa", "Pressure at sea level")
         L_atm = Variable("L_{atm}", 0.0065, "K/m", "Temperature lapse rate")
         T_sl = Variable("T_{sl}", 288.15, "K", "Temperature at sea level")
@@ -171,13 +168,13 @@ class Fuel(Model):
         constraints = [W_start >= W_end[0] + W_fuel[0],
                        W_fuelfs >= W_fuel.sum(),
                        W_end[-1] >= W_finish,
-                       W_begin[0] == W_start]
+                       W_begin[0] >= W_start]
 
         if N == 1:
             pass
         else:
             constraints.extend([W_end[:-1] >= W_end[1:] + W_fuel[1:],
-                                W_begin[1:] == W_end.left[1:],
+                                W_begin[1:] == W_end[:-1],
                                ])
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -219,9 +216,9 @@ class Engine(Model):
     """
     Engine performance and weight model for small engine
     """
-    def __init__(self, N, h, onStation, **kwargs):
+    def __init__(self, N, alt, onStation, **kwargs):
 
-        h = VectorVariable(N, "h", h, "ft", "altitude")
+        h = VectorVariable(N, "h", alt, "ft", "altitude")
         h_ref = Variable("h_{ref}", 15000, "ft", "ref altitude")
         P_shaft = VectorVariable(N, "P_{shaft}", "hp", "Shaft power")
         BSFC_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr", "Minimum BSFC")
@@ -233,7 +230,9 @@ class Engine(Model):
                                  "Max shaft power at MSL")
         P_shaftmax = VectorVariable(N, "P_{shaft-max}",
                                     "hp", "Max shaft power at altitude")
-        Lfactor = VectorVariable(N, "L_factor", "-",
+        lfac = [1 - 0.906**(1/0.15)*(v.value/h_ref.value)**0.92
+                for v in h]
+        h_loss = VectorVariable(N, "h_{loss}", lfac, "-",
                                  "Max shaft power loss factor")
         P_avn = Variable("P_{avn}", 40, "watts", "avionics power")
         P_pay = Variable("P_{pay}", 10, "watts", "payload power")
@@ -244,8 +243,7 @@ class Engine(Model):
 
         # Engine Weight Constraints
         constraints = [
-            Lfactor == 0.906**(1/0.15)*(h/h_ref)**0.92,
-            P_shaftmax/P_shaftmaxMSL + Lfactor <= 1,
+            P_shaftmax/P_shaftmaxMSL == h_loss,
             P_shaftmax >= P_shafttot,
             (BSFC/BSFC_min)**0.129 >= (2*.486*(RPM/RPM_max)**-0.141 +
                                        0.0268*(RPM/RPM_max)**9.62),
@@ -258,11 +256,12 @@ class Engine(Model):
         if onStation:
             constraints.extend([
                 P_shafttot >= (P_shaft + (P_avn + P_pay)/eta_alternator),
-                P_shaftmax >= P_shaftmaxMSL*0.481
+                #P_shaftmax >= P_shaftmaxMSL*0.481
                 ])
         else:
             constraints.extend([P_shafttot >= P_shaft + P_avn/eta_alternator,
-                                P_shaftmax >= P_shaftmaxMSL*0.81])
+                                #P_shaftmax >= P_shaftmaxMSL*0.81
+                               ])
 
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -399,7 +398,7 @@ class Weight(Model):
     """
     Weight brakedown of aircraft
     """
-    def __init__(self, NSeg, **kwargs):
+    def __init__(self, **kwargs):
 
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
         W_fuse = Variable("W_{fuse}", "lbf", "fuselage weight")
@@ -424,8 +423,6 @@ class Weight(Model):
         P_shaftmaxMSL = Variable("P_{shaft-maxMSL}", "hp",
                                  "Max shaft power at MSL")
 
-        W_fuel = VectorVariable(NSeg, "W_{fuel}", "lbf",
-                                "segment-fuel weight")
         W_pay = Variable("W_{pay}", 10, "lbf", "Payload weight")
         W_engtot = Variable("W_{eng-tot}", "lbf", "Installed engine weight")
         W_avionics = Variable("W_{avionics}", 8, "lbf", "Avionics weight")
@@ -514,10 +511,7 @@ class Fuselage(Model):
     """
     Sizes fuselage based off of volume constraints.  Assumes elliptical shape
     """
-    def __init__(self, NSeg, **kwargs):
-
-        #----------------------------------------------------
-        # Fuselage model
+    def __init__(self, **kwargs):
 
         # Constants
         rho_fuel = Variable("\\rho_{fuel}", 6.01, "lbf/gallon",
@@ -538,8 +532,7 @@ class Fuselage(Model):
                             "Wing Skin Density")
         S_fuse = Variable("S_{fuse}", "ft^2", "Fuselage surface area")
         l_fuse = Variable("l_{fuse}", "ft", "fuselage length")
-        W_fuel = VectorVariable(NSeg, "W_{fuel}", "lbf",
-                                "segment-fuel weight")
+        W_fueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
         l_cent = Variable("l_{cent}", "ft", "center fuselage length")
         Vol_avionics = Variable("Vol_{avionics}", 0.125, "ft^3",
                                 "Avionics volume")
@@ -551,7 +544,7 @@ class Fuselage(Model):
                        (l_fuse/k1fuse)**3 == Vol_fuse,
                        (S_fuse/k2fuse)**3 == Vol_fuse**2,
                        Vol_fuse >= l_cent*w_cent**2,
-                       Vol_fuel >= W_fuel.sum()/rho_fuel,
+                       Vol_fuel >= W_fueltot/rho_fuel,
                        l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay
                       ]
 
@@ -562,10 +555,10 @@ class Wind(Model):
     Model for wind speed
     wind = True, wind speed has specific value
     """
-    def __init__(self, N, h, wind, **kwargs):
+    def __init__(self, N, alt, wind, **kwargs):
 
         V = VectorVariable(N, "V", "m/s", "cruise speed")
-        h = VectorVariable(N, "h", h, "ft", "altitude")
+        h = VectorVariable(N, "h", alt, "ft", "altitude")
 
         if wind:
 
@@ -598,41 +591,75 @@ class GasMALERubber(Model):
     """
     def __init__(self, h_station=15000, wind=False, **kwargs):
 
-        # define number of segments
-        NSeg = 9 # number of flight segments
-        NCruise = 2 # number of cruise segments
-        NClimb = 2 # number of climb segments
-        NLoiter = NSeg - NCruise - NClimb # number of loiter segments
-        iCruise = [1, -1] # cuise index
-        iLoiter = [3] # loiter index
-        for i in range(4, NSeg-1):
-            iLoiter.append(i)
-        iClimb = [0, 2] # climb index
+        mission = Mission(h_station, wind)
+        weight = Weight()
+        fuselage = Fuselage()
+        structures = Structures()
 
-        breguetrange = BreguetRange(NSeg, NLoiter, iCruise, iLoiter)
-
-        self.submodels = [
-            Altitude(h_station, NSeg, NClimb, iClimb),
-            Atmosphere(h_station, NSeg, NCruise, NLoiter), Fuel(NSeg),
-            SteadyLevelFlight(NSeg, NClimb, iClimb),
-            Engine(h_station, NSeg, NCruise, NLoiter, iClimb, iCruise,
-                   iLoiter),
-            breguetrange,
-            Aerodynamics(NSeg), Weight(NSeg), Structures(), Fuselage(NSeg),
-            Wind(h_station, wind, NSeg, iLoiter, iCruise)]
+        self.submodels = [mission, weight, fuselage, structures]
 
         constraints = []
 
-        lc = LinkedConstraintSet([self.submodels, constraints])
+        lc = LinkedConstraintSet([self.submodels, constraints], exclude={
+            "t_{loiter}", "\\delta_h", "h_{dot}", "h", "T_{atm}",
+            "\\mu", "\\rho", "W_{start}", "W_{end}", "W_{fuel}",
+            "W_{fuel-fs}", "W_{finish}", "W_{begin}", "C_L", "C_D",
+            "V", "\\eta_{prop}", "P_{shaft}", "T", "BSFC", "RPM",
+            "P_{shaft-max}", "L_factor", "P_{shaft-tot}", "t", "R",
+            "Re", "C_{f-fuse}", "C_{D-fuse}", "Re_{fuse}", "c_{dp}",
+            "V_{wind}", "z_{bre}", "h_{loss}"})
+
+        #bc = BoundedContraintSet(lc)
 
         # objective = 1/t_station
-        objective = 1/breguetrange["t_{station}"]
+        objective = 1/mission["t_{loiter}"]
 
         Model.__init__(self, objective, lc, **kwargs)
 
+    def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
+        "Returns model with additional constraints bounding all free variables"
+        lb = lower if lower else eps
+        ub = upper if upper else 1/eps
+        constraints = []
+        freevks = tuple(vk for vk in model.varkeys if "value" not in vk.descr)
+        for varkey in freevks:
+           units = varkey.descr.get("units", 1)
+           constraints.append([ub*units >= Variable(**varkey.descr),
+                               Variable(**varkey.descr) >= lb*units])
+        m = Model(model.cost, [constraints, model], model.substitutions)
+        m.bound_all = {"lb": lb, "ub": ub, "varkeys": freevks}
+        return m
+
+    # pylint: disable=too-many-locals
+    def determine_unbounded_variables(self, model, solver=None, verbosity=0,
+        eps=1e-30, lower=None, upper=None, **kwargs):
+        "Returns labeled dictionary of unbounded variables."
+        m = self.bound_all_variables(model, eps, lower, upper)
+        sol = m.solve(solver, verbosity, **kwargs)
+        solhold = sol
+        lam = sol["sensitivities"]["la"][1:]
+        out = defaultdict(list)
+        for i, varkey in enumerate(m.bound_all["varkeys"]):
+            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
+            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to upper bound"].append(varkey)
+            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to lower bound"].append(varkey)
+            value = mag(sol["variables"][varkey])
+            distance_below = np.log(value/m.bound_all["lb"])
+            distance_above = np.log(m.bound_all["ub"]/value)
+            if distance_below <= 3:  # arbitrary threshold
+                out["value near lower bound"].append(varkey)
+            elif distance_above <= 3:  # arbitrary threshold
+                out["value near upper bound"].append(varkey)
+        return out, solhold
+
 if __name__ == "__main__":
     M = GasMALERubber()
+
     sol = M.solve("mosek")
+    # sol, _ = M.determine_unbounded_variables(M, solver="mosek")
+
 
     if PLOT:
         M.substitutions.update({"MTOW": 150})
