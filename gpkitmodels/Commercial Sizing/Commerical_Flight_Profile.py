@@ -255,13 +255,6 @@ class Climb1(Model):
         W_avgClimb1 = VectorVariable(Nclimb1, 'W_{avgClimb1}', 'N', 'Geometric Average of Segment Start and End Weight')
         W_fuelClimb1 = VectorVariable(Nclimb1, 'W_{fuelClimb1}', 'N', 'Segment Fuel Weight')
 
-        
-        #TEMPORARY
-##        Thold1 = Variable('Thold1', 'K', 'segment 1 T')
-##        Thold2 = Variable('Thold2', 'K', 'segment 2 T ')
-##        phold1 = Variable('phold1', 'kPa', 'segment 1 p')
-##        phold2 = Variable('phold2', 'kPa', 'segment 2 p')
-
         TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
         thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
         
@@ -319,19 +312,8 @@ class Climb1(Model):
 
         for i in range(0, Nclimb1):
             constraints.extend([
-##                rhoClimb1[i] == rhovec[i],
-##                TClimb1[i] == Tvec[i],
-##                pClimb1[i] == pvec[i],
-##                rhoClimb1[i] == 1*units('kg/m^3'),
-##                TClimb1[i] == pClimb1[i]/(rhovec[i]*R),
-##                pClimb1[i] == 100000*units('Pa'),
                 #speed of sound
                 aClimb1[i]  == (gamma * R * TClimb1[i])**.5,
-
-##                phold1 == pClimb1[0],
-##                phold2 == pClimb1[1],
-##                Thold1 == TClimb1[0],
-##                Thold2 == TClimb1[1],
                 ])
         
         Model.__init__(self, None, constraints, **kwargs)
@@ -399,14 +381,6 @@ class Climb2(Model):
 
         W_fuelClimb2 = VectorVariable(Nclimb2, 'W_{fuelClimb2}', 'N', 'Segment Fuel Weight')
         W_avgClimb2 = VectorVariable(Nclimb2, 'W_{avgClimb2}', 'N', 'Geometric Average of Segment Start and End Weight')
-
-        #TEMPORARY
-        mhold3 = Variable('mhold3', '-', 'segment 3 mach number')
-        mhold4 = Variable('mhold4', '-', 'segment 4 mach number')
-        Thold3 = Variable('Thold3', 'K', 'segment 3 T')
-        Thold4 = Variable('Thold4', 'K', 'segment 4 T')
-        phold3 = Variable('phold3', 'kPa', 'segment 3 p')
-        phold4 = Variable('phold4', 'kPa', 'segment 4 p')
         
         TSFCc2 = VectorVariable(Nclimb2, 'TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
         thrustc2 = VectorVariable(Nclimb2, 'thrust_{c2}', 'N', 'Thrust During Climb Segment #2')
@@ -465,16 +439,8 @@ class Climb2(Model):
 
         for i in range(0, Nclimb2):
             constraints.extend([
-##                rhoClimb2[i] == rhovec[i],
-##                TClimb2[i] == Tvec[i],
-##                pClimb2[i] == pvec[i],
                 #speed of sound
                 aClimb2[i]  == (gamma * R * TClimb2[i])**.5,
-
-##                phold3 == pClimb2[0],
-##                phold4 == pClimb2[1],
-##                Thold3 == TClimb2[0],
-##                Thold4 == TClimb2[1],
                 ])
         
         Model.__init__(self, None, constraints, **kwargs)
@@ -576,12 +542,6 @@ class Cruise2(Model):
         W_avgClimb2 = VectorVariable(Nclimb2, 'W_{avgClimb2}', 'N', 'Geometric Average of Segment Start and End Weight')
         W_endCruise2 = VectorVariable(Ncruise2, 'W_{endCruise2}', 'N', 'Segment End Weight')
 
-        #TEMPORARY
-        Thold5 = Variable('Thold5', 'K', 'segment 5 T')
-        Thold6 = Variable('Thold6', 'K', 'segment 6 T')
-        phold5 = Variable('phold5', 'kPa', 'segment 5 p')
-        phold6 = Variable('phold6', 'kPa', 'segment 6 p')
-
         #non-GPkit variables
         #cruise 2 lsit
         izbre = map(int, np.linspace(0, Ncruise2 - 1, Ncruise2))
@@ -619,7 +579,6 @@ class Cruise2(Model):
 
             #breguet range eqn
             TCS([z_brec2[izbre] >= (numeng * TSFCcr2[izbre] * thoursCruise2[izbre] * DCruise2[izbre]) / W_avgCruise2[izbre]]),
-##            TCS([z_brec2[1] >= (numeng*TSFCcr22*thoursCruise2[1]*DCruise2[1])/W_avgCruise2[1]]),
 
             #time
             thoursCruise2[izbre]*VCruise2[izbre]  == RngCruise2[izbre],
@@ -642,16 +601,8 @@ class Cruise2(Model):
 
         for i in range(0, Ncruise2):
             constraints.extend([
-##                rhoCruise2[i] == rhovec[i+4],
-##                TCruise2[i] == Tvec[i+4],
-##                pCruise2[i] == pvec[i+4],
                 #speed of sound
                 aCruise2[i]  == (gamma * R * TCruise2[i])**.5,
-
-##                phold5 == pCruise2[0],
-##                phold6 == pCruise2[1],
-##                Thold5 == TCruise2[0],
-##                Thold6 == TCruise2[1],
                 ])
             
         Model.__init__(self, None, constraints, **kwargs)
