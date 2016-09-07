@@ -10,13 +10,14 @@ from plotting import plot_sweep
 PLOT = False
 
 class Mission(Model):
-    def __init__(self, h_station, wind, **kwargs):
+    def __init__(self, h_station, wind, DF70, **kwargs):
 
-        self.mission = [Climb(1, [0.5], [5000], False, wind, 5000),
-                        Cruise(1, [0.6], [5000], False, wind, 180),
-                        Climb(1, [0.5], [h_station], False, wind, 10000),
-                        Loiter(5, [0.7]*5, [h_station]*5, True, wind),
-                        Cruise(1, [0.6], [5000], False, wind, 200)]
+        self.mission = [
+            Climb(1, [0.5], [5000], False, wind, 5000, DF70),
+            Cruise(1, [0.6], [5000], False, wind, 180, DF70),
+            Climb(1, [0.5], [h_station], False, wind, 10000, DF70),
+            Loiter(5, [0.7]*5, [h_station]*5, True, wind, DF70),
+            Cruise(1, [0.6], [5000], False, wind, 200, DF70)]
 
         MTOW = Variable("MTOW", "lbf", "max take off weight")
         W_zfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
@@ -46,12 +47,12 @@ class Mission(Model):
         Model.__init__(self, None, lc, **kwargs)
 
 class FlightSegment(Model):
-    def __init__(self, N, eta_p, alt, onStation, wind, **kwargs):
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, **kwargs):
 
         self.aero = Aerodynamics(N)
         self.fuel = Fuel(N)
         self.slf = SteadyLevelFlight(N, eta_p)
-        self.engine = Engine(N, alt, onStation)
+        self.engine = Engine(N, alt, onStation, DF70)
         self.atm = Atmosphere(N, alt)
         self.wind = Wind(N, alt, wind)
 
@@ -59,8 +60,8 @@ class FlightSegment(Model):
                           self.atm, self.wind]
 
 class Cruise(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, R, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind)
+    def __init__(self, N, eta_p, alt, onStation, wind, R, DF70, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
         breguetrange = BreguetRange(N, R)
 
@@ -71,8 +72,8 @@ class Cruise(FlightSegment):
         Model.__init__(self, None, lc, **kwargs)
 
 class Loiter(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind)
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -87,8 +88,8 @@ class Loiter(FlightSegment):
         Model.__init__(self, None, lc, **kwargs)
 
 class Climb(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, dh, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind)
+    def __init__(self, N, eta_p, alt, onStation, wind, dh, DF70, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -216,48 +217,67 @@ class Engine(Model):
     """
     Engine performance and weight model for small engine
     """
-    def __init__(self, N, alt, onStation, **kwargs):
+    def __init__(self, N, alt, onStation, DF70, **kwargs):
 
         h = VectorVariable(N, "h", alt, "ft", "altitude")
         h_ref = Variable("h_{ref}", 15000, "ft", "ref altitude")
         P_shaft = VectorVariable(N, "P_{shaft}", "hp", "Shaft power")
-        P_shaftref = Variable("P_{shaft-ref}", 2.295, "hp",
-                              "reference shaft power")
-        W_engref = Variable("W_{eng-ref}", 4.4107, "lbf",
-                            "Reference engine weight")
-        W_eng = Variable("W_{eng}", "lbf", "engine weight")
-        W_engtot = Variable("W_{eng-tot}", "lbf", "Installed engine weight")
-        BSFC_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr", "Minimum BSFC")
         BSFC = VectorVariable(N, "BSFC", "lb/hr/hp",
                               "brake specific fuel consumption")
-        RPM_max = Variable("RPM_{max}", 9000, "rpm", "Maximum RPM")
         RPM = VectorVariable(N, "RPM", "rpm", "Engine operating RPM")
-        P_shaftmaxMSL = Variable("P_{shaft-maxMSL}", "hp",
-                                 "Max shaft power at MSL")
-        P_shaftmax = VectorVariable(N, "P_{shaft-max}",
-                                    "hp", "Max shaft power at altitude")
-        lfac = [1 - 0.906**(1/0.15)*(v.value/h_ref.value)**0.92
-                for v in h]
-        h_loss = VectorVariable(N, "h_{loss}", lfac, "-",
-                                "Max shaft power loss factor")
         P_avn = Variable("P_{avn}", 40, "watts", "avionics power")
         P_pay = Variable("P_{pay}", 10, "watts", "payload power")
         P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
                                     "total power, avionics included")
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
                                   "alternator efficiency")
+        lfac = [1 - 0.906**(1/0.15)*(v.value/h_ref.value)**0.92
+                for v in h]
+        h_loss = VectorVariable(N, "h_{loss}", lfac, "-",
+                                "Max shaft power loss factor")
+        P_shaftmax = VectorVariable(N, "P_{shaft-max}",
+                                    "hp", "Max shaft power at altitude")
 
-        # Engine Weight Constraints
-        constraints = [
-            W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075,
-            W_engtot >= 2.572*W_eng**0.922*units("lbf")**0.078,
-            P_shaftmax/P_shaftmaxMSL == h_loss,
-            P_shaftmax >= P_shafttot,
-            (BSFC/BSFC_min)**0.129 >= (2*.486*(RPM/RPM_max)**-0.141 +
-                                       0.0268*(RPM/RPM_max)**9.62),
-            (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292,
-            RPM <= RPM_max,
-            ]
+        if DF70:
+            W_engtot = Variable("W_{eng-tot}", 7.1, "lbf",
+                                "Installed engine weight")
+            P_shaftmaxMSL = Variable("P_{shaft-maxMSL}", 5.17, "hp",
+                                     "Max shaft power at MSL")
+            RPM_max = Variable("RPM_{max}", 7698, "rpm", "Maximum RPM")
+            BSFC_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr",
+                                "Minimum BSFC")
+
+            constraints = [
+                (BSFC/BSFC_min)**35.7 >= (2.29*(RPM/RPM_max)**8.02 +
+                                          0.00114*(RPM/RPM_max)**-38.3),
+                (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.294,
+                ]
+        else:
+            P_shaftref = Variable("P_{shaft-ref}", 2.295, "hp",
+                                  "reference shaft power")
+            W_engref = Variable("W_{eng-ref}", 4.4107, "lbf",
+                                "Reference engine weight")
+            W_eng = Variable("W_{eng}", "lbf", "engine weight")
+            W_engtot = Variable("W_{eng-tot}", "lbf",
+                                "Installed engine weight")
+            BSFC_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr",
+                                "Minimum BSFC")
+            P_shaftmaxMSL = Variable("P_{shaft-maxMSL}", "hp",
+                                     "Max shaft power at MSL")
+            RPM_max = Variable("RPM_{max}", 9000, "rpm", "Maximum RPM")
+
+            constraints = [
+                W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075,
+                W_engtot >= 2.572*W_eng**0.922*units("lbf")**0.078,
+                (BSFC/BSFC_min)**0.129 >= (2*.486*(RPM/RPM_max)**-0.141 +
+                                           0.0268*(RPM/RPM_max)**9.62),
+                (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292,
+                ]
+
+        constraints.extend([P_shaftmax/P_shaftmaxMSL == h_loss,
+                            P_shaftmax >= P_shafttot,
+                            RPM <= RPM_max,
+                           ])
 
         if onStation:
             constraints.extend([
@@ -400,7 +420,7 @@ class Weight(Model):
     """
     Weight brakedown of aircraft
     """
-    def __init__(self, **kwargs):
+    def __init__(self, DF70, **kwargs):
 
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
         W_fuse = Variable("W_{fuse}", "lbf", "fuselage weight")
@@ -417,9 +437,15 @@ class Weight(Model):
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
 
         W_pay = Variable("W_{pay}", 10, "lbf", "Payload weight")
-        W_engtot = Variable("W_{eng-tot}", "lbf", "Installed engine weight")
         W_avionics = Variable("W_{avionics}", 8, "lbf", "Avionics weight")
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
+
+        if DF70:
+            W_engtot = Variable("W_{eng-tot}", 7.1, "lbf",
+                                "Installed engine weight")
+        else:
+            W_engtot = Variable("W_{eng-tot}", "lbf",
+                                "Installed engine weight")
 
         constraints = [
             W_wing >= m_skin*g + 1.2*m_cap*g,
@@ -580,10 +606,10 @@ class GasMALERubber(Model):
     possible.  Model should be combed for variables that are incorrectly
     fixed.
     """
-    def __init__(self, h_station=15000, wind=False, **kwargs):
+    def __init__(self, h_station=15000, wind=False, DF70=False, **kwargs):
 
-        mission = Mission(h_station, wind)
-        weight = Weight()
+        mission = Mission(h_station, wind, DF70)
+        weight = Weight(DF70)
         fuselage = Fuselage()
         structures = Structures()
 
@@ -606,7 +632,9 @@ class GasMALERubber(Model):
 
 if __name__ == "__main__":
     M = GasMALERubber()
+    sol = M.solve("mosek")
 
+    M = GasMALERubber(DF70=True)
     sol = M.solve("mosek")
 
     if PLOT:
