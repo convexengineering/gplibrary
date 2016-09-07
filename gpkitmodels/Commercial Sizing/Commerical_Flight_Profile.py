@@ -563,10 +563,8 @@ class Cruise2(Model):
             #compute the drag
 ##            TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
 ##                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
-##            TCS([DCruise2[0] >= (.5*S*rhoCruise2[0]*VCruise2[0]**2)*(Cd0 + K*(W_avgCruise2[0]/(.5*S*rhoCruise2[0]*VCruise2[0]**2))**2)]),
-##            TCS([DCruise2[1] >= (.5*S*rhoCruise2[1]*VCruise2[1]**2)*(Cd0 + K*(W_avgCruise2[1]/(.5*S*rhoCruise2[1]*VCruise2[1]**2))**2)]),
-##            DCruise2[0] == numeng * thrustcr21,
-##            DCruise2[1] == numeng * thrustcr22,
+            TCS([DCruise2[izbre] >= (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2) * (Cd0 + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2))**2)]),
+##            DCruise2[izbre] == numeng * thrustcr2[icrusie2],
 
             W_avgCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2,
             WLoadCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2/S,
@@ -1097,6 +1095,7 @@ class CommercialAircraft(Model):
             'numeng': 2,
             'dh_{climb2}': hcruise-10000,
             'W_{Load_max}': 6664,
+            'W_{engine}': 1000,
 
             #substitutions for global engine variables
             'G_f': 1,
@@ -1203,7 +1202,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
