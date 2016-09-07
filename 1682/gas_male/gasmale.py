@@ -628,12 +628,3 @@ class GasMALE(Model):
 if __name__ == "__main__":
     M = GasMALE()
     sol = M.solve("mosek")
-
-    M = GasMALE(DF70=True)
-    sol = M.solve("mosek")
-
-    if PLOT:
-        M.substitutions.update({"MTOW": 150})
-        fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15),
-                             "t_{loiter}")
-        fig.savefig("tstation_vs_MTOW_rubber.pdf")

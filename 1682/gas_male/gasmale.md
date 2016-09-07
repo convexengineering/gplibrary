@@ -77,7 +77,7 @@ from gasmale import GasMALE
 
 if __name__ == "__main__":
     M = GasMALE()
-    sol = M.solve("mosek")
+    # sol = M.solve("mosek")
     from gpkit.small_scripts import unitstr
 
     def gen_model_tex(model, modelname):
@@ -132,10 +132,38 @@ if __name__ == "__main__":
     for m in models: 
         gen_model_tex(m, m.__class__.__name__)
 
-    with open("sol.generated.tex", "w") as f:
-        f.write(sol.table(latex=True))
+    # with open("sol.generated.tex", "w") as f:
+    #     f.write(sol.table(latex=True))
 ```
 
+# Sizing
 
+This model was created and then a sweep was done to determine the MTOW required to meet 5 days. 
+
+```python
+#inPDF: skip
+from plotting import plot_sweep
+import numpy as np
+
+def gen_tex_fig(fig, filename, caption=None):
+    fig.savefig("%s.pdf" % filename)
+    with open("%s.fig.generated.tex" % filename, "w") as f:
+        f.write("\\begin{figure}[H]")
+        f.write("\\label{f:%s}" % filename)
+        f.write("\\begin{center}")
+        f.write("\\includegraphics[scale=0.5]{%s}" % filename)
+        if caption:
+            f.write("\\caption{%s}" % caption)
+        f.write("\\end{center}")
+        f.write("\\end{figure}")
+```
+
+```python
+#inPDF: replace with tstation_vs_MTOW_rubber.fig.generated.tex
+M = GasMALE()
+M.substitutions.update({"MTOW": 150})
+fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15), "t_{loiter}")
+gen_tex_fig(fig, "tstation_vs_MTOW_rubber")
+```
 
 
