@@ -206,7 +206,7 @@ class Climb1(Model):
         pClimb1 = VectorVariable(Nclimb1, 'pClimb1', 'kPa', 'Pressure')
         muClimb1 = VectorVariable(Nclimb1, '\muClimb1', 'kg/m/s', 'Air Kinematic Viscosity')
         TClimb1 = VectorVariable(Nclimb1, 'TClimb1', 'K', 'Air Temperature')
-
+        
         #aero
         CLClimb1 = VectorVariable(Nclimb1, 'C_{L_{Climb1}}', '-', 'Lift Coefficient')
         WLoadClimb1 = VectorVariable(Nclimb1, 'W_{Load_{Climb1}}', 'N/m^2', 'Wing Loading')
@@ -257,10 +257,10 @@ class Climb1(Model):
 
         
         #TEMPORARY
-        Thold1 = Variable('Thold1', 'K', 'segment 1 T')
-        Thold2 = Variable('Thold2', 'K', 'segment 2 T ')
-        phold1 = Variable('phold1', 'kPa', 'segment 1 p')
-        phold2 = Variable('phold2', 'kPa', 'segment 2 p')
+##        Thold1 = Variable('Thold1', 'K', 'segment 1 T')
+##        Thold2 = Variable('Thold2', 'K', 'segment 2 T ')
+##        phold1 = Variable('phold1', 'kPa', 'segment 1 p')
+##        phold2 = Variable('phold2', 'kPa', 'segment 2 p')
 
         TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
         thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
@@ -322,16 +322,16 @@ class Climb1(Model):
 ##                rhoClimb1[i] == rhovec[i],
 ##                TClimb1[i] == Tvec[i],
 ##                pClimb1[i] == pvec[i],
-                rhoClimb1[i] == 1*units('kg/m^3'),
-                TClimb1[i] == pClimb1[i]/(rhovec[i]*R),
-                pClimb1[i] == 100000*units('Pa'),
+##                rhoClimb1[i] == 1*units('kg/m^3'),
+##                TClimb1[i] == pClimb1[i]/(rhovec[i]*R),
+##                pClimb1[i] == 100000*units('Pa'),
                 #speed of sound
                 aClimb1[i]  == (gamma * R * TClimb1[i])**.5,
 
-                phold1 == pClimb1[0],
-                phold2 == pClimb1[1],
-                Thold1 == TClimb1[0],
-                Thold2 == TClimb1[1],
+##                phold1 == pClimb1[0],
+##                phold2 == pClimb1[1],
+##                Thold1 == TClimb1[0],
+##                Thold2 == TClimb1[1],
                 ])
         
         Model.__init__(self, None, constraints, **kwargs)
@@ -360,7 +360,7 @@ class Climb2(Model):
         pClimb2 = VectorVariable(Nclimb2, 'pClimb2', 'kPa', 'Pressure')
         muClimb2 = VectorVariable(Nclimb2, '\muClimb2', 'kg/m/s', 'Air Kinematic Viscosity')
         TClimb2 = VectorVariable(Nclimb2, 'TClimb2', 'K', 'Air Temperature')
-
+ 
         #number of engines
         numeng = Variable('numeng', '-', 'Number of Engines')
 
@@ -465,16 +465,16 @@ class Climb2(Model):
 
         for i in range(0, Nclimb2):
             constraints.extend([
-                rhoClimb2[i] == rhovec[i],
-                TClimb2[i] == Tvec[i],
-                pClimb2[i] == pvec[i],
+##                rhoClimb2[i] == rhovec[i],
+##                TClimb2[i] == Tvec[i],
+##                pClimb2[i] == pvec[i],
                 #speed of sound
                 aClimb2[i]  == (gamma * R * TClimb2[i])**.5,
 
-                phold3 == pClimb2[0],
-                phold4 == pClimb2[1],
-                Thold3 == TClimb2[0],
-                Thold4 == TClimb2[1],
+##                phold3 == pClimb2[0],
+##                phold4 == pClimb2[1],
+##                Thold3 == TClimb2[0],
+##                Thold4 == TClimb2[1],
                 ])
         
         Model.__init__(self, None, constraints, **kwargs)
@@ -538,14 +538,10 @@ class Cruise2(Model):
         R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
         
         TSFCcr2 = VectorVariable(Ncruise2, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
-##        TSFCcr21 = Variable('TSFC_{cr21}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
-##        TSFCcr22 = Variable('TSFC_{cr22}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
         D1 = Variable('D1', 'N', 'Drag for cruise part 1')
         D2 = Variable('D2', 'N', 'Drag for cruise part 2')
 
         thrustcr2 = VectorVariable(Ncruise2, 'thrust_{cr2}', 'N', 'Thrust During Cruise Segment #2')
-##        thrustcr21 = Variable('thrust_{cr21}', 'N', 'Thrust During Cruise Segment #2')
-##        thrustcr22 = Variable('thrust_{cr22}', 'N', 'Thrust During Cruise Segment #2')
 
         constraints = []
         
@@ -581,8 +577,6 @@ class Cruise2(Model):
         W_endCruise2 = VectorVariable(Ncruise2, 'W_{endCruise2}', 'N', 'Segment End Weight')
 
         #TEMPORARY
-##        mhold5 = Variable('mhold5', '-', 'segment 5 mach number')
-##        mhold6 = Variable('mhold6', '-', 'segment 6 mach number')
         Thold5 = Variable('Thold5', 'K', 'segment 5 T')
         Thold6 = Variable('Thold6', 'K', 'segment 6 T')
         phold5 = Variable('phold5', 'kPa', 'segment 5 p')
@@ -648,16 +642,16 @@ class Cruise2(Model):
 
         for i in range(0, Ncruise2):
             constraints.extend([
-                rhoCruise2[i] == rhovec[i+4],
-                TCruise2[i] == Tvec[i+4],
-                pCruise2[i] == pvec[i+4],
+##                rhoCruise2[i] == rhovec[i+4],
+##                TCruise2[i] == Tvec[i+4],
+##                pCruise2[i] == pvec[i+4],
                 #speed of sound
                 aCruise2[i]  == (gamma * R * TCruise2[i])**.5,
 
-                phold5 == pCruise2[0],
-                phold6 == pCruise2[1],
-                Thold5 == TCruise2[0],
-                Thold6 == TCruise2[1],
+##                phold5 == pCruise2[0],
+##                phold6 == pCruise2[1],
+##                Thold5 == TCruise2[0],
+##                Thold6 == TCruise2[1],
                 ])
             
         Model.__init__(self, None, constraints, **kwargs)
@@ -1130,7 +1124,7 @@ class CommercialAircraft(Model):
         climb1 = Climb1(Nclimb1)
         climb2 = Climb2(Nclimb2)
         cruise2 = Cruise2(Nclimb2, Ncruise2)
-        atm = Atmosphere(2)
+        atm = Atmosphere(Nclimb1+ Nclimb2 + Ncruise2)
         eonD = EngineOnDesign()
         eoffD = EngineOffDesign()
         eoffD2 = EngineOffDesign2()
@@ -1168,23 +1162,35 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2]#, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
+        self.submodels = [cmc, climb1, climb2, cruise2, atm]#, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
 
         constraints = ConstraintSet([self.submodels])
-        print climb1["MClimb1"][0]
-        print eoffD["TSFC_E"]
-        constraints.subinplace({climb1['TSFC_{c1}'][0]: eoffD["TSFC_E"], climb1["thrust_{c1}"][0]: eoffD["F"],
+
+        subs = {climb1["TSFC_{c1}"][0]: eoffD["TSFC_E"], climb1["thrust_{c1}"][0]: eoffD["F"],
                                 climb1["TSFC_{c1}"][1]: eoffD2["TSFC_E2"], climb1["thrust_{c1}"][1]: eoffD2["F_2"],
                                 climb2["thrust_{c2}"][0]: eoffD3["F_3"], climb2["TSFC_{c2}"][0]: eoffD3["TSFC_E3"],
                                 climb2["thrust_{c2}"][1]: eoffD4["F_4"], climb2["TSFC_{c2}"][1]: eoffD4["TSFC_E4"],
                                 cruise2["TSFC_{cr2}"][0]: eoffD5["TSFC_E5"], cruise2["thrust_{cr2}"][0]: eoffD5["F_{spec5}"],
                                 cruise2["TSFC_{cr2}"][1]: eoffD6["TSFC_E6"], cruise2["thrust_{cr2}"][1]: eoffD6["F_{spec6}"],
-                                climb1["MClimb1"][0]: eoffD["M_0_1"], climb1["MClimb1"][1]: eoffD2["M_0_2"], climb2["MClimb2"][0]: eoffD3["M_0_3"], climb2["MClimb2"][1]: eoffD4["M_0_4"], 'phold1': 'P_0_1',
-                                'phold2': 'P_0_2','phold3': 'P_0_3','phold4': 'P_0_4','phold5': 'P_0_5','phold6': 'P_0_6',
-                                'P_0': 'P_0_6'})#,'\rhoClimb1_(1,)':'\rho_(1,)',
-##                                'pClimb1_(0,)': 'p_(0,)','pClimb1_(1,)': 'p_(1,)', 'TClimb1_(0,)': 'T_(0,)', 'TClimb1_(1,)': 'T_(1,)'})#, 'Thold1': 'T_0_1'})#,
-##                                'Thold2': 'T_0_2','Thold3': 'T_0_3','Thold4': 'T_0_4','Thold5': 'T_0_5','Thold6': 'T_0_6',})
+                                climb1["MClimb1"][0]: eoffD["M_0_1"], climb1["MClimb1"][1]: eoffD2["M_0_2"], climb2["MClimb2"][0]: eoffD3["M_0_3"], climb2["MClimb2"][1]: eoffD4["M_0_4"]}
+        
+        for i in range(Nclimb1):
+            subs.update({
+                climb1["\rhoClimb1"][i]: atm["\rho"][i], climb1["TClimb1"][i]: atm["T"][i]
+                })
+    
 
+        for i in range(Nclimb2):
+            subs.update({
+                climb2["\rhoClimb2"][i]: atm["\rho"][i + Nclimb1], climb2["TClimb2"][i]: atm["T"][i + Nclimb1]
+                })
+
+        for i in range(Ncruise2):
+            subs.update({
+                cruise2["\rhoCruise2"][i]: atm["\rho"][i + Nclimb1 + Nclimb2], cruise2["TCruise2"][i]: atm["T"][i + Nclimb1 + Nclimb2]
+                })
+
+        constraints.subinplace(subs)
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}',
                                                        'h_{t_2.1}', 'P_{t_2.5}', 'T_{t_2.5}', 'h_{t_2.5}', 'P_{t_3}', 'T_{t_3}',
