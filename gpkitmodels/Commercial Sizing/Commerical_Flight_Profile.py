@@ -739,19 +739,13 @@ class ResClimb1(Model):
 
         
         #TEMPORARY
-        mhold1 = Variable('mhold1', '-', 'segment 1 mach number')
-        mhold2 = Variable('mhold2', '-', 'segment 2 mach number')
         Thold1 = Variable('Thold1', 'K', 'segment 1 T')
         Thold2 = Variable('Thold2', 'K', 'segment 2 T ')
         phold1 = Variable('phold1', 'kPa', 'segment 1 p')
         phold2 = Variable('phold2', 'kPa', 'segment 2 p')
 
-##        TSFCc1 = VectorVariable(Nresclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
-        TSFCc11 = Variable('TSFC_{c11}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
-        TSFCc12 = Variable('TSFC_{c12}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 2')
-##        thrustc1 = VectorVariable(Nresclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
-        thrustc11 = Variable('thrust_{c11}', 'N', 'Thrust During Climb Segment #1')
-        thrustc12 = Variable('thrust_{c12}', 'N', 'Thrust During Climb Segment #1')
+        TSFCcres1 = VectorVariable(Nresclimb1, 'TSFC_{cres1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
+        thrustcres1 = VectorVariable(Nresclimb1, 'thrust_{c1res}', 'N', 'Thrust During Climb Segment #1')
 
         #non-GPkit variables
         #cruise 2 lsit
@@ -764,42 +758,34 @@ class ResClimb1(Model):
             VResClimb1[irescl1] <= speedlimit,
             VResClimb1[irescl1] >= Vstall,
 
-            MResClimb1[0] == mhold1,
-            MResClimb1[1] == mhold2,
-
             MResClimb1 * aResClimb1 == VResClimb1,
 
             #constraint on drag and thrust
-##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
-            numeng*thrustc11 >= DResClimb1[0] + W_avgResClimb1[0]*thetaResClimb1[0],
-            numeng*thrustc12 >= DResClimb1[1] + W_avgResClimb1[1]*thetaResClimb1[1],
+            numeng * thrustcres1[irescl1] >= DResClimb1[irescl1] + W_avgResClimb1[irescl1] * thetaResClimb1[irescl1],
+
             #climb rate constraints
-##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
-            TCS([excessPResclimb1[0]+VResClimb1[0]*DResClimb1[0] <= VResClimb1[0]*numeng*thrustc11]),
-            TCS([excessPResclimb1[1]+VResClimb1[1]*DResClimb1[1] <= VResClimb1[1]*numeng*thrustc12]),
+            TCS([excessPResclimb1[irescl1] + VResClimb1[irescl1] * DResClimb1[irescl1] <= VResClimb1[irescl1] * numeng * thrustcres1[rescl1]]),
             
             TCS([DRedClimb1[irescl1] >= (.5*S*rhoResClimb1[irescl1]*VResClimb1[irescl1]**2)*(Cd0 + K*CLResClimb1[irescl1]**2)]),
             RCResClimb1[irescl1] == excessPResclimb1[irescl1]/W_avgResClimb1[irescl1],
             RCResClimb1[irescl1] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
-            thetaResClimb1[irescl1]*VResClimb1[irescl1]  == RCResClimb1[irescl1],
+            thetaResClimb1[irescl1] * VResClimb1[irescl1]  == RCResClimb1[irescl1],
            
             dhftResClimb1[irescl1]  == tmiNresclimb1[irescl1] * RCResClimb1[irescl1],
 
             tmiNresclimb1 == thoursResClimb1,
             #compute the distance traveled for each segment
             #takes into account two terms of a cosine expansion
-##            TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 >= thours[iclimb1]*V[iclimb1]]),
-            RngResClimb1[irescl1] == thoursResClimb1[irescl1]*VResClimb1[irescl1],
+            RngResClimb1[irescl1] == thoursResClimb1[irescl1] * VResClimb1[irescl1],
 
             W_avgResClimb1[irescl1] == .5*CLResClimb1[irescl1]*S*rhoResClimb1[irescl1]*VResClimb1[irescl1]**2,
             WLoadResClimb1[irescl1] == .5*CLResClimb1[irescl1]*S*rhoResClimb1[irescl1]*VResClimb1[irescl1]**2/S,
             
             #compute fuel burn from TSFC
-##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
-            W_fuelResClimb1[0]  == numeng*TSFCc11 * thoursResClimb1[0] * thrustc11,
-            W_fuelResClimb1[1]  == numeng*TSFCc12 * thoursResClimb1[1] * thrustc12,
+            W_fuelResClimb1[irescl1]  == numeng * TSFCcres1[irescl1] * thoursResClimb1[irescl1] * thrustcres1[irescl1],
+            
             #compute the dh required for each climb 1 segment
             dhftResClimb1[irescl1] == dhResClimb1/Nresclimb1,
 
@@ -807,10 +793,10 @@ class ResClimb1(Model):
             WLoadResClimb1 <= WLoadmax,
 
 
-            TSFCc11 == .5*units('1/hr'),
-            TSFCc12 == .5*units('1/hr'),
-            thrustc11 == 100000*units('N'),
-            thrustc12 == 100000*units('N'),
+            TSFCcres1[0] == .5*units('1/hr'),
+            TSFCcres1[1] == .5*units('1/hr'),
+            thrustcres1[0] == 100000*units('N'),
+            thrustcres1[1] == 100000*units('N'),
             ])
 
         for i in range(0, Nresclimb1):
@@ -888,20 +874,15 @@ class ResClimb2(Model):
         W_avgResClimb2 = VectorVariable(Nresclimb2, 'W_{ResavgClimb2}', 'N', 'Geometric Average of Segment Start and End Weight')
 
         #TEMPORARY
-        mhold3 = Variable('mhold3', '-', 'segment 3 mach number')
-        mhold4 = Variable('mhold4', '-', 'segment 4 mach number')
         Thold3 = Variable('Thold3', 'K', 'segment 3 T')
         Thold4 = Variable('Thold4', 'K', 'segment 4 T')
         phold3 = Variable('phold3', 'kPa', 'segment 3 p')
         phold4 = Variable('phold4', 'kPa', 'segment 4 p')
         
-##        TSFCc2 = VectorVariable(Nresclimb2, 'TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
-        TSFCc21 = Variable('TSFC_{c21}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
-        TSFCc22 = Variable('TSFC_{c22}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
-##        thrustc2 = VectorVariable(Nclimb1, 'thrust_{c2}', 'N', 'Thrust During Climb Segment #2')
-        thrustc21 = Variable('thrust_{c21}', 'N', 'Thrust During Climb Segment #2')
-        thrustc22 = Variable('thrust_{c22}', 'N', 'Thrust During Climb Segment #2')
-
+        TSFCcres2 = VectorVariable(Nresclimb2, 'TSFC_{cres2}', '1/hr', 'Thrust Specific Fuel Consumption During Reserve Climb2')
+ 
+        thrustcres2 = VectorVariable(Nresclimb2, 'thrust_{cres2}', 'N', 'Thrust During Reserve Climb Segment #2')
+        
         #non-GPkit variables
         #climb 2 lsit
         irescl2 = map(int, np.linspace(0, Nresclimb2 - 1, Nresclimb2))
@@ -913,25 +894,18 @@ class ResClimb2(Model):
             #needs to be replaced by an actual Vne and a mach number
             MResClimb2[irescl2] <= .75,
             VResClimb2[irescl2] >= Vstall,
-            
-            MResClimb2[0] == mhold3,
-            MResClimb2[1] == mhold4,
 
             VResClimb2 == MResClimb2 * aResClimb2,
 
             #constraint on drag and thrust
-##            thrustc21 >= D[iclimb2] + W_start[iclimb2]*theta[iclimb2],
-            numeng*thrustc21 >= DResClimb2[0] + W_avgResClimb2[0]*thetaResClimb2[0],
-            numeng*thrustc22 >= DResClimb2[1] + W_avgResClimb2[1]*thetaResClimb2[1],
+            numeng * thrustcres2[icrescl2] >= DResClimb2[irescl2] + W_avgResClimb2[irescl2] * thetaResClimb2[irescl2],
             
             #climb rate constraints
-##            TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrustc21]),
-            TCS([excessPResClimb2[0]+VResClimb2[0]*DResClimb2[0] <= VResClimb2[0]*numeng*thrustc21]),
-            TCS([excessPResClimb2[1]+VResClimb2[1]*DResClimb2[1] <= VResClimb2[1]*numeng*thrustc22]),
+            TCS([excessP[irescl2]+V[irescl2]*D[irescl2] <= V[irescl]*thrustcres2[irescl2]]),
+
             TCS([DResClimb2[irescl2] >= (.5*S*rhoResClimb2[irescl2]*VResClimb2[irescl2]**2)*(Cd0 + K*CLResClimb2[irescl2]**2)]),
             RCClimb2[irescl2] == excessPResClimb2[irescl2]/W_avgResClimb2[irescl2],
-            RCClimb2[0] >= 500*units('ft/min'),
-            RCClimb2[1] >= 500*units('ft/min'),
+            RCClimb2[irecl2] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
             thetaResClimb2[irescl2]*VResClimb2[irescl2]  == RCClimb2[irescl2],
@@ -948,8 +922,7 @@ class ResClimb2(Model):
             WLoadResClimb2[irescl2] == .5*CLResClimb2[irescl2]*S*rhoResClimb2[irescl2]*VResClimb2[irescl2]**2/S,
             
             #compute fuel burn from TSFC
-            W_fuelResClimb2[0]  == numeng*TSFCc21 * thoursResClimb2[0] * thrustc21,
-            W_fuelResClimb2[1]  == numeng*TSFCc22 * thoursResClimb2[1] * thrustc22,
+            W_fuelResClimb2[irescl2]  == numeng * TSFCresc2[irescl2] * thoursResClimb2[irescl2] * thrustcres2[irescl2],
 
             #compute the dh required for each climb 1 segment
             dhftResClimb2[irescl2] == dhResClimb2/Nresclimb2,
@@ -958,10 +931,10 @@ class ResClimb2(Model):
             WLoadResClimb2 <= WLoadmax,
 
 
-            TSFCc21 == .5*units('1/hr'),
-            TSFCc22 == .5*units('1/hr'),
-            thrustc21 == 100000*units('N'),
-            thrustc22 == 100000*units('N'),
+            TSFCcres2[0] == .5*units('1/hr'),
+            TSFCcres2[1] == .5*units('1/hr'),
+            thrustcres2[0] == 100000*units('N'),
+            thrustcres2[1] == 100000*units('N'),
             ])
 
         for i in range(0, Nresclimb2):
@@ -1027,15 +1000,11 @@ class ResCruise(Model):
         gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
         R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
         
-##        TSFCcr2 = VectorVariable(Nrescruise, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
-        TSFCcr21 = Variable('TSFC_{cr21}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
-        TSFCcr22 = Variable('TSFC_{cr22}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
-        DRes1 = Variable('ResDRes1', 'N', 'Drag for reserve cruise')
-        DRes2 = Variable('ResDRes2', 'N', 'Drag for reserve cruise')
+        TSFCcrr = VectorVariable(Nrescruise, 'TSFC_{crr}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+        DResCruise = VectorVariable(Nrescruise, 'ResDRes1', 'N', 'Drag for reserve cruise')
 
-        thrustcr21 = Variable('thrust_{cr21}', 'N', 'Thrust During Cruise Segment #2')
-        thrustcr22 = Variable('thrust_{cr22}', 'N', 'Thrust During Cruise Segment #2')
-
+        thrustcrr = Variable('thrust_{crr}', 'N', 'Thrust During Cruise Segment #2')
+        
         constraints = []
         
         #defined here for linking purposes
@@ -1088,8 +1057,7 @@ class ResCruise(Model):
             TCS([W_fuelResCruise[irescruise]/W_endResCruise[irescruise] >= te_exp_minus1(z_breRes[irescruise], nterm=3)]),
 
             #breguet range eqn
-            TCS([z_breRes[0] >= (numeng*TSFCcr21*thoursResCruise[0]*DResCruise[0])/W_avgResCruise[0]]),
-            TCS([z_breRes[1] >= (numeng*TSFCcr22*thoursResCruise[1]*DResCruise[1])/W_avgResCruise[1]]),
+            TCS([z_breRes[irescruise] >= (numeng * TSFCcrr[irescruise] * thoursResCruise[irescruise] * DResCruise[irescruise]) / W_avgResCruise[irescruise]]),
 
             #time
             thoursResCruise[irescruise]*VResCruise[irescruise]  == RngResCruise[irescruise],
@@ -1098,10 +1066,10 @@ class ResCruise(Model):
             #constrain the max wing loading
             WLoadResCruise <= WLoadmax,
 
-            TSFCcr21 == .5*units('1/hr'),
-            TSFCcr22 == .5*units('1/hr'),
-            thrustcr21 == 100000*units('N'),
-            thrustcr22 == 100000*units('N'),
+            TSFCcrr[0] == .5*units('1/hr'),
+            TSFCcrr[1] == .5*units('1/hr'),
+            thrustcrr[0] == 100000*units('N'),
+            thrustcrr[1] == 100000*units('N'),
             ])
         
         #constraint on the aircraft meeting the required range
