@@ -93,21 +93,24 @@ if __name__ == "__main__":
                 if name in varnames:
                     pass
                 else:
-                    varnames.append(name)
-                    unitstr = var.unitstr()[1:]
-                    unitstr = "$[%s]$" % unitstr if unitstr else ""
-                    val = "%0.3f" % var.value if var.value else ""
-                    f.write("$%s$ & %s & %s & %s \\\\\n" % 
-                                (var.name, val, unitstr, var.label))
+                    if var.models[0] == modelname:
+                        varnames.append(name)
+                        unitstr = var.unitstr()[1:]
+                        unitstr = "$[%s]$" % unitstr if unitstr else ""
+                        val = "%0.3f" % var.value if var.value else ""
+                        f.write("$%s$ & %s & %s & %s \\\\\n" % 
+                                    (var.name, val, unitstr, var.label))
+                    else:
+                        pass
             f.write("\\bottomrule\n")
             f.write("\\end{longtable}\n")
 
         with open('%s.cnstrs.generated.tex' % modelname, 'w') as f:
-            lines = model.latex(excluded=["models"]).replace("[ll]", "{ll}")..split("\n")
+            lines = model.latex(excluded=["models"]).replace("[ll]", "{ll}").split("\n")
             modeltex = "\n".join(lines[:1] + lines[3:])
             f.write("$$ %s $$" % modeltex)
 
-    def find_base_submodel(models, modelnames):
+    def find_submodels(models, modelnames):
         runAgain = 0
         for m in models:
             if "submodels" in m.__dict__.keys():
@@ -121,17 +124,16 @@ if __name__ == "__main__":
             else:
                 pass
         if runAgain > 0:
-            return find_base_submodel(models, modelnames)
+            return find_submodels(models, modelnames)
         else:
             return models, modelnames
 
-    models, modelnames = find_base_submodel([M], [])
+    models, modelnames = find_submodels([M], [])
     for m in models: 
         gen_model_tex(m, m.__class__.__name__)
 
     with open("sol.generated.tex", "w") as f:
         f.write(sol.table(latex=True))
-
 ```
 
 

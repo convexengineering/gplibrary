@@ -19,12 +19,12 @@ class Mission(Model):
             Loiter(5, [0.647]*5, [h_station]*5, True, wind, DF70),
             Cruise(1, [0.684], [5000], False, wind, 200, DF70)]
 
-        MTOW = Variable("MTOW", "lbf", "max take off weight")
+        mtow = Variable("MTOW", "lbf", "max take off weight")
         W_zfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
 
         constraints = [
-            MTOW >= self.submodels[0]["W_{start}"],
+            mtow >= self.submodels[0]["W_{start}"],
             W_zfw <= self.submodels[-1]["W_{finish}"],
             W_fueltot >= sum(fs["W_{fuel-fs}"] for fs in self.submodels)
             ]
@@ -222,9 +222,9 @@ class Engine(Model):
         h = VectorVariable(N, "h", alt, "ft", "altitude")
         h_ref = Variable("h_{ref}", 15000, "ft", "ref altitude")
         P_shaft = VectorVariable(N, "P_{shaft}", "hp", "Shaft power")
-        BSFC = VectorVariable(N, "BSFC", "lb/hr/hp",
+        bsfc = VectorVariable(N, "BSFC", "lb/hr/hp",
                               "brake specific fuel consumption")
-        RPM = VectorVariable(N, "RPM", "rpm", "Engine operating RPM")
+        rpm = VectorVariable(N, "RPM", "rpm", "Engine operating RPM")
         P_avn = Variable("P_{avn}", 40, "watts", "avionics power")
         P_pay = Variable("P_{pay}", 10, "watts", "payload power")
         P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
@@ -241,16 +241,16 @@ class Engine(Model):
         if DF70:
             W_engtot = Variable("W_{eng-tot}", 7.1, "lbf",
                                 "Installed engine weight")
-            P_shaftmaxMSL = Variable("P_{shaft-maxMSL}", 5.17, "hp",
+            P_shaftmaxmsl = Variable("P_{shaft-maxMSL}", 5.17, "hp",
                                      "Max shaft power at MSL")
-            RPM_max = Variable("RPM_{max}", 7698, "rpm", "Maximum RPM")
-            BSFC_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr",
+            rpm_max = Variable("RPM_{max}", 7698, "rpm", "Maximum RPM")
+            bsfc_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr",
                                 "Minimum BSFC")
 
             constraints = [
-                (BSFC/BSFC_min)**35.7 >= (2.29*(RPM/RPM_max)**8.02 +
-                                          0.00114*(RPM/RPM_max)**-38.3),
-                (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.294,
+                (bsfc/bsfc_min)**35.7 >= (2.29*(rpm/rpm_max)**8.02 +
+                                          0.00114*(rpm/rpm_max)**-38.3),
+                (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294,
                 ]
         else:
             P_shaftref = Variable("P_{shaft-ref}", 2.295, "hp",
@@ -260,23 +260,23 @@ class Engine(Model):
             W_eng = Variable("W_{eng}", "lbf", "engine weight")
             W_engtot = Variable("W_{eng-tot}", "lbf",
                                 "Installed engine weight")
-            BSFC_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr",
+            bsfc_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr",
                                 "Minimum BSFC")
-            P_shaftmaxMSL = Variable("P_{shaft-maxMSL}", "hp",
+            P_shaftmaxmsl = Variable("P_{shaft-maxMSL}", "hp",
                                      "Max shaft power at MSL")
-            RPM_max = Variable("RPM_{max}", 9000, "rpm", "Maximum RPM")
+            rpm_max = Variable("RPM_{max}", 9000, "rpm", "Maximum RPM")
 
             constraints = [
-                W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075,
+                W_eng/W_engref >= 0.5538*(P_shaftmaxmsl/P_shaftref)**1.075,
                 W_engtot >= 2.572*W_eng**0.922*units("lbf")**0.078,
-                (BSFC/BSFC_min)**0.129 >= (2*.486*(RPM/RPM_max)**-0.141 +
-                                           0.0268*(RPM/RPM_max)**9.62),
-                (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292,
+                (bsfc/bsfc_min)**0.129 >= (2*.486*(rpm/rpm_max)**-0.141 +
+                                           0.0268*(rpm/rpm_max)**9.62),
+                (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292,
                 ]
 
-        constraints.extend([P_shaftmax/P_shaftmaxMSL == h_loss,
+        constraints.extend([P_shaftmax/P_shaftmaxmsl == h_loss,
                             P_shaftmax >= P_shafttot,
-                            RPM <= RPM_max,
+                            rpm <= rpm_max,
                            ])
 
         if onStation:
@@ -298,7 +298,7 @@ class BreguetEndurance(Model):
         f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
         P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
                                     "total power, avionics included")
-        BSFC = VectorVariable(N, "BSFC", "lb/hr/hp",
+        bsfc = VectorVariable(N, "BSFC", "lb/hr/hp",
                               "brake specific fuel consumption")
         W_end = VectorVariable(N, "W_{end}", "lbf", "segment-end weight")
         W_fuel = VectorVariable(N, "W_{fuel}", "lbf",
@@ -306,7 +306,7 @@ class BreguetEndurance(Model):
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [
-            z_bre >= P_shafttot*t*BSFC*g/W_end,
+            z_bre >= P_shafttot*t*bsfc*g/W_end,
             f_fueloil*W_fuel/W_end >= te_exp_minus1(z_bre, 3)
             ]
 
@@ -323,7 +323,7 @@ class BreguetRange(Model):
         f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
         P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
                                     "total power, avionics included")
-        BSFC = VectorVariable(N, "BSFC", "lb/hr/hp",
+        bsfc = VectorVariable(N, "BSFC", "lb/hr/hp",
                               "brake specific fuel consumption")
         W_end = VectorVariable(N, "W_{end}", "lbf", "segment-end weight")
         V = VectorVariable(N, "V", "m/s", "cruise speed")
@@ -332,7 +332,7 @@ class BreguetRange(Model):
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [
-            z_bre >= P_shafttot*t*BSFC*g/W_end,
+            z_bre >= P_shafttot*t*bsfc*g/W_end,
             R/N <= V*t,
             f_fueloil*W_fuel/W_end >= te_exp_minus1(z_bre, 3)
             ]
@@ -507,7 +507,7 @@ class Structures(Model):
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
         b = Variable("b", "ft", "Span")
         m_cap = Variable("m_{cap}", "kg", "Cap mass")
-        MTOW = Variable("MTOW", "lbf", "max take off weight")
+        mtow = Variable("MTOW", "lbf", "max take off weight")
 
         constraints = [m_skin >= rho_skin*S*2,
                        F >= W_cent*N_max,
@@ -519,7 +519,7 @@ class Structures(Model):
                        m_cap == rho_cap*Vol_cap,
                        h_spar <= tau*c,
                        w_cap == A_capcent/t_cap,
-                       LoverA == MTOW/S,
+                       LoverA == mtow/S,
                        delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
                        delta_tip/b <= delta_tip_max]
 
@@ -586,16 +586,10 @@ class Wind(Model):
         else:
 
             V_wind = VectorVariable(N, "V_{wind}", "m/s", "wind speed")
-            wd_cnst = Variable("wd_{cnst}", 0.001077, "m/s/ft",
-                               "wind speed constant predicted by model")
-                               #0.002 is worst case, 0.0015 is mean at 45d
-            wd_ln = Variable("wd_{ln}", 8.845, "m/s",
-                             "linear wind speed variable")
-                             #13.009 is worst case, 8.845 is mean at 45deg
+            h_ref = Variable("h_{ref}", 15000, "ft", "ref altitude")
+            V_ref = Variable("V_{ref}", 25, "m/s", "wind speed")
 
-            constraints = [V_wind >= wd_cnst*h + wd_ln,
-                           # 0.002 is worst case, 0.0015 is mean at 45d
-                           # 13.009 is worst case, 8.845 is mean at 45deg
+            constraints = [(V_wind/V_ref) >= 0.6462*(h/h_ref) + 0.3538,
                            V >= V_wind,
                           ]
 
