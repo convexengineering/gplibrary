@@ -221,6 +221,12 @@ class Engine(Model):
         h = VectorVariable(N, "h", alt, "ft", "altitude")
         h_ref = Variable("h_{ref}", 15000, "ft", "ref altitude")
         P_shaft = VectorVariable(N, "P_{shaft}", "hp", "Shaft power")
+        P_shaftref = Variable("P_{shaft-ref}", 2.295, "hp",
+                              "reference shaft power")
+        W_engref = Variable("W_{eng-ref}", 4.4107, "lbf",
+                            "Reference engine weight")
+        W_eng = Variable("W_{eng}", "lbf", "engine weight")
+        W_engtot = Variable("W_{eng-tot}", "lbf", "Installed engine weight")
         BSFC_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr", "Minimum BSFC")
         BSFC = VectorVariable(N, "BSFC", "lb/hr/hp",
                               "brake specific fuel consumption")
@@ -233,7 +239,7 @@ class Engine(Model):
         lfac = [1 - 0.906**(1/0.15)*(v.value/h_ref.value)**0.92
                 for v in h]
         h_loss = VectorVariable(N, "h_{loss}", lfac, "-",
-                                 "Max shaft power loss factor")
+                                "Max shaft power loss factor")
         P_avn = Variable("P_{avn}", 40, "watts", "avionics power")
         P_pay = Variable("P_{pay}", 10, "watts", "payload power")
         P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
@@ -243,25 +249,21 @@ class Engine(Model):
 
         # Engine Weight Constraints
         constraints = [
+            W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075,
+            W_engtot >= 2.572*W_eng**0.922*units("lbf")**0.078,
             P_shaftmax/P_shaftmaxMSL == h_loss,
             P_shaftmax >= P_shafttot,
             (BSFC/BSFC_min)**0.129 >= (2*.486*(RPM/RPM_max)**-0.141 +
                                        0.0268*(RPM/RPM_max)**9.62),
             (P_shafttot/P_shaftmax)**0.1 == 0.999*(RPM/RPM_max)**0.292,
             RPM <= RPM_max,
-            #P_shaftmax[iClimb[1]] >= P_shaftmaxMSL*0.329, #value at 20kft
-            #P_shaftmax[iLoiter] >= P_shaftmaxMSL*0.329, #value at 20kft
             ]
 
         if onStation:
             constraints.extend([
-                P_shafttot >= (P_shaft + (P_avn + P_pay)/eta_alternator),
-                #P_shaftmax >= P_shaftmaxMSL*0.481
-                ])
+                P_shafttot >= P_shaft + (P_avn + P_pay)/eta_alternator])
         else:
-            constraints.extend([P_shafttot >= P_shaft + P_avn/eta_alternator,
-                                #P_shaftmax >= P_shaftmaxMSL*0.81
-                               ])
+            constraints.extend([P_shafttot >= P_shaft + P_avn/eta_alternator])
 
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -407,11 +409,6 @@ class Weight(Model):
         W_skid = Variable("W_{skid}", 3, "lbf", "skid weight")
         m_tail = Variable("m_{tail}", 1*1.5, "kg", "tail mass")
         m_rib = Variable("m_{rib}", 1.2*1.5, "kg", "rib mass")
-        P_shaftref = Variable("P_{shaft-ref}", 2.295, "hp",
-                              "reference shaft power")
-        W_engref = Variable("W_{eng-ref}", 4.4107, "lbf",
-                            "Reference engine weight")
-        W_eng = Variable("W_{eng}", "lbf", "engine weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         # gobal vars
@@ -419,18 +416,12 @@ class Weight(Model):
         m_cap = Variable("m_{cap}", "kg", "Cap mass")
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
 
-        # global vars 2
-        P_shaftmaxMSL = Variable("P_{shaft-maxMSL}", "hp",
-                                 "Max shaft power at MSL")
-
         W_pay = Variable("W_{pay}", 10, "lbf", "Payload weight")
         W_engtot = Variable("W_{eng-tot}", "lbf", "Installed engine weight")
         W_avionics = Variable("W_{avionics}", 8, "lbf", "Avionics weight")
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
 
         constraints = [
-            W_eng/W_engref >= 0.5538*(P_shaftmaxMSL/P_shaftref)**1.075,
-            W_engtot >= 2.572*W_eng**0.922*units("lbf")**0.078,
             W_wing >= m_skin*g + 1.2*m_cap*g,
             W_fuse >= m_fuse*g + m_rib*g,
             W_cent >= (W_fueltot + W_pay + W_engtot + W_fuse + W_avionics +
@@ -609,60 +600,17 @@ class GasMALERubber(Model):
             "Re", "C_{f-fuse}", "C_{D-fuse}", "Re_{fuse}", "c_{dp}",
             "V_{wind}", "z_{bre}", "h_{loss}"})
 
-        #bc = BoundedContraintSet(lc)
-
-        # objective = 1/t_station
         objective = 1/mission["t_{loiter}"]
 
         Model.__init__(self, objective, lc, **kwargs)
-
-    def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
-        "Returns model with additional constraints bounding all free variables"
-        lb = lower if lower else eps
-        ub = upper if upper else 1/eps
-        constraints = []
-        freevks = tuple(vk for vk in model.varkeys if "value" not in vk.descr)
-        for varkey in freevks:
-           units = varkey.descr.get("units", 1)
-           constraints.append([ub*units >= Variable(**varkey.descr),
-                               Variable(**varkey.descr) >= lb*units])
-        m = Model(model.cost, [constraints, model], model.substitutions)
-        m.bound_all = {"lb": lb, "ub": ub, "varkeys": freevks}
-        return m
-
-    # pylint: disable=too-many-locals
-    def determine_unbounded_variables(self, model, solver=None, verbosity=0,
-        eps=1e-30, lower=None, upper=None, **kwargs):
-        "Returns labeled dictionary of unbounded variables."
-        m = self.bound_all_variables(model, eps, lower, upper)
-        sol = m.solve(solver, verbosity, **kwargs)
-        solhold = sol
-        lam = sol["sensitivities"]["la"][1:]
-        out = defaultdict(list)
-        for i, varkey in enumerate(m.bound_all["varkeys"]):
-            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
-            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
-                out["sensitive to upper bound"].append(varkey)
-            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
-                out["sensitive to lower bound"].append(varkey)
-            value = mag(sol["variables"][varkey])
-            distance_below = np.log(value/m.bound_all["lb"])
-            distance_above = np.log(m.bound_all["ub"]/value)
-            if distance_below <= 3:  # arbitrary threshold
-                out["value near lower bound"].append(varkey)
-            elif distance_above <= 3:  # arbitrary threshold
-                out["value near upper bound"].append(varkey)
-        return out, solhold
 
 if __name__ == "__main__":
     M = GasMALERubber()
 
     sol = M.solve("mosek")
-    # sol, _ = M.determine_unbounded_variables(M, solver="mosek")
-
 
     if PLOT:
         M.substitutions.update({"MTOW": 150})
         fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15),
-                             "t_{station}")
+                             "t_{loiter}")
         fig.savefig("tstation_vs_MTOW_rubber.pdf")
