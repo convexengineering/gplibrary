@@ -601,7 +601,7 @@ class Wind(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class GasMALERubber(Model):
+class GasMALE(Model):
     """
     This model has a rubber engine and as many non fixed parameters as
     possible.  Model should be combed for variables that are incorrectly
@@ -632,10 +632,10 @@ class GasMALERubber(Model):
         Model.__init__(self, objective, lc, **kwargs)
 
 if __name__ == "__main__":
-    M = GasMALERubber()
+    M = GasMALE()
     sol = M.solve("mosek")
 
-    M = GasMALERubber(DF70=True)
+    M = GasMALE(DF70=True)
     sol = M.solve("mosek")
 
     if PLOT:
