@@ -264,13 +264,9 @@ class Climb1(Model):
         phold1 = Variable('phold1', 'kPa', 'segment 1 p')
         phold2 = Variable('phold2', 'kPa', 'segment 2 p')
 
-##        TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
-        TSFCc11 = Variable('TSFC_{c11}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 1')
-        TSFCc12 = Variable('TSFC_{c12}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1 part 2')
-##        thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
-        thrustc11 = Variable('thrust_{c11}', 'N', 'Thrust During Climb Segment #1')
-        thrustc12 = Variable('thrust_{c12}', 'N', 'Thrust During Climb Segment #1')
-
+        TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
+        thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
+        
         #non-GPkit variables
         #cruise 2 lsit
         icl1 = map(int, np.linspace(0, Nclimb1 - 1, Nclimb1))
@@ -282,19 +278,15 @@ class Climb1(Model):
             VClimb1[icl1] <= speedlimit,
             VClimb1[icl1] >= Vstall,
 
-            MClimb1[0] == mhold1,
-            MClimb1[1] == mhold2,
-
             MClimb1 * aClimb1 == VClimb1,
 
             #constraint on drag and thrust
-##            thrustc11 >= D[iclimb1] + W_start[iclimb1]*theta[iclimb1],
-            numeng*thrustc11 >= DClimb1[0] + W_avgClimb1[0]*thetaClimb1[0],
-            numeng*thrustc12 >= DClimb1[1] + W_avgClimb1[1]*thetaClimb1[1],
+            numeng*thrustc1[icl1] >= DClimb1[icl1] + W_avgClimb1[icl1]*thetaClimb1[icl1],
+##            numeng*thrustc1[1] >= DClimb1[1] + W_avgClimb1[1]*thetaClimb1[1],
             #climb rate constraints
 ##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
-            TCS([excessPclimb1[0]+VClimb1[0]*DClimb1[0] <= VClimb1[0]*numeng*thrustc11]),
-            TCS([excessPclimb1[1]+VClimb1[1]*DClimb1[1] <= VClimb1[1]*numeng*thrustc12]),
+            TCS([excessPclimb1[icl1]+VClimb1[icl1]*DClimb1[icl1] <= VClimb1[icl1]*numeng*thrustc1[icl1]]),
+##            TCS([excessPclimb1[1]+VClimb1[1]*DClimb1[1] <= VClimb1[1]*numeng*thrustc1[1]]),
             
             TCS([DClimb1[icl1] >= (.5*S*rhoClimb1[icl1]*VClimb1[icl1]**2)*(Cd0 + K*CLClimb1[icl1]**2)]),
             RCClimb1[icl1] == excessPclimb1[icl1]/W_avgClimb1[icl1],
@@ -316,8 +308,8 @@ class Climb1(Model):
             
             #compute fuel burn from TSFC
 ##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
-            W_fuelClimb1[0]  == numeng*TSFCc11 * thoursClimb1[0] * thrustc11,
-            W_fuelClimb1[1]  == numeng*TSFCc12 * thoursClimb1[1] * thrustc12,
+            W_fuelClimb1[icl1]  == numeng*TSFCc1[icl1] * thoursClimb1[icl1] * thrustc1[icl1],
+##            W_fuelClimb1[1]  == numeng*TSFCc1[1] * thoursClimb1[1] * thrustc1[1],
             #compute the dh required for each climb 1 segment
             dhftClimb1[icl1] == dhClimb1/Nclimb1,
 
@@ -325,10 +317,10 @@ class Climb1(Model):
             WLoadClimb1 <= WLoadmax,
 
 
-            TSFCc11 == .5*units('1/hr'),
-            TSFCc12 == .5*units('1/hr'),
-            thrustc11 == 100000*units('N'),
-            thrustc12 == 100000*units('N'),
+            TSFCc1[0] == .5*units('1/hr'),
+            TSFCc1[1] == .5*units('1/hr'),
+            thrustc1[0] == 100000*units('N'),
+            thrustc1[1] == 100000*units('N'),
             ])
 
         for i in range(0, Nclimb1):
@@ -440,9 +432,6 @@ class Climb2(Model):
             #needs to be replaced by an actual Vne and a mach number
             MClimb2[icl2] <= .75,
             VClimb2[icl2] >= Vstall,
-            
-            MClimb2[0] == mhold3,
-            MClimb2[1] == mhold4,
 
             VClimb2 == MClimb2 * aClimb2,
 
@@ -1230,14 +1219,15 @@ class CommercialAircraft(Model):
         self.submodels = [cmc, climb1, climb2, cruise2]#, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
 
         constraints = ConstraintSet([self.submodels])
-
-        constraints.subinplace({'TSFC_{c11}_Climb1': 'TSFC_E_EngineOffDesign', 'thrust_{c11}_Climb1': 'F_EngineOffDesign',
-                                'TSFC_{c12}_Climb1': 'TSFC_E2_EngineOffDesign2', 'thrust_{c12}_Climb1': 'F_2_EngineOffDesign2',
-                                'thrust_{c21}_Climb2': 'F_3_EngineOffDesign3','TSFC_{c21}_Climb2': 'TSFC_E3_EngineOffDesign3',
-                                'thrust_{c22}_Climb2': 'F_4_EngineOffDesign4','TSFC_{c22}_Climb2': 'TSFC_E4_EngineOffDesign4',
-                                'TSFC_{cr21}_Cruise2': 'TSFC_E5_EngineOffDesign5', 'thrust_{cr21}': 'F_{spec5}_EngineOffDesign5',
-                                'TSFC_{cr22}_Cruise2': 'TSFC_E6_EngineOffDesign6', 'thrust_{cr22}': 'F_{spec6}_EngineOffDesign6',
-                                'mhold1': 'M_0_1', 'mhold2': 'M_0_2', 'mhold3': 'M_0_3', 'mhold4': 'M_0_4', 'phold1': 'P_0_1',
+        print climb1["MClimb1"][0]
+        print eoffD["TSFC_E"]
+        constraints.subinplace({climb1['TSFC_{c1}'][0]: eoffD["TSFC_E"], climb1["thrust_{c1}"][0]: eoffD["F"],
+                                climb1["TSFC_{c1}"][1]: eoffD2["TSFC_E2"], climb1["thrust_{c1}"][1]: eoffD2["F_2"],
+                                climb2["thrust_{c21}"]: eoffD3["F_3"], climb2["TSFC_{c21}"]: eoffD3["TSFC_E3"],
+                                climb2["thrust_{c22}"]: eoffD4["F_4"], climb2["TSFC_{c22}"]: eoffD4["TSFC_E4"],
+                                cruise2["TSFC_{cr21}"]: eoffD5["TSFC_E5"], cruise2["thrust_{cr21}"]: eoffD5["F_{spec5}"],
+                                cruise2["TSFC_{cr22}"]: eoffD6["TSFC_E6"], cruise2["thrust_{cr22}"]: eoffD6["F_{spec6}"],
+                                climb1["MClimb1"][0]: eoffD["M_0_1"], climb1["MClimb1"][1]: eoffD2["M_0_2"], climb2["MClimb2"][0]: eoffD3["M_0_3"], climb2["MClimb2"][1]: eoffD4["M_0_4"], 'phold1': 'P_0_1',
                                 'phold2': 'P_0_2','phold3': 'P_0_3','phold4': 'P_0_4','phold5': 'P_0_5','phold6': 'P_0_6',
                                 'P_0': 'P_0_6'})#,'\rhoClimb1_(1,)':'\rho_(1,)',
 ##                                'pClimb1_(0,)': 'p_(0,)','pClimb1_(1,)': 'p_(1,)', 'TClimb1_(0,)': 'T_(0,)', 'TClimb1_(1,)': 'T_(1,)'})#, 'Thold1': 'T_0_1'})#,
