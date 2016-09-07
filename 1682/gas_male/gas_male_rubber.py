@@ -13,11 +13,11 @@ class Mission(Model):
     def __init__(self, h_station, wind, DF70, **kwargs):
 
         self.mission = [
-            Climb(1, [0.5], [5000], False, wind, 5000, DF70),
-            Cruise(1, [0.6], [5000], False, wind, 180, DF70),
-            Climb(1, [0.5], [h_station], False, wind, 10000, DF70),
-            Loiter(5, [0.7]*5, [h_station]*5, True, wind, DF70),
-            Cruise(1, [0.6], [5000], False, wind, 200, DF70)]
+            Climb(1, [0.502], [5000], False, wind, 5000, DF70),
+            Cruise(1, [0.684], [5000], False, wind, 180, DF70),
+            Climb(1, [0.567], [h_station], False, wind, 10000, DF70),
+            Loiter(5, [0.647]*5, [h_station]*5, True, wind, DF70),
+            Cruise(1, [0.684], [5000], False, wind, 200, DF70)]
 
         MTOW = Variable("MTOW", "lbf", "max take off weight")
         W_zfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
@@ -373,9 +373,9 @@ class Aerodynamics(Model):
         constraints = [
             CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR),
             #jh01
-            #cdp >= ((0.0075 + 0.002*CL**2 + 0.00033*CL**10)*(Re/Re_ref)**-0.4),
+            cdp >= ((0.0075 + 0.002*CL**2 + 0.00033*CL**10)*(Re/Re_ref)**-0.4),
             #sd7032
-            cdp >= ((0.006 + 0.005*CL**2 + 0.00012*CL**10)*(Re/Re_ref)**-0.3),
+            # cdp >= ((0.006 + 0.005*CL**2 + 0.00012*CL**10)*(Re/Re_ref)**-0.3),
             b**2 == S*AR,
             CL <= CLmax,
             Re == rho*V/mu_atm*(S/AR)**0.5,
@@ -426,9 +426,10 @@ class Weight(Model):
         W_fuse = Variable("W_{fuse}", "lbf", "fuselage weight")
         W_wing = Variable("W_{wing}", "lbf", "Total wing structural weight")
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
-        W_skid = Variable("W_{skid}", 3, "lbf", "skid weight")
-        m_tail = Variable("m_{tail}", 1*1.5, "kg", "tail mass")
-        m_rib = Variable("m_{rib}", 1.2*1.5, "kg", "rib mass")
+        W_fueltank = Variable('W_{fuel-tank}', 4, 'lbf', 'fuel tank weight')
+        W_skid = Variable("W_{skid}", 4, "lbf", "skid weight")
+        m_tail = Variable("m_{tail}", 1.587, "kg", "tail mass")
+        m_rib = Variable("m_{rib}", 1.36, "kg", "rib mass")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         # gobal vars
@@ -451,9 +452,9 @@ class Weight(Model):
             W_wing >= m_skin*g + 1.2*m_cap*g,
             W_fuse >= m_fuse*g + m_rib*g,
             W_cent >= (W_fueltot + W_pay + W_engtot + W_fuse + W_avionics +
-                       W_skid),
+                       W_skid + W_fueltank),
             W_zfw >= (W_pay + W_engtot + W_fuse + W_wing + m_tail*g +
-                      W_avionics + W_skid)
+                      W_avionics + W_skid + W_fueltank)
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -480,7 +481,7 @@ class Structures(Model):
         #assumes straight, untapered wing
 
         # Structural ratios
-        tau = Variable("\\tau", 0.12, "-", "Airfoil thickness ratio")
+        tau = Variable("\\tau", 0.115, "-", "Airfoil thickness ratio")
         #find better number
         LoverA = Variable("LoverA", "lbf/ft^2", "Wing loading")
 
@@ -535,10 +536,10 @@ class Fuselage(Model):
                             "density of 100LL")
 
         # Non-dimensional variables
-        k1fuse = Variable("k_{1-fuse}", 2.858, "-", "fuselage form factor 1")
-        k2fuse = Variable("k-{2-fuse}", 5.938, "-", "fuselage form factor 2")
-        w_cent = Variable("w_{cent}", "ft", "center fuselage width")
-        fr = Variable("fr", 3.5, "-", "fineness ratio fuselage")
+        k1fuse = Variable('k_{1-fuse}', 4.3246, '-', 'fuselage form factor 1')
+        k2fuse = Variable('k-{2-fuse}', 7.124, '-', 'fuselage form factor 2')
+        w_cent = Variable('w_{cent}', 'ft', 'center fuselage width')
+        fr = Variable('fr', 6.5, '-', 'fineness ratio fuselage')
 
         # Volumes
         Vol_fuel = Variable("Vol_{fuel}", "m**3", "Fuel Volume")
