@@ -257,8 +257,6 @@ class Climb1(Model):
 
         
         #TEMPORARY
-        mhold1 = Variable('mhold1', '-', 'segment 1 mach number')
-        mhold2 = Variable('mhold2', '-', 'segment 2 mach number')
         Thold1 = Variable('Thold1', 'K', 'segment 1 T')
         Thold2 = Variable('Thold2', 'K', 'segment 2 T ')
         phold1 = Variable('phold1', 'kPa', 'segment 1 p')
@@ -282,11 +280,9 @@ class Climb1(Model):
 
             #constraint on drag and thrust
             numeng*thrustc1[icl1] >= DClimb1[icl1] + W_avgClimb1[icl1]*thetaClimb1[icl1],
-##            numeng*thrustc1[1] >= DClimb1[1] + W_avgClimb1[1]*thetaClimb1[1],
+
             #climb rate constraints
-##            TCS([excessP[iclimb1]+V[iclimb1]*D[iclimb1] <= V[iclimb1]*thrustc11]),
             TCS([excessPclimb1[icl1]+VClimb1[icl1]*DClimb1[icl1] <= VClimb1[icl1]*numeng*thrustc1[icl1]]),
-##            TCS([excessPclimb1[1]+VClimb1[1]*DClimb1[1] <= VClimb1[1]*numeng*thrustc1[1]]),
             
             TCS([DClimb1[icl1] >= (.5*S*rhoClimb1[icl1]*VClimb1[icl1]**2)*(Cd0 + K*CLClimb1[icl1]**2)]),
             RCClimb1[icl1] == excessPclimb1[icl1]/W_avgClimb1[icl1],
@@ -300,16 +296,14 @@ class Climb1(Model):
             tminClimb1 == thoursClimb1,
             #compute the distance traveled for each segment
             #takes into account two terms of a cosine expansion
-##            TCS([RngClimb[iclimb1] + .5*thours[iclimb1]*V[iclimb1]*theta[iclimb1]**2 >= thours[iclimb1]*V[iclimb1]]),
             RngClimb1[icl1] == thoursClimb1[icl1]*VClimb1[icl1],
 
             W_avgClimb1[icl1] == .5*CLClimb1[icl1]*S*rhoClimb1[icl1]*VClimb1[icl1]**2,
             WLoadClimb1[icl1] == .5*CLClimb1[icl1]*S*rhoClimb1[icl1]*VClimb1[icl1]**2/S,
             
             #compute fuel burn from TSFC
-##            W_fuel[iclimb1]  == TSFCc1[iclimb1] * thours[iclimb1] * thrust,
             W_fuelClimb1[icl1]  == numeng*TSFCc1[icl1] * thoursClimb1[icl1] * thrustc1[icl1],
-##            W_fuelClimb1[1]  == numeng*TSFCc1[1] * thoursClimb1[1] * thrustc1[1],
+
             #compute the dh required for each climb 1 segment
             dhftClimb1[icl1] == dhClimb1/Nclimb1,
 
@@ -414,12 +408,8 @@ class Climb2(Model):
         phold3 = Variable('phold3', 'kPa', 'segment 3 p')
         phold4 = Variable('phold4', 'kPa', 'segment 4 p')
         
-##        TSFCc2 = VectorVariable(Nclimb2, 'TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
-        TSFCc21 = Variable('TSFC_{c21}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
-        TSFCc22 = Variable('TSFC_{c22}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
-##        thrustc2 = VectorVariable(Nclimb1, 'thrust_{c2}', 'N', 'Thrust During Climb Segment #2')
-        thrustc21 = Variable('thrust_{c21}', 'N', 'Thrust During Climb Segment #2')
-        thrustc22 = Variable('thrust_{c22}', 'N', 'Thrust During Climb Segment #2')
+        TSFCc2 = VectorVariable(Nclimb2, 'TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
+        thrustc2 = VectorVariable(Nclimb2, 'thrust_{c2}', 'N', 'Thrust During Climb Segment #2')
 
         #non-GPkit variables
         #climb 2 lsit
@@ -436,18 +426,13 @@ class Climb2(Model):
             VClimb2 == MClimb2 * aClimb2,
 
             #constraint on drag and thrust
-##            thrustc21 >= D[iclimb2] + W_start[iclimb2]*theta[iclimb2],
-            numeng*thrustc21 >= DClimb2[0] + W_avgClimb2[0]*thetaClimb2[0],
-            numeng*thrustc22 >= DClimb2[1] + W_avgClimb2[1]*thetaClimb2[1],
+            numeng*thrustc2[icl2] >= DClimb2[icl2] + W_avgClimb2[icl2] * thetaClimb2[icl2],
             
             #climb rate constraints
-##            TCS([excessP[iclimb2]+V[iclimb2]*D[iclimb2] <= V[iclimb2]*thrustc21]),
-            TCS([excessPclimb2[0]+VClimb2[0]*DClimb2[0] <= VClimb2[0]*numeng*thrustc21]),
-            TCS([excessPclimb2[1]+VClimb2[1]*DClimb2[1] <= VClimb2[1]*numeng*thrustc22]),
+            TCS([excessPclimb2[icl2]+VClimb2[icl2]*DClimb2[icl2] <= VClimb2[icl2]*numeng*thrustc2[icl2]]),
             TCS([DClimb2[icl2] >= (.5*S*rhoClimb2[icl2]*VClimb2[icl2]**2)*(Cd0 + K*CLClimb2[icl2]**2)]),
             RCClimb2[icl2] == excessPclimb2[icl2]/W_avgClimb2[icl2],
-            RCClimb2[0] >= 500*units('ft/min'),
-            RCClimb2[1] >= 500*units('ft/min'),
+            RCClimb2[icl2] >= 500*units('ft/min'),
             
             #make the small angle approximation and compute theta
             thetaClimb2[icl2]*VClimb2[icl2]  == RCClimb2[icl2],
@@ -457,15 +442,13 @@ class Climb2(Model):
             tminClimb2 == thoursClimb2,
             #compute the distance traveled for each segment
             #takes into account two terms of a cosine expansion
-##            TCS([RngClimb[iclimb2] + .5*thours[iclimb2]*V[iclimb2]*theta[iclimb2]**2 <= thours[iclimb2]*V[iclimb2]]),
             RngClimb2[icl2] <= thoursClimb2[icl2]*VClimb2[icl2],
 
             W_avgClimb2[icl2] == .5*CLClimb2[icl2]*S*rhoClimb2[icl2]*VClimb2[icl2]**2,      
             WLoadClimb2[icl2] == .5*CLClimb2[icl2]*S*rhoClimb2[icl2]*VClimb2[icl2]**2/S,
             
             #compute fuel burn from TSFC
-            W_fuelClimb2[0]  == numeng*TSFCc21 * thoursClimb2[0] * thrustc21,
-            W_fuelClimb2[1]  == numeng*TSFCc22 * thoursClimb2[1] * thrustc22,
+            W_fuelClimb2[icl2]  == numeng*TSFCc2[icl2] * thoursClimb2[icl2] * thrustc2[icl2],
 
             #compute the dh required for each climb 1 segment
             dhftClimb2[icl2] == dhClimb2/Nclimb2,
@@ -474,10 +457,10 @@ class Climb2(Model):
             WLoadClimb2 <= WLoadmax,
 
 
-            TSFCc21 == .5*units('1/hr'),
-            TSFCc22 == .5*units('1/hr'),
-            thrustc21 == 100000*units('N'),
-            thrustc22 == 100000*units('N'),
+            TSFCc2[0] == .5*units('1/hr'),
+            TSFCc2[1] == .5*units('1/hr'),
+            thrustc2[0] == 100000*units('N'),
+            thrustc2[1] == 100000*units('N'),
             ])
 
         for i in range(0, Nclimb2):
@@ -554,14 +537,15 @@ class Cruise2(Model):
         gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
         R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
         
-##        TSFCcr2 = VectorVariable(Ncruise2, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
-        TSFCcr21 = Variable('TSFC_{cr21}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
-        TSFCcr22 = Variable('TSFC_{cr22}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+        TSFCcr2 = VectorVariable(Ncruise2, 'TSFC_{cr2}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+##        TSFCcr21 = Variable('TSFC_{cr21}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
+##        TSFCcr22 = Variable('TSFC_{cr22}', '1/hr', 'Thrust Specific Fuel Consumption During Cruise2')
         D1 = Variable('D1', 'N', 'Drag for cruise part 1')
         D2 = Variable('D2', 'N', 'Drag for cruise part 2')
 
-        thrustcr21 = Variable('thrust_{cr21}', 'N', 'Thrust During Cruise Segment #2')
-        thrustcr22 = Variable('thrust_{cr22}', 'N', 'Thrust During Cruise Segment #2')
+        thrustcr2 = VectorVariable(Ncruise2, 'thrust_{cr2}', 'N', 'Thrust During Cruise Segment #2')
+##        thrustcr21 = Variable('thrust_{cr21}', 'N', 'Thrust During Cruise Segment #2')
+##        thrustcr22 = Variable('thrust_{cr22}', 'N', 'Thrust During Cruise Segment #2')
 
         constraints = []
         
@@ -597,8 +581,8 @@ class Cruise2(Model):
         W_endCruise2 = VectorVariable(Ncruise2, 'W_{endCruise2}', 'N', 'Segment End Weight')
 
         #TEMPORARY
-        mhold5 = Variable('mhold5', '-', 'segment 5 mach number')
-        mhold6 = Variable('mhold6', '-', 'segment 6 mach number')
+##        mhold5 = Variable('mhold5', '-', 'segment 5 mach number')
+##        mhold6 = Variable('mhold6', '-', 'segment 6 mach number')
         Thold5 = Variable('Thold5', 'K', 'segment 5 T')
         Thold6 = Variable('Thold6', 'K', 'segment 6 T')
         phold5 = Variable('phold5', 'kPa', 'segment 5 p')
@@ -640,8 +624,8 @@ class Cruise2(Model):
             TCS([W_fuelCruise2[izbre]/W_endCruise2[izbre] >= te_exp_minus1(z_brec2[izbre], nterm=3)]),
 
             #breguet range eqn
-            TCS([z_brec2[0] >= (numeng*TSFCcr21*thoursCruise2[0]*DCruise2[0])/W_avgCruise2[0]]),
-            TCS([z_brec2[1] >= (numeng*TSFCcr22*thoursCruise2[1]*DCruise2[1])/W_avgCruise2[1]]),
+            TCS([z_brec2[izbre] >= (numeng * TSFCcr2[izbre] * thoursCruise2[izbre] * DCruise2[izbre]) / W_avgCruise2[izbre]]),
+##            TCS([z_brec2[1] >= (numeng*TSFCcr22*thoursCruise2[1]*DCruise2[1])/W_avgCruise2[1]]),
 
             #time
             thoursCruise2[izbre]*VCruise2[izbre]  == RngCruise2[izbre],
@@ -650,10 +634,10 @@ class Cruise2(Model):
             #constrain the max wing loading
             WLoadCruise2 <= WLoadmax,
 
-            TSFCcr21 == .5*units('1/hr'),
-            TSFCcr22 == .5*units('1/hr'),
-            thrustcr21 == 100000*units('N'),
-            thrustcr22 == 100000*units('N'),
+            TSFCcr2[0] == .5*units('1/hr'),
+            TSFCcr2[1] == .5*units('1/hr'),
+            thrustcr2[0] == 100000*units('N'),
+            thrustcr2[1] == 100000*units('N'),
             ])
         
         #constraint on the aircraft meeting the required range
@@ -1223,10 +1207,10 @@ class CommercialAircraft(Model):
         print eoffD["TSFC_E"]
         constraints.subinplace({climb1['TSFC_{c1}'][0]: eoffD["TSFC_E"], climb1["thrust_{c1}"][0]: eoffD["F"],
                                 climb1["TSFC_{c1}"][1]: eoffD2["TSFC_E2"], climb1["thrust_{c1}"][1]: eoffD2["F_2"],
-                                climb2["thrust_{c21}"]: eoffD3["F_3"], climb2["TSFC_{c21}"]: eoffD3["TSFC_E3"],
-                                climb2["thrust_{c22}"]: eoffD4["F_4"], climb2["TSFC_{c22}"]: eoffD4["TSFC_E4"],
-                                cruise2["TSFC_{cr21}"]: eoffD5["TSFC_E5"], cruise2["thrust_{cr21}"]: eoffD5["F_{spec5}"],
-                                cruise2["TSFC_{cr22}"]: eoffD6["TSFC_E6"], cruise2["thrust_{cr22}"]: eoffD6["F_{spec6}"],
+                                climb2["thrust_{c2}"][0]: eoffD3["F_3"], climb2["TSFC_{c2}"][0]: eoffD3["TSFC_E3"],
+                                climb2["thrust_{c2}"][1]: eoffD4["F_4"], climb2["TSFC_{c2}"][1]: eoffD4["TSFC_E4"],
+                                cruise2["TSFC_{cr2}"][0]: eoffD5["TSFC_E5"], cruise2["thrust_{cr2}"][0]: eoffD5["F_{spec5}"],
+                                cruise2["TSFC_{cr2}"][1]: eoffD6["TSFC_E6"], cruise2["thrust_{cr2}"][1]: eoffD6["F_{spec6}"],
                                 climb1["MClimb1"][0]: eoffD["M_0_1"], climb1["MClimb1"][1]: eoffD2["M_0_2"], climb2["MClimb2"][0]: eoffD3["M_0_3"], climb2["MClimb2"][1]: eoffD4["M_0_4"], 'phold1': 'P_0_1',
                                 'phold2': 'P_0_2','phold3': 'P_0_3','phold4': 'P_0_4','phold5': 'P_0_5','phold6': 'P_0_6',
                                 'P_0': 'P_0_6'})#,'\rhoClimb1_(1,)':'\rho_(1,)',
