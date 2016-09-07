@@ -304,10 +304,10 @@ class Climb1(Model):
             WLoadClimb1 <= WLoadmax,
 
 
-            TSFCc1[0] == .5*units('1/hr'),
-            TSFCc1[1] == .5*units('1/hr'),
-            thrustc1[0] == 100000*units('N'),
-            thrustc1[1] == 100000*units('N'),
+##            TSFCc1[0] == .5*units('1/hr'),
+##            TSFCc1[1] == .5*units('1/hr'),
+##            thrustc1[0] == 100000*units('N'),
+##            thrustc1[1] == 100000*units('N'),
             ])
 
         for i in range(0, Nclimb1):
@@ -431,10 +431,10 @@ class Climb2(Model):
             WLoadClimb2 <= WLoadmax,
 
 
-            TSFCc2[0] == .5*units('1/hr'),
-            TSFCc2[1] == .5*units('1/hr'),
-            thrustc2[0] == 100000*units('N'),
-            thrustc2[1] == 100000*units('N'),
+##            TSFCc2[0] == .5*units('1/hr'),
+##            TSFCc2[1] == .5*units('1/hr'),
+##            thrustc2[0] == 100000*units('N'),
+##            thrustc2[1] == 100000*units('N'),
             ])
 
         for i in range(0, Nclimb2):
@@ -490,9 +490,6 @@ class Cruise2(Model):
         #time
         tminCruise2 = VectorVariable(Ncruise2, 'tminCruise2', 'min', 'Flight Time in Minutes')
         thoursCruise2 = VectorVariable(Ncruise2, 'thrCruise2', 'hour', 'Flight Time in Hours')
-
-        #thrust
-        thrustCruise2 = Variable('thrustCruise2', 'N', 'Engine Thrust')
 
         #velocitites and mach numbers
         VCruise2 = VectorVariable(Ncruise2, 'VCruise2', 'knots', 'Aircraft Flight Speed')
@@ -555,16 +552,15 @@ class Cruise2(Model):
             T0 == 280*units('K'),
             
              #climb rate constraints for engine sizing at TOC
-##            excessPtoc+Vtoc*Dtoc  <= numeng*Fd*Vtoc,
-##            RCtoc == excessPtoc/W_avgClimb2[Nclimb2-1],
-##            RCtoc == 500*units('ft/min'),
-##            Vtoc == VCruise2[0],
+            excessPtoc+Vtoc*Dtoc  <= numeng*Fd*Vtoc,
+            RCtoc == excessPtoc/W_avgClimb2[Nclimb2-1],
+            RCtoc == 500*units('ft/min'),
+            Vtoc == VCruise2[0],
 
             #compute the drag
-##            TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
-##                TCS([D[icruise2] >= (.5*S*rho[icruise2]*V[icruise2]**2)*(Cd0 + K*(W_start[icruise2]/(.5*S*rho[icruise2]*V[icruise2]**2))**2)]),
+            TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
             TCS([DCruise2[izbre] >= (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2) * (Cd0 + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2))**2)]),
-##            DCruise2[izbre] == numeng * thrustcr2[icrusie2],
+            DCruise2[izbre] == numeng * thrustcr2[izbre],
 
             W_avgCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2,
             WLoadCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2/S,
@@ -585,10 +581,10 @@ class Cruise2(Model):
             #constrain the max wing loading
             WLoadCruise2 <= WLoadmax,
 
-            TSFCcr2[0] == .5*units('1/hr'),
-            TSFCcr2[1] == .5*units('1/hr'),
-            thrustcr2[0] == 100000*units('N'),
-            thrustcr2[1] == 100000*units('N'),
+##            TSFCcr2[0] == .5*units('1/hr'),
+##            TSFCcr2[1] == .5*units('1/hr'),
+##            thrustcr2[0] == 100000*units('N'),
+##            thrustcr2[1] == 100000*units('N'),
             ])
         
         #constraint on the aircraft meeting the required range
@@ -1095,7 +1091,7 @@ class CommercialAircraft(Model):
             'numeng': 2,
             'dh_{climb2}': hcruise-10000,
             'W_{Load_max}': 6664,
-            'W_{engine}': 1000,
+##            'W_{engine}': 1000,
 
             #substitutions for global engine variables
             'G_f': 1,
@@ -1112,16 +1108,19 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, atm]#, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
+        self.submodels = [cmc, climb1, climb2, cruise2, atm, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
 
         constraints = ConstraintSet([self.submodels])
-
+        print cruise2["TSFC_{cr2}"][0]
+        print eoffD5["TSFC_E5"]
+        print cruise2['thrust_{cr2}'][0]
+        print eoffD5["F_{spec5}"],
         subs = {climb1["TSFC_{c1}"][0]: eoffD["TSFC_E"], climb1["thrust_{c1}"][0]: eoffD["F"],
                                 climb1["TSFC_{c1}"][1]: eoffD2["TSFC_E2"], climb1["thrust_{c1}"][1]: eoffD2["F_2"],
                                 climb2["thrust_{c2}"][0]: eoffD3["F_3"], climb2["TSFC_{c2}"][0]: eoffD3["TSFC_E3"],
                                 climb2["thrust_{c2}"][1]: eoffD4["F_4"], climb2["TSFC_{c2}"][1]: eoffD4["TSFC_E4"],
-                                cruise2["TSFC_{cr2}"][0]: eoffD5["TSFC_E5"], cruise2["thrust_{cr2}"][0]: eoffD5["F_{spec5}"],
-                                cruise2["TSFC_{cr2}"][1]: eoffD6["TSFC_E6"], cruise2["thrust_{cr2}"][1]: eoffD6["F_{spec6}"],
+                                cruise2["TSFC_{cr2}"][0]: eoffD5["TSFC_E5"], cruise2['thrust_{cr2}'][0]: eoffD5["F_{spec5}"],
+                                cruise2["TSFC_{cr2}"][1]: eoffD6["TSFC_E6"], cruise2['thrust_{cr2}'][1]: eoffD6["F_{spec6}"],
                                 climb1["MClimb1"][0]: eoffD["M_0_1"], climb1["MClimb1"][1]: eoffD2["M_0_2"], climb2["MClimb2"][0]: eoffD3["M_0_3"], climb2["MClimb2"][1]: eoffD4["M_0_4"]}
         
         for i in range(Nclimb1):
@@ -1141,6 +1140,7 @@ class CommercialAircraft(Model):
                 })
 
         constraints.subinplace(subs)
+        
         lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
                                                        'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}',
                                                        'h_{t_2.1}', 'P_{t_2.5}', 'T_{t_2.5}', 'h_{t_2.5}', 'P_{t_3}', 'T_{t_3}',
