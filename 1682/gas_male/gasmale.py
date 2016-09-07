@@ -12,7 +12,7 @@ PLOT = False
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, **kwargs):
 
-        self.mission = [
+        self.submodels = [
             Climb(1, [0.502], [5000], False, wind, 5000, DF70),
             Cruise(1, [0.684], [5000], False, wind, 180, DF70),
             Climb(1, [0.567], [h_station], False, wind, 10000, DF70),
@@ -24,18 +24,18 @@ class Mission(Model):
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
 
         constraints = [
-            MTOW >= self.mission[0]["W_{start}"],
-            W_zfw <= self.mission[-1]["W_{finish}"],
-            W_fueltot >= sum(fs["W_{fuel-fs}"] for fs in self.mission)
+            MTOW >= self.submodels[0]["W_{start}"],
+            W_zfw <= self.submodels[-1]["W_{finish}"],
+            W_fueltot >= sum(fs["W_{fuel-fs}"] for fs in self.submodels)
             ]
 
-        for i, fs in enumerate(self.mission[1:]):
+        for i, fs in enumerate(self.submodels[1:]):
             constraints.extend([
-                self.mission[i]["W_{finish}"] == fs["W_{start}"]
+                self.submodels[i]["W_{finish}"] == fs["W_{start}"]
                 ])
 
         lc = LinkedConstraintSet(
-            [fs for fs in self.mission, constraints], exclude={
+            [fs for fs in self.submodels, constraints], exclude={
                 "t_{loiter}", "\\delta_h", "h_{dot}", "h", "T_{atm}",
                 "\\mu", "\\rho", "W_{start}", "W_{end}", "W_{fuel}",
                 "W_{fuel-fs}", "W_{finish}", "W_{begin}", "C_L", "C_D",
