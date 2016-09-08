@@ -1,6 +1,7 @@
 from gas_male_fixCDR import GasMALEFixedEngine
 from gas_male_discritized_climb import GasMALEDiscritizedClimb
 from gpkit.small_scripts import unitstr
+from gasmale import GasMALE
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -56,7 +57,7 @@ def plot_sweep(model, xvarname, xsweep, yvarname, ylim=[0, 10]):
 
     return fig, ax
 
-def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix, CLIMB=False):
+def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
     """
     Plots sweeps of yvarnames vs altitude. Only runs GasMALEFixedEngine().
     Arguments
@@ -74,39 +75,35 @@ def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix, CLIMB=False):
     """
 
     vals = np.zeros([len(hvals), len(yvarnames)])
-    if CLIMB:
-        M_fix = GasMALEDiscritizedClimb()
-    else:
-        M_fix = GasMALEFixedEngine()
-
+    M_fix = GasMALE(DF70=True)
+    M_fix.substitutions.update({"t_{loiter}": 6})
+    M_fix.cost = M_fix["MTOW"]
     sol_fix = M_fix.solve("mosek", verbosity=0)
 
     for i, h in enumerate(hvals):
-        M = GasMALEFixedEngine(h)
+        M = GasMALE(h_station=h, DF70=True)
         fix_vars(M, sol_fix, vars_to_fix)
-        del M.substitutions["t_{station}"]
-        M.cost = 1/M["t_{station}"]
         sol = M.solve("mosek", verbosity=0)
         for j, yvarname in enumerate(yvarnames):
-            vals[i,j] = sol(yvarname).magnitude
+            vals[i, j] = sol(yvarname).magnitude
 
+    figures = []
+    axis = []
     for j, yvarname in enumerate(yvarnames):
         fig, ax = plt.subplots()
         ax.plot(hvals, vals[:, j])
-        ax.set_xlabel("%s [%s]" % (M_fix["h_{station}"].descr["label"],
-                                   unitstr(M_fix["h_{station}"].units)))
+        ax.set_xlabel("%s [%s]" % (M_fix["h"].descr["label"],
+                                   unitstr(M_fix["h"].units)))
         ax.set_ylabel("%s [%s]" % (M_fix[yvarname].descr["label"],
                                    unitstr(M_fix[yvarname].units)))
         ax.set_title("CRD " + yvarname + " vs h_{station}")
         plt.grid()
-        if CLIMB:
-            plot_name = "altitude_vs_%s_Climb.pdf" % \
-                       M[yvarname].descr["label"].replace(" ", "")
-        else:
-            plot_name = "altitude_vs_%s_CDR.pdf" % \
-                       M[yvarname].descr["label"].replace(" ", "")
 
-        fig.savefig(plot_name)
+        figures.append(fig)
+        axis.append(ax)
+
+    return figures, axis
+
 
 def plot_mission_var(model, yvarname, ylim, yaxis_name=None):
     """

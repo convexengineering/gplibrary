@@ -233,25 +233,30 @@ M.cost = 1/M["t_{loiter}"]
 # payload power vs time on station
 fig, ax = plot_sweep(M, "P_{pay}", np.linspace(10, 200, 15),
                      "t_{loiter}")
-fig.savefig("tvsP_pay.pdf")
+gen_tex_fig(fig, "t_vs_Ppay")
 
 # payload weight vs time on station
 fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 40, 15), "t_{loiter}")
-fig.savefig("tvsW_pay.pdf")
+gen_tex_fig(fig, "t_vs_Wpay")
 
 # wind speed vs time on station
 M = GasMALE(wind=True, DF70=True)
 fix_vars(M, sol, vars_to_fix)
-del M.substitutions["t_{loiter}"]
-M.cost = 1/M["t_{loiter}"]
-fig, ax = plot_sweep(M, "V_{wind}", np.linspace(5, 40, 15), "t_{loiter}")
-fig.savefig("tvsV_wind.pdf")
+fig, ax = plot_sweep(M, "V_{wind}_Wind, Loiter, Mission, GasMALE", np.linspace(5, 40, 15), "t_{loiter}")
+gen_tex_fig(fig, "t_vs_Vwind")
 
 # altitude vs time on loiter
-plot_altitude_sweeps(np.linspace(14000, 23000, 20), {"t_{loiter}"},
+altitude_vars = {"t_{loiter}"}
+figs, axs = plot_altitude_sweeps(np.linspace(14000, 20000, 20), altitude_vars,
                      vars_to_fix)
 
+for var, fig in zip(altitude_vars, figs):
+    gen_tex_fig(fig, "%s_v_altitude" % var.replace("{", "").replace("}", "").replace("_", ""))
 ```
+\input{t_vs_Ppay.fig.generated.tex}
+\input{t_vs_Wpay.fig.generated.tex}
+\input{t_vs_Vwind.fig.generated.tex}
+\input{tloiter_vs_altitude.fig.generated.tex}
 
 
 
