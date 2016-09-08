@@ -75,65 +75,64 @@ from gasmale import GasMALE
 ```python
 #inPDF: skip
 
-if __name__ == "__main__":
-    M = GasMALE()
-    from gpkit.small_scripts import unitstr
+M = GasMALE()
+from gpkit.small_scripts import unitstr
 
-    def gen_model_tex(model, modelname, texname=None):
-        if texname:
-            filename = texname
-        else:
-            filename = modelname
-        with open('%s.vars.generated.tex' % filename, 'w') as f:
-            f.write("\\begin{longtable}{llll}\n \\toprule\n")
-            f.write("\\toprule\n")
-            f.write("Variables & Value & Units & Description \\\\ \n")
-            f.write("\\midrule\n")
-            #f.write("\\multicolumn{3}{l}\n")
-            varnames = ["firstname"]
-            for var in model.varkeys:
-                name = var.name
-                if name in varnames:
-                    pass
-                else:
-                    if var.models[0] == modelname:
-                        varnames.append(name)
-                        unitstr = var.unitstr()[1:]
-                        unitstr = "$[%s]$" % unitstr if unitstr else ""
-                        val = "%0.3f" % var.value if var.value else ""
-                        f.write("$%s$ & %s & %s & %s \\\\\n" % 
-                                    (var.name, val, unitstr, var.label))
-                    else:
-                        pass
-            f.write("\\bottomrule\n")
-            f.write("\\end{longtable}\n")
-
-        with open('%s.cnstrs.generated.tex' % texname, 'w') as f:
-            lines = model.latex(excluded=["models"]).replace("[ll]", "{ll}").split("\n")
-            modeltex = "\n".join(lines[:1] + lines[3:])
-            f.write("$$ %s $$" % modeltex)
-
-    def find_submodels(models, modelnames):
-        runAgain = 0
-        for m in models:
-            if "submodels" in m.__dict__.keys():
-                for sub in m.submodels:
-                    if sub.__class__.__name__ not in modelnames:
-                        models.append(sub)
-                        modelnames.append(sub.__class__.__name__)
-                        runAgain += 1
-                    else:
-                        pass
-            else:
+def gen_model_tex(model, modelname, texname=None):
+    if texname:
+        filename = texname
+    else:
+        filename = modelname
+    with open('%s.vars.generated.tex' % filename, 'w') as f:
+        f.write("\\begin{longtable}{llll}\n \\toprule\n")
+        f.write("\\toprule\n")
+        f.write("Variables & Value & Units & Description \\\\ \n")
+        f.write("\\midrule\n")
+        #f.write("\\multicolumn{3}{l}\n")
+        varnames = ["firstname"]
+        for var in model.varkeys:
+            name = var.name
+            if name in varnames:
                 pass
-        if runAgain > 0:
-            return find_submodels(models, modelnames)
-        else:
-            return models, modelnames
+            else:
+                if var.models[0] == modelname:
+                    varnames.append(name)
+                    unitstr = var.unitstr()[1:]
+                    unitstr = "$[%s]$" % unitstr if unitstr else ""
+                    val = "%0.3f" % var.value if var.value else ""
+                    f.write("$%s$ & %s & %s & %s \\\\\n" % 
+                                (var.name, val, unitstr, var.label))
+                else:
+                    pass
+        f.write("\\bottomrule\n")
+        f.write("\\end{longtable}\n")
 
-    models, modelnames = find_submodels([M], [])
-    for m in models: 
-        gen_model_tex(m, m.__class__.__name__)
+    with open('%s.cnstrs.generated.tex' % texname, 'w') as f:
+        lines = model.latex(excluded=["models"]).replace("[ll]", "{ll}").split("\n")
+        modeltex = "\n".join(lines[:1] + lines[3:])
+        f.write("$$ %s $$" % modeltex)
+
+def find_submodels(models, modelnames):
+    runAgain = 0
+    for m in models:
+        if "submodels" in m.__dict__.keys():
+            for sub in m.submodels:
+                if sub.__class__.__name__ not in modelnames:
+                    models.append(sub)
+                    modelnames.append(sub.__class__.__name__)
+                    runAgain += 1
+                else:
+                    pass
+        else:
+            pass
+    if runAgain > 0:
+        return find_submodels(models, modelnames)
+    else:
+        return models, modelnames
+
+models, modelnames = find_submodels([M], [])
+for m in models: 
+    gen_model_tex(m, m.__class__.__name__)
 
 ```
 
@@ -143,7 +142,7 @@ This model was created and then a sweep was done to determine the MTOW required 
 
 ```python
 #inPDF: skip
-from plotting import plot_sweep
+from plotting import plot_sweep, fix_vars, plot_altitude_sweeps
 import numpy as np
 
 def gen_tex_fig(fig, filename, caption=None):
@@ -194,6 +193,68 @@ models, modelnames = find_submodels([M], [])
 DF70Engine = models[modelnames.index("Engine") + 1]
 gen_model_tex(DF70Engine, "Engine", texname="DF70")
 ```
+
+By fixing the following variables to their respective values we were also able to generate performance curves. 
+
+```python
+#inPDF: replace with fixvars.table.generated.tex
+
+def gen_fixvars_tex(model, solution, fixvars):
+    with open('fixvars.table.generated.tex', 'w') as f:
+        f.write("\\begin{longtable}{llll}\n \\toprule\n")
+        f.write("\\toprule\n")
+        f.write("Variables & Value & Units & Description \\\\ \n")
+        f.write("\\midrule\n")
+        varnames = ["firstname"]
+        for varname in fixvars:
+            val = "%0.3f" % sol(varname).magnitude 
+            unitstring = unitstr(model[varname].units)
+            label = model[varname].descr["label"]
+            f.write("$%s$ & %s & %s & %s \\\\\n" % 
+                    (varname, val, unitstring, label))
+        f.write("\\bottomrule\n")
+        f.write("\\end{longtable}\n")
+
+vars_to_fix = {"S":0.0, "b":0.0, "Vol_{fuse}":0.00001}
+gen_fixvars_tex(M, sol, vars_to_fix)
+
+fix_vars(M, sol, vars_to_fix)
+sol = M.solve("mosek") # check for solving errors
+```
+
+## Sweeps
+
+```python
+#inPDF: skip
+# set objective to time on station after fixing variables
+del M.substitutions["t_{loiter}"]
+M.cost = 1/M["t_{loiter}"]
+
+# payload power vs time on station
+fig, ax = plot_sweep(M, "P_{pay}", np.linspace(10, 200, 15),
+                     "t_{loiter}")
+fig.savefig("tvsP_pay.pdf")
+
+# payload weight vs time on station
+fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 40, 15), "t_{loiter}")
+fig.savefig("tvsW_pay.pdf")
+
+# wind speed vs time on station
+M = GasMALE(wind=True, DF70=True)
+fix_vars(M, sol, vars_to_fix)
+del M.substitutions["t_{loiter}"]
+M.cost = 1/M["t_{loiter}"]
+fig, ax = plot_sweep(M, "V_{wind}", np.linspace(5, 40, 15), "t_{loiter}")
+fig.savefig("tvsV_wind.pdf")
+
+# altitude vs time on loiter
+plot_altitude_sweeps(np.linspace(14000, 23000, 20), {"t_{loiter}"},
+                     vars_to_fix)
+
+```
+
+
+
 
 
 
