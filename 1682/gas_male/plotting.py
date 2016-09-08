@@ -89,11 +89,11 @@ def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
 
     figures = []
     axis = []
+    hvar = M_fix.variables_byname("h")[0]
     for j, yvarname in enumerate(yvarnames):
         fig, ax = plt.subplots()
         ax.plot(hvals, vals[:, j])
-        ax.set_xlabel("%s [%s]" % (M_fix["h"].descr["label"],
-                                   unitstr(M_fix["h"].units)))
+        ax.set_xlabel("%s [%s]" % (hvar.descr["label"], unitstr(hvar.units)))
         ax.set_ylabel("%s [%s]" % (M_fix[yvarname].descr["label"],
                                    unitstr(M_fix[yvarname].units)))
         ax.set_title("CRD " + yvarname + " vs h_{station}")

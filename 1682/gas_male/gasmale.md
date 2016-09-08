@@ -251,7 +251,7 @@ figs, axs = plot_altitude_sweeps(np.linspace(14000, 20000, 20), altitude_vars,
                      vars_to_fix)
 
 for var, fig in zip(altitude_vars, figs):
-    gen_tex_fig(fig, "%s_v_altitude" % var.replace("{", "").replace("}", "").replace("_", ""))
+    gen_tex_fig(fig, "%s_vs_altitude" % var.replace("{", "").replace("}", "").replace("_", ""))
 ```
 \input{t_vs_Ppay.fig.generated.tex}
 \input{t_vs_Wpay.fig.generated.tex}
