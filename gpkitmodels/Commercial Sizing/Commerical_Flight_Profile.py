@@ -304,10 +304,10 @@ class Climb1(Model):
             WLoadClimb1 <= WLoadmax,
 
 
-##            TSFCc1[0] == .5*units('1/hr'),
-##            TSFCc1[1] == .5*units('1/hr'),
-##            thrustc1[0] == 100000*units('N'),
-##            thrustc1[1] == 100000*units('N'),
+            TSFCc1[0] == .5*units('1/hr'),
+            TSFCc1[1] == .5*units('1/hr'),
+            thrustc1[0] == 100000*units('N'),
+            thrustc1[1] == 100000*units('N'),
             ])
 
         for i in range(0, Nclimb1):
@@ -431,10 +431,10 @@ class Climb2(Model):
             WLoadClimb2 <= WLoadmax,
 
 
-##            TSFCc2[0] == .5*units('1/hr'),
-##            TSFCc2[1] == .5*units('1/hr'),
-##            thrustc2[0] == 100000*units('N'),
-##            thrustc2[1] == 100000*units('N'),
+            TSFCc2[0] == .5*units('1/hr'),
+            TSFCc2[1] == .5*units('1/hr'),
+            thrustc2[0] == 100000*units('N'),
+            thrustc2[1] == 100000*units('N'),
             ])
 
         for i in range(0, Nclimb2):
@@ -552,13 +552,13 @@ class Cruise2(Model):
             T0 == 280*units('K'),
             
              #climb rate constraints for engine sizing at TOC
-            excessPtoc+Vtoc*Dtoc  <= numeng*Fd*Vtoc,
-            RCtoc == excessPtoc/W_avgClimb2[Nclimb2-1],
-            RCtoc == 500*units('ft/min'),
-            Vtoc == VCruise2[0],
+##            excessPtoc+Vtoc*Dtoc  <= numeng*Fd*Vtoc,
+##            RCtoc == excessPtoc/W_avgClimb2[Nclimb2-1],
+##            RCtoc == 500*units('ft/min'),
+##            Vtoc == VCruise2[0],
 
             #compute the drag
-            TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
+##            TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
             TCS([DCruise2[izbre] >= (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2) * (Cd0 + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2))**2)]),
             DCruise2[izbre] == numeng * thrustcr2[izbre],
 
@@ -581,10 +581,10 @@ class Cruise2(Model):
             #constrain the max wing loading
             WLoadCruise2 <= WLoadmax,
 
-##            TSFCcr2[0] == .5*units('1/hr'),
-##            TSFCcr2[1] == .5*units('1/hr'),
-##            thrustcr2[0] == 100000*units('N'),
-##            thrustcr2[1] == 100000*units('N'),
+            TSFCcr2[0] == .5*units('1/hr'),
+            TSFCcr2[1] == .5*units('1/hr'),
+            thrustcr2[0] == 100000*units('N'),
+            thrustcr2[1] == 100000*units('N'),
             ])
         
         #constraint on the aircraft meeting the required range
@@ -1108,7 +1108,7 @@ class CommercialAircraft(Model):
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, atm, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
+        self.submodels = [cmc, climb1, climb2, cruise2, atm]#, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
 
         constraints = ConstraintSet([self.submodels])
         print cruise2["TSFC_{cr2}"][0]
@@ -1202,7 +1202,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
