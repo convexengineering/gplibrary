@@ -5,7 +5,7 @@ def gen_model_tex(model, modelname, texname=None):
         filename = texname
     else:
         filename = modelname
-    with open('%s.vars.generated.tex' % filename, 'w') as f:
+    with open('tex/%s.vars.generated.tex' % filename, 'w') as f:
         f.write("\\begin{longtable}{llll}\n \\toprule\n")
         f.write("\\toprule\n")
         f.write("Variables & Value & Units & Description \\\\ \n")
@@ -29,7 +29,7 @@ def gen_model_tex(model, modelname, texname=None):
         f.write("\\bottomrule\n")
         f.write("\\end{longtable}\n")
 
-    with open('%s.cnstrs.generated.tex' % texname, 'w') as f:
+    with open('tex/%s.cnstrs.generated.tex' % filename, 'w') as f:
         lines = model.latex(excluded=["models"]). \
                 replace("[ll]", "{ll}").split("\n")
         modeltex = "\n".join(lines[:1] + lines[3:])
@@ -54,19 +54,19 @@ def find_submodels(models, modelnames):
         return models, modelnames
 
 def gen_tex_fig(fig, filename, caption=None):
-    fig.savefig("%s.pdf" % filename)
-    with open("%s.fig.generated.tex" % filename, "w") as f:
+    fig.savefig("figs/%s.pdf" % filename)
+    with open("tex/%s.fig.generated.tex" % filename, "w") as f:
         f.write("\\begin{figure}[H]")
         f.write("\\label{f:%s}" % filename)
         f.write("\\begin{center}")
-        f.write("\\includegraphics[scale=0.5]{%s}" % filename)
+        f.write("\\includegraphics[scale=0.5]{figs/%s}" % filename)
         if caption:
             f.write("\\caption{%s}" % caption)
         f.write("\\end{center}")
         f.write("\\end{figure}")
 
 def gen_fixvars_tex(model, solution, fixvars):
-    with open('fixvars.table.generated.tex', 'w') as f:
+    with open('tex/fixvars.table.generated.tex', 'w') as f:
         f.write("\\begin{longtable}{llll}\n \\toprule\n")
         f.write("\\toprule\n")
         f.write("Variables & Value & Units & Description \\\\ \n")
