@@ -73,15 +73,18 @@ from gasmale import GasMALE
 ```
 
 ```python
-#inPDF: replace with sol.generated.tex
+#inPDF: skip
 
 if __name__ == "__main__":
     M = GasMALE()
-    # sol = M.solve("mosek")
     from gpkit.small_scripts import unitstr
 
-    def gen_model_tex(model, modelname):
-        with open('%s.vars.generated.tex' % modelname, 'w') as f:
+    def gen_model_tex(model, modelname, texname=None):
+        if texname:
+            filename = texname
+        else:
+            filename = modelname
+        with open('%s.vars.generated.tex' % filename, 'w') as f:
             f.write("\\begin{longtable}{llll}\n \\toprule\n")
             f.write("\\toprule\n")
             f.write("Variables & Value & Units & Description \\\\ \n")
@@ -105,7 +108,7 @@ if __name__ == "__main__":
             f.write("\\bottomrule\n")
             f.write("\\end{longtable}\n")
 
-        with open('%s.cnstrs.generated.tex' % modelname, 'w') as f:
+        with open('%s.cnstrs.generated.tex' % texname, 'w') as f:
             lines = model.latex(excluded=["models"]).replace("[ll]", "{ll}").split("\n")
             modeltex = "\n".join(lines[:1] + lines[3:])
             f.write("$$ %s $$" % modeltex)
@@ -132,8 +135,6 @@ if __name__ == "__main__":
     for m in models: 
         gen_model_tex(m, m.__class__.__name__)
 
-    # with open("sol.generated.tex", "w") as f:
-    #     f.write(sol.table(latex=True))
 ```
 
 # Sizing
@@ -165,5 +166,35 @@ M.substitutions.update({"MTOW": 150})
 fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15), "t_{loiter}")
 gen_tex_fig(fig, "tstation_vs_MTOW_rubber")
 ```
+
+### CDR Aircraft Sizing
+
+After deciding on the 150 lb aircraft to meet with a 1 day margin on the loiter requirement, a DF70 engine was chosen. The aircraft was reoptimized to meet the 6 day time on station and minimize max take off weight.  This was the aircraft chosen for the CDR. The solution is shown in the tables below. 
+
+```python
+#inPDF: replace with sol.generated.tex
+M = GasMALE(DF70=True)
+M.substitutions.update({"t_{loiter}": 6})
+M.cost = M["MTOW"]
+sol = M.solve("mosek")
+
+with open("sol.generated.tex", "w") as f:
+    f.write(sol.table(latex=True))
+```
+
+### DF70 Engine Model
+The engine model of the DF70 is shown below. 
+
+\input{DF70.vars.generated.tex}
+\input{DF70.cnstrs.generated.tex}
+
+```python
+#inPDF: skip
+models, modelnames = find_submodels([M], [])
+DF70Engine = models[modelnames.index("Engine") + 1]
+gen_model_tex(DF70Engine, "Engine", texname="DF70")
+```
+
+
 
 
