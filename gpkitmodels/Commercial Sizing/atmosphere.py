@@ -59,20 +59,43 @@ class Atmosphere(Model):
             hu*m == h,
             pu*pa ==p,
             rhou*kgm3 == rho,
+
+            hu[0] == 1,
+            hu[1] == 100,
+            hu[2] == 1000,
+            hu[3] == 10000,
+            hu[4] == 15000,
+            hu[5] == 20000,
             ]
         
         with SignomialsEnabled():
                 for i in range(N):
                     constraints.extend([
                         #pressure constraint
-                        SignomialEquality(pu[i]**-.58, (0.000162 * hu[i]**-6.78e-06+ 1.54e-10 * hu[i]**-2+ 2.87e-05 * (hu[i])**0.00355+ 0.000812 *
-                                  (hu[i])**0.00022+ 0.000248 * (hu[i])**8.7e-05+ 1.41e-15 * (hu[i])**2.88 + 5.66e-08 * (hu[i])**1.06)),
+##                        SignomialEquality(pu[i]**(-.58), (0.000162 * hu[i]**-6.78e-06+ 1.54e-10 * hu[i]**-2+ 2.87e-05 * (hu[i])**0.00355+ 0.000812 *
+##                                  (hu[i])**0.00022+ 0.000248 * (hu[i])**8.7e-05+ 1.41e-15 * (hu[i])**2.88 + 5.66e-08 * (hu[i])**1.06)),
+
+                        SignomialEquality(pu[i]**(-.0401), 5.59e-07 * (hu[i])**1.19 + 0.629 * (hu[i])**0.000386),
+
+##                        pu[i] **-.58 >= (0.000162 * hu[i]**-6.78e-06+ 1.54e-10 * hu[i]**-2+ 2.87e-05 * (hu[i])**0.00355+ 0.000812 *
+##                                  (hu[i])**0.00022+ 0.000248 * (hu[i])**8.7e-05+ 1.41e-15 * (hu[i])**2.88 + 5.66e-08 * (hu[i])**1.06),
 
                         #density constraint
-                        SignomialEquality(rhou[i]**(-2.15), (0.149 * (hu[i])**-0.00179+ 4.74e-10 * (hu[i])**2.47+ 0.132 * (hu[i])**-0.00142 + 3.55e-28 *
+##                        SignomialEquality(rhou[i]**(-2.15), (0.149 * (hu[i])**-0.00179+ 4.74e-10 * (hu[i])**2.47+ 0.132 * (hu[i])**-0.00142 + 3.55e-28 *
+##                                   (hu[i])**6.89+ 0.0882 * (hu[i])**-0.00141+ 0.151 * (hu[i])**-0.000969+ 0.126 * (hu[i])**-0.00141+ 0.000232 *
+##                                   (hu[i])**0.933)),
+
+                        rhou[i]**(-2.15) >= (0.149 * (hu[i])**-0.00179+ 4.74e-10 * (hu[i])**2.47+ 0.132 * (hu[i])**-0.00142 + 3.55e-28 *
                                    (hu[i])**6.89+ 0.0882 * (hu[i])**-0.00141+ 0.151 * (hu[i])**-0.000969+ 0.126 * (hu[i])**-0.00141+ 0.000232 *
-                                   (hu[i])**0.933)),
+                                   (hu[i])**0.933)
+
+##                        rhou == 1,
+##                        pu == 10000,
 
                         ])
 
-        Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, sum(1/rho), constraints, **kwargs)
+
+if __name__ == '__main__':
+    m = Atmosphere(6)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
