@@ -6,7 +6,6 @@ from gpkit import VectorVariable, Variable, Model, units
 from gpkit import LinkedConstraintSet
 #from gpkit.tools import BoundedConstraintSet
 from gpkit.tools import te_exp_minus1
-from plotting import plot_sweep
 PLOT = False
 
 class Mission(Model):
