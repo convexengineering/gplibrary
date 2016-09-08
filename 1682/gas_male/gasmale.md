@@ -66,70 +66,12 @@ This paper presents the designs achieved in the 82 project. This also presents a
 \input{GasMALE.vars.generated.tex}
 \input{GasMALE.cnstrs.generated.tex}
 
-
 ```python
 #inPDF: skip
 from gasmale import GasMALE
-```
-
-```python
-#inPDF: skip
+from gen_tex import gen_model_tex, find_submodels, gen_tex_fig, gen_fixvars_tex 
 
 M = GasMALE()
-from gpkit.small_scripts import unitstr
-
-def gen_model_tex(model, modelname, texname=None):
-    if texname:
-        filename = texname
-    else:
-        filename = modelname
-    with open('%s.vars.generated.tex' % filename, 'w') as f:
-        f.write("\\begin{longtable}{llll}\n \\toprule\n")
-        f.write("\\toprule\n")
-        f.write("Variables & Value & Units & Description \\\\ \n")
-        f.write("\\midrule\n")
-        #f.write("\\multicolumn{3}{l}\n")
-        varnames = ["firstname"]
-        for var in model.varkeys:
-            name = var.name
-            if name in varnames:
-                pass
-            else:
-                if var.models[0] == modelname:
-                    varnames.append(name)
-                    unitstr = var.unitstr()[1:]
-                    unitstr = "$[%s]$" % unitstr if unitstr else ""
-                    val = "%0.3f" % var.value if var.value else ""
-                    f.write("$%s$ & %s & %s & %s \\\\\n" % 
-                                (var.name, val, unitstr, var.label))
-                else:
-                    pass
-        f.write("\\bottomrule\n")
-        f.write("\\end{longtable}\n")
-
-    with open('%s.cnstrs.generated.tex' % texname, 'w') as f:
-        lines = model.latex(excluded=["models"]).replace("[ll]", "{ll}").split("\n")
-        modeltex = "\n".join(lines[:1] + lines[3:])
-        f.write("$$ %s $$" % modeltex)
-
-def find_submodels(models, modelnames):
-    runAgain = 0
-    for m in models:
-        if "submodels" in m.__dict__.keys():
-            for sub in m.submodels:
-                if sub.__class__.__name__ not in modelnames:
-                    models.append(sub)
-                    modelnames.append(sub.__class__.__name__)
-                    runAgain += 1
-                else:
-                    pass
-        else:
-            pass
-    if runAgain > 0:
-        return find_submodels(models, modelnames)
-    else:
-        return models, modelnames
-
 models, modelnames = find_submodels([M], [])
 for m in models: 
     gen_model_tex(m, m.__class__.__name__)
@@ -141,25 +83,10 @@ for m in models:
 This model was created and then a sweep was done to determine the MTOW required to meet 5 days. 
 
 ```python
-#inPDF: skip
+#inPDF: replace with tstation_vs_MTOW_rubber.fig.generated.tex
 from plotting import plot_sweep, fix_vars, plot_altitude_sweeps
 import numpy as np
 
-def gen_tex_fig(fig, filename, caption=None):
-    fig.savefig("%s.pdf" % filename)
-    with open("%s.fig.generated.tex" % filename, "w") as f:
-        f.write("\\begin{figure}[H]")
-        f.write("\\label{f:%s}" % filename)
-        f.write("\\begin{center}")
-        f.write("\\includegraphics[scale=0.5]{%s}" % filename)
-        if caption:
-            f.write("\\caption{%s}" % caption)
-        f.write("\\end{center}")
-        f.write("\\end{figure}")
-```
-
-```python
-#inPDF: replace with tstation_vs_MTOW_rubber.fig.generated.tex
 M = GasMALE()
 M.substitutions.update({"MTOW": 150})
 fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15), "t_{loiter}")
@@ -199,21 +126,6 @@ By fixing the following variables to their respective values we were also able t
 ```python
 #inPDF: replace with fixvars.table.generated.tex
 
-def gen_fixvars_tex(model, solution, fixvars):
-    with open('fixvars.table.generated.tex', 'w') as f:
-        f.write("\\begin{longtable}{llll}\n \\toprule\n")
-        f.write("\\toprule\n")
-        f.write("Variables & Value & Units & Description \\\\ \n")
-        f.write("\\midrule\n")
-        varnames = ["firstname"]
-        for varname in fixvars:
-            val = "%0.3f" % sol(varname).magnitude 
-            unitstring = unitstr(model[varname].units)
-            label = model[varname].descr["label"]
-            f.write("$%s$ & %s & %s & %s \\\\\n" % 
-                    (varname, val, unitstring, label))
-        f.write("\\bottomrule\n")
-        f.write("\\end{longtable}\n")
 
 vars_to_fix = {"S":0.0, "b":0.0, "Vol_{fuse}":0.00001}
 gen_fixvars_tex(M, sol, vars_to_fix)
