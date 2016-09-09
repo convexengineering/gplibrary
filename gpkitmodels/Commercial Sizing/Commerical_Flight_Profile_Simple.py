@@ -196,7 +196,7 @@ class Climb1(Model):
     class to model the climb portion of a flight, applies to all climbs below
     10,000'
     """
-    def __init__(self, Nclimb1, **kwargs):
+    def __init__(self, Nclimb1, Ncruise2, **kwargs):
         #set the speed limit under 10,000'
         speedlimit = Variable('speedlimit', 'kts', 'Speed Limit Under 10,000 ft')
 
@@ -257,6 +257,8 @@ class Climb1(Model):
 
         TSFCc1 = VectorVariable(Nclimb1, 'TSFC_{c1}', '1/hr', 'Thrust Specific Fuel Consumption During Climb1')
         thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
+
+        thrustcr2 = VectorVariable(Ncruise2, 'thrust_{cr2}', 'N', 'Thrust During Cruise Segment #2')
         
         #non-GPkit variables
         #cruise 2 lsit
@@ -303,11 +305,10 @@ class Climb1(Model):
             #constrain the max wing loading
             WLoadClimb1 <= WLoadmax,
 
+            thrustc1 <= 2 * thrustcr2,
 
-            TSFCc1[0] == .5*units('1/hr'),
-            TSFCc1[1] == .5*units('1/hr'),
-            thrustc1[0] == 100000*units('N'),
-            thrustc1[1] == 100000*units('N'),
+            TSFCc1[0] == .7*units('1/hr'),
+            TSFCc1[1] == .7*units('1/hr'),
             ])
 
         for i in range(0, Nclimb1):
@@ -326,7 +327,7 @@ class Climb2(Model):
     """
     class to model the climb portion above 10,000'
     """
-    def __init__(self, Nclimb2, **kwargs):
+    def __init__(self, Nclimb2, Ncruise2, **kwargs):
         #aero
         CLClimb2 = VectorVariable(Nclimb2, 'C_{L_{Climb2}}', '-', 'Lift Coefficient')
         WLoadClimb2 = VectorVariable(Nclimb2, 'W_{Load_{Climb2}}', 'N/m^2', 'Wing Loading')
@@ -385,6 +386,8 @@ class Climb2(Model):
         TSFCc2 = VectorVariable(Nclimb2, 'TSFC_{c2}', '1/hr', 'Thrust Specific Fuel Consumption During Climb2')
         thrustc2 = VectorVariable(Nclimb2, 'thrust_{c2}', 'N', 'Thrust During Climb Segment #2')
 
+        thrustcr2 = VectorVariable(Ncruise2, 'thrust_{cr2}', 'N', 'Thrust During Cruise Segment #2')
+
         #non-GPkit variables
         #climb 2 lsit
         icl2 = map(int, np.linspace(0, Nclimb2 - 1, Nclimb2))
@@ -430,11 +433,10 @@ class Climb2(Model):
             #constrain the max wing loading
             WLoadClimb2 <= WLoadmax,
 
+            thrustc2 <= 1.5 * thrustcr2[0],
 
-            TSFCc2[0] == .5*units('1/hr'),
-            TSFCc2[1] == .5*units('1/hr'),
-            thrustc2[0] == 100000*units('N'),
-            thrustc2[1] == 100000*units('N'),
+            TSFCc2[0] == .65*units('1/hr'),
+            TSFCc2[1] == .6*units('1/hr'),
             ])
 
         for i in range(0, Nclimb2):
@@ -519,17 +521,10 @@ class Cruise2(Model):
         ReqRngCruise = Variable('ReqRngCruise', 'miles', 'Required Cruise Range')
         RngCruise2 = VectorVariable(Ncruise2, 'RngCruise2', 'miles', 'Segment Range During Cruise2')
 
-        #top of climb parameters for engine sizing
-        RCtoc = Variable('RC @ TOC', 'feet/min', 'Rate of Climb at Top of Climb')
-        Dtoc = Variable('Drag @ TOC', 'N', 'Drag at Top of Climb')
-        excessPtoc = Variable('Excess Power @ TOC', 'W', 'Excess Power at Top Of Climb')
-        Vtoc = Variable('V @ TOC', 'knots', 'Aircraft Flight Speed at TOC')
-        htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
-        CLtoc = Variable('C_{Ltoc}', '-', 'Lift Coefficient @ TOC')
-
         #altitude
         hCruise2 = VectorVariable(Ncruise2, 'hCruise2', 'm', 'Altitude [meters]')
         hftCruise2 = VectorVariable(Ncruise2, 'hftCruise2', 'feet', 'Altitude [feet]')
+        htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
 
         W_fuelCruise2 = VectorVariable(Ncruise2, 'W_{fuelCruise2}', 'N', 'Segment Fuel Weight')
         W_avgCruise2 = VectorVariable(Ncruise2, 'W_{avgCruise2}', 'N', 'Geometric Average of Segment Start and End Weight')
@@ -630,8 +625,8 @@ class CommercialAircraft(Model):
 
         #define all the submodels
         cmc = CommericalMissionConstraints(Nclimb1, Nclimb2, Ncruise2, False)
-        climb1 = Climb1(Nclimb1)
-        climb2 = Climb2(Nclimb2)
+        climb1 = Climb1(Nclimb1, Ncruise2)
+        climb2 = Climb2(Nclimb2, Ncruise2)
         cruise2 = Cruise2(Nclimb2, Ncruise2)
         atm = Atmosphere(Nclimb1+ Nclimb2 + Ncruise2)
         
