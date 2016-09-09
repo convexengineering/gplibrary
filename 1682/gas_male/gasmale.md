@@ -138,7 +138,7 @@ sol = M.solve("mosek") # check for solving errors
 
 ```python
 #inPDF: skip
-set objective to time on station after fixing variables
+# set objective to time on station after fixing variables
 del M.substitutions["t_{loiter}"]
 M.cost = 1/M["t_{loiter}"]
 

@@ -127,21 +127,23 @@ def plot_mission_var(model, sol, yvarname, ylim, yaxis_name=None):
     for key, value in sv.items():
         shape += key.descr["shape"][0]
         modelnum.append(key.descr["modelnums"][ind])
+        if key.descr["models"][ind] != "Loiter":
+            N = key.descr["shape"][0]
 
     y = np.zeros(shape)
     for key, value in sv.items():
         if key.descr["models"][ind] == "Climb":
             if key.descr["modelnums"][ind] == max(modelnum):
-                y[10:15] = value.magnitude[0:5]
+                y[2*N:3*N] = value.magnitude[0:]
             else:
-                y[0:5] = value.magnitude[0:5]
+                y[0:N] = value.magnitude[0:]
         elif key.descr["models"][ind] == "Cruise":
             if key.descr["modelnums"][ind] == max(modelnum):
-                y[35:40] = value.magnitude[0:5]
+                y[shape - N:shape] = value.magnitude[0:]
             else:
-                y[5:10] = value.magnitude[0:5]
+                y[N:2*N] = value.magnitude[0:]
         else:
-            y[15:35] = value.magnitude[0:20]
+            y[3*N:shape - N] = value.magnitude[0:]
 
     # define tick step on plot
     t = np.linspace(0, shape - 1, shape)
