@@ -18,14 +18,9 @@ class Atmosphere(Model):
         rho = Variable('\rho', 'kg/m^3', 'Density of air')
 
         h = Variable("h", "ft", "Altitude")
-        
 
         with SignomialsEnabled():
             constraints = [
-                h==10000*units.m,
-    
-                #h <= 20000*units.m,  # Model valid to top of troposphere
-
                 # Pressure-altitude relation
                 (p_atm/p_sl)**(1/TH) == T_atm/T_sl,
 
