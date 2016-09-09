@@ -1,5 +1,5 @@
 from gpkit import Variable, Model, units, SignomialsEnabled, SignomialEquality
-from gpkit.nomials import SignomialEqualityTriv, SignomialEqualityTrivTrust, SignomialEqualityLinTrust, SignomialEqualityLin
+##from gpkit.nomials import SignomialEqualityTriv, SignomialEqualityTrivTrust, SignomialEqualityLinTrust, SignomialEqualityLin
 from gpkit.constraints.set import ConstraintSet
 from gpkit import LinkedConstraintSet
 import numpy as np
@@ -63,17 +63,17 @@ class Weight(Model):
         W_airframe = Variable('W_{airframe}', 'lbf', 'Airframe weight')
         W_solar = Variable('W_{solar}', 'lbf', 'Solar panel weight')
         W_pay = Variable('W_{pay}', 10, 'lbf', 'Payload weight')
-        W_avionics = Variable('W_{avionics}', 8, 'lbf', 'avionics weight')
+        W_avionics = Variable('W_{avionics}', 8, 'lbf', 'avionics weight')  
         rho_solar = Variable(r'\rho_{solar}', 0.3, 'kg/m^2',
                              'Solar cell area density')
         f_airframe = Variable('f_{airframe}', 0.30, '-',
                               'Airframe weight fraction') # incl propulsion
         h_batt = Variable('h_{batt}', 350, 'W*hr/kg', 'Battery energy density')
 
-	coeff_airframe = Variable('coeff_af', 0.44, 'lbf/m^3.1', 'coefficient for airframe')
+        coeff_airframe = Variable('coeff_af', 0.44, 'lbf/m^3.1', 'coefficient for airframe')
 
         constraints = [#W_airframe >= coeff_airframe*S**1.55*AR**1.30,
-		       W_airframe >= W*f_airframe,
+               W_airframe >= W*f_airframe,
                        W_batt >= E_batt/h_batt*g,
                        W_solar >= rho_solar*g*S_solar,
                        W >= W_pay + W_solar + W_airframe + W_batt + W_avionics]
@@ -132,28 +132,28 @@ class Atmosphere(Model):
                 rho == p_atm/(R_atm/M_atm*T_atm),
 
                 # T_sl >= T_atm + L_atm*h,     # Temp decreases w/ altitude
-                SignomialEqualityTrivTrust(T_sl, T_atm + L_atm*h)]
+                SignomialEquality(T_sl, T_atm + L_atm*h)]
                 # http://en.wikipedia.org/wiki/Density_of_air#Altitude
                 #rho <= p_sl*T_atm**(TH-1)*M_atm/R_atm/(T_sl**TH)]
         constraints[4].trustregion = 0.999
-	Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, None, constraints, **kwargs)
 
 class StationKeeping(Model):
     def __init__(self, **kwargs):
 
         h_min = Variable('h_{min}', 11000, 'm', 'minimum altitude for GP fit')
-        h_max = Variable('h_{max}', 20000, 'm', 'maximum altitude for GP fit')
+        h_max = Variable('h_{max}', 14000, 'm', 'maximum altitude for GP fit')
         V_wind = Variable('V_{wind}', 26, 'm/s', 'wind speed')
 
         h_0 = Variable('h_0',1,'m','h0 for nondimensionalization')
         V_0 = Variable('V_0',1,'m/s','V0 for nondimensionalization')
 
-	with SignomialsEnabled():
-	    constraints = [h >= h_min,
-                       (2.63 * (h/h_0)**-0.162
-                        + 2.68 * (h/h_0)**-0.156
-                        + 2.37 * (h/h_0)**-0.178)/(V/V_0)**(0.131) <= 1,
-                       h <= h_max] # units?
+        with SignomialsEnabled():
+            constraints = [h >= h_min,
+                           (2.63 * (h/h_0)**-0.162
+                            + 2.68 * (h/h_0)**-0.156
+                            + 2.37 * (h/h_0)**-0.178)/(V/V_0)**(0.131) <= 1,
+                           h <= h_max] # units?
         Model.__init__(self, None, constraints, **kwargs)
 
 class SolarHALE(Model):
