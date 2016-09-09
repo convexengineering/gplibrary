@@ -96,6 +96,9 @@ class CommericalMissionConstraints(Model):
 
         #aircraft geometry
         S = Variable('S', 'm^2', 'Wing Planform Area')
+        AR = Variable('AR', '-', 'Aspect Ratio')
+        span = Variable('span', 'm', 'Wing Span')
+        span_max = Variable('span_{max}', 'm', 'Max Wing Span')
 
         #number of engines
         numeng = Variable('numeng', '-', 'Number of Engines')
@@ -139,6 +142,10 @@ class CommericalMissionConstraints(Model):
             #wing weight constraint
             #based off of a raymer weight and 737 data from TASOPT output file
             (S/(124.58*units('m^2')))**.65 == W_wing/(105384.1524*units('N')),
+
+            #compute wing span and aspect ratio, subject to a span constraint
+            AR == (span**2)/S,
+            span <= span_max,
 
             W_e == .75*W_payload,
 
@@ -488,6 +495,8 @@ class Cruise2(Model):
         Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
         Cdfuse = Variable('C_{d_fuse}', '-', 'Fuselage Drag Coefficient')
         K = Variable('K', '-', 'K for Parametric Drag Model')
+        e = Variable('e', '-', 'Oswald Span Efficiency Factor')
+        AR = Variable('AR', '-', 'Aspect Ratio')
 
         #atmosphere
         aCruise2 = VectorVariable(Ncruise2, 'aCruise2', 'm/s', 'Speed of Sound')
@@ -559,6 +568,8 @@ class Cruise2(Model):
             TCS([DCruise2[izbre] >= (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2) *
                  (Cd0 + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre]* VCruise2[izbre]**2))**2)
                  + Cdfuse * (.5 * A_fuse * rhoCruise2[izbre] * VCruise2[izbre]**2)]),
+
+            K == (3.14 * e * AR)**-1,
             
             DCruise2[izbre] == numeng * thrustcr2[izbre],
 
@@ -653,6 +664,8 @@ class CommercialAircraft(Model):
             'n_{pax}': 150,
             'pax_{area}': 1,
             'C_{d_fuse}': .005, #assumes turbulent flow, from wikipedia
+            'e': .9,
+            'span_{max}': 35,
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
