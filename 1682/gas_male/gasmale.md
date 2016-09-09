@@ -138,7 +138,7 @@ sol = M.solve("mosek") # check for solving errors
 
 ```python
 #inPDF: skip
-# set objective to time on station after fixing variables
+set objective to time on station after fixing variables
 del M.substitutions["t_{loiter}"]
 M.cost = 1/M["t_{loiter}"]
 
@@ -170,9 +170,45 @@ for var, fig in zip(altitude_vars, figs):
 \input{tex/t_vs_Vwind.fig.generated.tex}
 \input{tex/tloiter_vs_altitude.fig.generated.tex}
 
+## Flight Profile
 
+By further discritizing the climb, cruise, and loiter mission segments the following figures were generated to follow the performance over the duration of the mission. 
 
+```python
+#inPDF: skip
+from plotting import plot_mission_var
 
+Mprof = GasMALE(DF70=True, discrit=True)
+Mprof.substitutions.update({"t_{loiter}": 6})
+Mprof.cost = Mprof["MTOW"]
+sol = Mprof.solve("mosek")
 
+# plot mission profiles
+fig, ax = plot_mission_var(Mprof, sol, "V", [0, 40])
+gen_tex_fig(fig, "profilevs_velocity")
 
+fig, ax = plot_mission_var(Mprof, sol, "\\eta_{prop}", [0, 1])
+gen_tex_fig(fig, "profilevs_etaprop")
 
+fig, ax = plot_mission_var(Mprof, sol, "BSFC", [0, 2])
+gen_tex_fig(fig, "profilevs_BSFC")
+
+fig, ax = plot_mission_var(Mprof, sol, "P_{shaft-max}", [0, 5])
+gen_tex_fig(fig, "profilevs_Pshaftmax")
+
+fig, ax = plot_mission_var(Mprof, sol, "P_{shaft-tot}", [0, 5])
+gen_tex_fig(fig, "profilevs_Pshafttot")
+
+fig, ax = plot_mission_var(Mprof, sol, "RPM", [0, 9000])
+gen_tex_fig(fig, "profilevs_RPM")
+
+fig, ax = plot_mission_var(Mprof, sol, "W_{end}", [0, 150], "aircraft weight [lbf]")
+gen_tex_fig(fig, "profilevs_weight")
+```
+\input{tex/profilevs_velocity.fig.generated.tex}
+\input{tex/profilevs_etaprop.fig.generated.tex}
+\input{tex/profilevs_BSFC.fig.generated.tex}
+\input{tex/profilevs_Pshaftmax.fig.generated.tex}
+\input{tex/profilevs_Pshafttot.fig.generated.tex}
+\input{tex/profilevs_RPM.fig.generated.tex}
+\input{tex/profilevs_weight.fig.generated.tex}

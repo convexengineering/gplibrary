@@ -9,14 +9,21 @@ from gpkit.tools import te_exp_minus1
 PLOT = False
 
 class Mission(Model):
-    def __init__(self, h_station, wind, DF70, **kwargs):
+    def __init__(self, h_station, wind, DF70, discrit, **kwargs):
+
+        if discrit:
+            N = 5
+            Nl = 20
+        else:
+            N = 1
+            Nl = 5
 
         self.submodels = [
-            Climb(1, [0.502], [5000], False, wind, 5000, DF70),
-            Cruise(1, [0.684], [5000], False, wind, 180, DF70),
-            Climb(1, [0.567], [h_station], False, wind, 10000, DF70),
-            Loiter(5, [0.647]*5, [h_station]*5, True, wind, DF70),
-            Cruise(1, [0.684], [5000], False, wind, 200, DF70)]
+            Climb(N, [0.502]*N, [5000]*N, False, wind, 5000, DF70),
+            Cruise(N, [0.684]*N, [5000]*N, False, wind, 180, DF70),
+            Climb(N, [0.567]*N, [h_station]*N, False, wind, 10000, DF70),
+            Loiter(Nl, [0.647]*Nl, [h_station]*Nl, True, wind, DF70),
+            Cruise(N, [0.684]*N, [5000]*N, False, wind, 200, DF70)]
 
         mtow = Variable("MTOW", "lbf", "max take off weight")
         W_zfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
@@ -600,9 +607,10 @@ class GasMALE(Model):
     possible.  Model should be combed for variables that are incorrectly
     fixed.
     """
-    def __init__(self, h_station=15000, wind=False, DF70=False, **kwargs):
+    def __init__(self, h_station=15000, wind=False, DF70=False,
+                 discrit=False, **kwargs):
 
-        mission = Mission(h_station, wind, DF70)
+        mission = Mission(h_station, wind, DF70, discrit)
         weight = Weight(DF70)
         fuselage = Fuselage()
         structures = Structures()

@@ -1,5 +1,3 @@
-from gas_male_fixCDR import GasMALEFixedEngine
-from gas_male_discritized_climb import GasMALEDiscritizedClimb
 from gpkit.small_scripts import unitstr
 from gasmale import GasMALE
 import numpy as np
@@ -105,7 +103,7 @@ def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
     return figures, axis
 
 
-def plot_mission_var(model, yvarname, ylim, yaxis_name=None):
+def plot_mission_var(model, sol, yvarname, ylim, yaxis_name=None):
     """
     Plots a mission varible against mission time.
 
@@ -119,26 +117,47 @@ def plot_mission_var(model, yvarname, ylim, yaxis_name=None):
              by mission profile inhereint in model.
     """
 
-    # solve model
-    sol = model.solve("mosek")
+    sv = sol(yvarname)
+    for seg in ["Loiter", "Cruise", "Climb"]:
+        if seg in sv.items()[0][0].descr["models"]:
+            ind = sv.items()[0][0].descr["models"].index(seg)
 
-    y = sol(yvarname).magnitude
+    shape = 0
+    modelnum = []
+    for key, value in sv.items():
+        shape += key.descr["shape"][0]
+        modelnum.append(key.descr["modelnums"][ind])
+
+    y = np.zeros(shape)
+    for key, value in sv.items():
+        if key.descr["models"][ind] == "Climb":
+            if key.descr["modelnums"][ind] == max(modelnum):
+                y[10:15] = value.magnitude[0:5]
+            else:
+                y[0:5] = value.magnitude[0:5]
+        elif key.descr["models"][ind] == "Cruise":
+            if key.descr["modelnums"][ind] == max(modelnum):
+                y[35:40] = value.magnitude[0:5]
+            else:
+                y[5:10] = value.magnitude[0:5]
+        else:
+            y[15:35] = value.magnitude[0:20]
 
     # define tick step on plot
-    t = np.linspace(0, model.NSeg - 1, model.NSeg)
+    t = np.linspace(0, shape - 1, shape)
 
     # create plot
     fig, ax = plt.subplots()
     line, = ax.plot(t, y)
 
     # label time axis
-    ax.xaxis.set_ticks(np.arange(0, model.NSeg-1, 1))
+    ax.xaxis.set_ticks(np.arange(0, shape - 1, 1))
     labels = [item.get_text() for item in ax.get_xticklabels()]
-    labels[model.mStart + np.round(model.NClimb1/2)] = 'Climb'
-    labels[model.mEndClimb + np.round(model.NCruise1/2)] = 'Cruise'
-    labels[model.mEndCruise + np.round(model.NClimb2/2)] = 'Climb'
-    labels[model.mEndClimb2 + np.round(model.NLoiter/2)] = 'Loiter'
-    labels[model.mEndLoiter + np.round(model.NCruise2/2)] = 'Cruise'
+    labels[2] = 'Climb'
+    labels[7] = 'Cruise'
+    labels[12] = 'Climb'
+    labels[25] = 'Loiter'
+    labels[37] = 'Cruise'
     ax.set_xticklabels(labels)
 
     # mark mission profile changes
@@ -146,16 +165,13 @@ def plot_mission_var(model, yvarname, ylim, yaxis_name=None):
     if yaxis_name:
         ax.set_ylabel(yaxis_name)
     else:
-        ax.set_ylabel("%s [%s]" % (model[yvarname][0].descr["label"],
-                                   unitstr(model[yvarname][0].units)))
+        ax.set_ylabel("%s [%s]" %
+                      (model.variables_byname(yvarname)[0].descr["label"],
+                       unitstr(model.variables_byname(yvarname)[0].units)))
     ax.grid()
-    ax.plot([model.mEndClimb - 1, model.mEndClimb - 1],
-            [ylim[0], ylim[1]], '--', color='r')
-    ax.plot([model.mEndCruise - 1, model.mEndCruise - 1],
-            [ylim[0], ylim[1]], '--', color='r')
-    ax.plot([model.mEndClimb2 - 1, model.mEndClimb2 - 1],
-            [ylim[0], ylim[1]], '--', color='r')
-    ax.plot([model.mEndLoiter - 1, model.mEndLoiter - 1],
-            [ylim[0], ylim[1]], '--', color='r')
+    ax.plot([4, 4], [ylim[0], ylim[1]], '--', color='r')
+    ax.plot([9, 9], [ylim[0], ylim[1]], '--', color='r')
+    ax.plot([14, 14], [ylim[0], ylim[1]], '--', color='r')
+    ax.plot([34, 34], [ylim[0], ylim[1]], '--', color='r')
 
     return fig, ax
