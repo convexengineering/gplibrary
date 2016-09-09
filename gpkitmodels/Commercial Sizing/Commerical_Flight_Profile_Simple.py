@@ -171,7 +171,9 @@ class CommericalMissionConstraints(Model):
                     ])
             for i in range(0, Nclimb1):
                 constraints.extend([
-                    SignomialEquality(hftClimb1[i], 1500*units('ft')+(i+1)*dhftClimb1[i]),
+##                    SignomialEquality(hftClimb1[i], 1500*units('ft')+(i+1)*dhftClimb1[i]),
+                    TCS([hftClimb1[i]<=(i+1)*dhftClimb1[i] + 1500*units('ft')]),
+                    hftClimb1[i] <= 100*units('ft'),
                     #constrain the geometric weight average
                     W_avgClimb1[i] == (W_startClimb1[i]*W_endClimb1[i])**.5,
                     TCS([W_startClimb1[i] >= W_endClimb1[i] + W_fuelClimb1[i]]),
@@ -194,7 +196,9 @@ class CommericalMissionConstraints(Model):
 
             for i in range(0, Nclimb2):
                 constraints.extend([
-                    SignomialEquality(hftClimb2[i], 10000*units('ft')+(i+1)*dhftClimb2[i]),
+##                    SignomialEquality(hftClimb2[i], 10000*units('ft')+(i+1)*dhftClimb2[i]),
+                    TCS([hftClimb2[i] <= 10000*units('ft')+(i+1)*dhftClimb2[i]]),
+                    hftClimb2[i] >= 10*units('ft'),
                     W_avgClimb2[i] == (W_startClimb2[i]*W_endClimb2[i])**.5,
                     TCS([W_startClimb2[i] >= W_endClimb2[i] + W_fuelClimb2[i]]),
                     ])
