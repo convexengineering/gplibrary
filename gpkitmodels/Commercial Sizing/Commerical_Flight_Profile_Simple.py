@@ -511,9 +511,6 @@ class Cruise2(Model):
         #defined here for linking purposes
         T0 = Variable('T_0', 'K', 'Free Stream Stagnation Temperature')
         P0 = Variable('P_0', 'kPa', 'Free Stream Static Pressure')
-        Fd = Variable('F_D', 'N', 'Design Thrust')
-
-        Tt4 = Variable('T_{t_4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')
 
         #parameter to make breguent range eqn gp compatible
         z_brec2 = VectorVariable(Ncruise2, 'z_{brec2}', '-', 'Breguet Parameter')
@@ -548,17 +545,6 @@ class Cruise2(Model):
 
             MCruise2 * aCruise2 == VCruise2,
             
-##                P0 == p[Nclimb],
-            T0 == 280*units('K'),
-            
-             #climb rate constraints for engine sizing at TOC
-##            excessPtoc+Vtoc*Dtoc  <= numeng*Fd*Vtoc,
-##            RCtoc == excessPtoc/W_avgClimb2[Nclimb2-1],
-##            RCtoc == 500*units('ft/min'),
-##            Vtoc == VCruise2[0],
-
-            #compute the drag
-##            TCS([Dtoc >= (.5*S*rhoCruise2[0]*Vtoc**2)*(Cd0 + K*(W_avgClimb2[Nclimb2-1]/(.5*S*rhoCruise2[0]*Vtoc**2))**2)]),
             TCS([DCruise2[izbre] >= (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2) * (Cd0 + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2))**2)]),
             DCruise2[izbre] == numeng * thrustcr2[izbre],
 
@@ -648,13 +634,7 @@ class CommercialAircraft(Model):
         climb2 = Climb2(Nclimb2)
         cruise2 = Cruise2(Nclimb2, Ncruise2)
         atm = Atmosphere(Nclimb1+ Nclimb2 + Ncruise2)
-        eonD = EngineOnDesign()
-        eoffD = EngineOffDesign()
-        eoffD2 = EngineOffDesign2()
-        eoffD3 = EngineOffDesign3()
-        eoffD4 = EngineOffDesign4()
-        eoffD5 = EngineOffDesign5()
-        eoffD6 = EngineOffDesign6()
+        
         for i in range(Nseg):
             None
  
@@ -669,38 +649,16 @@ class CommercialAircraft(Model):
             'numeng': 2,
             'dh_{climb2}': hcruise-10000,
             'W_{Load_max}': 6664,
-##            'W_{engine}': 1000,
-
-            #substitutions for global engine variables
-            'G_f': 1,
-            'N_{{bar}_Df}': 1,
-            'T_{ref}': 288.15,
-            'P_{ref}': 101.325,
-            '\pi_{d}': .99,
-            '\pi_{fn}': .98,
-            '\pi_{tn}': .99,
-            '\pi_{b}': .94,
-            '\pi_{f_D}': 1.5,
-            '\pi_{lc_D}': 3,
-            '\pi_{hc_D}': 10
+            'W_{engine}': 1000,
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
         self.submodels = [cmc, climb1, climb2, cruise2, atm]#, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
 
         constraints = ConstraintSet([self.submodels])
-        print cruise2["TSFC_{cr2}"][0]
-        print eoffD5["TSFC_E5"]
-        print cruise2['thrust_{cr2}'][0]
-        print eoffD5["F_{spec5}"],
-        subs = {climb1["TSFC_{c1}"][0]: eoffD["TSFC_E"], climb1["thrust_{c1}"][0]: eoffD["F"],
-                                climb1["TSFC_{c1}"][1]: eoffD2["TSFC_E2"], climb1["thrust_{c1}"][1]: eoffD2["F_2"],
-                                climb2["thrust_{c2}"][0]: eoffD3["F_3"], climb2["TSFC_{c2}"][0]: eoffD3["TSFC_E3"],
-                                climb2["thrust_{c2}"][1]: eoffD4["F_4"], climb2["TSFC_{c2}"][1]: eoffD4["TSFC_E4"],
-                                cruise2["TSFC_{cr2}"][0]: eoffD5["TSFC_E5"], cruise2['thrust_{cr2}'][0]: eoffD5["F_{spec5}"],
-                                cruise2["TSFC_{cr2}"][1]: eoffD6["TSFC_E6"], cruise2['thrust_{cr2}'][1]: eoffD6["F_{spec6}"],
-                                climb1["MClimb1"][0]: eoffD["M_0_1"], climb1["MClimb1"][1]: eoffD2["M_0_2"], climb2["MClimb2"][0]: eoffD3["M_0_3"], climb2["MClimb2"][1]: eoffD4["M_0_4"]}
-        
+
+        subs= {}
+     
         for i in range(Nclimb1):
             subs.update({
                 climb1["\rhoClimb1"][i]: atm["\rho"][i], climb1["TClimb1"][i]: atm["T"][i]
@@ -719,22 +677,7 @@ class CommercialAircraft(Model):
 
         constraints.subinplace(subs)
         
-        lc = LinkedConstraintSet(constraints, exclude={'T_0', 'P_0', 'M_0', 'a_0', 'u_0', 'P_{t_0}', 'T_{t_0}', 'h_{t_0}', 'P_{t_1.8}',
-                                                       'T_{t_1.8}', 'h_{t_1.8}', 'P_{t_2}', 'T_{t_2}', 'h_{t_2}', 'P_{t_2.1}','T_{t_2.1}',
-                                                       'h_{t_2.1}', 'P_{t_2.5}', 'T_{t_2.5}', 'h_{t_2.5}', 'P_{t_3}', 'T_{t_3}',
-                                                       'h_{t_3}','P_{t_7}', 'T_{t_7}', 'h_{t_7}', '\pi_f','\pi_{lc}','\pi_{hc}', 'P_{t_4}'
-                                                       ,'h_{t_4}','T_{t_4}','P_{t_4.1}','T_{t_4.1}','h_{t_4.1}','f','h_{t_4.5}',
-                                                       'P_{t_4.5}','T_{t_4.5}','P_{t_4.9}','T_{t_4.9}','h_{t_4.9}','P_{t_5}','T_{t_5}',
-                                                       'h_{t_5}','\pi_{HPT}','\pi_{LPT}','P_8','P_{t_8}','h_{t_8}','h_8','T_{t_8}',
-                                                       'T_{8}','P_6','P_{t_6}','T_{t_6}','T_{6}','h_{t_6}','h_6','F_8','F_6','F','F_{sp}'
-                                                       ,'I_{sp}','TSFC_E','u_6','u_8','m_{core}','T_2','P_2','u_2','\rho_2.5','T_{2.5}',
-                                                       'P_{2.5}','P_{t_2.5}','u_{2.5}','T_{t_2.5}','h_{t_2.5}','h_{2.5}','M_8','M_6',
-                                                       'M_5','M_7','M_2','M_{2.5}','F_{sp}','T_{2}','h_{2}','T_{6}','T_{8}','T_{5}',
-                                                       'T_{7}','P_{5}','P_0','fp1','u_7','\rho_7','u_5','\rho_5','m_{f}','m_{fan}',
-                                                       'm_{tild_f}','p_{tildf}','N_f','m_{{tild}_sf}','p_{{tild}_sf}','N_1','m_{lc}',
-                                                        'm_{hc}','u_7','M_7','\rho_7','P_{5}','T_{5}','M_5','u_5','\rho_5','T_{t_{4spec}}'
-                                                        ,'m_{tild_hc}','p_{tild_lc}','N_2','m_{{tild}_shc}','p_{{tild}_shc}','m_{tild_lc}'
-                                                        ,'p_{tild_lc}','m_{{tild}_slc}','p_{{tild}_slc}','P_{7}', 'F_{spec}'})
+        lc = LinkedConstraintSet(constraints)
 
         Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
 
