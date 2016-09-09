@@ -89,6 +89,10 @@ class CommericalMissionConstraints(Model):
         W_fuelCruise2 = VectorVariable(Ncruise2, 'W_{fuelCruise2}', 'N', 'Segment Fuel Weight')
         W_endCruise2 = VectorVariable(Ncruise2, 'W_{endCruise2}', 'N', 'Segment End Weight')
         W_avgCruise2 = VectorVariable(Ncruise2, 'W_{avgCruise2}', 'N', 'Geometric Average of Segment Start and End Weight')
+        W_pax = Variable('W_{pax}', 'N', 'Estimated Average Passenger Weight, Includes Baggage')
+
+        #number of passengers
+        n_pax = Variable('n_{pax}', '-', 'Number of Passengers to Carry')
 
         #aircraft geometry
         S = Variable('S', 'm^2', 'Wing Planform Area')
@@ -107,6 +111,9 @@ class CommericalMissionConstraints(Model):
         gamma = Variable('\gamma', 1.4, '-', 'Air Specific Heat Ratio')
         R = Variable('R', 287, 'J/kg/K', 'Gas Constant for Air')
 
+        #Fuselage area
+        A_fuse = Variable('A_{fuse}', 'm^2', 'Estimated Fuselage Area')
+        pax_area = Variable('pax_{area}', 'm^2', 'Estimated Fuselage Area per Passenger')
         
         constraints = []
         constraints.extend([
@@ -117,7 +124,8 @@ class CommericalMissionConstraints(Model):
             
             
             #constraints on the various weights
-            #with engine weight
+            W_payload == n_pax * W_pax,
+            
             TCS([W_e + W_payload + W_ftotal + numeng * W_engine + W_wing <= W_total]),
  
             W_startClimb1[0]  == W_total,
@@ -133,6 +141,10 @@ class CommericalMissionConstraints(Model):
             (S/(124.58*units('m^2')))**.65 == W_wing/(105384.1524*units('N')),
 
             W_e == .75*W_payload,
+
+            #compute fuselage area for drag approximation
+            A_fuse == pax_area * n_pax,
+            
             ])
         
         with gpkit.SignomialsEnabled():
@@ -474,6 +486,7 @@ class Cruise2(Model):
         DCruise2 = VectorVariable(Ncruise2, 'DragCruise2', 'N', 'Drag')
         Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
         Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+        Cdfuse = Variable('C_{d_fuse}', '-', 'Fuselage Drag Coefficient')
         K = Variable('K', '-', 'K for Parametric Drag Model')
 
         #atmosphere
@@ -531,6 +544,9 @@ class Cruise2(Model):
         W_avgClimb2 = VectorVariable(Nclimb2, 'W_{avgClimb2}', 'N', 'Geometric Average of Segment Start and End Weight')
         W_endCruise2 = VectorVariable(Ncruise2, 'W_{endCruise2}', 'N', 'Segment End Weight')
 
+        #Fuselage area
+        A_fuse = Variable('A_{fuse}', 'm^2', 'Estimated Fuselage Area')
+
         #non-GPkit variables
         #cruise 2 lsit
         izbre = map(int, np.linspace(0, Ncruise2 - 1, Ncruise2))
@@ -540,7 +556,10 @@ class Cruise2(Model):
 
             MCruise2 * aCruise2 == VCruise2,
             
-            TCS([DCruise2[izbre] >= (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2) * (Cd0 + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2))**2)]),
+            TCS([DCruise2[izbre] >= (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2) *
+                 (Cd0 + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre]* VCruise2[izbre]**2))**2)
+                 + Cdfuse * (.5 * A_fuse * rhoCruise2[izbre] * VCruise2[izbre]**2)]),
+            
             DCruise2[izbre] == numeng * thrustcr2[izbre],
 
             W_avgCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2,
@@ -564,8 +583,6 @@ class Cruise2(Model):
 
             TSFCcr2[0] == .5*units('1/hr'),
             TSFCcr2[1] == .5*units('1/hr'),
-##            thrustcr2[0] == 100000*units('N'),
-##            thrustcr2[1] == 100000*units('N'),
             ])
         
         #constraint on the aircraft meeting the required range
@@ -601,27 +618,15 @@ class CommercialAircraft(Model):
     """
     def __init__(self, **kwargs):
         #defining the number of segments
-        Ntakeoff = 0
         Nclimb1 = 2
         Nclimb2 = 2
-        Ncruise1 = 0
-        Ncruiseclimb = 0
         Ncruise2 = 2
-        Ndecent = 0
-        Nlanding = 0
-
-        #segments below here that start with res --> fuel reserves
-        Nresclimb = 0
-        Nresdecent = 0
-        Nreslanding = 0
-        Nreshold = 0
 
         #total number of flight segments in each category, possibly useful
-        Nclimb = Nclimb1 + Nclimb2 + Ncruiseclimb
-        Ncruise = Ncruise1 + Ncruise2
-        Nres = Nresclimb + Nresdecent + Nreslanding + Nreshold
+        Nclimb = Nclimb1 + Nclimb2
+        Ncruise = Ncruise2
 
-        Nseg = Nclimb + Ncruise + Nres + Ntakeoff + Ndecent + Nlanding
+        Nseg = Nclimb + Ncruise
 
         #define all the submodels
         cmc = CommericalMissionConstraints(Nclimb1, Nclimb2, Ncruise2, False)
@@ -634,7 +639,6 @@ class CommercialAircraft(Model):
             None
  
         substitutions = {      
-            'W_{payload}': .6*44000*9.8*units('N'),
             'V_{stall}': 120,
             'ReqRng': 1000,
             'C_{d_0}': .02,
@@ -645,6 +649,10 @@ class CommercialAircraft(Model):
             'dh_{climb2}': hcruise-10000,
             'W_{Load_max}': 6664,
             'W_{engine}': 1000,
+            'W_{pax}': 91 * 9.81,
+            'n_{pax}': 150,
+            'pax_{area}': 1,
+            'C_{d_fuse}': .005, #assumes turbulent flow, from wikipedia
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
