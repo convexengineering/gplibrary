@@ -88,8 +88,6 @@ class Fuselage(CostedConstraintSet):
                             'Proportion of passengers with two suitcases')
         fpadd    = Variable('f_{padd}', '-',
                             'Other misc weight as fraction of payload weight')
-        fseat    = Variable('f_{seat}', '-',
-                            'Seat weight as fraction of payload weight')
         fstring  = Variable('f_{string}', '-','Fractional weight of stringers')
         g        = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
         hfloor   = Variable('h_{floor}', 'm', 'Floor beam height')
@@ -330,7 +328,6 @@ class Fuselage(CostedConstraintSet):
                          'f_{lugg,1}': 0.4,
                          'f_{lugg,2}': 0.1,
                          'f_{padd}': 0.4, # [TAS]
-                         'f_{seat}': 0.10,
                          'f_{string}': 0.35, # [TAS]
                          'n_{seat}': 186,
                          'p_s': 31,
@@ -338,9 +335,7 @@ class Fuselage(CostedConstraintSet):
                          'r_E': 1.0, # [TAS]
                          'w_{aisle}': 0.51, # Boeing
                          'w_{seat}': 0.5,
-                         'w_{sys}': 0.10,
-                         'xapu': 120,
-                         'xfix': 2.1
+                         'w_{sys}': 0.10
                         }
 
         return substitutions
@@ -368,6 +363,7 @@ class Fuselage(CostedConstraintSet):
         linkedsubs = ['L_{v_{max}}', 'V_{\\infty}', 'b_{vt}', 'c_{vt}']
         substitutions = {key: value for key, value in dsubs.items()
                                     if key not in linkedsubs}
+        substitutions.update({'xfix': 2.1, 'xapu': 120})
 
         m = Model(ccs.cost, constraints, substitutions, name='Fuselage')
         return m
