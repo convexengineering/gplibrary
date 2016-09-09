@@ -234,6 +234,8 @@ class Climb1(Model):
         Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
         Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
         K = Variable('K', '-', 'K for Parametric Drag Model')
+        e = Variable('e', '-', 'Oswald Span Efficiency Factor')
+        AR = Variable('AR', '-', 'Aspect Ratio')
 
         #aircraft geometry
         S = Variable('S', 'm^2', 'Wing Planform Area')
@@ -299,6 +301,7 @@ class Climb1(Model):
             TCS([excessPclimb1[icl1]+VClimb1[icl1]*DClimb1[icl1] <= VClimb1[icl1]*numeng*thrustc1[icl1]]),
             
             TCS([DClimb1[icl1] >= (.5*S*rhoClimb1[icl1]*VClimb1[icl1]**2)*(Cd0 + K*CLClimb1[icl1]**2)]),
+            K == (3.14 * e * AR)**-1,
             RCClimb1[icl1] == excessPclimb1[icl1]/W_avgClimb1[icl1],
             RCClimb1[icl1] >= 500*units('ft/min'),
             
@@ -355,7 +358,9 @@ class Climb2(Model):
         Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
         Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
         K = Variable('K', '-', 'K for Parametric Drag Model')
-
+        e = Variable('e', '-', 'Oswald Span Efficiency Factor')
+        AR = Variable('AR', '-', 'Aspect Ratio')
+        
         #atmosphere
         aClimb2 = VectorVariable(Nclimb2, 'aClimb2', 'm/s', 'Speed of Sound')
         rhoClimb2 = VectorVariable(Nclimb2, '\rhoClimb2', 'kg/m^3', 'Air Density')
@@ -427,6 +432,7 @@ class Climb2(Model):
             #climb rate constraints
             TCS([excessPclimb2[icl2]+VClimb2[icl2]*DClimb2[icl2] <= VClimb2[icl2]*numeng*thrustc2[icl2]]),
             TCS([DClimb2[icl2] >= (.5*S*rhoClimb2[icl2]*VClimb2[icl2]**2)*(Cd0 + K*CLClimb2[icl2]**2)]),
+            K == (3.14 * e * AR)**-1,
             RCClimb2[icl2] == excessPclimb2[icl2]/W_avgClimb2[icl2],
             RCClimb2[icl2] >= 500*units('ft/min'),
             
@@ -492,7 +498,9 @@ class Cruise2(Model):
         WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
         DCruise2 = VectorVariable(Ncruise2, 'DragCruise2', 'N', 'Drag')
         Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
-        Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+##        Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+        Cdw = VectorVariable(Ncruise2, 'C_{d_w}', '-', 'Cd for a NC130 Airfoil at Re=2e7')
+        cdp_r = VectorVariable(Ncruise2, 'cdp_r', '-', 'Hold Variable for Drag Fit')
         Cdfuse = Variable('C_{d_fuse}', '-', 'Fuselage Drag Coefficient')
         K = Variable('K', '-', 'K for Parametric Drag Model')
         e = Variable('e', '-', 'Oswald Span Efficiency Factor')
@@ -566,10 +574,17 @@ class Cruise2(Model):
             MCruise2 * aCruise2 == VCruise2,
             
             TCS([DCruise2[izbre] >= (.5 * S * rhoCruise2[izbre] * VCruise2[izbre]**2) *
-                 (Cd0 + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre]* VCruise2[izbre]**2))**2)
+                 (Cdw[izbre] + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre]* VCruise2[izbre]**2))**2)
                  + Cdfuse * (.5 * A_fuse * rhoCruise2[izbre] * VCruise2[izbre]**2)]),
 
             K == (3.14 * e * AR)**-1,
+
+            cdp_r[izbre] >= (1.02458748e10 * CLCruise2[izbre]**15.587947404823325 * MCruise2[izbre]**156.86410659495155 +
+                2.85612227e-13 * CLCruise2[izbre]**1.2774976672501526 * MCruise2[izbre]**6.2534328002723703 +
+                2.08095341e-14 * CLCruise2[izbre]**0.8825277088649582 * MCruise2[izbre]**0.0273667615730107 +
+                1.94411925e+06 * CLCruise2[izbre]**5.6547413360261691 * MCruise2[izbre]**146.51920742858428),
+
+            Cdw[izbre]**6.5 >= cdp_r[izbre],
             
             DCruise2[izbre] == numeng * thrustcr2[izbre],
 
