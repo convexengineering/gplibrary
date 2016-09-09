@@ -232,7 +232,9 @@ class Climb1(Model):
         WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
         DClimb1 = VectorVariable(Nclimb1, 'DragClimb1', 'N', 'Drag')
         Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
-        Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+        Cdw = VectorVariable(Ncruise2, 'C_{d_w}', '-', 'Cd for a NC130 Airfoil at Re=2e7')
+        cdp_r = VectorVariable(Ncruise2, 'cdp_r', '-', 'Hold Variable for Drag Fit')
+        Cdfuse = Variable('C_{d_fuse}', '-', 'Fuselage Drag Coefficient')
         K = Variable('K', '-', 'K for Parametric Drag Model')
         e = Variable('e', '-', 'Oswald Span Efficiency Factor')
         AR = Variable('AR', '-', 'Aspect Ratio')
@@ -280,6 +282,9 @@ class Climb1(Model):
         thrustc1 = VectorVariable(Nclimb1, 'thrust_{c1}', 'N', 'Thrust During Climb Segment #1')
 
         thrustcr2 = VectorVariable(Ncruise2, 'thrust_{cr2}', 'N', 'Thrust During Cruise Segment #2')
+
+        #Fuselage area
+        A_fuse = Variable('A_{fuse}', 'm^2', 'Estimated Fuselage Area')
         
         #non-GPkit variables
         #cruise 2 lsit
@@ -300,8 +305,17 @@ class Climb1(Model):
             #climb rate constraints
             TCS([excessPclimb1[icl1]+VClimb1[icl1]*DClimb1[icl1] <= VClimb1[icl1]*numeng*thrustc1[icl1]]),
             
-            TCS([DClimb1[icl1] >= (.5*S*rhoClimb1[icl1]*VClimb1[icl1]**2)*(Cd0 + K*CLClimb1[icl1]**2)]),
+            TCS([DClimb1[icl1] >= (.5*S*rhoClimb1[icl1]*VClimb1[icl1]**2)*(Cdw[icl1] + K*CLClimb1[icl1]**2) + Cdfuse * (.5 * A_fuse * rhoClimb1[icl1] * VClimb1[icl1]**2)]),
+            
             K == (3.14 * e * AR)**-1,
+            
+            cdp_r[icl1] >= (1.02458748e10 * CLClimb1[icl1]**15.587947404823325 * MClimb1[icl1]**156.86410659495155 +
+                2.85612227e-13 * CLClimb1[icl1]**1.2774976672501526 * MClimb1[icl1]**6.2534328002723703 +
+                2.08095341e-14 * CLClimb1[icl1]**0.8825277088649582 * MClimb1[icl1]**0.0273667615730107 +
+                1.94411925e+06 * CLClimb1[icl1]**5.6547413360261691 * MClimb1[icl1]**146.51920742858428),
+
+            Cdw[icl1]**6.5 >= cdp_r[icl1],
+            
             RCClimb1[icl1] == excessPclimb1[icl1]/W_avgClimb1[icl1],
             RCClimb1[icl1] >= 500*units('ft/min'),
             
@@ -356,7 +370,9 @@ class Climb2(Model):
         WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
         DClimb2 = VectorVariable(Nclimb2, 'DragClimb2', 'N', 'Drag')
         Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
-        Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
+        Cdw = VectorVariable(Ncruise2, 'C_{d_w}', '-', 'Cd for a NC130 Airfoil at Re=2e7')
+        cdp_r = VectorVariable(Ncruise2, 'cdp_r', '-', 'Hold Variable for Drag Fit')
+        Cdfuse = Variable('C_{d_fuse}', '-', 'Fuselage Drag Coefficient')
         K = Variable('K', '-', 'K for Parametric Drag Model')
         e = Variable('e', '-', 'Oswald Span Efficiency Factor')
         AR = Variable('AR', '-', 'Aspect Ratio')
@@ -412,6 +428,9 @@ class Climb2(Model):
 
         thrustcr2 = VectorVariable(Ncruise2, 'thrust_{cr2}', 'N', 'Thrust During Cruise Segment #2')
 
+        #Fuselage area
+        A_fuse = Variable('A_{fuse}', 'm^2', 'Estimated Fuselage Area')
+
         #non-GPkit variables
         #climb 2 lsit
         icl2 = map(int, np.linspace(0, Nclimb2 - 1, Nclimb2))
@@ -421,7 +440,6 @@ class Climb2(Model):
         constraints.extend([            
             #set the velocity limits
             #needs to be replaced by an actual Vne and a mach number
-            MClimb2[icl2] <= .75,
             VClimb2[icl2] >= Vstall,
 
             VClimb2 == MClimb2 * aClimb2,
@@ -431,8 +449,18 @@ class Climb2(Model):
             
             #climb rate constraints
             TCS([excessPclimb2[icl2]+VClimb2[icl2]*DClimb2[icl2] <= VClimb2[icl2]*numeng*thrustc2[icl2]]),
-            TCS([DClimb2[icl2] >= (.5*S*rhoClimb2[icl2]*VClimb2[icl2]**2)*(Cd0 + K*CLClimb2[icl2]**2)]),
+            
+            TCS([DClimb2[icl2] >= (.5*S*rhoClimb2[icl2]*VClimb2[icl2]**2)*(Cdw[icl2] + K*CLClimb2[icl2]**2) + Cdfuse * (.5 * A_fuse * rhoClimb2[icl2] * VClimb2[icl2]**2)]),
+            
             K == (3.14 * e * AR)**-1,
+            
+            cdp_r[icl2] >= (1.02458748e10 * CLClimb2[icl2]**15.587947404823325 * MClimb2[icl2]**156.86410659495155 +
+                2.85612227e-13 * CLClimb2[icl2]**1.2774976672501526 * MClimb2[icl2]**6.2534328002723703 +
+                2.08095341e-14 * CLClimb2[icl2]**0.8825277088649582 * MClimb2[icl2]**0.0273667615730107 +
+                1.94411925e+06 * CLClimb2[icl2]**5.6547413360261691 * MClimb2[icl2]**146.51920742858428),
+
+            Cdw[icl2]**6.5 >= cdp_r[icl2],
+            
             RCClimb2[icl2] == excessPclimb2[icl2]/W_avgClimb2[icl2],
             RCClimb2[icl2] >= 500*units('ft/min'),
             
@@ -498,7 +526,6 @@ class Cruise2(Model):
         WLoadmax = Variable('W_{Load_max}', 'N/m^2', 'Max Wing Loading')
         DCruise2 = VectorVariable(Ncruise2, 'DragCruise2', 'N', 'Drag')
         Vstall = Variable('V_{stall}', 'knots', 'Aircraft Stall Speed')
-##        Cd0 = Variable('C_{d_0}', '-', 'Aircraft Cd0')
         Cdw = VectorVariable(Ncruise2, 'C_{d_w}', '-', 'Cd for a NC130 Airfoil at Re=2e7')
         cdp_r = VectorVariable(Ncruise2, 'cdp_r', '-', 'Hold Variable for Drag Fit')
         Cdfuse = Variable('C_{d_fuse}', '-', 'Fuselage Drag Coefficient')
@@ -569,7 +596,7 @@ class Cruise2(Model):
         izbre = map(int, np.linspace(0, Ncruise2 - 1, Ncruise2))
             
         constraints.extend([
-            MCruise2[izbre] == 0.8,
+##            MCruise2[izbre] == 0.8,
 
             MCruise2 * aCruise2 == VCruise2,
             
@@ -667,7 +694,6 @@ class CommercialAircraft(Model):
         substitutions = {      
             'V_{stall}': 120,
             'ReqRng': 1000,
-            'C_{d_0}': .02,
             'K': 0.05,
             'h_{toc}': hcruise,
             'speedlimit': 250,
@@ -754,7 +780,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
