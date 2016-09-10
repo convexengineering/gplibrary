@@ -162,15 +162,15 @@ class CommericalMissionConstraints(Model):
                     #constrain the geometric weight average
                     W_avgClimb1[i] == (W_startClimb1[i]*W_endClimb1[i])**.5,
                     TCS([W_startClimb1[i] >= W_endClimb1[i] + W_fuelClimb1[i]]),
+
+
+                    
                     ])
                 
             #altitude buildup constraints for climb segment 1
             constraints.extend([
                 TCS([hftClimb1[0] >= 1500 * units('ft') + dhftClimb1[i]]),
-                hftClimb1 <= 10000 * units('ft'),
-
-                  
-               htoc <= dhftClimb2 + alt10k,
+                hftClimb1 <= alt10k,
                 ])
 
             for i in range(1, Nclimb1):
@@ -200,6 +200,9 @@ class CommericalMissionConstraints(Model):
             constraints.extend([
                 TCS([hftClimb2[0] >= hftClimb1[Nclimb1-1] + dhftClimb2[i]]),
                 hftClimb2[i] <= htoc,
+
+                #compute hdclimb2
+                htoc <= dhClimb2 + alt10k,
                 ])
 
             for i in range(0, Ncruise2):
@@ -703,7 +706,6 @@ class CommercialAircraft(Model):
             'h_{toc}': hcruise,
             'speedlimit': 250,
             'numeng': 2,
-##            'dh_{climb2}': hcruise-10000,
             'W_{Load_max}': 6664,
             'W_{engine}': 1000,
             'W_{pax}': 91 * 9.81,
@@ -795,7 +797,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
