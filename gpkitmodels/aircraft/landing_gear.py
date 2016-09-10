@@ -57,8 +57,6 @@ class LandingGear(CostedConstraintSet):
         dxm     = Variable('\\Delta x_m', 'm', 'Distance b/w main gear and CG')
         dxn     = Variable('\\Delta x_n', 'm', 'Distance b/w nose gear and CG')
         eta_s   = Variable('\\eta_s', '-', 'Shock absorber efficiency')
-        eta_t   = Variable('\\eta_t', '-',
-                           'Efficiency of tire in shock absorption')
         faddm   = Variable('f_{add,m}', '-', 'Proportional added weight, main')
         faddn   = Variable('f_{add,n}', '-', 'Proportional added weight, nose')
         g       = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
@@ -263,7 +261,6 @@ class LandingGear(CostedConstraintSet):
                          'N_s': 2,
                          'W_{0_{lg}}': 82000*9.81,
                          '\\eta_s': 0.8,
-                         '\\eta_t': 0.47,
                          '\\lambda_{LG}': 2.5,
                          '\\rho_{st}': 7850,
                          '\\tan(\\gamma)': np.tan(5*np.pi/180),
@@ -310,6 +307,8 @@ class LandingGear(CostedConstraintSet):
         constraints = ccs + ccs.coupledCG
 
         dsubs = ccs.default737subs()
+        del dsubs['x_{CG_0}']
+        del dsubs['W_{0_{lg}}']
         linkedsubs = ['h_{hold}', 'x_{up}']
         substitutions = {key: value for key, value in dsubs.items()
                                     if key not in linkedsubs}

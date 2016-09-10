@@ -155,7 +155,6 @@ class Wing(CostedConstraintSet):
                          '\\rho_0': 1.225,
                          '\\rho_{fuel}': 817, # Kerosene [TASOPT]
                          '\\tan(\\Lambda)': tan(sweep*pi/180),
-                         'a': 297,
                          'g': 9.81,
                         }
 

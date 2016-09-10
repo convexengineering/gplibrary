@@ -225,6 +225,7 @@ class HorizontalTail(CostedConstraintSet):
         constraints = ccs + ccs.CG_constraint
 
         dsubs = ccs.default737subs()
+        del dsubs['a']
         linkedsubs = ['AR_w', 'C_{L_w}', 'C_{L_{aw}}', 'M', 'S_w',
                       '\\bar{c}_w', 'l_{fuse}', 'w_{fuse}', 'x_{CG}']
         substitutions = {key: value for key, value in dsubs.items()
