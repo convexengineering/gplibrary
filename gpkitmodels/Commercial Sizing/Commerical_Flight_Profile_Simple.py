@@ -701,9 +701,9 @@ class CommercialAircraft(Model):
         hcruise = 40000
         substitutions = {      
             'V_{stall}': 120,
-            'ReqRng': 1000,
+            'ReqRng': 2000,
             'K': 0.05,
-            'h_{toc}': hcruise,
+##            'h_{toc}': hcruise,
             'speedlimit': 250,
             'numeng': 2,
             'W_{Load_max}': 6664,
