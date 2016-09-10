@@ -20,20 +20,6 @@ minimizes the aircraft total weight, must specify all weights except fuel weight
 we are minimizing the fuel weight
 Rate of climb equation taken from John Anderson's Aircraft Performance and Design (eqn 5.85)
 """
-
-#altitude precomputation
-#select the cruise altitude
-hcruise = 30000
-#develop the list of altitudes
-hvec = [3625, 7875, .25*(hcruise-10000)+10000, hcruise-.25*(hcruise-10000), hcruise, hcruise]
-#convert from ft to m for atmosphere model
-hvec = [x * 0.3048 for x in hvec]
-#get the actual atmosphere values
-atmdict = get_atmosphere_vec(hvec)
-Tvec = atmdict['T']  * units('K')
-rhovec = atmdict['rho'] * units('kg/m^3')
-pvec = atmdict['p'] * units('kPa')
-
 #TODO
 #link in with engine
 #fix indicies on the TSFC vector variables
@@ -173,21 +159,27 @@ class CommericalMissionConstraints(Model):
                     ])
             for i in range(0, Nclimb1):
                 constraints.extend([
-                    TCS([hftClimb1[i] >= (i+1)*dhftClimb1[i] + 1500*units('ft')]),
-                    
                     #constrain the geometric weight average
                     W_avgClimb1[i] == (W_startClimb1[i]*W_endClimb1[i])**.5,
                     TCS([W_startClimb1[i] >= W_endClimb1[i] + W_fuelClimb1[i]]),
                     ])
+                
+            #altitude buildup constraints for climb segment 1
+            constraints.extend([
+                TCS([hftClimb1[0] >= 1500 * units('ft') + dhftClimb1[i]]),
+                hftClimb1[i] <= 10000 * units('ft')
+                ])
 
             for i in range(1, Nclimb1):
                 constraints.extend([
                     TCS([W_startClimb1[i] == W_endClimb1[i-1]]),
+                    TCS([hftClimb1[i] >= hftClimb1[i-1] + dhftClimb1[i]]),
                     ])
 
             for i in range(1, Nclimb2):
                 constraints.extend([
                     TCS([W_startClimb2[i] == W_endClimb2[i-1]]),
+                    TCS([hftClimb2[i] >= hftClimb2[i-1] + dhftClimb2[i]]),
                     ])
 
             for i in range(1, Ncruise2):
@@ -197,18 +189,14 @@ class CommericalMissionConstraints(Model):
 
             for i in range(0, Nclimb2):
                 constraints.extend([
-##                    SignomialEquality(hftClimb2[i], 10000*units('ft')+(i+1)*dhftClimb2[i]),
-                    
-##                    test[i] == (i+1)*dhftClimb2[i],
-##                    hftClimb2[i] <= 10000*units('ft') + test[i],
-##                    TCS([hftClimb2[i] >= 10000*units('ft')+(i+1)*dhftClimb2[i]]),
-                    hftClimb2[i] <= htoc,
                     W_avgClimb2[i] == (W_startClimb2[i]*W_endClimb2[i])**.5,
                     TCS([W_startClimb2[i] >= W_endClimb2[i] + W_fuelClimb2[i]]),
                     ])
+
+            #altitude buildup constraints for climb segment 2
             constraints.extend([
-                hftClimb2[0] >= hftClimb1[Nclimb1-1] + dhftClimb2[i],
-                hftClimb2[1] >= hftClimb2[0] + dhftClimb2[i],
+                TCS([hftClimb2[0] >= hftClimb1[Nclimb1-1] + dhftClimb2[i]]),
+                hftClimb2[i] <= htoc,
                 ])
 
             for i in range(0, Ncruise2):
@@ -357,8 +345,6 @@ class Climb1(Model):
 
             TSFCc1[0] == .7*units('1/hr'),
             TSFCc1[1] == .7*units('1/hr'),
-##            rhoClimb1[1] == 1*units('kg/m^3'),
-##            TClimb1[1] == 270*units('K'),
             ])
 
         for i in range(0, Nclimb1):
@@ -504,8 +490,6 @@ class Climb2(Model):
 
             TSFCc2[0] == .65*units('1/hr'),
             TSFCc2[1] == .6*units('1/hr'),
-##            rhoClimb2 == .75*units('kg/m^3'),
-##            TClimb2 == 250*units('K'),
             ])
 
         for i in range(0, Nclimb2):
@@ -652,8 +636,6 @@ class Cruise2(Model):
 
             TSFCcr2[0] == .5*units('1/hr'),
             TSFCcr2[1] == .5*units('1/hr'),
-##            rhoCruise2 == .5*units('kg/m^3'),
-##            TCruise2 == 220*units('K'),
             ])
         
         #constraint on the aircraft meeting the required range
@@ -706,11 +688,11 @@ class CommercialAircraft(Model):
         cruise2 = Cruise2(Nclimb2, Ncruise2)
 
         atmvec = []
-##        atm = Atmosphere()
         
         for i in range(Nseg):
             atmvec.append(Atmosphere())
-
+            
+        hcruise = 40000
         substitutions = {      
             'V_{stall}': 120,
             'ReqRng': 1000,
@@ -810,7 +792,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
