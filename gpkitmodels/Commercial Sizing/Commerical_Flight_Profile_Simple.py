@@ -502,8 +502,8 @@ class Climb2(Model):
 
             TSFCc2[0] == .65*units('1/hr'),
             TSFCc2[1] == .6*units('1/hr'),
-            rhoClimb2 == .75*units('kg/m^3'),
-            TClimb2 == 250*units('K'),
+##            rhoClimb2 == .75*units('kg/m^3'),
+##            TClimb2 == 250*units('K'),
             ])
 
         for i in range(0, Nclimb2):
@@ -650,8 +650,8 @@ class Cruise2(Model):
 
             TSFCcr2[0] == .5*units('1/hr'),
             TSFCcr2[1] == .5*units('1/hr'),
-            rhoCruise2 == .5*units('kg/m^3'),
-            TCruise2 == 220*units('K'),
+##            rhoCruise2 == .5*units('kg/m^3'),
+##            TCruise2 == 220*units('K'),
             ])
         
         #constraint on the aircraft meeting the required range
@@ -706,7 +706,7 @@ class CommercialAircraft(Model):
         atmvec = []
 ##        atm = Atmosphere()
         
-        for i in range(2):
+        for i in range(Nseg):
             atmvec.append(Atmosphere())
 
         substitutions = {      
@@ -744,26 +744,22 @@ class CommercialAircraft(Model):
 
         subs= {}
 
-##        subs.update({
-##                climb1["\rhoClimb1"][0]: atm["\rho"], climb1["TClimb1"][0]: atm["T_{atm}"], cmc['hClimb1'][0]: atm["h"]
-##                })
-
-        for i in range(2):
+        for i in range(Nclimb1):
             subs.update({
                 climb1["\rhoClimb1"][i]: atmvec[i]["\rho"], climb1["TClimb1"][i]: atmvec[i]["T_{atm}"], cmc['hClimb1'][i]: atmvec[i]["h"]
                 })
     
-##        for i in range(Nclimb2):
-##            subs.update({
-##                climb2["\rhoClimb2"][i]: atmvec[i + Nclimb1]["\rho"], climb2["TClimb2"][i]: atmvec[i + Nclimb1]["T_{atm}"], cmc['hClimb2'][i]: atmvec[i + Nclimb1]["h"]
-##                })
-##
-##        for i in range(Ncruise2):
-##            subs.update({
-##                cruise2["\rhoCruise2"][i]: atmvec[i + Nclimb1 + Nclimb2]["\rho"], cruise2["TCruise2"][i]:atmvec[i + Nclimb1 + Nclimb2]["T_{atm}"],
-##                cmc['hCruise2'][i]: atmvec[i + Nclimb1 + Nclimb2]["h"]
-##                })
-        print subs
+        for i in range(Nclimb2):
+            subs.update({
+                climb2["\rhoClimb2"][i]: atmvec[i + Nclimb1]["\rho"], climb2["TClimb2"][i]: atmvec[i + Nclimb1]["T_{atm}"], cmc['hClimb2'][i]: atmvec[i + Nclimb1]["h"]
+                })
+
+        for i in range(Ncruise2):
+            subs.update({
+                cruise2["\rhoCruise2"][i]: atmvec[i + Nclimb1 + Nclimb2]["\rho"], cruise2["TCruise2"][i]:atmvec[i + Nclimb1 + Nclimb2]["T_{atm}"],
+                cmc['hCruise2'][i]: atmvec[i + Nclimb1 + Nclimb2]["h"]
+                })
+
         constraints.subinplace(subs)
         
         lc = LinkedConstraintSet(constraints, exclude={"T_{atm}", "P_{atm}", '\rho', "h"})
