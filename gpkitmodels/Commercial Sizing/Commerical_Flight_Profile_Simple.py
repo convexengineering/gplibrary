@@ -698,12 +698,12 @@ class CommercialAircraft(Model):
         for i in range(Nseg):
             atmvec.append(Atmosphere())
             
-        hcruise = 40000
+##        hcruise = 40000
         substitutions = {      
             'V_{stall}': 120,
             'ReqRng': 2000,
             'K': 0.05,
-##            'h_{toc}': hcruise,
+            'h_{toc}': ('sweep', np.linspace(40000,40000,4)),
             'speedlimit': 250,
             'numeng': 2,
             'W_{Load_max}': 6664,
