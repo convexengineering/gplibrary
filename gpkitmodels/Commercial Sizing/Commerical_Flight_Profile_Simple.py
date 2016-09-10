@@ -117,6 +117,8 @@ class CommericalMissionConstraints(Model):
         #Fuselage area
         A_fuse = Variable('A_{fuse}', 'm^2', 'Estimated Fuselage Area')
         pax_area = Variable('pax_{area}', 'm^2', 'Estimated Fuselage Area per Passenger')
+
+        test= VectorVariable(2, 'test', 'm', 'test')
         
         constraints = []
         constraints.extend([
@@ -178,8 +180,12 @@ class CommericalMissionConstraints(Model):
 
                     #split into 2 constraints with a hold variable
                     #hard coding altitudes for climb segment #1
-                    TCS([hftClimb1[i]<=(i+1)*dhftClimb1[i] + 1500*units('ft')]),
+                    test[i] == (i+1)*dhftClimb1[i],
+                    hftClimb1[i] >= test[i] + 1500*units('ft'),
+                    
+##                    TCS([hftClimb1[i]<=(i+1)*dhftClimb1[i] + 1500*units('ft')]),
                     hftClimb1[i] >= 1*units('ft'),
+                    hftClimb1[i] <= 10000*units('ft'),
                     #constrain the geometric weight average
                     W_avgClimb1[i] == (W_startClimb1[i]*W_endClimb1[i])**.5,
                     TCS([W_startClimb1[i] >= W_endClimb1[i] + W_fuelClimb1[i]]),
@@ -808,7 +814,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
