@@ -6,11 +6,11 @@ from gpkit import VectorVariable, Variable, Model, units, ConstraintSet, LinkedC
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
-from atmosphere import Atmosphere
+##from atmosphere import Atmosphere
 from collections import defaultdict
 from gpkit.small_scripts import mag
-from engine_atm import EngineOnDesign, EngineOffDesign, EngineOffDesign2, EngineOffDesign3, EngineOffDesign4, EngineOffDesign5, EngineOffDesign6
 from getatm import get_atmosphere_vec
+from atm_test import Atmosphere
 
 #packages just needed for plotting since this is for sweeps
 import matplotlib.pyplot as plt
@@ -172,8 +172,14 @@ class CommericalMissionConstraints(Model):
             for i in range(0, Nclimb1):
                 constraints.extend([
 ##                    SignomialEquality(hftClimb1[i], 1500*units('ft')+(i+1)*dhftClimb1[i]),
+
+
+                    #things to try
+
+                    #split into 2 constraints with a hold variable
+                    #hard coding altitudes for climb segment #1
                     TCS([hftClimb1[i]<=(i+1)*dhftClimb1[i] + 1500*units('ft')]),
-                    hftClimb1[i] <= 100*units('ft'),
+                    hftClimb1[i] >= 1*units('ft'),
                     #constrain the geometric weight average
                     W_avgClimb1[i] == (W_startClimb1[i]*W_endClimb1[i])**.5,
                     TCS([W_startClimb1[i] >= W_endClimb1[i] + W_fuelClimb1[i]]),
@@ -349,6 +355,8 @@ class Climb1(Model):
 
             TSFCc1[0] == .7*units('1/hr'),
             TSFCc1[1] == .7*units('1/hr'),
+##            rhoClimb1[1] == 1*units('kg/m^3'),
+##            TClimb1[1] == 270*units('K'),
             ])
 
         for i in range(0, Nclimb1):
@@ -494,6 +502,8 @@ class Climb2(Model):
 
             TSFCc2[0] == .65*units('1/hr'),
             TSFCc2[1] == .6*units('1/hr'),
+            rhoClimb2 == .75*units('kg/m^3'),
+            TClimb2 == 250*units('K'),
             ])
 
         for i in range(0, Nclimb2):
@@ -619,8 +629,8 @@ class Cruise2(Model):
             
             DCruise2[izbre] == numeng * thrustcr2[izbre],
 
-            W_avgCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2,
-            WLoadCruise2[izbre] == .5*CLCruise2[izbre]*S*rhoCruise2[izbre]*VCruise2[izbre]**2/S,
+            W_avgCruise2[izbre] == .5 * CLCruise2[izbre] * S * rhoCruise2[izbre] * VCruise2[izbre]**2,
+            WLoadCruise2[izbre] == .5 * CLCruise2[izbre] * S * rhoCruise2[izbre] * VCruise2[izbre]**2 / S,
             
             #constrain the climb rate by holding altitude constant
             hftCruise2[izbre]  == htoc,
@@ -640,6 +650,8 @@ class Cruise2(Model):
 
             TSFCcr2[0] == .5*units('1/hr'),
             TSFCcr2[1] == .5*units('1/hr'),
+            rhoCruise2 == .5*units('kg/m^3'),
+            TCruise2 == 220*units('K'),
             ])
         
         #constraint on the aircraft meeting the required range
@@ -690,11 +702,13 @@ class CommercialAircraft(Model):
         climb1 = Climb1(Nclimb1, Ncruise2)
         climb2 = Climb2(Nclimb2, Ncruise2)
         cruise2 = Cruise2(Nclimb2, Ncruise2)
-        atm = Atmosphere(Nclimb1+ Nclimb2 + Ncruise2)
+
+        atmvec = []
+##        atm = Atmosphere()
         
-        for i in range(Nseg):
-            None
- 
+        for i in range(2):
+            atmvec.append(Atmosphere())
+
         substitutions = {      
             'V_{stall}': 120,
             'ReqRng': 1000,
@@ -711,34 +725,48 @@ class CommercialAircraft(Model):
             'C_{d_fuse}': .005, #assumes turbulent flow, from wikipedia
             'e': .9,
             'span_{max}': 35,
+
+            #atm subs
+            "p_{sl}":101325,
+            "T_{sl}":288.15,
+            "L_{atm}":.0065,
+            "M_{atm}":.0289644,
+            "R_{atm}":8.31447
             }
         #for engine on design must link T0, P0, F_D,TSFC w/TSFC from icruise 2
         
-        self.submodels = [cmc, climb1, climb2, cruise2, atm]#, eonD, eoffD, eoffD2, eoffD3, eoffD4, eoffD5, eoffD6]
+        self.submodels = [cmc, climb1, climb2, cruise2]
+
+        for i in range(len(atmvec)):
+            self.submodels.extend(atmvec[i])
 
         constraints = ConstraintSet([self.submodels])
 
         subs= {}
-     
-        for i in range(Nclimb1):
+
+##        subs.update({
+##                climb1["\rhoClimb1"][0]: atm["\rho"], climb1["TClimb1"][0]: atm["T_{atm}"], cmc['hClimb1'][0]: atm["h"]
+##                })
+
+        for i in range(2):
             subs.update({
-                climb1["\rhoClimb1"][i]: atm["\rho"][i], climb1["TClimb1"][i]: atm["T"][i]
+                climb1["\rhoClimb1"][i]: atmvec[i]["\rho"], climb1["TClimb1"][i]: atmvec[i]["T_{atm}"], cmc['hClimb1'][i]: atmvec[i]["h"]
                 })
     
-
-        for i in range(Nclimb2):
-            subs.update({
-                climb2["\rhoClimb2"][i]: atm["\rho"][i + Nclimb1], climb2["TClimb2"][i]: atm["T"][i + Nclimb1]
-                })
-
-        for i in range(Ncruise2):
-            subs.update({
-                cruise2["\rhoCruise2"][i]: atm["\rho"][i + Nclimb1 + Nclimb2], cruise2["TCruise2"][i]: atm["T"][i + Nclimb1 + Nclimb2]
-                })
-
+##        for i in range(Nclimb2):
+##            subs.update({
+##                climb2["\rhoClimb2"][i]: atmvec[i + Nclimb1]["\rho"], climb2["TClimb2"][i]: atmvec[i + Nclimb1]["T_{atm}"], cmc['hClimb2'][i]: atmvec[i + Nclimb1]["h"]
+##                })
+##
+##        for i in range(Ncruise2):
+##            subs.update({
+##                cruise2["\rhoCruise2"][i]: atmvec[i + Nclimb1 + Nclimb2]["\rho"], cruise2["TCruise2"][i]:atmvec[i + Nclimb1 + Nclimb2]["T_{atm}"],
+##                cmc['hCruise2'][i]: atmvec[i + Nclimb1 + Nclimb2]["h"]
+##                })
+        print subs
         constraints.subinplace(subs)
         
-        lc = LinkedConstraintSet(constraints)
+        lc = LinkedConstraintSet(constraints, exclude={"T_{atm}", "P_{atm}", '\rho', "h"})
 
         Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
 

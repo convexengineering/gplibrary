@@ -3,14 +3,14 @@ from gpkit.constraints.set import ConstraintSet
 
 class Atmosphere(Model):
     def __init__(self, **kwargs):
-        g = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
-        p_sl = Variable("p_{sl}", 101325, "Pa", "Pressure at sea level")
-        T_sl = Variable("T_{sl}", 288.15, "K", "Temperature at sea level")
-        L_atm = Variable("L_{atm}", 0.0065, "K/m", "Temperature lapse rate")
+        g = Variable('g', 'm/s^2', 'Gravitational acceleration')
+        p_sl = Variable("p_{sl}", "Pa", "Pressure at sea level")
+        T_sl = Variable("T_{sl}", "K", "Temperature at sea level")
+        L_atm = Variable("L_{atm}", "K/m", "Temperature lapse rate")
         T_atm = Variable("T_{atm}", "K", "air temperature")
-        M_atm = Variable("M_{atm}", 0.0289644, "kg/mol",
+        M_atm = Variable("M_{atm}", "kg/mol",
                          "Molar mass of dry air")
-        R_atm = Variable("R_{atm}", 8.31447, "J/mol/K",
+        R_atm = Variable("R_{atm}", "J/mol/K",
                          "air specific heating value")
         p_atm = Variable("P_{atm}", "Pa", "air pressure")
         TH = (g*M_atm/R_atm/L_atm).value
@@ -22,7 +22,7 @@ class Atmosphere(Model):
         with SignomialsEnabled():
             constraints = [
                 # Pressure-altitude relation
-                (p_atm/p_sl)**(1/TH) == T_atm/T_sl,
+                (p_atm/p_sl)**(1/5.257) == T_atm/T_sl,
 
                 # Ideal gas law
                 rho == p_atm/(R_atm/M_atm*T_atm),
