@@ -1,4 +1,4 @@
-"""Standard tube and wing commercial aircraft sizing"""
+"""Simple commercial aircraft flight profile and aircraft model"""
 from numpy import pi
 import gpkit
 import numpy as np
@@ -6,14 +6,14 @@ from gpkit import VectorVariable, Variable, Model, units, ConstraintSet, LinkedC
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
-##from atmosphere import Atmosphere
-from collections import defaultdict
 from gpkit.small_scripts import mag
-from getatm import get_atmosphere_vec
 from atm_test import Atmosphere
 
 #packages just needed for plotting since this is for sweeps
 import matplotlib.pyplot as plt
+
+#only needed for the local bounded debugging tool
+from collections import defaultdict
 
 """
 minimizes the aircraft total weight, must specify all weights except fuel weight, so in effect
@@ -54,7 +54,7 @@ class CommericalMissionConstraints(Model):
         hftCruise2 = VectorVariable(Ncruise2, 'hftCruise2', 'feet', 'Altitude [feet]')
         
         #alttidue at the top of climb
-        htoc = Variable('h_{toc}', 'ft', 'Altitude at Top of Climb')
+        htoc = Variable('h_{toc}', 'feet', 'Altitude at Top of Climb')
 
         #weight variables
         W_payload = Variable('W_{payload}', 'N', 'Aircraft Payload Weight')
@@ -139,7 +139,7 @@ class CommericalMissionConstraints(Model):
 
             #compute fuselage area for drag approximation
             A_fuse == pax_area * n_pax,
-            
+               
             ])
         
         with gpkit.SignomialsEnabled():
@@ -167,7 +167,10 @@ class CommericalMissionConstraints(Model):
             #altitude buildup constraints for climb segment 1
             constraints.extend([
                 TCS([hftClimb1[0] >= 1500 * units('ft') + dhftClimb1[i]]),
-                hftClimb1[i] <= 10000 * units('ft')
+                hftClimb1 <= 10000 * units('ft'),
+
+                  
+               htoc <= dhftClimb2 + alt10k,
                 ])
 
             for i in range(1, Nclimb1):
@@ -307,7 +310,7 @@ class Climb1(Model):
             
             TCS([DClimb1[icl1] >= (.5*S*rhoClimb1[icl1]*VClimb1[icl1]**2)*(Cdwc1[icl1] + K*CLClimb1[icl1]**2) + Cdfuse * (.5 * A_fuse * rhoClimb1[icl1] * VClimb1[icl1]**2)]),
             
-            K == (3.14 * e * AR)**-1,
+            K == (pi * e * AR)**-1,
             
             cdp_rc1[icl1] >= (1.02458748e10 * CLClimb1[icl1]**15.587947404823325 * MClimb1[icl1]**156.86410659495155 +
                 2.85612227e-13 * CLClimb1[icl1]**1.2774976672501526 * MClimb1[icl1]**6.2534328002723703 +
@@ -452,7 +455,7 @@ class Climb2(Model):
             
             TCS([DClimb2[icl2] >= (.5*S*rhoClimb2[icl2]*VClimb2[icl2]**2)*(Cdwc2[icl2] + K*CLClimb2[icl2]**2) + Cdfuse * (.5 * A_fuse * rhoClimb2[icl2] * VClimb2[icl2]**2)]),
             
-            K == (3.14 * e * AR)**-1,
+            K == (pi * e * AR)**-1,
             
             cdp_rc2[icl2] >= (1.02458748e10 * CLClimb2[icl2]**15.587947404823325 * MClimb2[icl2]**156.86410659495155 +
                 2.85612227e-13 * CLClimb2[icl2]**1.2774976672501526 * MClimb2[icl2]**6.2534328002723703 +
@@ -604,7 +607,7 @@ class Cruise2(Model):
                  (Cdwcr2[izbre] + K * (W_avgCruise2[izbre] / (.5 * S * rhoCruise2[izbre]* VCruise2[izbre]**2))**2)
                  + Cdfuse * (.5 * A_fuse * rhoCruise2[izbre] * VCruise2[izbre]**2)]),
 
-            K == (3.14 * e * AR)**-1,
+            K == (pi * e * AR)**-1,
 
             cdp_rcr2[izbre] >= (1.02458748e10 * CLCruise2[izbre]**15.587947404823325 * MCruise2[izbre]**156.86410659495155 +
                 2.85612227e-13 * CLCruise2[izbre]**1.2774976672501526 * MCruise2[izbre]**6.2534328002723703 +
@@ -700,7 +703,7 @@ class CommercialAircraft(Model):
             'h_{toc}': hcruise,
             'speedlimit': 250,
             'numeng': 2,
-            'dh_{climb2}': hcruise-10000,
+##            'dh_{climb2}': hcruise-10000,
             'W_{Load_max}': 6664,
             'W_{engine}': 1000,
             'W_{pax}': 91 * 9.81,
@@ -792,7 +795,7 @@ class CommercialAircraft(Model):
     
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
     
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
     
