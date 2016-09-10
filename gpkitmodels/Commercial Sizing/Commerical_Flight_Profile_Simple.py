@@ -173,19 +173,8 @@ class CommericalMissionConstraints(Model):
                     ])
             for i in range(0, Nclimb1):
                 constraints.extend([
-##                    SignomialEquality(hftClimb1[i], 1500*units('ft')+(i+1)*dhftClimb1[i]),
-
-
-                    #things to try
-
-                    #split into 2 constraints with a hold variable
-                    #hard coding altitudes for climb segment #1
-                    test[i] == (i+1)*dhftClimb1[i],
-                    hftClimb1[i] >= test[i] + 1500*units('ft'),
+                    TCS([hftClimb1[i] >= (i+1)*dhftClimb1[i] + 1500*units('ft')]),
                     
-##                    TCS([hftClimb1[i]<=(i+1)*dhftClimb1[i] + 1500*units('ft')]),
-                    hftClimb1[i] >= 1*units('ft'),
-                    hftClimb1[i] <= 10000*units('ft'),
                     #constrain the geometric weight average
                     W_avgClimb1[i] == (W_startClimb1[i]*W_endClimb1[i])**.5,
                     TCS([W_startClimb1[i] >= W_endClimb1[i] + W_fuelClimb1[i]]),
@@ -209,11 +198,18 @@ class CommericalMissionConstraints(Model):
             for i in range(0, Nclimb2):
                 constraints.extend([
 ##                    SignomialEquality(hftClimb2[i], 10000*units('ft')+(i+1)*dhftClimb2[i]),
-                    TCS([hftClimb2[i] <= 10000*units('ft')+(i+1)*dhftClimb2[i]]),
-                    hftClimb2[i] >= 10*units('ft'),
+                    
+##                    test[i] == (i+1)*dhftClimb2[i],
+##                    hftClimb2[i] <= 10000*units('ft') + test[i],
+##                    TCS([hftClimb2[i] >= 10000*units('ft')+(i+1)*dhftClimb2[i]]),
+                    hftClimb2[i] <= htoc,
                     W_avgClimb2[i] == (W_startClimb2[i]*W_endClimb2[i])**.5,
                     TCS([W_startClimb2[i] >= W_endClimb2[i] + W_fuelClimb2[i]]),
                     ])
+            constraints.extend([
+                hftClimb2[0] >= hftClimb1[Nclimb1-1] + dhftClimb2[i],
+                hftClimb2[1] >= hftClimb2[0] + dhftClimb2[i],
+                ])
 
             for i in range(0, Ncruise2):
                 constraints.extend([
