@@ -703,7 +703,7 @@ class CommercialAircraft(Model):
             'V_{stall}': 120,
             'ReqRng': 2000,
             'K': 0.05,
-            'h_{toc}': ('sweep', np.linspace(20000,40000,4)),
+##            'h_{toc}': ('sweep', np.linspace(20000,40000,4)),
             'speedlimit': 250,
             'numeng': 2,
             'W_{Load_max}': 6664,
