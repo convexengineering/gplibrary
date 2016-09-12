@@ -19,11 +19,16 @@ from simple_gp import SimpleGP
 m = SimpleGP()
 with open("gp.generated.tex", "w") as f:
     f.write("$%s$" % m.latex(excluded=["models", "units"]))
+
+# TODO: this doesn't work! 
+# sol = m.solve()
+# with open("sol.generated.tex", "w") as f:
+#     f.write(sol.table(latex=True))
 ```
 
 Sweeping over $x_{min}$ shows the relationship between $x$ and $x_{min}$.
 ```python
-#inPDF: skip
+#inPDF: replace with simple_sweep.fig.generated.tex
 import numpy as np
 import matplotlib.pyplot as plt
 xmin = np.linspace(0.01, 3, 30)
@@ -34,16 +39,26 @@ plt.ylim((0, plt.ylim()[1]))
 plt.xlabel("$x_{min}$")
 plt.ylabel("cost")
 plt.savefig("simple_sweep.pdf")
+
+def gen_tex_fig(filename, caption=None):
+    with open("%s.fig.generated.tex" % filename, "w") as f:
+        f.write("\\begin{figure}[h!]")
+        f.write("\\label{f:%s}" % filename)
+        f.write("\\begin{center}")
+        f.write("\\includegraphics{%s}" % filename)
+        if caption:
+            f.write("\\caption{%s}" % caption)
+        f.write("\\end{center}")
+        f.write("\\end{figure}")
+
+gen_tex_fig("simple_sweep", "xmin only has an effect when greater than 1")
 ```
-```python
-#inPDF: skip
-# TODO: argh, the below doesn't work
-# \begin{figure}[h!]
-# \label{fig:sweep}
-# \begin{center}
-# \includegraphics[scale=0.5]{simple_sweep.pdf}
-# \caption{xmin only has an effect when greater than 1}
-# \end{center}
-# \end{figure}
-```
+\begin{figure}[h!]
+\label{fig:sweep}
+\begin{center}
+\includegraphics{simple_sweep.pdf}
+\caption{xmin only has an effect when greater than 1}
+\end{center}
+\end{figure}
+
 ![xmin only has an effect when greater than 1](simple_sweep.pdf)
