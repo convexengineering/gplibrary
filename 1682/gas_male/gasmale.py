@@ -18,20 +18,20 @@ class Mission(Model):
         if discrete:
             self.submodels = [
                 Climb(5, [0.502]*5, np.linspace(1, 5000, 5), False, wind,
-                      5000, DF70),
-                Cruise(5, [0.684]*5, [5000]*5, False, wind, 180, DF70),
+                      DF70, dh=5000),
+                Cruise(5, [0.684]*5, [5000]*5, False, wind, DF70, R=180),
                 Climb(5, [0.567]*5, np.linspace(5000, h_station, 5), False,
-                      wind, 10000, DF70),
+                      wind, DF70, dh=10000),
                 Loiter(20, [0.647]*20, [h_station]*20, True, wind, DF70),
-                Cruise(5, [0.684]*5, [5000]*5, False, wind, 200, DF70)
+                Cruise(5, [0.684]*5, [5000]*5, False, wind, DF70, R=200)
                 ]
         else:
             self.submodels = [
-                Climb(1, [0.502], [5000], False, wind, 5000, DF70),
-                Cruise(1, [0.684], [5000], False, wind, 180, DF70),
-                Climb(1, [0.567], [h_station], False, wind, 10000, DF70),
+                Climb(1, [0.502], [5000], False, wind, DF70, dh=5000),
+                Cruise(1, [0.684], [5000], False, wind, DF70, R=180),
+                Climb(1, [0.567], [h_station], False, wind, DF70, dh=10000),
                 Loiter(5, [0.647]*5, [h_station]*5, True, wind, DF70),
-                Cruise(1, [0.684], [5000], False, wind, 200, DF70)
+                Cruise(1, [0.684], [5000], False, wind, DF70, R=200)
                 ]
 
         mtow = Variable("MTOW", "lbf", "Max take off weight")
@@ -65,11 +65,13 @@ class FlightSegment(Model):
         self.atm = Atmosphere(N, alt)
         self.wind = Wind(N, alt, wind)
 
+        self.N = N
+
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
                           self.atm, self.wind]
 
 class Cruise(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, R, DF70, **kwargs):
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, R=200, **kwargs):
         FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
         breguetrange = BreguetRange(N, R)
@@ -99,7 +101,8 @@ class Loiter(FlightSegment):
         Model.__init__(self, None, lc, **kwargs)
 
 class Climb(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, dh, DF70, **kwargs):
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dh=5000,
+                 **kwargs):
         FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
         breguetendurance = BreguetEndurance(N)
