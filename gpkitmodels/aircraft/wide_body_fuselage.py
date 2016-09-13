@@ -1,4 +1,4 @@
-"Implements Fuselage model"
+"Implements Wide Body Fuselage model"
 import numpy as np
 from gpkit import Variable, Model, SignomialsEnabled, units
 from gpkit.constraints.costed import CostedConstraintSet
