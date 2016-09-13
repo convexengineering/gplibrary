@@ -3,13 +3,14 @@ from numpy import pi
 import numpy as np
 import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units
-from gpkit import LinkedConstraintSet
+from gpkit import LinkedConstraintSet, ConstraintSet
+from helpers import SummingConstraintSet
 #from gpkit.tools import BoundedConstraintSet
 from gpkit.tools import te_exp_minus1
 PLOT = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "W_{eng-tot}", "b",
-           "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}", "W_{wing}",
+           "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}",
            "W_{fuse}"]
 
 class Mission(Model):
@@ -424,42 +425,6 @@ class LandingGear(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class Weight(Model):
-    """
-    Weight brakedown of aircraft
-    """
-    def __init__(self, DF70, **kwargs):
-
-        W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
-        W_fuse = Variable("W_{fuse}", "lbf", "Fuselage weight")
-        W_wing = Variable("W_{wing}", "lbf", "Total wing structural weight")
-        W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
-        W_fueltank = Variable('W_{fuel-tank}', 4, 'lbf', 'Fuel tank weight')
-        W_skid = Variable("W_{skid}", 4, "lbf", "Skid weight")
-        m_tail = Variable("m_{tail}", 1.587, "kg", "Tail mass")
-        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-
-        # gobal vars
-
-        W_pay = Variable("W_{pay}", 10, "lbf", "Payload weight")
-        W_avionics = Variable("W_{avionics}", 8, "lbf", "Avionics weight")
-        W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
-
-        if DF70:
-            W_engtot = Variable("W_{eng-tot}", 7.1, "lbf",
-                                "Installed engine weight")
-        else:
-            W_engtot = Variable("W_{eng-tot}", "lbf",
-                                "Installed engine weight")
-
-        constraints = [
-            W_cent >= (W_fueltot + W_pay + W_engtot + W_fuse + W_avionics +
-                       W_skid + W_fueltank),
-            W_zfw >= (W_pay + W_engtot + W_fuse + W_wing + m_tail*g +
-                      W_avionics + W_skid + W_fueltank)
-            ]
-
-        Model.__init__(self, None, constraints, **kwargs)
 
 class Wing(Model):
     """
@@ -512,7 +477,7 @@ class Wing(Model):
         mtow = Variable("MTOW", "lbf", "Max take off weight")
         m_cap = Variable("m_{cap}", "kg", "Cap mass")
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
-        W_wing = Variable("W_{wing}", "lbf", "Total wing structural weight")
+        W = Variable("W", "lbf", "Total wing structural weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [m_skin >= rho_skin*S*2,
@@ -528,7 +493,7 @@ class Wing(Model):
                        LoverA == mtow/S,
                        delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
                        delta_tip/b <= delta_tip_max,
-                       W_wing >= m_skin*g + 1.2*m_cap*g
+                       W >= m_skin*g + 1.2*m_cap*g
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -608,6 +573,42 @@ class Wind(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class Weight(ConstraintSet):
+    """
+    Weight brakedown of aircraft
+    """
+    def __init__(self, DF70, wing, **kwargs):
+
+        W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
+        W_fuse = Variable("W_{fuse}", "lbf", "Fuselage weight")
+        W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
+        W_fueltank = Variable('W_{fuel-tank}', 4, 'lbf', 'Fuel tank weight')
+        W_skid = Variable("W_{skid}", 4, "lbf", "Skid weight")
+        W_tail = Variable("W_{tail}", 3.4999, "lbf", "Tail weight")
+
+        # gobal vars
+
+        W_pay = Variable("W_{pay}", 10, "lbf", "Payload weight")
+        W_avionics = Variable("W_{avionics}", 8, "lbf", "Avionics weight")
+        W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
+
+        if DF70:
+            W_engtot = Variable("W_{eng-tot}", 7.1, "lbf",
+                                "Installed engine weight")
+        else:
+            W_engtot = Variable("W_{eng-tot}", "lbf",
+                                "Installed engine weight")
+
+        constraints = [
+            W_cent >= (W_fueltot + W_pay + W_engtot + W_fuse + W_avionics +
+                       W_skid + W_fueltank),
+            SummingConstraintSet(W_zfw, "W", [wing], [W_pay, W_engtot, W_fuse,
+                                                      W_tail, W_avionics,
+                                                      W_skid, W_fueltank])
+            ]
+
+        ConstraintSet.__init__(self, constraints, **kwargs)
+
 class GasMALE(Model):
     """
     This model has a rubber engine and as many non fixed parameters as
@@ -618,9 +619,9 @@ class GasMALE(Model):
                  discrete=False, **kwargs):
 
         mission = Mission(h_station, wind, DF70, discrete)
-        weight = Weight(DF70)
-        fuselage = Fuselage()
         wing = Wing()
+        fuselage = Fuselage()
+        weight = Weight(DF70, wing)
 
         self.submodels = [mission, weight, fuselage, wing]
 
