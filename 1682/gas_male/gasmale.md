@@ -172,13 +172,13 @@ for var, fig in zip(altitude_vars, figs):
 
 ## Flight Profile
 
-By further discritizing the climb, cruise, and loiter mission segments the following figures were generated to follow the performance over the duration of the mission. 
+By further discretizing the climb, cruise, and loiter mission segments the following figures were generated to follow the performance over the duration of the mission. 
 
 ```python
 #inPDF: skip
 from plotting import plot_mission_var
 
-Mprof = GasMALE(DF70=True, discrit=True)
+Mprof = GasMALE(DF70=True, discrete=True)
 Mprof.substitutions.update({"t_{loiter}": 6})
 Mprof.cost = Mprof["MTOW"]
 sol = Mprof.solve("mosek")

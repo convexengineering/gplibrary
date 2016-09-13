@@ -53,7 +53,7 @@ class Mission(Model):
                 "V", "\\eta_{prop}", "P_{shaft}", "T", "BSFC", "RPM",
                 "P_{shaft-max}", "L_factor", "P_{shaft-tot}", "t", "R",
                 "Re", "C_{f-fuse}", "C_{D-fuse}", "Re_{fuse}", "c_{dp}",
-                "V_{wind}", "z_{bre}", "h_{loss}", "K_{fuse}"})
+                "V_{wind}", "z_{bre}", "h_{loss}", "K_{fuse}", "f_{(fuel/oil)}", "BSFC_{min}"})
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -631,7 +631,7 @@ class GasMALE(Model):
             "V", "\\eta_{prop}", "P_{shaft}", "T", "BSFC", "RPM",
             "P_{shaft-max}", "L_factor", "P_{shaft-tot}", "t", "R",
             "Re", "C_{f-fuse}", "C_{D-fuse}", "Re_{fuse}", "c_{dp}",
-            "V_{wind}", "z_{bre}", "h_{loss}", "K_{fuse}"})
+            "V_{wind}", "z_{bre}", "h_{loss}", "K_{fuse}", "f_{(fuel/oil)}", "BSFC_{min}"})
 
         objective = 1/mission["t_{loiter}"]
 
