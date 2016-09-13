@@ -8,6 +8,8 @@ from gpkit import LinkedConstraintSet
 from gpkit.tools import te_exp_minus1
 PLOT = False
 
+INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "W_{eng-tot}", "b", "S_{fuse}", "W_{cent}", "m_{fuse}", "m_{skin}", "m_{cap}", "W_{zfw}", "W_{fuel-tot}"]
+
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, discrete, **kwargs):
 
@@ -46,14 +48,7 @@ class Mission(Model):
                 ])
 
         lc = LinkedConstraintSet(
-            [fs for fs in self.submodels, constraints], exclude={
-                "t_{loiter}", "\\delta_h", "h_{dot}", "h", "T_{atm}",
-                "\\mu", "\\rho", "W_{start}", "W_{end}", "W_{fuel}",
-                "W_{fuel-fs}", "W_{finish}", "W_{begin}", "C_L", "C_D",
-                "V", "\\eta_{prop}", "P_{shaft}", "T", "BSFC", "RPM",
-                "P_{shaft-max}", "L_factor", "P_{shaft-tot}", "t", "R",
-                "Re", "C_{f-fuse}", "C_{D-fuse}", "Re_{fuse}", "c_{dp}",
-                "V_{wind}", "z_{bre}", "h_{loss}", "K_{fuse}", "f_{(fuel/oil)}", "BSFC_{min}"})
+            [fs for fs in self.submodels, constraints], include_only=INCLUDE)
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -624,19 +619,16 @@ class GasMALE(Model):
 
         constraints = []
 
-        lc = LinkedConstraintSet([self.submodels, constraints], exclude={
-            "t_{loiter}", "\\delta_h", "h_{dot}", "h", "T_{atm}",
-            "\\mu", "\\rho", "W_{start}", "W_{end}", "W_{fuel}",
-            "W_{fuel-fs}", "W_{finish}", "W_{begin}", "C_L", "C_D",
-            "V", "\\eta_{prop}", "P_{shaft}", "T", "BSFC", "RPM",
-            "P_{shaft-max}", "L_factor", "P_{shaft-tot}", "t", "R",
-            "Re", "C_{f-fuse}", "C_{D-fuse}", "Re_{fuse}", "c_{dp}",
-            "V_{wind}", "z_{bre}", "h_{loss}", "K_{fuse}", "f_{(fuel/oil)}", "BSFC_{min}"})
+        lc = LinkedConstraintSet([self.submodels, constraints],
+                                 include_only=INCLUDE)
 
         objective = 1/mission["t_{loiter}"]
 
         Model.__init__(self, objective, lc, **kwargs)
 
 if __name__ == "__main__":
-    M = GasMALE()
+    M = GasMALE(DF70=True)
+    M.substitutions.update({"t_{loiter}": 6})
+    M.cost = M["MTOW"]
     sol = M.solve("mosek")
+
