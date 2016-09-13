@@ -10,8 +10,7 @@ from gpkit.tools import te_exp_minus1
 PLOT = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "W_{eng-tot}", "b",
-           "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}",
-           "W_{fuse}"]
+           "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}"]
 
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, discrete, **kwargs):
@@ -530,7 +529,7 @@ class Fuselage(Model):
         Vol_pay = Variable("Vol_{pay}", 1, "ft^3", "Payload volume")
         m_rib = Variable("m_{rib}", 1.36, "kg", "Rib mass")
         m_fuse = Variable("m_{fuse}", "kg", "Fuselage mass")
-        W_fuse = Variable("W_{fuse}", "lbf", "Fuselage weight")
+        W = Variable("W", "lbf", "Fuselage weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [m_fuse >= S_fuse*rho_skin,
@@ -541,7 +540,7 @@ class Fuselage(Model):
                        Vol_fuse >= l_cent*w_cent**2,
                        Vol_fuel >= W_fueltot/rho_fuel,
                        l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay,
-                       W_fuse >= m_fuse*g + m_rib*g
+                       W >= m_fuse*g + m_rib*g
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -577,10 +576,9 @@ class Weight(ConstraintSet):
     """
     Weight brakedown of aircraft
     """
-    def __init__(self, DF70, wing, **kwargs):
+    def __init__(self, DF70, structures, **kwargs):
 
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
-        W_fuse = Variable("W_{fuse}", "lbf", "Fuselage weight")
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
         W_fueltank = Variable('W_{fuel-tank}', 4, 'lbf', 'Fuel tank weight')
         W_skid = Variable("W_{skid}", 4, "lbf", "Skid weight")
@@ -600,9 +598,8 @@ class Weight(ConstraintSet):
                                 "Installed engine weight")
 
         constraints = [
-            W_cent >= (W_fueltot + W_pay + W_engtot + W_fuse + W_avionics +
-                       W_skid + W_fueltank),
-            SummingConstraintSet(W_zfw, "W", [wing], [W_pay, W_engtot, W_fuse,
+            SummingConstraintSet(W_cent, "W", structures, [W_fueltot, W_pay, W_engtot, W_avionics, W_skid, W_fueltank]),
+            SummingConstraintSet(W_zfw, "W", structures, [W_pay, W_engtot,
                                                       W_tail, W_avionics,
                                                       W_skid, W_fueltank])
             ]
@@ -621,7 +618,8 @@ class GasMALE(Model):
         mission = Mission(h_station, wind, DF70, discrete)
         wing = Wing()
         fuselage = Fuselage()
-        weight = Weight(DF70, wing)
+        structures = [wing, fuselage]
+        weight = Weight(DF70, structures)
 
         self.submodels = [mission, weight, fuselage, wing]
 
