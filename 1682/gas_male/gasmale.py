@@ -9,8 +9,8 @@ from gpkit.tools import te_exp_minus1
 PLOT = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "W_{eng-tot}", "b",
-           "S_{fuse}", "W_{cent}", "m_{fuse}", "m_{skin}", "m_{cap}",
-           "W_{zfw}", "W_{fuel-tot}", "W_{wing}"]
+           "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}", "W_{wing}",
+           "W_{fuse}"]
 
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, discrete, **kwargs):
@@ -437,11 +437,9 @@ class Weight(Model):
         W_fueltank = Variable('W_{fuel-tank}', 4, 'lbf', 'Fuel tank weight')
         W_skid = Variable("W_{skid}", 4, "lbf", "Skid weight")
         m_tail = Variable("m_{tail}", 1.587, "kg", "Tail mass")
-        m_rib = Variable("m_{rib}", 1.36, "kg", "Rib mass")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         # gobal vars
-        m_fuse = Variable("m_{fuse}", "kg", "Fuselage mass")
 
         W_pay = Variable("W_{pay}", 10, "lbf", "Payload weight")
         W_avionics = Variable("W_{avionics}", 8, "lbf", "Avionics weight")
@@ -455,7 +453,6 @@ class Weight(Model):
                                 "Installed engine weight")
 
         constraints = [
-            W_fuse >= m_fuse*g + m_rib*g,
             W_cent >= (W_fueltot + W_pay + W_engtot + W_fuse + W_avionics +
                        W_skid + W_fueltank),
             W_zfw >= (W_pay + W_engtot + W_fuse + W_wing + m_tail*g +
@@ -531,7 +528,7 @@ class Wing(Model):
                        LoverA == mtow/S,
                        delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
                        delta_tip/b <= delta_tip_max,
-                       W_wing >= m_skin*g + 1.2*m_cap*g,
+                       W_wing >= m_skin*g + 1.2*m_cap*g
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -566,6 +563,10 @@ class Fuselage(Model):
         Vol_avionics = Variable("Vol_{avionics}", 0.125, "ft^3",
                                 "Avionics volume")
         Vol_pay = Variable("Vol_{pay}", 1, "ft^3", "Payload volume")
+        m_rib = Variable("m_{rib}", 1.36, "kg", "Rib mass")
+        m_fuse = Variable("m_{fuse}", "kg", "Fuselage mass")
+        W_fuse = Variable("W_{fuse}", "lbf", "Fuselage weight")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [m_fuse >= S_fuse*rho_skin,
                        l_cent == fr*w_cent,
@@ -574,7 +575,8 @@ class Fuselage(Model):
                        (S_fuse/k2fuse)**3 == Vol_fuse**2,
                        Vol_fuse >= l_cent*w_cent**2,
                        Vol_fuel >= W_fueltot/rho_fuel,
-                       l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay
+                       l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay,
+                       W_fuse >= m_fuse*g + m_rib*g
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
