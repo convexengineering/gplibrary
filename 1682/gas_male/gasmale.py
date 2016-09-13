@@ -9,7 +9,7 @@ from helpers import SummingConstraintSet
 from gpkit.tools import te_exp_minus1
 PLOT = False
 
-INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "W_{eng-tot}", "b",
+INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b",
            "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}"]
 
 class Mission(Model):
@@ -50,7 +50,7 @@ class Mission(Model):
                 ])
 
         lc = LinkedConstraintSet(
-            [fs for fs in self.submodels, constraints], include_only=INCLUDE)
+            [fs for fs in self.submodels, constraints], include_only=INCLUDE+self.submodels[0].include)
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -64,6 +64,8 @@ class FlightSegment(Model):
         self.atm = Atmosphere(N, alt)
         self.wind = Wind(N, alt, wind)
 
+        self.include = ["W"]
+
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
                           self.atm, self.wind]
 
@@ -74,6 +76,8 @@ class Cruise(FlightSegment):
         breguetrange = BreguetRange(N, R)
 
         self.submodels.extend([breguetrange])
+
+        constraints = []
 
         lc = LinkedConstraintSet([self.submodels])
 
@@ -245,10 +249,11 @@ class Engine(Model):
                                 "Max shaft power loss factor")
         P_shaftmax = VectorVariable(N, "P_{shaft-max}",
                                     "hp", "Max shaft power at altitude")
+        W = Variable("W", "lbf", "Installed/Total engine weight")
 
         if DF70:
-            W_engtot = Variable("W_{eng-tot}", 7.1, "lbf",
-                                "Installed engine weight")
+            W_df70 = Variable("W_{DF70}", 7.1, "lbf",
+                              "Installed/Total DF70 engine weight")
             P_shaftmaxmsl = Variable("P_{shaft-maxMSL}", 5.17, "hp",
                                      "Max shaft power at MSL")
             rpm_max = Variable("RPM_{max}", 7698, "rpm", "Maximum RPM")
@@ -256,6 +261,7 @@ class Engine(Model):
                                 "Minimum BSFC")
 
             constraints = [
+                W >= W_df70,
                 (bsfc/bsfc_min)**35.7 >= (2.29*(rpm/rpm_max)**8.02 +
                                           0.00114*(rpm/rpm_max)**-38.3),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294,
@@ -266,8 +272,6 @@ class Engine(Model):
             W_engref = Variable("W_{eng-ref}", 4.4107, "lbf",
                                 "Reference engine weight")
             W_eng = Variable("W_{eng}", "lbf", "engine weight")
-            W_engtot = Variable("W_{eng-tot}", "lbf",
-                                "Installed engine weight")
             bsfc_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr",
                                 "Minimum BSFC")
             P_shaftmaxmsl = Variable("P_{shaft-maxMSL}", "hp",
@@ -276,7 +280,7 @@ class Engine(Model):
 
             constraints = [
                 W_eng/W_engref >= 0.5538*(P_shaftmaxmsl/P_shaftref)**1.075,
-                W_engtot >= 2.572*W_eng**0.922*units("lbf")**0.078,
+                W >= 2.572*W_eng**0.922*units("lbf")**0.078,
                 (bsfc/bsfc_min)**0.129 >= (2*.486*(rpm/rpm_max)**-0.141 +
                                            0.0268*(rpm/rpm_max)**9.62),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292,
@@ -576,7 +580,7 @@ class Weight(ConstraintSet):
     """
     Weight brakedown of aircraft
     """
-    def __init__(self, DF70, structures, **kwargs):
+    def __init__(self, weights, **kwargs):
 
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
@@ -590,18 +594,9 @@ class Weight(ConstraintSet):
         W_avionics = Variable("W_{avionics}", 8, "lbf", "Avionics weight")
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
 
-        if DF70:
-            W_engtot = Variable("W_{eng-tot}", 7.1, "lbf",
-                                "Installed engine weight")
-        else:
-            W_engtot = Variable("W_{eng-tot}", "lbf",
-                                "Installed engine weight")
-
         constraints = [
-            SummingConstraintSet(W_cent, "W", structures, [W_fueltot, W_pay, W_engtot, W_avionics, W_skid, W_fueltank]),
-            SummingConstraintSet(W_zfw, "W", structures, [W_pay, W_engtot,
-                                                      W_tail, W_avionics,
-                                                      W_skid, W_fueltank])
+            SummingConstraintSet(W_cent, "W", weights, [W_fueltot, W_pay, W_avionics, W_skid, W_fueltank]),
+            SummingConstraintSet(W_zfw, "W", weights, [W_pay, W_tail, W_avionics, W_skid, W_fueltank])
             ]
 
         ConstraintSet.__init__(self, constraints, **kwargs)
@@ -618,8 +613,8 @@ class GasMALE(Model):
         mission = Mission(h_station, wind, DF70, discrete)
         wing = Wing()
         fuselage = Fuselage()
-        structures = [wing, fuselage]
-        weight = Weight(DF70, structures)
+        weights = [wing, fuselage, mission]
+        weight = Weight(weights)
 
         self.submodels = [mission, weight, fuselage, wing]
 
