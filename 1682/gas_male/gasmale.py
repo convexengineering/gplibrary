@@ -10,7 +10,7 @@ PLOT = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "W_{eng-tot}", "b",
            "S_{fuse}", "W_{cent}", "m_{fuse}", "m_{skin}", "m_{cap}",
-           "W_{zfw}", "W_{fuel-tot}"]
+           "W_{zfw}", "W_{fuel-tot}", "W_{wing}"]
 
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, discrete, **kwargs):
@@ -442,8 +442,6 @@ class Weight(Model):
 
         # gobal vars
         m_fuse = Variable("m_{fuse}", "kg", "Fuselage mass")
-        m_cap = Variable("m_{cap}", "kg", "Cap mass")
-        m_skin = Variable("m_{skin}", "kg", "Skin mass")
 
         W_pay = Variable("W_{pay}", 10, "lbf", "Payload weight")
         W_avionics = Variable("W_{avionics}", 8, "lbf", "Avionics weight")
@@ -457,7 +455,6 @@ class Weight(Model):
                                 "Installed engine weight")
 
         constraints = [
-            W_wing >= m_skin*g + 1.2*m_cap*g,
             W_fuse >= m_fuse*g + m_rib*g,
             W_cent >= (W_fueltot + W_pay + W_engtot + W_fuse + W_avionics +
                        W_skid + W_fueltank),
@@ -467,7 +464,7 @@ class Weight(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class Structures(Model):
+class Wing(Model):
     """
     Structural wing model.  Simple beam.
     """
@@ -516,6 +513,10 @@ class Structures(Model):
         b = Variable("b", "ft", "Span")
         m_cap = Variable("m_{cap}", "kg", "Cap mass")
         mtow = Variable("MTOW", "lbf", "Max take off weight")
+        m_cap = Variable("m_{cap}", "kg", "Cap mass")
+        m_skin = Variable("m_{skin}", "kg", "Skin mass")
+        W_wing = Variable("W_{wing}", "lbf", "Total wing structural weight")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [m_skin >= rho_skin*S*2,
                        F >= W_cent*N_max,
@@ -529,7 +530,9 @@ class Structures(Model):
                        w_cap == A_capcent/t_cap,
                        LoverA == mtow/S,
                        delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
-                       delta_tip/b <= delta_tip_max]
+                       delta_tip/b <= delta_tip_max,
+                       W_wing >= m_skin*g + 1.2*m_cap*g,
+                      ]
 
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -615,9 +618,9 @@ class GasMALE(Model):
         mission = Mission(h_station, wind, DF70, discrete)
         weight = Weight(DF70)
         fuselage = Fuselage()
-        structures = Structures()
+        wing = Wing()
 
-        self.submodels = [mission, weight, fuselage, structures]
+        self.submodels = [mission, weight, fuselage, wing]
 
         constraints = []
 
