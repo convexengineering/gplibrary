@@ -50,7 +50,8 @@ class Mission(Model):
                 ])
 
         lc = LinkedConstraintSet(
-            [fs for fs in self.submodels, constraints], include_only=INCLUDE+self.submodels[0].include)
+            [fs for fs in self.submodels, constraints],
+            include_only=INCLUDE + ["W"])
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -64,8 +65,6 @@ class FlightSegment(Model):
         self.atm = Atmosphere(N, alt)
         self.wind = Wind(N, alt, wind)
 
-        self.include = ["W"]
-
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
                           self.atm, self.wind]
 
@@ -77,7 +76,7 @@ class Cruise(FlightSegment):
 
         self.submodels.extend([breguetrange])
 
-        constraints = []
+        self.constraints = []
 
         lc = LinkedConstraintSet([self.submodels])
 
