@@ -8,7 +8,9 @@ from gpkit import LinkedConstraintSet
 from gpkit.tools import te_exp_minus1
 PLOT = False
 
-INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "W_{eng-tot}", "b", "S_{fuse}", "W_{cent}", "m_{fuse}", "m_{skin}", "m_{cap}", "W_{zfw}", "W_{fuel-tot}"]
+INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "W_{eng-tot}", "b",
+           "S_{fuse}", "W_{cent}", "m_{fuse}", "m_{skin}", "m_{cap}",
+           "W_{zfw}", "W_{fuel-tot}"]
 
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, discrete, **kwargs):
@@ -38,13 +40,13 @@ class Mission(Model):
 
         constraints = [
             mtow >= self.submodels[0]["W_{start}"],
-            W_zfw <= self.submodels[-1]["W_{finish}"],
+            W_zfw <= self.submodels[-1]["W_{end}"],
             W_fueltot >= sum(fs["W_{fuel-fs}"] for fs in self.submodels)
             ]
 
         for i, fs in enumerate(self.submodels[1:]):
             constraints.extend([
-                self.submodels[i]["W_{finish}"] == fs["W_{start}"]
+                self.submodels[i]["W_{end}"] == fs["W_{start}"]
                 ])
 
         lc = LinkedConstraintSet(
@@ -109,7 +111,7 @@ class Climb(FlightSegment):
             h_dot >= h_dotmin,
             self.slf["T"] >= (0.5*self.slf["\\rho"]*self.slf["V"]**2*
                               self.slf["C_D"]*self.slf["S"] +
-                              self.slf["W_{begin}"]*h_dot/self.slf["V"])
+                              self.slf["W_{N}"]*h_dot/self.slf["V"])
             ]
 
         self.submodels.extend([breguetendurance])
@@ -158,30 +160,30 @@ class Fuel(Model):
 
         W_start = Variable("W_{start}", "lbf",
                            "weight at beginning of flight segment")
-        W_end = VectorVariable(N, "W_{end}", "lbf", "Segment-end weight")
+        W_nplus1 = VectorVariable(N, "W_{N+1}", "lbf", "vector-end weight")
         W_fuel = VectorVariable(N, "W_{fuel}", "lbf",
                                 "Segment-fuel weight")
         W_fuelfs = Variable("W_{fuel-fs}", "lbf",
                             "flight segment fuel weight")
-        W_finish = Variable("W_{finish}", "lbf",
-                            "weight at beginning of flight segment")
-        W_begin = VectorVariable(N, "W_{begin}", "lbf", "segment-begin weight")
+        W_end = Variable("W_{end}", "lbf",
+                         "weight at beginning of flight segment")
+        W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         # end of first segment weight + first segment fuel weight must be
         # greater  than MTOW.  Each end of segment weight must be greater
         # than the next end of segment weight + the next segment fuel weight.
         # The last end segment weight must be greater than the zero fuel
         # weight
-        constraints = [W_start >= W_end[0] + W_fuel[0],
+        constraints = [W_start >= W_nplus1[0] + W_fuel[0],
                        W_fuelfs >= W_fuel.sum(),
-                       W_end[-1] >= W_finish,
-                       W_begin[0] >= W_start]
+                       W_nplus1[-1] >= W_end,
+                       W_n[0] >= W_start]
 
         if N == 1:
             pass
         else:
-            constraints.extend([W_end[:-1] >= W_end[1:] + W_fuel[1:],
-                                W_begin[1:] == W_end[:-1],
+            constraints.extend([W_nplus1[:-1] >= W_nplus1[1:] + W_fuel[1:],
+                                W_n[1:] == W_nplus1[:-1],
                                ])
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -202,8 +204,8 @@ class SteadyLevelFlight(Model):
         T = VectorVariable(N, "T", "lbf", "Thrust")
 
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
-        W_end = VectorVariable(N, "W_{end}", "lbf", "Segment-end weight")
-        W_begin = VectorVariable(N, "W_{begin}", "lbf", "segment-begin weight")
+        W_nplus1 = VectorVariable(N, "W_{N+1}", "lbf", "vector-end weight")
+        W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         # Climb model
         # Currently climb rate is being optimized to reduce fuel consumption.
@@ -212,7 +214,7 @@ class SteadyLevelFlight(Model):
         constraints = [
             P_shaft == T*V/eta_prop,
             T >= 0.5*rho*V**2*CD*S,
-            0.5*rho*CL*S*V**2 == (W_end*W_begin)**0.5,
+            0.5*rho*CL*S*V**2 == (W_nplus1*W_n)**0.5,
             ]
         # Propulsive efficiency variation with different flight segments,
         # will change depending on propeller characteristics
@@ -306,14 +308,14 @@ class BreguetEndurance(Model):
                                     "Total power, avionics included")
         bsfc = VectorVariable(N, "BSFC", "lb/hr/hp",
                               "Brake specific fuel consumption")
-        W_end = VectorVariable(N, "W_{end}", "lbf", "Segment-end weight")
+        W_nplus1 = VectorVariable(N, "W_{N+1}", "lbf", "vector-end weight")
         W_fuel = VectorVariable(N, "W_{fuel}", "lbf",
                                 "Segment-fuel weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [
-            z_bre >= P_shafttot*t*bsfc*g/W_end,
-            f_fueloil*W_fuel/W_end >= te_exp_minus1(z_bre, 3)
+            z_bre >= P_shafttot*t*bsfc*g/W_nplus1,
+            f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -331,16 +333,16 @@ class BreguetRange(Model):
                                     "Total power, avionics included")
         bsfc = VectorVariable(N, "BSFC", "lb/hr/hp",
                               "Brake specific fuel consumption")
-        W_end = VectorVariable(N, "W_{end}", "lbf", "Segment-end weight")
+        W_nplus1 = VectorVariable(N, "W_{N+1}", "lbf", "vector-end weight")
         V = VectorVariable(N, "V", "m/s", "Cruise speed")
         W_fuel = VectorVariable(N, "W_{fuel}", "lbf",
                                 "Segment-fuel weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [
-            z_bre >= P_shafttot*t*bsfc*g/W_end,
+            z_bre >= P_shafttot*t*bsfc*g/W_nplus1,
             R/N <= V*t,
-            f_fueloil*W_fuel/W_end >= te_exp_minus1(z_bre, 3)
+            f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
