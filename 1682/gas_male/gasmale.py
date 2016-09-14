@@ -578,17 +578,25 @@ class Wind(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class Tail(Model):
+    def __init__(self, **kwargs):
+        W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
+        W = Variable("W", "lbf", "Tail weight")
+
+        constraints = [W >= W_vtail]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class Weight(ConstraintSet):
     """
     Weight brakedown of aircraft
     """
-    def __init__(self, weights, **kwargs):
+    def __init__(self, center_loads, zf_loads, **kwargs):
 
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
         W_fueltank = Variable('W_{fuel-tank}', 4, 'lbf', 'Fuel tank weight')
         W_skid = Variable("W_{skid}", 4, "lbf", "Skid weight")
-        W_tail = Variable("W_{tail}", 3.4999, "lbf", "Tail weight")
 
         # gobal vars
 
@@ -597,8 +605,8 @@ class Weight(ConstraintSet):
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
 
         constraints = [
-            SummingConstraintSet(W_cent, "W", weights, [W_fueltot, W_pay, W_avionics, W_skid, W_fueltank]),
-            SummingConstraintSet(W_zfw, "W", weights, [W_pay, W_tail, W_avionics, W_skid, W_fueltank])
+            SummingConstraintSet(W_cent, "W", center_loads, [W_fueltot, W_pay, W_avionics, W_skid, W_fueltank]),
+            SummingConstraintSet(W_zfw, "W", zf_loads, [W_pay, W_avionics, W_skid, W_fueltank])
             ]
 
         ConstraintSet.__init__(self, constraints, **kwargs)
@@ -614,11 +622,13 @@ class GasMALE(Model):
 
         mission = Mission(h_station, wind, DF70, discrete)
         wing = Wing()
+        tail = Tail()
         fuselage = Fuselage()
-        weights = [wing, fuselage, mission]
-        weight = Weight(weights)
+        center_loads = [wing, fuselage, mission]
+        zf_loads = center_loads + [tail]
+        weight = Weight(center_loads, zf_loads)
 
-        self.submodels = [mission, weight, fuselage, wing]
+        self.submodels = [mission, weight, fuselage, wing, tail]
 
         constraints = []
 
