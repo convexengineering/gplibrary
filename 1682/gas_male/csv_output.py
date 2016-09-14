@@ -1,8 +1,12 @@
 import numpy as np
 import pandas as pd
 from gasmale import GasMALE
+from gpkit.small_scripts import unitstr
 
-def output_csv(M, sol):
+def output_csv(M, sol, varnames):
+    """
+    This ouputs variables relevant accross a mission
+    """
 
     fseg = {"name": [], "shape": [], "index": []}
     for subm in M.submodels:
@@ -22,10 +26,8 @@ def output_csv(M, sol):
             colnames.append(n)
 
     data = {}
-    for var in M.varkeys:
-        for mname in var.descr["models"]:
-            if mname in fseg["name"] and var.descr["name"] not in data:
-                data[var.descr["name"]] = np.zeros(sum(fseg["shape"]))
+    for vname in varnames:
+        data[vname] = np.zeros(sum(fseg["shape"]))
 
     for var in M.varkeys:
         if var.descr["name"] in data:
@@ -47,10 +49,35 @@ def output_csv(M, sol):
     df.columns = colnames
     df.to_csv("csv/output1.csv")
 
+def bd_csv_output(sol, varname):
+
+    if varname in sol["sensitivities"]["constants"]:
+        colnames = ["Value", "Units", "Sensitivitiy", "Label"]
+    else:
+        colnames = ["Value", "Units", "Label"]
+
+    data = {}
+    for sv in sol(varname):
+        name = sv.name + "_" + sv.models[0]
+        data[name] = [sol(sv).magnitude]
+        data[name].append(unitstr(sv.units))
+        if varname in sol["sensitivities"]["constants"]:
+            data[name].append(sol["sensitivities"]["constants"][sv])
+        data[name].append(sv.label)
+
+    df = pd.DataFrame(data)
+    df = df.transpose()
+    df.columns = colnames
+    df.to_csv("csv/%s_breakdown.csv" % varname.replace("{", "").replace("}",
+                                                                        ""))
+
 if __name__ == "__main__":
     M = GasMALE()
     M.substitutions.update({"t_{loiter}": 6})
     M.cost = M["MTOW"]
-    sol = M.solve("mosek")
+    Sol = M.solve("mosek")
 
-    output_csv(M, sol)
+    Mission_vars = ["RPM", "BSFC", "V", "P_{shaft}", "P_{shaft-tot}", "h_{dot}", "h", "T_{atm}", "\\mu", "\\rho", "W_{fuel}", "W_{N}", "W_{N+1}", "C_D", "C_L", "\\eta_{prop}", "T", "h_{loss}", "P_{shaft-max}", "t", "Re", "C_{f-fuse}", "C_{D-fuse}", "c_{dp}", "V_{wind}"]
+    output_csv(M, Sol, Mission_vars)
+    bd_csv_output(Sol, "W")
+    bd_csv_output(Sol, "m_{fac}")
