@@ -587,6 +587,16 @@ class Tail(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class Avionics(Model):
+    def __init__(self, **kwargs):
+        W_fc = Variable("W_{fc}", 4, "lbf", "Flight controller weight")
+        W_batt = Variable("W_{batt}", 4, "lbf", "Battery weight")
+        W = Variable("W", "lbf", "Avionics Weight")
+
+        constraints = [W >= W_fc + W_batt]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class Weight(ConstraintSet):
     """
     Weight brakedown of aircraft
@@ -601,12 +611,11 @@ class Weight(ConstraintSet):
         # gobal vars
 
         W_pay = Variable("W_{pay}", 10, "lbf", "Payload weight")
-        W_avionics = Variable("W_{avionics}", 8, "lbf", "Avionics weight")
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
 
         constraints = [
-            SummingConstraintSet(W_cent, "W", center_loads, [W_fueltot, W_pay, W_avionics, W_skid, W_fueltank]),
-            SummingConstraintSet(W_zfw, "W", zf_loads, [W_pay, W_avionics, W_skid, W_fueltank])
+            SummingConstraintSet(W_cent, "W", center_loads, [W_fueltot, W_pay, W_skid, W_fueltank]),
+            SummingConstraintSet(W_zfw, "W", zf_loads, [W_pay, W_skid, W_fueltank])
             ]
 
         ConstraintSet.__init__(self, constraints, **kwargs)
@@ -623,12 +632,13 @@ class GasMALE(Model):
         mission = Mission(h_station, wind, DF70, discrete)
         wing = Wing()
         tail = Tail()
+        avionics = Avionics()
         fuselage = Fuselage()
-        center_loads = [wing, fuselage, mission]
+        center_loads = [wing, fuselage, mission, avionics]
         zf_loads = center_loads + [tail]
         weight = Weight(center_loads, zf_loads)
 
-        self.submodels = [mission, weight, fuselage, wing, tail]
+        self.submodels = zf_loads + [weight]
 
         constraints = []
 
