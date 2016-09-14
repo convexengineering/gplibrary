@@ -67,6 +67,8 @@ class FlightSegment(Model):
         self.wind = Wind(N, alt, wind)
 
         self.N = N
+        self.include = ["h", "\\rho", "\\mu", "W_{n}", "W_{N+1}", "W_{fuel}", "C_D", "C_L", "V", "S", "\\eta_{prop}", "P_{shaft}", "P_{shaft-tot}", "T", "BSFC"]
+        self.exclude = ["m_{fac}"]
 
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
                           self.atm, self.wind]
@@ -81,7 +83,8 @@ class Cruise(FlightSegment):
 
         self.constraints = []
 
-        lc = LinkedConstraintSet([self.submodels])
+        #lc = LinkedConstraintSet([self.submodels], include_only=self.include)
+        lc = LinkedConstraintSet([self.submodels], exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -98,7 +101,8 @@ class Loiter(FlightSegment):
 
         self.submodels.extend([breguetendurance])
 
-        lc = LinkedConstraintSet([self.submodels, constraints])
+        #lc = LinkedConstraintSet([self.submodels, constraints], include_only=self.include)
+        lc = LinkedConstraintSet([self.submodels, constraints], exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -125,7 +129,8 @@ class Climb(FlightSegment):
 
         self.submodels.extend([breguetendurance])
 
-        lc = LinkedConstraintSet([self.submodels, constraints])
+        # lc = LinkedConstraintSet([self.submodels, constraints], include_only=self.include)
+        lc = LinkedConstraintSet([self.submodels, constraints], exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -255,7 +260,7 @@ class Engine(Model):
         P_shaftmax = VectorVariable(N, "P_{shaft-max}",
                                     "hp", "Max shaft power at altitude")
         W = Variable("W", "lbf", "Installed/Total engine weight")
-        m_fac = Variable("m_{fac]", 1.0, "-", "BSFC margin factor")
+        m_fac = Variable("m_{fac}", 1.0, "-", "BSFC margin factor")
 
         if DF70:
             W_df70 = Variable("W_{DF70}", 7.1, "lbf",

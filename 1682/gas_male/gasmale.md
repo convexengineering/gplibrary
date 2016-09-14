@@ -202,7 +202,7 @@ gen_tex_fig(fig, "profilevs_Pshafttot")
 fig, ax = plot_mission_var(Mprof, sol, "RPM", [0, 9000])
 gen_tex_fig(fig, "profilevs_RPM")
 
-fig, ax = plot_mission_var(Mprof, sol, "W_{end}", [0, 150], "aircraft weight [lbf]")
+fig, ax = plot_mission_var(Mprof, sol, "W_{N+1}", [0, 150], "aircraft weight [lbf]")
 gen_tex_fig(fig, "profilevs_weight")
 ```
 \input{tex/profilevs_velocity.fig.generated.tex}

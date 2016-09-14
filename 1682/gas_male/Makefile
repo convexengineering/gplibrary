@@ -1,3 +1,4 @@
 all:
+	python csv_output.py
 	python -c 'import gpkit.tools; exec gpkit.tools.mdmake("gasmale.md")'
-	pandoc --template default.latex gasmale.md.tex.md -o "/Users/mjburton11/Dropbox (MIT)/16.82GasMALE/GPkitReport/gasmale.pdf"
+	pandoc --template default.latex gasmale.md.tex.md -o "/Users/mjburton11/Dropbox (MIT)/16.82GasMALE/GPkitReports/gasmale.pdf"

@@ -3,7 +3,7 @@ import pandas as pd
 from gasmale import GasMALE
 from gpkit.small_scripts import unitstr
 
-def output_csv(M, sol, varnames):
+def output_csv(PATH, M, sol, varnames):
     """
     This ouputs variables relevant accross a mission
     """
@@ -47,9 +47,9 @@ def output_csv(M, sol, varnames):
     df = pd.DataFrame(data)
     df = df.transpose()
     df.columns = colnames
-    df.to_csv("csv/output1.csv")
+    df.to_csv("%soutput1.csv" % PATH)
 
-def bd_csv_output(sol, varname):
+def bd_csv_output(PATH, sol, varname):
 
     if varname in sol["sensitivities"]["constants"]:
         colnames = ["Value", "Units", "Sensitivitiy", "Label"]
@@ -58,7 +58,7 @@ def bd_csv_output(sol, varname):
 
     data = {}
     for sv in sol(varname):
-        name = sv.name + "_" + sv.models[0]
+        name = sv
         data[name] = [sol(sv).magnitude]
         data[name].append(unitstr(sv.units))
         if varname in sol["sensitivities"]["constants"]:
@@ -68,16 +68,21 @@ def bd_csv_output(sol, varname):
     df = pd.DataFrame(data)
     df = df.transpose()
     df.columns = colnames
-    df.to_csv("csv/%s_breakdown.csv" % varname.replace("{", "").replace("}",
-                                                                        ""))
+    df.to_csv("%s%s_breakdown.csv" %
+              (PATH, varname.replace("{", "").replace("}", "")))
 
 if __name__ == "__main__":
     M = GasMALE()
     M.substitutions.update({"t_{loiter}": 6})
     M.cost = M["MTOW"]
     Sol = M.solve("mosek")
+    PATH = "/Users/mjburton11/Dropbox (MIT)/16.82GasMALE/GpkitReports/csvs/"
 
-    Mission_vars = ["RPM", "BSFC", "V", "P_{shaft}", "P_{shaft-tot}", "h_{dot}", "h", "T_{atm}", "\\mu", "\\rho", "W_{fuel}", "W_{N}", "W_{N+1}", "C_D", "C_L", "\\eta_{prop}", "T", "h_{loss}", "P_{shaft-max}", "t", "Re", "C_{f-fuse}", "C_{D-fuse}", "c_{dp}", "V_{wind}"]
-    output_csv(M, Sol, Mission_vars)
-    bd_csv_output(Sol, "W")
-    bd_csv_output(Sol, "m_{fac}")
+    Mission_vars = ["RPM", "BSFC", "V", "P_{shaft}", "P_{shaft-tot}",
+                    "h_{dot}", "h", "T_{atm}", "\\mu", "\\rho", "W_{fuel}",
+                    "W_{N}", "W_{N+1}", "C_D", "C_L", "\\eta_{prop}", "T",
+                    "h_{loss}", "P_{shaft-max}", "t", "Re", "C_{f-fuse}",
+                    "C_{D-fuse}", "c_{dp}", "V_{wind}"]
+    output_csv(PATH, M, Sol, Mission_vars)
+    bd_csv_output(PATH, Sol, "W")
+    bd_csv_output(PATH, Sol, "m_{fac}")
