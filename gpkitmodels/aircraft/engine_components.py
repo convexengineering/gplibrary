@@ -189,7 +189,7 @@ class CombustorCooling(Model):
                 #this is where the bug is in the off design
                 
                 SignomialEquality(fp1,f+1),
-                SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),
+                
 ##                TCS([f*hf + ht3 >= ht4]),
                 
 ##                f*hf + ht3 >= ht4,
@@ -199,16 +199,8 @@ class CombustorCooling(Model):
                 
                 
                 ht41 == Cpc * Tt41,
-                
-                
-                #compute Tt41...mixing causes a temperature drop
-                #had to include Tt4 here to prevent it from being pushed down to zero
-                TCS([ht41 <= ((1-ac+f)*ht4 +ac*ht3)/fp1]),
-                #comptue the rest of the station 4.1 variables
                          
                 
-                #this is a stagnation relation...need to fix it to not be signomial
-                TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
                 #here we assume no pressure loss in mixing so P41=P4a
                 Pt41 == P4a*(Tt41/T41)**(1.313/.313),
                 #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
@@ -218,30 +210,30 @@ class CombustorCooling(Model):
   
                 ]
             
-##            if cooling == True:
-##                print "true"
-##                constraints.extend([
-##                    #compute Tt41...mixing causes a temperature drop
-##                    #had to include Tt4 here to prevent it from being pushed down to zero
-####                    TCS([ht41 <= ((1-ac)*ht4 +ac*ht3+Cpfuel*f*(Tt4-Ttf) + Cpfuel*Ttf*f)/fp1]),
-##                    TCS([ht41 <= ((1-ac+f)*ht4 +ac*ht3)/fp1]),
-##                    #comptue the rest of the station 4.1 variables
-##                    SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
-##                    
-##                    #this is a stagnation relation...need to fix it to not be signomial
-##                    TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
-##                    #here we assume no pressure loss in mixing so P41=P4a
-##                    Pt41 == P4a*(Tt41/T41)**(1.313/.313),
-##                    #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
-##                    u4a == M4a*((1.313*R*Tt4)**.5)/hold4a,
-##                    uc == ruc*u4a,
-##                    P4a == Pt4*hold4a**(-1.313/.313),
-##                    ])
-##            else:
-##                constraints.extend([
-##                    Pt41 == Pt4,
-##                    Tt41 == Tt4,
-##                    ])
+            if cooling == True:
+                print "true"
+                constraints.extend([
+                    #compute Tt41...mixing causes a temperature drop
+                    #had to include Tt4 here to prevent it from being pushed down to zero
+##                    TCS([ht41 <= ((1-ac)*ht4 +ac*ht3+Cpfuel*f*(Tt4-Ttf) + Cpfuel*Ttf*f)/fp1]),
+                    TCS([ht41 <= ((1-ac+f)*ht4 +ac*ht3)/fp1]),
+                    #comptue the rest of the station 4.1 variables
+                    SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
+                    
+                    #this is a stagnation relation...need to fix it to not be signomial
+                    TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
+                    #here we assume no pressure loss in mixing so P41=P4a
+                    Pt41 == P4a*(Tt41/T41)**(1.313/.313),
+                    #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
+                    u4a == M4a*((1.313*R*Tt4)**.5)/hold4a,
+                    uc == ruc*u4a,
+                    P4a == Pt4*hold4a**(-1.313/.313),
+                    ])
+            else:
+                constraints.extend([
+                    Pt41 == Pt4,
+                    Tt41 == Tt4,
+                    ])
             
         Model.__init__(self, 1/f, constraints, **kwargs)
 

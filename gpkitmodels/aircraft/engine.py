@@ -73,18 +73,12 @@ class EngineOnDesign(Model):
             '\eta_{HPshaft}': .99,
             '\eta_{LPshaft}': .98,
             'M_{takeoff}': .95,
-            'stag41': 1+.5*(.312)*M4a**2,
             '\alpca_c': .05,
 
             #new subs for mixing flow losses
             'T_{t_f}': 600,
             'hold_{4a}': 1+.5*(1.313-1)*M4a**2,
             'r_{uc}': 0.5,
-            'T_{m_TO}': 1000,
-            'M_{t_exit}': Mexit,
-            'chold_2': (1+.5*(1.318-1)*Mexit**2)**-1,
-            'chold_3': (1+.5*(1.318-1)*Mexit**2)**-2,
-            'T_{t_4TO}': 1600,
             }
 
             #temporary objective is to minimize the core mass flux 
