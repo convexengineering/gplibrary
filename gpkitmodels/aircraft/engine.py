@@ -29,7 +29,7 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        mixing = False
+        mixing = True
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(mixing)
@@ -73,7 +73,7 @@ class EngineOnDesign(Model):
             '\eta_{HPshaft}': .99,
             '\eta_{LPshaft}': .98,
             'M_{takeoff}': .95,
-            '\alpca_c': .05,
+            '\\alpha_c': .05,
 
             #new subs for mixing flow losses
             'T_{t_f}': 600,
@@ -199,7 +199,7 @@ class EngineOffDesign(Model):
                 '\eta_{HPshaft}': sol('\eta_{HPshaft}'),
                 '\eta_{LPshaft}': sol('\eta_{LPshaft}'),
                 'M_{takeoff}': sol('M_{takeoff}'),
-                '\alpca_c': sol('\alpca_c'),
+                '\\alpha_c': sol('\\alpha_c'),
                 'T_{t_f}': sol('T_{t_f}'),
                 
                 'm_{fan_D}': sol('alpha')*sol('m_{core}'),
