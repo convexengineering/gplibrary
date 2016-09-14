@@ -125,7 +125,7 @@ class CombustorCooling(Model):
         #gas propeRies
         Cpc = Variable('Cp_c', 1204, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K, gamma equals 1.312
         R = Variable('R', 287, 'J/kg/K', 'R')
-        Cpfuel = Variable('Cp_{fuel}', 2010, 'J/kg/K', 'Specific Heat Capacity of Kerosene (~Jet Fuel)')
+##        Cpfuel = Variable('Cp_{fuel}', 1, 'J/kg/K', 'Specific Heat Capacity of Kerosene (~Jet Fuel)')
         
         #HPC exit state variables (station 3)
         Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
@@ -190,17 +190,21 @@ class CombustorCooling(Model):
             if mixing == True:
                 constraints.extend([
                     #compute f with mixing
-                    TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3+Cpfuel*f*(Tt4-Ttf)]),
+##                    TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3+Cpfuel*f*(Tt4-Ttf)]),
+                    TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3]),
+##                    TCS([f*hf + ht3 >= ht4]),
+
                     
                     #compute Tt41...mixing causes a temperature drop
                     #had to include Tt4 here to prevent it from being pushed down to zero
-##                    TCS([ht41 <= ((1-ac)*ht4 +ac*ht3+Cpfuel*f*(Tt4-Ttf) + Cpfuel*Ttf*f)/fp1]),
                     TCS([ht41 <= ((1-ac+f)*ht4 +ac*ht3)/fp1]),
+                    
                     #comptue the rest of the station 4.1 variables
                     SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
                     
                     #this is a stagnation relation...need to fix it to not be signomial
                     TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
+                    
                     #here we assume no pressure loss in mixing so P41=P4a
                     Pt41 == P4a*(Tt41/T41)**(1.313/.313),
                     #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)

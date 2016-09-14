@@ -77,7 +77,7 @@ class EngineOnDesign(Model):
             if mixing == True:
                 substitutions.update({
                     #new subs for mixing flow losses
-                    'T_{t_f}': 600,
+##                    'T_{t_f}': 100,
                     'hold_{4a}': 1+.5*(1.313-1)*M4a**2,
                     'r_{uc}': 0.5,
                     'M_{4a}': M4a,
@@ -229,8 +229,8 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-##    solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
-    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
+    solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
+##    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
     
 ##    engineOffD = EngineOffDesign(solOn)
     
