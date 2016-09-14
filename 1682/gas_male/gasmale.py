@@ -37,9 +37,10 @@ class Mission(Model):
         mtow = Variable("MTOW", "lbf", "Max take off weight")
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
+        m_fac = Variable("m_{fac}", 1.0, "-", "MTOW margin factor")
 
         constraints = [
-            mtow >= self.submodels[0]["W_{start}"],
+            mtow/m_fac >= self.submodels[0]["W_{start}"],
             W_zfw <= self.submodels[-1]["W_{end}"],
             W_fueltot >= sum(fs["W_{fuel-fs}"] for fs in self.submodels)
             ]
@@ -91,8 +92,9 @@ class Loiter(FlightSegment):
         breguetendurance = BreguetEndurance(N)
 
         t_loiter = Variable("t_{loiter}", "days", "time loitering")
+        m_fac = Variable("m_{fac}", 1.0, "-", "loiter time margin factor")
 
-        constraints = [breguetendurance["t"] >= t_loiter/N]
+        constraints = [breguetendurance["t"]/m_fac >= t_loiter/N]
 
         self.submodels.extend([breguetendurance])
 
@@ -111,10 +113,11 @@ class Climb(FlightSegment):
         h_dot = VectorVariable(N, "h_{dot}", "ft/min", "Climb rate")
         h_dotmin = Variable("h_{dot-min}", 100, "ft/min",
                             "minimum climb rate")
+        m_fac = Variable("m_{fac}", 1.0, "-", "climb rate margin factor")
 
         constraints = [
             h_dot*breguetendurance["t"] >= deltah/N,
-            h_dot >= h_dotmin,
+            h_dot/m_fac >= h_dotmin,
             self.slf["T"] >= (0.5*self.slf["\\rho"]*self.slf["V"]**2*
                               self.slf["C_D"]*self.slf["S"] +
                               self.slf["W_{N}"]*h_dot/self.slf["V"])
@@ -252,6 +255,7 @@ class Engine(Model):
         P_shaftmax = VectorVariable(N, "P_{shaft-max}",
                                     "hp", "Max shaft power at altitude")
         W = Variable("W", "lbf", "Installed/Total engine weight")
+        m_fac = Variable("m_{fac]", 1.0, "-", "BSFC margin factor")
 
         if DF70:
             W_df70 = Variable("W_{DF70}", 7.1, "lbf",
@@ -264,8 +268,8 @@ class Engine(Model):
 
             constraints = [
                 W >= W_df70,
-                (bsfc/bsfc_min)**35.7 >= (2.29*(rpm/rpm_max)**8.02 +
-                                          0.00114*(rpm/rpm_max)**-38.3),
+                (bsfc/m_fac/bsfc_min)**35.7 >= (2.29*(rpm/rpm_max)**8.02 +
+                                                0.00114*(rpm/rpm_max)**-38.3),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294,
                 ]
         else:
@@ -283,8 +287,8 @@ class Engine(Model):
             constraints = [
                 W_eng/W_engref >= 0.5538*(P_shaftmaxmsl/P_shaftref)**1.075,
                 W >= 2.572*W_eng**0.922*units("lbf")**0.078,
-                (bsfc/bsfc_min)**0.129 >= (2*.486*(rpm/rpm_max)**-0.141 +
-                                           0.0268*(rpm/rpm_max)**9.62),
+                (bsfc/m_fac/bsfc_min)**0.129 >= (0.972*(rpm/rpm_max)**-0.141 +
+                                                 0.0268*(rpm/rpm_max)**9.62),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292,
                 ]
 
@@ -383,11 +387,13 @@ class Aerodynamics(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Aerodynamic margin factor")
 
         constraints = [
             CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR),
             #jh01
-            cdp >= ((0.0075 + 0.002*CL**2 + 0.00033*CL**10)*(Re/Re_ref)**-0.4),
+            cdp/m_fac >= ((0.0075 + 0.002*CL**2 +
+                           0.00033*CL**10)*(Re/Re_ref)**-0.4),
             #sd7032
             # cdp >= ((0.006 + 0.005*CL**2 + 0.00012*CL**10)*(Re/Re_ref)**-0.3),
             b**2 == S*AR,
@@ -484,6 +490,7 @@ class Wing(Model):
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
         W = Variable("W", "lbf", "Total wing structural weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Wing weight margin factor")
 
         constraints = [m_skin >= rho_skin*S*2,
                        F >= W_cent*N_max,
@@ -498,7 +505,7 @@ class Wing(Model):
                        LoverA == mtow/S,
                        delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
                        delta_tip/b <= delta_tip_max,
-                       W >= m_skin*g + 1.2*m_cap*g
+                       W/m_fac >= m_skin*g + 1.2*m_cap*g
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -537,6 +544,7 @@ class Fuselage(Model):
         m_fuse = Variable("m_{fuse}", "kg", "Fuselage mass")
         W = Variable("W", "lbf", "Fuselage weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Fuselage weight margin factor")
 
         constraints = [m_fuse >= S_fuse*rho_skin,
                        l_cent == fr*w_cent,
@@ -546,7 +554,7 @@ class Fuselage(Model):
                        Vol_fuse >= l_cent*w_cent**2,
                        Vol_fuel >= W_fueltot/rho_fuel,
                        l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay,
-                       W >= m_fuse*g + m_rib*g
+                       W/m_fac >= m_fuse*g + m_rib*g
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -581,9 +589,10 @@ class Wind(Model):
 class Tail(Model):
     def __init__(self, **kwargs):
         W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Tail margin factor")
         W = Variable("W", "lbf", "Tail weight")
 
-        constraints = [W >= W_vtail]
+        constraints = [W/m_fac >= W_vtail]
 
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -592,8 +601,9 @@ class Avionics(Model):
         W_fc = Variable("W_{fc}", 4, "lbf", "Flight controller weight")
         W_batt = Variable("W_{batt}", 4, "lbf", "Battery weight")
         W = Variable("W", "lbf", "Avionics Weight")
+        m_fac = Variable("m_{fac}", 1.0, "-", "avionics margin factor")
 
-        constraints = [W >= W_fc + W_batt]
+        constraints = [W/m_fac >= W_fc + W_batt]
 
         Model.__init__(self, None, constraints, **kwargs)
 
