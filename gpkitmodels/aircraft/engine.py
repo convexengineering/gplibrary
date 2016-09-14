@@ -29,7 +29,7 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        mixing = True
+        mixing = False
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(mixing)
@@ -62,7 +62,6 @@ class EngineOnDesign(Model):
             '\pi_{b}': .94,
             'alpha': 5.5,
             'alphap1': 6.5,
-            'M_{4a}': M4a,    #choked turbines
             'F_D': 86.7*1000, #737 max thrust in N
             'M_2': M2,
             'M_{2.5}':M25,
@@ -73,13 +72,17 @@ class EngineOnDesign(Model):
             '\eta_{HPshaft}': .99,
             '\eta_{LPshaft}': .98,
             'M_{takeoff}': .95,
-            '\\alpha_c': .05,
-
-            #new subs for mixing flow losses
-            'T_{t_f}': 600,
-            'hold_{4a}': 1+.5*(1.313-1)*M4a**2,
-            'r_{uc}': 0.5,
             }
+
+            if mixing == True:
+                substitutions.update({
+                    #new subs for mixing flow losses
+                    'T_{t_f}': 600,
+                    'hold_{4a}': 1+.5*(1.313-1)*M4a**2,
+                    'r_{uc}': 0.5,
+                    'M_{4a}': M4a,
+                    '\\alpha_c': .05,
+                    })
 
             #temporary objective is to minimize the core mass flux 
             Model.__init__(self, size.cost, lc, substitutions)
@@ -226,8 +229,8 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-    solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
-##    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
+##    solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
+    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
     
 ##    engineOffD = EngineOffDesign(solOn)
     
