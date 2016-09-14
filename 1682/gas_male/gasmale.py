@@ -9,8 +9,8 @@ from helpers import SummingConstraintSet
 from gpkit.tools import te_exp_minus1
 PLOT = False
 
-INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b",
-           "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}"]
+INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR",
+           "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}", "g"]
 
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, discrete, **kwargs):
