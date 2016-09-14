@@ -9,7 +9,7 @@ from helpers import SummingConstraintSet
 from gpkit.tools import te_exp_minus1
 PLOT = False
 
-INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR",
+INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "P_{shaft-maxMSL}",
            "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}", "g"]
 
 class Mission(Model):
@@ -62,12 +62,11 @@ class FlightSegment(Model):
         self.aero = Aerodynamics(N)
         self.fuel = Fuel(N)
         self.slf = SteadyLevelFlight(N, eta_p)
-        self.engine = Engine(N, alt, onStation, DF70)
+        self.engine = EnginePerformance(N, alt, onStation, DF70)
         self.atm = Atmosphere(N, alt)
         self.wind = Wind(N, alt, wind)
 
         self.N = N
-        self.include = ["h", "\\rho", "\\mu", "W_{n}", "W_{N+1}", "W_{fuel}", "C_D", "C_L", "V", "S", "\\eta_{prop}", "P_{shaft}", "P_{shaft-tot}", "T", "BSFC"]
         self.exclude = ["m_{fac}"]
 
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
@@ -235,7 +234,7 @@ class SteadyLevelFlight(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class Engine(Model):
+class EnginePerformance(Model):
     """
     Engine performance and weight model for small engine
     """
@@ -259,12 +258,9 @@ class Engine(Model):
                                 "Max shaft power loss factor")
         P_shaftmax = VectorVariable(N, "P_{shaft-max}",
                                     "hp", "Max shaft power at altitude")
-        W = Variable("W", "lbf", "Installed/Total engine weight")
         m_fac = Variable("m_{fac}", 1.0, "-", "BSFC margin factor")
 
         if DF70:
-            W_df70 = Variable("W_{DF70}", 7.1, "lbf",
-                              "Installed/Total DF70 engine weight")
             P_shaftmaxmsl = Variable("P_{shaft-maxMSL}", 5.17, "hp",
                                      "Max shaft power at MSL")
             rpm_max = Variable("RPM_{max}", 7698, "rpm", "Maximum RPM")
@@ -272,26 +268,18 @@ class Engine(Model):
                                 "Minimum BSFC")
 
             constraints = [
-                W >= W_df70,
                 (bsfc/m_fac/bsfc_min)**35.7 >= (2.29*(rpm/rpm_max)**8.02 +
                                                 0.00114*(rpm/rpm_max)**-38.3),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294,
                 ]
         else:
-            P_shaftref = Variable("P_{shaft-ref}", 2.295, "hp",
-                                  "Reference shaft power")
-            W_engref = Variable("W_{eng-ref}", 4.4107, "lbf",
-                                "Reference engine weight")
-            W_eng = Variable("W_{eng}", "lbf", "engine weight")
             bsfc_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr",
                                 "Minimum BSFC")
+            rpm_max = Variable("RPM_{max}", 9000, "rpm", "Maximum RPM")
             P_shaftmaxmsl = Variable("P_{shaft-maxMSL}", "hp",
                                      "Max shaft power at MSL")
-            rpm_max = Variable("RPM_{max}", 9000, "rpm", "Maximum RPM")
 
             constraints = [
-                W_eng/W_engref >= 0.5538*(P_shaftmaxmsl/P_shaftref)**1.075,
-                W >= 2.572*W_eng**0.922*units("lbf")**0.078,
                 (bsfc/m_fac/bsfc_min)**0.129 >= (0.972*(rpm/rpm_max)**-0.141 +
                                                  0.0268*(rpm/rpm_max)**9.62),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292,
@@ -591,6 +579,34 @@ class Wind(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class EngineWeight(Model):
+    def __init__(self, DF70, **kwargs):
+
+        W = Variable("W", "lbf", "Installed/Total engine weight")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Engine weight margin factor")
+
+        if DF70:
+            W_df70 = Variable("W_{DF70}", 7.1, "lbf",
+                              "Installed/Total DF70 engine weight")
+            P_shaftmaxmsl = Variable("P_{shaft-maxMSL}", 5.17, "hp",
+                                     "Max shaft power at MSL")
+            constraints = [W/m_fac >= W_df70]
+
+        else:
+            P_shaftref = Variable("P_{shaft-ref}", 2.295, "hp",
+                                  "Reference shaft power")
+            W_engref = Variable("W_{eng-ref}", 4.4107, "lbf",
+                                "Reference engine weight")
+            W_eng = Variable("W_{eng}", "lbf", "engine weight")
+            P_shaftmaxmsl = Variable("P_{shaft-maxMSL}", "hp",
+                                     "Max shaft power at MSL")
+
+            constraints = [
+                W_eng/W_engref >= 0.5538*(P_shaftmaxmsl/P_shaftref)**1.075,
+                W/m_fac >= 2.572*W_eng**0.922*units("lbf")**0.078]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class Tail(Model):
     def __init__(self, **kwargs):
         W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
@@ -629,8 +645,10 @@ class Weight(ConstraintSet):
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
 
         constraints = [
-            SummingConstraintSet(W_cent, "W", center_loads, [W_fueltot, W_pay, W_skid, W_fueltank]),
-            SummingConstraintSet(W_zfw, "W", zf_loads, [W_pay, W_skid, W_fueltank])
+            SummingConstraintSet(W_cent, "W", center_loads,
+                                 [W_fueltot, W_pay, W_skid, W_fueltank]),
+            SummingConstraintSet(W_zfw, "W", zf_loads,
+                                 [W_pay, W_skid, W_fueltank])
             ]
 
         ConstraintSet.__init__(self, constraints, **kwargs)
@@ -645,15 +663,16 @@ class GasMALE(Model):
                  discrete=False, **kwargs):
 
         mission = Mission(h_station, wind, DF70, discrete)
+        engineweight = EngineWeight(DF70)
         wing = Wing()
         tail = Tail()
         avionics = Avionics()
         fuselage = Fuselage()
-        center_loads = [wing, fuselage, mission, avionics]
+        center_loads = [wing, fuselage, avionics, engineweight]
         zf_loads = center_loads + [tail]
         weight = Weight(center_loads, zf_loads)
 
-        self.submodels = zf_loads + [weight]
+        self.submodels = zf_loads + [weight, mission]
 
         constraints = []
 
