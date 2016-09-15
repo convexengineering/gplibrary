@@ -29,7 +29,7 @@ class EngineOnDesign(Model):
 
     def __init__(self, **kwargs):
         #set up the overeall model for an on design solve
-        mixing = False
+        mixing = True
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(mixing)
@@ -196,32 +196,29 @@ class EngineOffDesign(Model):
                 'alpha': sol('alpha'),
                 'alphap1': sol('alphap1'),
                 
-                'F_{spec}': 8.0e+04 ,
-                'T_{t_{4spec}}': 1200,
-
                 '\eta_{HPshaft}': sol('\eta_{HPshaft}'),
                 '\eta_{LPshaft}': sol('\eta_{LPshaft}'),
                 'M_{takeoff}': sol('M_{takeoff}'),
-                '\\alpha_c': sol('\\alpha_c'),
-                'T_{t_f}': sol('T_{t_f}'),
                 
-                'm_{fan_D}': sol('alpha')*sol('m_{core}'),
-                'N_{{bar}_Df}': 1,
-                '\pi_{f_D}': sol('\pi_f'),
-                'm_{core_D}': sol('m_{core}'),
-                '\pi_{lc_D}': sol('\pi_{lc}'),
+                
                 'm_{lc_D}': sol('m_{lc_D}'),
                 'm_{fan_bar_D}': sol('m_{fan_bar_D}'),
-                'm_{hc_D}': sol('m_{hc_D}'),
-                '\pi_{hc_D}': sol('\pi_{hc}'),
-
             }
+            
             if mixing == True:
                 substitutions.update({
-                    'stag41': 1+.5*(.312)*sol('M_{4a}')**2,
                     'M_{4a}': sol('M_{4a}'),
                     'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
                     'r_{uc}': sol('r_{uc}'),
+                    '\\alpha_c': sol('\\alpha_c'),
+                })
+            if res7 == 1:
+               substitutions.update({
+                    'T_{t_{4spec}}': 1200,
+                })
+            else:
+                substitutions.update({
+                    'F_{spec}': 8.0e+04,
                 })
             
         Model.__init__(self, thrust.cost, lc, substitutions)
@@ -232,7 +229,7 @@ if __name__ == "__main__":
     solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
 ##    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
     
-##    engineOffD = EngineOffDesign(solOn)
+    engineOffD = EngineOffDesign(solOn)
     
-##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
+    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
 ##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
