@@ -29,6 +29,8 @@ def output_csv(PATH, M, sol, varnames):
     data = {}
     for vname in varnames:
         data[vname] = [0]*(sum(fseg["shape"]) + 2)
+        if vname in sol["sensitivities"]["constants"]:
+            data[vname + " sensitivity"] = [""] + [0]*sum(fseg["shape"]) + [""]
 
     for var in M.varkeys:
         if var.descr["name"] in data:
@@ -46,6 +48,17 @@ def output_csv(PATH, M, sol, varnames):
                                 l + 1] = sol(var).magnitude
                     else:
                         data[var.descr["name"]][l + 1] = [sol(var).magnitude]
+                    if var.descr["name"] in sol["sensitivities"]["constants"]:
+                        if "idx" in var.descr:
+                            data[var.descr["name"] + " sensitivity"][var.descr["idx"][0] + l+1] = sol["sensitivities"]["constants"][var]
+                        else:
+                            data[var.descr["name"] + " sensitivity"][l+1] = sol["sensitivities"]["constants"][var]
+
+
+                    # for sv in sol("m_{fac}"):
+                    #     if sv.models == var.models and \
+                    #         sv.modelnums == var.modelnums:
+                    #         data[sv.label] = sol(sv).magnitude
 
     df = pd.DataFrame(data)
     df = df.transpose()
@@ -86,6 +99,7 @@ if __name__ == "__main__":
                     "W_{N}", "W_{N+1}", "C_D", "C_L", "\\eta_{prop}", "T",
                     "h_{loss}", "P_{shaft-max}", "t", "Re", "C_{f-fuse}",
                     "C_{D-fuse}", "c_{dp}", "V_{wind}"]
+    margins = ["m_{fac-hdot}"]
     output_csv(PATH, M, Sol, Mission_vars)
     bd_csv_output(PATH, Sol, "W")
     bd_csv_output(PATH, Sol, "m_{fac}")
