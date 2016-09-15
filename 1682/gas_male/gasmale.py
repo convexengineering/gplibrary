@@ -82,7 +82,6 @@ class Cruise(FlightSegment):
 
         self.constraints = []
 
-        #lc = LinkedConstraintSet([self.submodels], include_only=self.include)
         lc = LinkedConstraintSet([self.submodels], exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
@@ -100,8 +99,8 @@ class Loiter(FlightSegment):
 
         self.submodels.extend([breguetendurance])
 
-        #lc = LinkedConstraintSet([self.submodels, constraints], include_only=self.include)
-        lc = LinkedConstraintSet([self.submodels, constraints], exclude=self.exclude)
+        lc = LinkedConstraintSet([self.submodels, constraints],
+                                 exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -128,8 +127,8 @@ class Climb(FlightSegment):
 
         self.submodels.extend([breguetendurance])
 
-        # lc = LinkedConstraintSet([self.submodels, constraints], include_only=self.include)
-        lc = LinkedConstraintSet([self.submodels, constraints], exclude=self.exclude)
+        lc = LinkedConstraintSet([self.submodels, constraints],
+                                 exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -380,7 +379,7 @@ class Aerodynamics(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
-        m_fac = Variable("m_{fac}", 1.0, "-", "Aerodynamic margin factor")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Drag margin factor")
 
         constraints = [
             CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR),
@@ -610,7 +609,7 @@ class EngineWeight(Model):
 class Tail(Model):
     def __init__(self, **kwargs):
         W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
-        m_fac = Variable("m_{fac}", 1.0, "-", "Tail margin factor")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "Tail weight")
 
         constraints = [W/m_fac >= W_vtail]
@@ -622,7 +621,7 @@ class Avionics(Model):
         W_fc = Variable("W_{fc}", 4, "lbf", "Flight controller weight")
         W_batt = Variable("W_{batt}", 4, "lbf", "Battery weight")
         W = Variable("W", "lbf", "Avionics Weight")
-        m_fac = Variable("m_{fac}", 1.0, "-", "avionics margin factor")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Avionics weight margin factor")
 
         constraints = [W/m_fac >= W_fc + W_batt]
 
