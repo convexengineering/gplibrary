@@ -148,8 +148,8 @@ class EngineOffDesign(Model):
     HPC corrected mass flow, Tt4, and Pt5 as uknowns that are solved for
     """
     def __init__(self, sol):
-        mixing = False
-        SPmaps = False
+        mixing = True
+        SPmaps = True
         
         lpc = FanAndLPC()
         combustor = CombustorCooling(mixing)
@@ -159,7 +159,7 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 1
+        res7 = 0
         
         offD = OffDesign(res7, mixing)
 
@@ -231,5 +231,5 @@ if __name__ == "__main__":
     
     engineOffD = EngineOffDesign(solOn)
     
-    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
-##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
+##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
+    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
