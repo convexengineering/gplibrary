@@ -20,14 +20,15 @@ def output_csv(PATH, M, sol, varnames):
     for i in range(0, len(fseg["shape"])-1):
         fseg["start"].append(fseg["start"][i] + fseg["shape"][i])
 
-    colnames = []
+    colnames = ["Units"]
     for n, s in zip(fseg["name"], fseg["shape"]):
         for i in range(s):
             colnames.append(n)
+    colnames.append("Label")
 
     data = {}
     for vname in varnames:
-        data[vname] = np.zeros(sum(fseg["shape"]))
+        data[vname] = [0]*(sum(fseg["shape"]) + 2)
 
     for var in M.varkeys:
         if var.descr["name"] in data:
@@ -38,11 +39,13 @@ def output_csv(PATH, M, sol, varnames):
             for n, i, s, l in zip(fseg["name"], fseg["index"],
                                   fseg["shape"], fseg["start"]):
                 if i == ind and n == mname and s == shape:
+                    data[var.descr["name"]][0] = unitstr(var.units)
+                    data[var.descr["name"]][-1] = var.label
                     if "idx" in var.descr:
                         data[var.descr["name"]][var.descr["idx"][0] + \
-                                l] = sol(var).magnitude
+                                l + 1] = sol(var).magnitude
                     else:
-                        data[var.descr["name"]] = sol(var).magnitude
+                        data[var.descr["name"]][l + 1] = [sol(var).magnitude]
 
     df = pd.DataFrame(data)
     df = df.transpose()

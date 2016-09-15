@@ -652,6 +652,21 @@ class Weight(ConstraintSet):
 
         ConstraintSet.__init__(self, constraints, **kwargs)
 
+class SystemRequirements(Model):
+    def __init__(self, **kwargs):
+
+        mtow = Variable("MTOW", "lbf", "Max take off weight")
+        t_loiter = Variable("t_{loiter}", "days", "time loitering")
+
+        s = Variable("s", "-", "system margin factor")
+        mtowreq = Variable("MTOW_{req}", 150, "lbf", "Max take off weight")
+        t_loiterreq = Variable("t_{loiter-req}", 5, "days", "time loitering")
+
+        constraints = [mtow <= s*mtowreq,
+                       t_loiter*s >= t_loiterreq]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class GasMALE(Model):
     """
     This model has a rubber engine and as many non fixed parameters as
@@ -659,7 +674,7 @@ class GasMALE(Model):
     fixed.
     """
     def __init__(self, h_station=15000, wind=False, DF70=False,
-                 discrete=False, **kwargs):
+                 discrete=False, margin=False, **kwargs):
 
         mission = Mission(h_station, wind, DF70, discrete)
         engineweight = EngineWeight(DF70)
@@ -675,8 +690,13 @@ class GasMALE(Model):
 
         constraints = []
 
+        if margin:
+            sq = SystemRequirements()
+            self.submodels.append(sq)
+
         lc = LinkedConstraintSet([self.submodels, constraints],
                                  include_only=INCLUDE)
+
 
         objective = 1/mission["t_{loiter}"]
 
