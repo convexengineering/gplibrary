@@ -94,25 +94,45 @@ def bd_csv_output(path, sol, varname):
     df = pd.DataFrame(data)
     df = df.transpose()
     df.columns = colnames
-    writer = pd.ExcelWriter("%s%s_breakdown.xlsx" % (path, varname.replace("{", "").replace("}", "")), engine="xlsxwriter")
+
+    return df
+
+def write_to_excel(path, filename, df, sens_formatting):
+
+    writer = pd.ExcelWriter("%s%s" % (path, filename), engine="xlsxwriter")
     df.to_excel(writer, sheet_name="Sheet1")
 
     workbook = writer.book
     worksheet = writer.sheets["Sheet1"]
-    # Add a format. Light red fill with dark red text.
+    # Light red fill
     format1 = workbook.add_format({'bg_color': '#FFC7CE'})
 
-    # Add a format. Green fill with dark green text.
-    format2 = workbook.add_format({'bg_color': '#C6EFCE',
-                                   'font_color': '#006100'})
+    # Green fill
+    format2 = workbook.add_format({'bg_color': '#FFCC99'})
+
+    # Green fill
+    format3 = workbook.add_format({'bg_color': '#C6EFCE'})
 
     worksheet.conditional_format("E2:E%d" % (len(df["Margin Sensitivity"])+1),
                                  {"type": "cell",
                                   "criteria": ">=",
-                                  "value": 0.8,
+                                  "value": sens_formatting["bad"],
                                   "format": format1})
-    # df.to_csv("%s%s_breakdown.csv" %
-    #           (path, varname.replace("{", "").replace("}", "")))
+
+    worksheet.conditional_format("E2:E%d" % (len(df["Margin Sensitivity"])+1),
+                                 {"type": "cell",
+                                  "criteria": "between",
+                                  "minimum": sens_formatting["bad"],
+                                  "maximum": sens_formatting["good"],
+                                  "format": format2})
+
+    worksheet.conditional_format("E2:E%d" % (len(df["Margin Sensitivity"])+1),
+                                 {"type": "cell",
+                                  "criteria": "<",
+                                  "value": sens_formatting["good"],
+                                  "format": format3})
+
+    writer.save()
 
 if __name__ == "__main__":
     M = GasMALE()
@@ -127,5 +147,7 @@ if __name__ == "__main__":
                     "h_{loss}", "P_{shaft-max}", "t", "Re", "C_{f-fuse}",
                     "C_{D-fuse}", "c_{dp}", "V_{wind}"]
     Margins = ["BSFC", "c_{dp}"]
+    Sens_boundaries = {"bad": 0.8, "good": 0.2}
     output_csv(PATH, M, Sol, Mission_vars, Margins)
-    bd_csv_output(PATH, Sol, "W")
+    DF = bd_csv_output(PATH, Sol, "W")
+    write_to_excel(PATH, "W_breakdown.xlsx", DF, Sens_boundaries)
