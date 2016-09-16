@@ -44,11 +44,12 @@ def output_csv(path, M, sol, varnames, margins):
                     continue
                 ind = sv.models.index(fs)
                 ifs = fseg[fs]["index"].index(sv.modelnums[ind])
-                data[vname][fseg[fs]["start"][ifs]:fseg[fs]["start"][ifs]
-                            + sv.shape[0]] = sol(sv).magnitude[0:]
+                st = fseg[fs]["start"][ifs]
+                data[vname][0] = unitstr(sv.units)
+                data[vname][-1] = sv.label
+                data[vname][st:st + sv.shape[0]] = sol(sv).magnitude[0:]
                 if vname in sens:
-                    data[vname + " sensitivity"][fseg[fs]["start"][ifs]:
-                            fseg[fs]["start"][ifs] + sv.shape[0]] = sens[sv][0:]
+                    data[vname+" sensitivity"][st:st+sv.shape[0]] = sens[sv][0:]
 
 
     df = pd.DataFrame(data)
