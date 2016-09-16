@@ -35,6 +35,9 @@ def output_csv(path, M, sol, varnames, margins):
         data[vname] = [0]*(start[-1] + 1)
         if vname in sens:
             data[vname + " sensitivity"] = [""] + [0]*(start[-1]-1) + [""]
+        if vname in margins:
+            data[vname + " margin"] = [""] + [0]*(start[-1]-1) + [""]
+            data[vname+" margin sensitivity"] = [""] + [0]*(start[-1]-1) + [""]
 
     i = 0
     for vname in varnames:
@@ -50,6 +53,16 @@ def output_csv(path, M, sol, varnames, margins):
                 data[vname][st:st + sv.shape[0]] = sol(sv).magnitude[0:]
                 if vname in sens:
                     data[vname+" sensitivity"][st:st+sv.shape[0]] = sens[sv][0:]
+                if vname not in margins:
+                    continue
+                for mfac in sol("m_{fac}"):
+                    # the varname must be in the m_fac label or it won't work
+                    if not vname in mfac.label:
+                        continue
+                    data[vname+" margin"][st:st+sv.shape[0]] = \
+                        [sol(mfac).magnitude]*sv.shape[0]
+                    data[vname+" margin sensitivity"][st:st+sv.shape[0]] = \
+                        [sens[mfac]]*sv.shape[0]
 
 
     df = pd.DataFrame(data)

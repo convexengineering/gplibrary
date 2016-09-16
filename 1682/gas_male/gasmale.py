@@ -376,7 +376,7 @@ class Aerodynamics(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
-        m_fac = Variable("m_{fac}", 1.0, "-", "Drag margin factor")
+        m_fac = Variable("m_{fac}", 1.0, "-", "c_{dp} margin factor")
 
         constraints = [
             CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR),
