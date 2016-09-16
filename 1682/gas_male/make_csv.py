@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from gasmale import GasMALE
 from gpkit.small_scripts import unitstr
+import xlsxwriter
 
 def output_csv(path, M, sol, varnames, margins):
     """
@@ -78,7 +79,7 @@ def bd_csv_output(path, sol, varname):
 
     data = {}
     for sv in sol(varname):
-        name = sv
+        name = max(list(sv.keys), key=len)
         data[name] = [sol(sv).magnitude]
         data[name].append(unitstr(sv.units))
         if varname in sol["sensitivities"]["constants"]:
@@ -93,8 +94,25 @@ def bd_csv_output(path, sol, varname):
     df = pd.DataFrame(data)
     df = df.transpose()
     df.columns = colnames
-    df.to_csv("%s%s_breakdown.csv" %
-              (path, varname.replace("{", "").replace("}", "")))
+    writer = pd.ExcelWriter("%s%s_breakdown.xlsx" % (path, varname.replace("{", "").replace("}", "")), engine="xlsxwriter")
+    df.to_excel(writer, sheet_name="Sheet1")
+
+    workbook = writer.book
+    worksheet = writer.sheets["Sheet1"]
+    # Add a format. Light red fill with dark red text.
+    format1 = workbook.add_format({'bg_color': '#FFC7CE'})
+
+    # Add a format. Green fill with dark green text.
+    format2 = workbook.add_format({'bg_color': '#C6EFCE',
+                                   'font_color': '#006100'})
+
+    worksheet.conditional_format("E2:E%d" % (len(df["Margin Sensitivity"])+1),
+                                 {"type": "cell",
+                                  "criteria": ">=",
+                                  "value": 0.8,
+                                  "format": format1})
+    # df.to_csv("%s%s_breakdown.csv" %
+    #           (path, varname.replace("{", "").replace("}", "")))
 
 if __name__ == "__main__":
     M = GasMALE()
