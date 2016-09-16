@@ -3,10 +3,12 @@ import pandas as pd
 from gasmale import GasMALE
 from gpkit.small_scripts import unitstr
 
-def output_csv(PATH, M, sol, varnames, margins):
+def output_csv(path, M, sol, varnames, margins):
     """
     This ouputs variables relevant accross a mission
     """
+    sens = sol["sensitivities"]["constants"]
+
     fseg = {}
     for subm in M.submodels:
         if subm.__class__.__name__ == "Mission":
@@ -31,23 +33,30 @@ def output_csv(PATH, M, sol, varnames, margins):
     data = {}
     for vname in varnames:
         data[vname] = [0]*(start[-1] + 1)
+        if vname in sens:
+            data[vname + " sensitivity"] = [""] + [0]*(start[-1]-1) + [""]
 
     i = 0
     for vname in varnames:
         for sv in sol(vname):
             for fs in fseg:
-                if fs in sv.models:
-                    ind = sv.models.index(fs)
-                    ifs = fseg[fs]["index"].index(sv.modelnums[ind])
-                    data[vname][fseg[fs]["start"][ifs]:fseg[fs]["start"][ifs]
-                                + sv.shape[0]] = sol(sv).magnitude[0:]
+                if fs not in sv.models:
+                    continue
+                ind = sv.models.index(fs)
+                ifs = fseg[fs]["index"].index(sv.modelnums[ind])
+                data[vname][fseg[fs]["start"][ifs]:fseg[fs]["start"][ifs]
+                            + sv.shape[0]] = sol(sv).magnitude[0:]
+                if vname in sens:
+                    data[vname + " sensitivity"][fseg[fs]["start"][ifs]:
+                            fseg[fs]["start"][ifs] + sv.shape[0]] = sens[sv][0:]
+
 
     df = pd.DataFrame(data)
     df = df.transpose()
     df.columns = colnames
-    df.to_csv("%soutput1.csv" % PATH)
+    df.to_csv("%soutput1.csv" % path)
 
-def bd_csv_output(PATH, sol, varname):
+def bd_csv_output(path, sol, varname):
 
     if varname in sol["sensitivities"]["constants"]:
         colnames = ["Value", "Units", "Sensitivitiy", "Label"]
@@ -67,7 +76,7 @@ def bd_csv_output(PATH, sol, varname):
     df = df.transpose()
     df.columns = colnames
     df.to_csv("%s%s_breakdown.csv" %
-              (PATH, varname.replace("{", "").replace("}", "")))
+              (path, varname.replace("{", "").replace("}", "")))
 
 if __name__ == "__main__":
     M = GasMALE()
