@@ -4,7 +4,7 @@ from gasmale import GasMALE
 from gpkit.small_scripts import unitstr
 import xlsxwriter
 
-def output_csv(path, M, sol, varnames, margins):
+def output_csv(M, sol, varnames, margins):
     """
     This ouputs variables relevant accross a mission
     """
@@ -17,6 +17,7 @@ def output_csv(path, M, sol, varnames, margins):
                 fseg[fs.name] = {"index": [], "shape": [], "start": []}
 
     start = [1]
+    colnames = ["Units"]
     for subm in M.submodels:
         if subm.__class__.__name__ == "Mission":
             for i, fs in enumerate(subm.submodels):
@@ -24,21 +25,18 @@ def output_csv(path, M, sol, varnames, margins):
                 fseg[fs.name]["shape"].append(fs.N)
                 start.append(start[i] + fs.N)
                 fseg[fs.name]["start"].append(start[i])
-
-    colnames = ["Units"]
-    for fs in fseg:
-        for i in fseg[fs]["shape"]:
-            colnames += [fs]*i
+                colnames += [fs.name + "%d.%d" %
+                             (fs.num, n) for n in range(fs.N)]
     colnames.append("Label")
 
     data = {}
     for vname in varnames:
         data[vname] = [0]*(start[-1] + 1)
         if vname in sens:
-            data[vname + " sensitivity"] = [""] + [0]*(start[-1]-1) + [""]
+            data[vname + " Sensitivity"] = [""] + [0]*(start[-1]-1) + [""]
         if vname in margins:
-            data[vname + " margin"] = [""] + [0]*(start[-1]-1) + [""]
-            data[vname+" margin sensitivity"] = [""] + [0]*(start[-1]-1) + [""]
+            data[vname + " Margin"] = [""] + [0]*(start[-1]-1) + [""]
+            data[vname+" Margin Sensitivity"] = [""] + [0]*(start[-1]-1) + [""]
 
     i = 0
     for vname in varnames:
@@ -53,25 +51,25 @@ def output_csv(path, M, sol, varnames, margins):
                 data[vname][-1] = sv.label
                 data[vname][st:st + sv.shape[0]] = sol(sv).magnitude[0:]
                 if vname in sens:
-                    data[vname+" sensitivity"][st:st+sv.shape[0]] = sens[sv][0:]
+                    data[vname+" Sensitivity"][st:st+sv.shape[0]] = sens[sv][0:]
                 if vname not in margins:
                     continue
                 for mfac in sol("m_{fac}"):
                     # the varname must be in the m_fac label or it won't work
                     if not vname in mfac.label:
                         continue
-                    data[vname+" margin"][st:st+sv.shape[0]] = \
+                    data[vname+" Margin"][st:st+sv.shape[0]] = \
                         [sol(mfac).magnitude]*sv.shape[0]
-                    data[vname+" margin sensitivity"][st:st+sv.shape[0]] = \
+                    data[vname+" Margin Sensitivity"][st:st+sv.shape[0]] = \
                         [sens[mfac]]*sv.shape[0]
 
 
     df = pd.DataFrame(data)
     df = df.transpose()
     df.columns = colnames
-    df.to_csv("%soutput1.csv" % path)
+    return df
 
-def bd_csv_output(path, sol, varname):
+def bd_csv_output(sol, varname):
 
     colnames = ["Value", "Units", "Margin", "Margin Sensitivity", "Label"]
     if varname in sol["sensitivities"]["constants"]:
@@ -94,16 +92,30 @@ def bd_csv_output(path, sol, varname):
     df = pd.DataFrame(data)
     df = df.transpose()
     df.columns = colnames
-
     return df
 
 def write_to_excel(path, filename, df, sens_formatting):
+
+    coldepth = df.count()[0]
+    rowdepth = len(df.columns)
+
+    colind = []
+    for colname in df.columns:
+        if "Sensitivity" in colname:
+            colind.append(list(df.columns).index(colname))
+
+    rowind = []
+    for rowname in df.index:
+        if "Sensitivity" in rowname:
+            rowind.append(list(df.index).index(rowname))
+
+    alp = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"]
 
     writer = pd.ExcelWriter("%s%s" % (path, filename), engine="xlsxwriter")
     df.to_excel(writer, sheet_name="Sheet1")
 
     workbook = writer.book
-    worksheet = writer.sheets["Sheet1"]
+    ws = writer.sheets["Sheet1"]
     # Light red fill
     format1 = workbook.add_format({'bg_color': '#FFC7CE'})
 
@@ -113,24 +125,45 @@ def write_to_excel(path, filename, df, sens_formatting):
     # Green fill
     format3 = workbook.add_format({'bg_color': '#C6EFCE'})
 
-    worksheet.conditional_format("E2:E%d" % (len(df["Margin Sensitivity"])+1),
-                                 {"type": "cell",
-                                  "criteria": ">=",
-                                  "value": sens_formatting["bad"],
-                                  "format": format1})
+    for i in colind:
+        ws.conditional_format("%s2:%s%d" % (alp[i+1], alp[i+1], coldepth+1),
+                              {"type": "cell",
+                               "criteria": ">=",
+                               "value": sens_formatting["bad"],
+                               "format": format1})
 
-    worksheet.conditional_format("E2:E%d" % (len(df["Margin Sensitivity"])+1),
-                                 {"type": "cell",
-                                  "criteria": "between",
-                                  "minimum": sens_formatting["bad"],
-                                  "maximum": sens_formatting["good"],
-                                  "format": format2})
+        ws.conditional_format("%s2:%s%d" % (alp[i+1], alp[i+1], coldepth+1),
+                              {"type": "cell",
+                               "criteria": "between",
+                               "minimum": sens_formatting["bad"],
+                               "maximum": sens_formatting["good"],
+                               "format": format2})
 
-    worksheet.conditional_format("E2:E%d" % (len(df["Margin Sensitivity"])+1),
-                                 {"type": "cell",
-                                  "criteria": "<",
-                                  "value": sens_formatting["good"],
-                                  "format": format3})
+        ws.conditional_format("%s2:%s%d" % (alp[i+1], alp[i+1], coldepth+1),
+                              {"type": "cell",
+                               "criteria": "<",
+                               "value": sens_formatting["good"],
+                               "format": format3})
+
+    for i in rowind:
+        ws.conditional_format("%s%d:%s%d" % (alp[2], i+2, alp[rowdepth-1], i+2),
+                              {"type": "cell",
+                               "criteria": ">=",
+                               "value": sens_formatting["bad"],
+                               "format": format1})
+
+        ws.conditional_format("%s%d:%s%d" % (alp[2], i+2, alp[rowdepth-1], i+2),
+                              {"type": "cell",
+                               "criteria": "between",
+                               "minimum": sens_formatting["bad"],
+                               "maximum": sens_formatting["good"],
+                               "format": format2})
+
+        ws.conditional_format("%s%d:%s%d" % (alp[2], i+2, alp[rowdepth-1], i+2),
+                              {"type": "cell",
+                               "criteria": "<",
+                               "value": sens_formatting["good"],
+                               "format": format3})
 
     writer.save()
 
@@ -148,6 +181,8 @@ if __name__ == "__main__":
                     "C_{D-fuse}", "c_{dp}", "V_{wind}"]
     Margins = ["BSFC", "c_{dp}"]
     Sens_boundaries = {"bad": 0.8, "good": 0.2}
-    output_csv(PATH, M, Sol, Mission_vars, Margins)
-    DF = bd_csv_output(PATH, Sol, "W")
+    DF = output_csv(M, Sol, Mission_vars, Margins)
+    DF.to_csv("test.csv")
+    write_to_excel(PATH, "Mission_params.xlsx", DF, Sens_boundaries)
+    DF = bd_csv_output(Sol, "W")
     write_to_excel(PATH, "W_breakdown.xlsx", DF, Sens_boundaries)
