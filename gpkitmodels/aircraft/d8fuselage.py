@@ -15,6 +15,9 @@ class Fuselage(Model):
 
         # Fixed variables
         SPR      = Variable('SPR', 8, '-', 'Number of seats per row')
+        nseat    = Variable('n_{seat}', '-',' Number of seats')
+        nrows    = Variable('n_{rows}', '-', 'Number of rows')
+        pitch    = Variable('p_s', 'in', 'Seat pitch')
         #npass    = Variable('n_{pass}', '-', 'Number of passengers')
         #nrows    = Variable('n_{rows}', '-', 'Number of rows')
         #Nland    = Variable('N_{land}', '-', 'Emergency landing load factor')
@@ -24,19 +27,18 @@ class Fuselage(Model):
         
         # Cross sectional parameters (free)
         #Afloor   = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
-        Afuse    = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
-        #Ahold    = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
-        Askin    = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
-        hdb = Variable('h_{db}','m', 'Web half-height')
-        Rfuse    = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there is
-                                                                # no under-fuselage extension deltaR
+        Afuse  = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
+        #Ahold = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
+        Askin  = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
+        hdb    = Variable('h_{db}','m', 'Web half-height')
+        Rfuse  = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there is no under-fuselage extension deltaR
         tdb    = Variable('t_{db}', 'm', 'Web thickness')
         tshell = Variable('t_{shell}', 'm', 'Shell thickness')
         tskin  = Variable('t_{skin}', 'm', 'Skin thickness')
         waisle = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
-        wdb = Variable('w_{db}','m','DB added half-width')
+        wdb    = Variable('w_{db}','m','DB added half-width')
         wfuse  = Variable('w_{fuse}', 'm', 'Fuselage width')
-        wseat    = Variable('w_{seat}',0.5,'m', 'Seat width')
+        wseat  = Variable('w_{seat}',0.5,'m', 'Seat width')
 
 
         # Lengths (free)
@@ -61,10 +63,10 @@ class Fuselage(Model):
         Wfuse    = Variable('W_{fuse}', 'N', 'Fuselage weight')
 
         # Weights (fixed)
-        Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
-        Wavgpass = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
-        Wcarryon = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
-        Wchecked = Variable('W_{checked}', 40, 'lbf', 'Ave. checked bag weight')
+        #Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
+        #Wavgpass = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
+        #Wcarryon = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
+        #Wchecked = Variable('W_{checked}', 40, 'lbf', 'Ave. checked bag weight')
         Wfix     = Variable('W_{fix}', 3000, 'lbf',
                             'Fixed weights (pilots, cockpit seats, navcom)')
 
@@ -80,13 +82,16 @@ class Fuselage(Model):
         thetadb = ('\\theta_{db}','-','DB fuselage joining angle')
 
         # Material properties
+        rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
         sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
-                            'Max allowable skin stress')
+                            'Max allowable skin stress') # again notional 
         sigth    = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
         sigx     = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
 
         with SignomialsEnabled():
             constraints = [
+
+            # Passenger constraints (assuming 737-sixed aircraft)
 
             # Fuselage joint angle relations
             thetadb == wdb/Rfuse, # first order Taylor works...
@@ -96,11 +101,13 @@ class Fuselage(Model):
             Afuse >= (pi + 2*thetadb + thetadb)*Rfuse**2,
             
             # Fuselage surface area relations
-            Snose >= (2*pi + 4*thetadb)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
-            Sbulk >= (2*pi + 4*thetadb)*Rfuse**2,
+            #Snose >= (2*pi + 4*thetadb)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
+            #Sbulk >= (2*pi + 4*thetadb)*Rfuse**2,
 
             # Fuselage length relations
-            lfuse >= lnose+lshell+lcone,
+            lfuse >= lnose+lshell, # forget about tailcone for now
+            # Temporarily
+            lfuse >=1.3*lshell,
 
             # Fuselage width relations
             wfuse >= SPR*wseat + 2*waisle + tdb + 2*tskin,
@@ -116,7 +123,7 @@ class Fuselage(Model):
             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell >= Wskin*(1 + fstring + ffairing + fframe + ffadd +fweb),
             
-            Wfuse >= Wfix + Wskin + Wshell + Wbuoy,
+            Wfuse >= Wfix + Wskin + Wshell,
             
             # Stress relations
             sigth == dPover*Rfuse/tskin, 
@@ -169,4 +176,4 @@ class Fuselage(Model):
 
 if __name__ == "__main__":
     M = Fuselage()
-    sol = M.solve("mosek")
+    sol = M.localsolve("mosek")
