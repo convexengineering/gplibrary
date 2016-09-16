@@ -72,10 +72,9 @@ def output_csv(path, M, sol, varnames, margins):
 
 def bd_csv_output(path, sol, varname):
 
+    colnames = ["Value", "Units", "Margin", "Margin Sensitivity", "Label"]
     if varname in sol["sensitivities"]["constants"]:
-        colnames = ["Value", "Units", "Sensitivitiy", "Label"]
-    else:
-        colnames = ["Value", "Units", "Label"]
+        colnames.insert(2, "Sensitivitiy")
 
     data = {}
     for sv in sol(varname):
@@ -84,6 +83,11 @@ def bd_csv_output(path, sol, varname):
         data[name].append(unitstr(sv.units))
         if varname in sol["sensitivities"]["constants"]:
             data[name].append(sol["sensitivities"]["constants"][sv])
+        for mfac in sol("m_{fac}"):
+            if not sv.models == mfac.models:
+                continue
+            data[name].append(sol(mfac).magnitude)
+            data[name].append(sol["sensitivities"]["constants"][mfac])
         data[name].append(sv.label)
 
     df = pd.DataFrame(data)
@@ -107,4 +111,3 @@ if __name__ == "__main__":
     Margins = ["BSFC", "c_{dp}"]
     output_csv(PATH, M, Sol, Mission_vars, Margins)
     bd_csv_output(PATH, Sol, "W")
-    bd_csv_output(PATH, Sol, "m_{fac}")
