@@ -3,62 +3,44 @@ import pandas as pd
 from gasmale import GasMALE
 from gpkit.small_scripts import unitstr
 
-def output_csv(PATH, M, sol, varnames):
+def output_csv(PATH, M, sol, varnames, margins):
     """
     This ouputs variables relevant accross a mission
     """
-
-    fseg = {"name": [], "shape": [], "index": []}
+    fseg = {}
     for subm in M.submodels:
         if subm.__class__.__name__ == "Mission":
             for fs in subm.submodels:
-                fseg["name"].append(fs.__class__.__name__)
-                fseg["shape"].append(fs.N)
-                fseg["index"].append(fs.num)
+                fseg[fs.name] = {"index": [], "shape": [], "start": []}
 
-    fseg["start"] = [0]
-    for i in range(0, len(fseg["shape"])-1):
-        fseg["start"].append(fseg["start"][i] + fseg["shape"][i])
+    start = [1]
+    for subm in M.submodels:
+        if subm.__class__.__name__ == "Mission":
+            for i, fs in enumerate(subm.submodels):
+                fseg[fs.name]["index"].append(fs.num)
+                fseg[fs.name]["shape"].append(fs.N)
+                start.append(start[i] + fs.N)
+                fseg[fs.name]["start"].append(start[i])
 
     colnames = ["Units"]
-    for n, s in zip(fseg["name"], fseg["shape"]):
-        for i in range(s):
-            colnames.append(n)
+    for fs in fseg:
+        for i in fseg[fs]["shape"]:
+            colnames += [fs]*i
     colnames.append("Label")
 
     data = {}
     for vname in varnames:
-        data[vname] = [0]*(sum(fseg["shape"]) + 2)
-        if vname in sol["sensitivities"]["constants"]:
-            data[vname + " sensitivity"] = [""] + [0]*sum(fseg["shape"]) + [""]
+        data[vname] = [0]*(start[-1] + 1)
 
-    for var in M.varkeys:
-        if var.descr["name"] in data:
-            mname = list(set(fseg["name"]) & set(var.descr["models"]))[0]
-            ind = var.descr["modelnums"][var.descr["models"].index(mname)]
-            if "shape" in var.descr:
-                shape = var.descr["shape"][0]
-            for n, i, s, l in zip(fseg["name"], fseg["index"],
-                                  fseg["shape"], fseg["start"]):
-                if i == ind and n == mname and s == shape:
-                    data[var.descr["name"]][0] = unitstr(var.units)
-                    data[var.descr["name"]][-1] = var.label
-                    if "idx" in var.descr:
-                        data[var.descr["name"]][var.descr["idx"][0] + \
-                                l + 1] = sol(var).magnitude
-                    else:
-                        data[var.descr["name"]][l + 1] = [sol(var).magnitude]
-                    if var.descr["name"] in sol["sensitivities"]["constants"]:
-                        if "idx" in var.descr:
-                            data[var.descr["name"] + " sensitivity"][var.descr["idx"][0] + l+1] = sol["sensitivities"]["constants"][var]
-                        else:
-                            data[var.descr["name"] + " sensitivity"][l+1] = sol["sensitivities"]["constants"][var]
-
-
-                    # for sv in sol("m_{fac}"):
-                    #     if sv.models == var.models and \
-                    #         sv.modelnums == var.modelnums:
-                    #         data[sv.label] = sol(sv).magnitude
+    i = 0
+    for vname in varnames:
+        for sv in sol(vname):
+            for fs in fseg:
+                if fs in sv.models:
+                    ind = sv.models.index(fs)
+                    ifs = fseg[fs]["index"].index(sv.modelnums[ind])
+                    data[vname][fseg[fs]["start"][ifs]:fseg[fs]["start"][ifs]
+                                + sv.shape[0]] = sol(sv).magnitude[0:]
 
     df = pd.DataFrame(data)
     df = df.transpose()
@@ -99,7 +81,7 @@ if __name__ == "__main__":
                     "W_{N}", "W_{N+1}", "C_D", "C_L", "\\eta_{prop}", "T",
                     "h_{loss}", "P_{shaft-max}", "t", "Re", "C_{f-fuse}",
                     "C_{D-fuse}", "c_{dp}", "V_{wind}"]
-    margins = ["m_{fac-hdot}"]
-    output_csv(PATH, M, Sol, Mission_vars)
+    Margins = ["BSFC", "c_{dp}"]
+    output_csv(PATH, M, Sol, Mission_vars, Margins)
     bd_csv_output(PATH, Sol, "W")
     bd_csv_output(PATH, Sol, "m_{fac}")

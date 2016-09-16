@@ -93,9 +93,8 @@ class Loiter(FlightSegment):
         breguetendurance = BreguetEndurance(N)
 
         t_loiter = Variable("t_{loiter}", "days", "time loitering")
-        m_fac = Variable("m_{fac}", 1.0, "-", "loiter time margin factor")
 
-        constraints = [breguetendurance["t"]/m_fac >= t_loiter/N]
+        constraints = [breguetendurance["t"] >= t_loiter/N]
 
         self.submodels.extend([breguetendurance])
 
@@ -115,11 +114,9 @@ class Climb(FlightSegment):
         h_dot = VectorVariable(N, "h_{dot}", "ft/min", "Climb rate")
         h_dotmin = Variable("h_{dot-min}", 100, "ft/min",
                             "minimum climb rate")
-        m_fac = Variable("m_{fac}", 1.0, "-", "climb rate margin factor")
-
         constraints = [
             h_dot*breguetendurance["t"] >= deltah/N,
-            h_dot/m_fac >= h_dotmin,
+            h_dot >= h_dotmin,
             self.slf["T"] >= (0.5*self.slf["\\rho"]*self.slf["V"]**2*
                               self.slf["C_D"]*self.slf["S"] +
                               self.slf["W_{N}"]*h_dot/self.slf["V"])
@@ -267,8 +264,8 @@ class EnginePerformance(Model):
                                 "Minimum BSFC")
 
             constraints = [
-                (bsfc/m_fac/bsfc_min)**35.7 >= (2.29*(rpm/rpm_max)**8.02 +
-                                                0.00114*(rpm/rpm_max)**-38.3),
+                (bsfc*m_fac/bsfc_min)**35.7 >=
+                (2.29*(rpm/rpm_max)**8.02 + 0.00114*(rpm/rpm_max)**-38.3),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294,
                 ]
         else:
@@ -279,8 +276,8 @@ class EnginePerformance(Model):
                                      "Max shaft power at MSL")
 
             constraints = [
-                (bsfc/m_fac/bsfc_min)**0.129 >= (0.972*(rpm/rpm_max)**-0.141 +
-                                                 0.0268*(rpm/rpm_max)**9.62),
+                (bsfc*m_fac/bsfc_min)**0.129 >=
+                (0.972*(rpm/rpm_max)**-0.141 + 0.0268*(rpm/rpm_max)**9.62),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292,
                 ]
 
