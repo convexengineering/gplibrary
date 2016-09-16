@@ -33,10 +33,10 @@ def output_csv(M, sol, varnames, margins):
     for vname in varnames:
         data[vname] = [0]*(start[-1] + 1)
         if vname in sens:
-            data[vname + " Sensitivity"] = [""] + [0]*(start[-1]-1) + [""]
+            data[vname + " Sens"] = [""] + [0]*(start[-1]-1) + [""]
         if vname in margins:
             data[vname + " Margin"] = [""] + [0]*(start[-1]-1) + [""]
-            data[vname+" Margin Sensitivity"] = [""] + [0]*(start[-1]-1) + [""]
+            data[vname+" Margin Sens"] = [""] + [0]*(start[-1]-1) + [""]
 
     i = 0
     for vname in varnames:
@@ -49,9 +49,16 @@ def output_csv(M, sol, varnames, margins):
                 st = fseg[fs]["start"][ifs]
                 data[vname][0] = unitstr(sv.units)
                 data[vname][-1] = sv.label
-                data[vname][st:st + sv.shape[0]] = sol(sv).magnitude[0:]
-                if vname in sens:
-                    data[vname+" Sensitivity"][st:st+sv.shape[0]] = sens[sv][0:]
+                if "shape" in sv.descr:
+                    data[vname][st:st + sv.shape[0]] = sol(sv).magnitude[0:]
+                    if vname in sens:
+                        data[vname+" Sens"][st:st+sv.shape[0]] = sens[sv][0:]
+                else:
+                    data[vname][st:st + fseg[fs]["shape"][ifs]] = \
+                            [sol(sv).magnitude]*fseg[fs]["shape"][ifs]
+                    if vname in sens:
+                        data[vname+" Sens"][st:st+fseg[fs]["shape"][ifs]] = \
+                                [sens[sv]]*fseg[fs]["shape"][ifs]
                 if vname not in margins:
                     continue
                 for mfac in sol("m_{fac}"):
@@ -60,7 +67,7 @@ def output_csv(M, sol, varnames, margins):
                         continue
                     data[vname+" Margin"][st:st+sv.shape[0]] = \
                         [sol(mfac).magnitude]*sv.shape[0]
-                    data[vname+" Margin Sensitivity"][st:st+sv.shape[0]] = \
+                    data[vname+" Margin Sens"][st:st+sv.shape[0]] = \
                         [sens[mfac]]*sv.shape[0]
 
 
@@ -71,7 +78,7 @@ def output_csv(M, sol, varnames, margins):
 
 def bd_csv_output(sol, varname):
 
-    colnames = ["Value", "Units", "Margin", "Margin Sensitivity", "Label"]
+    colnames = ["Value", "Units", "Margin", "Margin Sens", "Label"]
     if varname in sol["sensitivities"]["constants"]:
         colnames.insert(2, "Sensitivitiy")
 
@@ -101,12 +108,12 @@ def write_to_excel(path, filename, df, sens_formatting):
 
     colind = []
     for colname in df.columns:
-        if "Sensitivity" in colname:
+        if "Sens" in colname:
             colind.append(list(df.columns).index(colname))
 
     rowind = []
     for rowname in df.index:
-        if "Sensitivity" in rowname:
+        if "Sens" in rowname:
             rowind.append(list(df.index).index(rowname))
 
     alp = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"]
@@ -168,13 +175,13 @@ def write_to_excel(path, filename, df, sens_formatting):
     writer.save()
 
 if __name__ == "__main__":
-    M = GasMALE()
+    M = GasMALE(DF70=True)
     M.substitutions.update({"t_{loiter}": 6})
     M.cost = M["MTOW"]
     Sol = M.solve("mosek")
     PATH = "/Users/mjburton11/Dropbox (MIT)/16.82GasMALE/GpkitReports/csvs/"
 
-    Mission_vars = ["RPM", "BSFC", "V", "P_{shaft}", "P_{shaft-tot}",
+    Mission_vars = ["RPM", "RPM_{max}", "BSFC", "V", "P_{shaft}", "P_{shaft-tot}",
                     "h_{dot}", "h", "T_{atm}", "\\mu", "\\rho", "W_{fuel}",
                     "W_{N}", "W_{N+1}", "C_D", "C_L", "\\eta_{prop}", "T",
                     "h_{loss}", "P_{shaft-max}", "t", "Re", "C_{f-fuse}",

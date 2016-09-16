@@ -264,7 +264,7 @@ class EnginePerformance(Model):
                                 "Minimum BSFC")
 
             constraints = [
-                (bsfc*m_fac/bsfc_min)**35.7 >=
+                (bsfc/m_fac/bsfc_min)**35.7 >=
                 (2.29*(rpm/rpm_max)**8.02 + 0.00114*(rpm/rpm_max)**-38.3),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294,
                 ]
@@ -276,7 +276,7 @@ class EnginePerformance(Model):
                                      "Max shaft power at MSL")
 
             constraints = [
-                (bsfc*m_fac/bsfc_min)**0.129 >=
+                (bsfc/m_fac/bsfc_min)**0.129 >=
                 (0.972*(rpm/rpm_max)**-0.141 + 0.0268*(rpm/rpm_max)**9.62),
                 (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292,
                 ]
