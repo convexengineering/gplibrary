@@ -2,35 +2,43 @@
 from numpy import pi
 import numpy as np
 import matplotlib.pyplot as plt
-from gpkit import VectorVariable, Variable, Model, units
+from gpkit import VectorVariable, Variable, Model, units, SignomialsEnabled
 from gpkit import LinkedConstraintSet
 #from gpkit.tools import BoundedConstraintSet
 from gpkit.tools import te_exp_minus1
 
 class Fuselage(Model):
     def __init__(self, **kwargs):
-    	constraints = []
-    	# Will try to stick to Philippe's naming methods as closely as possible
-    	# for cross-compatibility (to be able to switch models quickly)
+        constraints = []
+        # Will try to stick to Philippe's naming methods as closely as possible
+        # for cross-compatibility (to be able to switch models quickly)
 
-    	# Fixed variables
-    	SPR      = Variable('SPR', 8, '-', 'Number of seats per row')
-    	npass    = Variable('n_{pass}', '-', 'Number of passengers')
-    	nrows    = Variable('n_{rows}', '-', 'Number of rows')
+        # Fixed variables
+        SPR      = Variable('SPR', 8, '-', 'Number of seats per row')
+        #npass    = Variable('n_{pass}', '-', 'Number of passengers')
+        #nrows    = Variable('n_{rows}', '-', 'Number of rows')
+        #Nland    = Variable('N_{land}', '-', 'Emergency landing load factor')
+        #Pfloor   = Variable('P_{floor}', 'N', 'Distributed floor load')
+        #Pcargofloor = Variable ('P_{cargo floor}','N','Distributed cargo floor load')
+        dPover = Variable('\\delta P_{over-pressure}',18.4,'psi','Cabin overpressure (2P)')
+        
+        # Cross sectional areas (free)
 
-    	# Cross sectional areas (free)
+        #Afloor   = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
+        Afuse    = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
+        #Ahold    = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
+        Askin    = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
 
-    	# Lengths (free)
-    	lfuse    = Variable('l_{fuse}', 'm', 'Fuselage length')
+        # Lengths (free)
+        lfuse    = Variable('l_{fuse}', 'm', 'Fuselage length')
         lnose    = Variable('l_{nose}', 'm', 'Nose length')
         lshell   = Variable('l_{shell}', 'm', 'Shell length')
-    	Rfuse    = Variable('R_{fuse}', 'm', 'Fuselage radius')
+        Rfuse    = Variable('R_{fuse}', 'm', 'Fuselage radius')
 
-    	# Lengths (fixed)
+        # Lengths (fixed)
 
-    	# Surface areas (free)
+        # Surface areas (free)
         Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
-        Sfloor   = Variable('S_{floor}', 'N', 'Maximum shear in floor beams')
         Snose    = Variable('S_{nose}', 'm^2', 'Nose surface area')
 
         # Volumes (free)
@@ -42,48 +50,58 @@ class Fuselage(Model):
 
         # Weights (free)
         Wbuoy    = Variable('W_{buoy}', 'N', 'Buoyancy weight')
-        Wapu     = Variable('W_{apu}', 'N', 'APU weight')
+        Wfuse    = Variable('W_{fuse}', 'N', 'Fuselage weight')
 
         # Weights (fixed)
         Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
         Wavgpass = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
         Wcarryon = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
         Wchecked = Variable('W_{checked}', 40, 'lbf', 'Ave. checked bag weight')
-    	Wfix     = Variable('W_{fix}', 3000, 'lbf',
+        Wfix     = Variable('W_{fix}', 3000, 'lbf',
                             'Fixed weights (pilots, cockpit seats, navcom)')
 
-    	# Weight fractions (fixed)
+        # Weight fractions (fixed, with respect to the aircraft skin weight, set from PRSEUS metrics)
 
-    	ffadd    = Variable('f_{fadd}', '-',
+        ffadd    = Variable('f_{fadd}', '-',
                             'Fractional added weight of local reinforcements')
-        fframe   = Variable('f_{frame}', '-', 'Fractional frame weight')
+        fstring = Variable('f_{string}','-','Fracional stringer weight')
+        fframe   = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
+        ffairing = Variable('f_{fairing}','-','  Fractional fairing weight')
+        fwebcargo = Variable('f_{web}', '-','Fractional web and cargo floor weight')
 
-    	# Misc free variables
-    	thetaDB = ('\\theta_{DB}','-','DB fuselage joining angle')
+        # Misc free variables
+        thetaDB = ('\\theta_{DB}','-','DB fuselage joining angle')
+
+        # x-Locations (free)
+        #xCGfu    = Variable('x_{CG_{fu}}', 'm', 'x-location of fuselage CG')
+
+        # Material properties
+        sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
+                            'Max allowable skin stress')
 
 
 
-    	with SignomialsEnabled():
-    		constraints = [
+        with SignomialsEnabled():
+            constraints = [
 
-    		# Fuselage surface area relations
-    		Snose >= (2*pi + 4*thetaDB)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
-    		Sbulk >= (2*pi + 4*thetaDB)*Rfuse**2,
+            # Fuselage surface area relations
+            Snose >= (2*pi + 4*thetaDB)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
+            Sbulk >= (2*pi + 4*thetaDB)*Rfuse**2,
 
-    		# Fuselage volume relations
-    		Vcyl == Askin*lshell,
+            # Fuselage volume relations
+            Vcyl == Askin*lshell,
             Vnose == Snose*tskin,
             Vbulk == Sbulk*tskin,
 
             # Fuselage weight relations
             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
-           	Wshell >= Wskin*(1 + fstring + fframe + ffadd)
+            Wshell >= Wskin*(1 + fstring + ffairing + fframe + ffadd +fweb)
 
-    		]
+            ]
 
 
 
-    	Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, None, constraints, **kwargs)
 
 # class Aircraft(Model):
 #     """
@@ -124,5 +142,5 @@ class Fuselage(Model):
 #         Model.__init__(self, objective, lc, **kwargs)
 
 if __name__ == "__main__":
-	M = Fuselage()
-	sol = M.solve("mosek")
+    M = Fuselage()
+    sol = M.solve("mosek")
