@@ -22,30 +22,38 @@ class Fuselage(Model):
         #Pcargofloor = Variable ('P_{cargo floor}','N','Distributed cargo floor load')
         dPover = Variable('\\delta P_{over-pressure}',18.4,'psi','Cabin overpressure (2P)')
         
-        # Cross sectional areas (free)
-
+        # Cross sectional parameters (free)
         #Afloor   = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
         Afuse    = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
         #Ahold    = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
         Askin    = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
+        hdb = Variable('h_{db}','m', 'Web half-height')
+        Rfuse    = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there is
+                                                                # no under-fuselage extension deltaR
+        tdb    = Variable('t_{db}', 'm', 'Web thickness')
+        tshell = Variable('t_{shell}', 'm', 'Shell thickness')
+        tskin  = Variable('t_{skin}', 'm', 'Skin thickness')
+        waisle = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
+        wdb = Variable('w_{db}','m','DB added half-width')
+        wfuse  = Variable('w_{fuse}', 'm', 'Fuselage width')
+        wseat    = Variable('w_{seat}',0.5,'m', 'Seat width')
+
 
         # Lengths (free)
         lfuse    = Variable('l_{fuse}', 'm', 'Fuselage length')
         lnose    = Variable('l_{nose}', 'm', 'Nose length')
         lshell   = Variable('l_{shell}', 'm', 'Shell length')
-        Rfuse    = Variable('R_{fuse}', 'm', 'Fuselage radius')
-
-        # Lengths (fixed)
-
+      
         # Surface areas (free)
         Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
         Snose    = Variable('S_{nose}', 'm^2', 'Nose surface area')
 
         # Volumes (free)
-        Vcyl     = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')
-        Vnose    = Variable('V_{nose}', 'm^3', 'Nose skin volume')
-        Vbulk    = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
-        Vcabin   = Variable('V_{cabin}', 'm^3', 'Cabin volume')
+        Vdb    = Variable('V_{db}', 'm^3', 'Web volume')
+        Vcyl   = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')
+        Vnose  = Variable('V_{nose}', 'm^3', 'Nose skin volume')
+        Vbulk  = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
+        Vcabin = Variable('V_{cabin}', 'm^3', 'Cabin volume')
 
 
         # Weights (free)
@@ -62,44 +70,62 @@ class Fuselage(Model):
 
         # Weight fractions (fixed, with respect to the aircraft skin weight, set from PRSEUS metrics)
 
-        ffadd    = Variable('f_{fadd}', '-',
-                            'Fractional added weight of local reinforcements')
-        fstring = Variable('f_{string}','-','Fracional stringer weight')
-        fframe   = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
-        ffairing = Variable('f_{fairing}','-','  Fractional fairing weight')
+        ffadd     = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
+        fstring   = Variable('f_{string}','-','Fracional stringer weight')
+        fframe    = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
+        ffairing  = Variable('f_{fairing}','-','  Fractional fairing weight')
         fwebcargo = Variable('f_{web}', '-','Fractional web and cargo floor weight')
 
         # Misc free variables
-        thetaDB = ('\\theta_{DB}','-','DB fuselage joining angle')
-
-        # x-Locations (free)
-        #xCGfu    = Variable('x_{CG_{fu}}', 'm', 'x-location of fuselage CG')
+        thetadb = ('\\theta_{db}','-','DB fuselage joining angle')
 
         # Material properties
         sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
                             'Max allowable skin stress')
-
-
+        sigth    = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
+        sigx     = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
 
         with SignomialsEnabled():
             constraints = [
 
+            # Fuselage joint angle relations
+            thetadb == wdb/Rfuse, # first order Taylor works...
+            hdb >= Rfuse*(1-thetadb**2/2),
+            Askin >= (2*pi + 4*thetadb)*Rfuse*tskin, #no delta R for now
+            Adb >= (2*hdb)*tdb,
+            Afuse >= (pi + 2*thetadb + thetadb)*Rfuse**2,
+            
             # Fuselage surface area relations
-            Snose >= (2*pi + 4*thetaDB)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
-            Sbulk >= (2*pi + 4*thetaDB)*Rfuse**2,
+            Snose >= (2*pi + 4*thetadb)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
+            Sbulk >= (2*pi + 4*thetadb)*Rfuse**2,
+
+            # Fuselage length relations
+            lfuse >= lnose+lshell+lcone,
+
+            # Fuselage width relations
+            wfuse >= SPR*wseat + 2*waisle + tdb + 2*tskin,
+
 
             # Fuselage volume relations
             Vcyl == Askin*lshell,
             Vnose == Snose*tskin,
             Vbulk == Sbulk*tskin,
+            Vdb == Adb*lshell,
 
             # Fuselage weight relations
             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
-            Wshell >= Wskin*(1 + fstring + ffairing + fframe + ffadd +fweb)
+            Wshell >= Wskin*(1 + fstring + ffairing + fframe + ffadd +fweb),
+            
+            Wfuse >= Wfix + Wskin + Wshell + Wbuoy,
+            
+            # Stress relations
+            sigth == dPover*Rfuse/tskin, 
+            sigx == dPover/2*Rfuse/tshell,
+
 
             ]
 
-
+        objective == 1/wfuse;            
 
         Model.__init__(self, None, constraints, **kwargs)
 
