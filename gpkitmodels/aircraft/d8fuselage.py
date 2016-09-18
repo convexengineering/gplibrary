@@ -17,11 +17,10 @@ class Fuselage(Model):
 
         # Fixed variables
         SPR      = Variable('SPR', 8, '-', 'Number of seats per row')
-        #nseat    = Variable('n_{seat}', '-',' Number of seats')
-        #nrows    = Variable('n_{rows}', '-', 'Number of rows')
-        #pitch    = Variable('p_s', 'in', 'Seat pitch')
+        nseats    = Variable('n_{seat}',196,'-','Number of seats')
+        nrows    = Variable('n_{rows}', '-', 'Number of rows')
+        pitch    = Variable('p_s',81, 'cm', 'Seat pitch')
         #npass    = Variable('n_{pass}', '-', 'Number of passengers')
-        #nrows    = Variable('n_{rows}', '-', 'Number of rows')
         #Nland    = Variable('N_{land}', '-', 'Emergency landing load factor')
         #Pfloor   = Variable('P_{floor}', 'N', 'Distributed floor load')
         #Pcargofloor = Variable ('P_{cargo floor}','N','Distributed cargo floor load')
@@ -45,9 +44,9 @@ class Fuselage(Model):
 
 
         # Lengths (free)
-        # lfuse    = Variable('l_{fuse}', 'm', 'Fuselage length')
-        # lnose    = Variable('l_{nose}', 'm', 'Nose length')
-        # lshell   = Variable('l_{shell}', 'm', 'Shell length')
+        lfuse    = Variable('l_{fuse}', 'm', 'Fuselage length')
+        lnose    = Variable('l_{nose}', 'm', 'Nose length')
+        lshell   = Variable('l_{shell}', 'm', 'Shell length')
       
         # Surface areas (free)
         # Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
@@ -77,10 +76,10 @@ class Fuselage(Model):
 
         # Weight fractions (fixed, with respect to the aircraft skin weight, set from PRSEUS metrics)
 
-        #ffadd     = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
-        #fstring   = Variable('f_{string}',0.235,'-','Fractional stringer weight')
-        #fframe    = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
-        #ffairing  = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
+        ffadd     = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
+        fstring   = Variable('f_{string}',0.235,'-','Fractional stringer weight')
+        fframe    = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
+        ffairing  = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
         #fwebcargo = Variable('f_{web}',1.030, '-','Fractional web and cargo floor weight')
 
         # Misc free variables
@@ -88,16 +87,16 @@ class Fuselage(Model):
 
         # Material properties
         rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
-        sigskin  = Variable('\\sigma_{skin}', 460000,'psi',
+        sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
                             'Max allowable skin stress') # again notional 
         #sigth    = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
         #sigx     = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
 
         with SignomialsEnabled():
             constraints = [
-
             # Passenger constraints (assuming 737-sixed aircraft)
-
+            nrows == nseats/SPR,
+            lshell == nrows*pitch,
             # Fuselage joint angle relations
             thetadb == wdb/Rfuse, # first order Taylor works...
             thetadb == 0.3,
@@ -114,9 +113,10 @@ class Fuselage(Model):
             #Sbulk >= (2*pi + 4*thetadb)*Rfuse**2,
 
             # Fuselage length relations
+            lshell == nrows*pitch,
             #lfuse >= lnose+lshell, # forget about tailcone for now
             # Temporarily
-            #lfuse >=1.3*lshell,
+            lfuse == 1.3*lshell,
 
             # Fuselage width relations
             wfuse >= SPR*wseat + 2*waisle + tdb + 2*tskin,
