@@ -20,7 +20,6 @@ class Fuselage(Model):
         nseats    = Variable('n_{seat}',192,'-','Number of seats')
         nrows    = Variable('n_{rows}', '-', 'Number of rows')
         pitch    = Variable('p_s',81, 'cm', 'Seat pitch')
-        #npass    = Variable('n_{pass}', '-', 'Number of passengers')
         #Nland    = Variable('N_{land}', '-', 'Emergency landing load factor')
         #Pfloor   = Variable('P_{floor}', 'N', 'Distributed floor load')
         #Pcargofloor = Variable ('P_{cargo floor}','N','Distributed cargo floor load')
@@ -57,7 +56,7 @@ class Fuselage(Model):
         Vcyl   = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')
         Vnose  = Variable('V_{nose}', 'm^3', 'Nose skin volume')
         Vbulk  = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
-        # Vcabin = Variable('V_{cabin}', 'm^3', 'Cabin volume')
+        Vcabin = Variable('V_{cabin}', 'm^3', 'Cabin volume')
 
 
         # Weights (free)
@@ -104,7 +103,7 @@ class Fuselage(Model):
             Rfuse == 5.0*units('m'),
             Askin >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
             Adb == (2*hdb)*tdb,
-            #Afuse >= (pi + 2*thetadb + thetadb)*Rfuse**2,
+            Afuse >= (pi + 2*thetadb + thetadb)*Rfuse**2,
             
             # Fuselage surface area relations
             Snose >= (2*pi + 4*thetadb)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
@@ -127,22 +126,20 @@ class Fuselage(Model):
             Vnose == Snose*tskin,
             Vbulk == Sbulk*tskin,
             Vdb == Adb*lshell,
+            Vcabin >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
 
             # Fuselage weight relations
             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
-            #Wskin <= 100000*units('N'),
             Wshell >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
-            
             Wfuse >= Wfix + Wshell,
             
             # Stress relations
             tskin == dPover*Rfuse/sigskin,
             tdb == 2*dPover*wdb/sigskin
-
             ]
 
-        objective = Wfuse
-        
+        objective = Wfuse + Afuse*units('N/m**2') + Vcabin*units('N/m**3')
+
         Model.__init__(self, objective, constraints, **kwargs)
 
 # class Aircraft(Model):
@@ -188,3 +185,4 @@ if __name__ == "__main__":
     subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     sol = M.localsolve("mosek",tolerance = 0.01,verbosity = 1, iteration_limit=50)
     print sol['cost']
+    print M.solution('V_{cabin}_Fuselage')
