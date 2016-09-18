@@ -49,38 +49,38 @@ class Fuselage(Model):
         lshell   = Variable('l_{shell}', 'm', 'Shell length')
       
         # Surface areas (free)
-        # Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
-        # Snose    = Variable('S_{nose}', 'm^2', 'Nose surface area')
+        #Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
+        #Snose    = Variable('S_{nose}', 'm^2', 'Nose surface area')
 
         # Volumes (free)
         Vdb    = Variable('V_{db}', 'm^3', 'Web volume')
         Vcyl   = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')
-        # Vnose  = Variable('V_{nose}', 'm^3', 'Nose skin volume')
-        # Vbulk  = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
+        Vnose  = Variable('V_{nose}', 'm^3', 'Nose skin volume')
+        #bulk  = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
         # Vcabin = Variable('V_{cabin}', 'm^3', 'Cabin volume')
 
 
         # Weights (free)
         #Wbuoy    = Variable('W_{buoy}', 'N', 'Buoyancy weight')
-        #Wfuse    = Variable('W_{fuse}', 'N', 'Fuselage weight')
-        #Wshell = Variable('W_{shell}','N','Shell weight')
-        #Wskin    = Variable('W_{skin}', 'N', 'Skin weight')
+        Wfuse    = Variable('W_{fuse}', 'N', 'Fuselage weight')
+        Wshell = Variable('W_{shell}','N','Shell weight')
+        Wskin    = Variable('W_{skin}', 'N', 'Skin weight')
 
         # Weights (fixed)
         #Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
         #Wavgpass = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
         #Wcarryon = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
         #Wchecked = Variable('W_{checked}', 40, 'lbf', 'Ave. checked bag weight')
-        #Wfix     = Variable('W_{fix}', 3000, 'lbf',
-        #                    'Fixed weights (pilots, cockpit seats, navcom)')
+        Wfix     = Variable('W_{fix}', 3000, 'lbf',
+                           'Fixed weights (pilots, cockpit seats, navcom)')
 
         # Weight fractions (fixed, with respect to the aircraft skin weight, set from PRSEUS metrics)
 
-        ffadd     = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
+        #ffadd     = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
         fstring   = Variable('f_{string}',0.235,'-','Fractional stringer weight')
         fframe    = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
         ffairing  = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
-        #fwebcargo = Variable('f_{web}',1.030, '-','Fractional web and cargo floor weight')
+        fwebcargo = Variable('f_{web}',1.030, '-','Fractional web and cargo floor weight')
 
         # Misc free variables
         thetadb = Variable('\\theta_{db}','-','DB fuselage joining angle')
@@ -101,11 +101,9 @@ class Fuselage(Model):
             thetadb == wdb/Rfuse, # first order Taylor works...
             thetadb == 0.3,
             hdb >= Rfuse*(1.0-.5*thetadb**2),
-
             Rfuse == 4.0*units('m'),
-
             Askin >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
-            Adb >= (2*hdb)*tdb,
+            Adb == (2*hdb)*tdb,
             #Afuse >= (pi + 2*thetadb + thetadb)*Rfuse**2,
             
             # Fuselage surface area relations
@@ -114,7 +112,7 @@ class Fuselage(Model):
 
             # Fuselage length relations
             lshell == nrows*pitch,
-            lfuse >= lnose+lshell, # forget about tailcone for now
+            #lfuse >= lnose+lshell, # forget about tailcone for now
             # Temporarily
             lnose == 0.3*lshell,
             lfuse == 1.3*lshell,
@@ -128,21 +126,22 @@ class Fuselage(Model):
             Vcyl == Askin*lshell,
             #Vnose == Snose*tskin,
             #Vbulk == Sbulk*tskin,
-            Vdb == Adb*lshell,
+            #Vdb == Adb*lshell,
 
             # Fuselage weight relations
-            #Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
-            #Wshell >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
+            Wskin >= rhoskin*g*(Vcyl), # have to add Vnose + Vbulk later
+            #Wskin <= 100000*units('N'),
+            Wshell >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
             
-            #Wfuse >= Wfix + Wskin + Wshell,
+            Wfuse >= Wfix + Wskin + Wshell,
             
             # Stress relations
-            tskin >= dPover*Rfuse/sigskin,
-            tdb >= 2*dPover*wdb/sigskin
+            tskin == dPover*Rfuse/sigskin,
+            tdb == 2*dPover*wdb/sigskin
 
             ]
 
-        objective = Askin;            
+        objective = Wfuse;            
 
         Model.__init__(self, objective, constraints, **kwargs)
 
@@ -186,4 +185,5 @@ class Fuselage(Model):
 
 if __name__ == "__main__":
     M = Fuselage()
-    sol = M.localsolve("mosek",verbosity = 0)
+    sol = M.localsolve("mosek",tolerance = 0.01,verbosity = 1, x0 = {'R_{fuse}_Fuselage':4}, iteration_limit=50)
+    print sol['cost']
