@@ -17,7 +17,7 @@ class Fuselage(Model):
 
         # Fixed variables
         SPR      = Variable('SPR', 8, '-', 'Number of seats per row')
-        nseats    = Variable('n_{seat}',196,'-','Number of seats')
+        nseats    = Variable('n_{seat}',192,'-','Number of seats')
         nrows    = Variable('n_{rows}', '-', 'Number of rows')
         pitch    = Variable('p_s',81, 'cm', 'Seat pitch')
         #npass    = Variable('n_{pass}', '-', 'Number of passengers')
@@ -53,8 +53,8 @@ class Fuselage(Model):
         # Snose    = Variable('S_{nose}', 'm^2', 'Nose surface area')
 
         # Volumes (free)
-        # Vdb    = Variable('V_{db}', 'm^3', 'Web volume')
-        # Vcyl   = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')
+        Vdb    = Variable('V_{db}', 'm^3', 'Web volume')
+        Vcyl   = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')
         # Vnose  = Variable('V_{nose}', 'm^3', 'Nose skin volume')
         # Vbulk  = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
         # Vcabin = Variable('V_{cabin}', 'm^3', 'Cabin volume')
@@ -114,21 +114,21 @@ class Fuselage(Model):
 
             # Fuselage length relations
             lshell == nrows*pitch,
-            #lfuse >= lnose+lshell, # forget about tailcone for now
+            lfuse >= lnose+lshell, # forget about tailcone for now
             # Temporarily
+            lnose == 0.3*lshell,
             lfuse == 1.3*lshell,
 
             # Fuselage width relations
             wfuse >= SPR*wseat + 2*waisle + tdb + 2*tskin,
             wfuse >= 2*(Rfuse + wdb),
             wfuse <= 15*units('m'),
-            #tdb == tshell,
 
             # Fuselage volume relations
-            #Vcyl == Askin*lshell,
+            Vcyl == Askin*lshell,
             #Vnose == Snose*tskin,
             #Vbulk == Sbulk*tskin,
-            #Vdb == Adb*lshell,
+            Vdb == Adb*lshell,
 
             # Fuselage weight relations
             #Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
