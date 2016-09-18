@@ -98,7 +98,7 @@ class Fuselage(Model):
             lshell == nrows*pitch,
             # Fuselage joint angle relations
             thetadb == wdb/Rfuse, # first order Taylor works...
-            thetadb == 0.3,
+            thetadb >= 0.1, thetadb <= 0.3,
             hdb >= Rfuse*(1.0-.5*thetadb**2),
             Rfuse == 5.0*units('m'),
             Askin >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
@@ -183,6 +183,9 @@ class Fuselage(Model):
 if __name__ == "__main__":
     M = Fuselage()
     subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
-    sol = M.localsolve("mosek",tolerance = 0.01,verbosity = 1, iteration_limit=50)
-    print sol['cost']
-    print M.solution('V_{cabin}_Fuselage')
+    sol = M.localsolve("mosek",tolerance = 0.01, x0 = subs, verbosity = 1, iteration_limit=50)
+    varVals = sol['variables']
+    print 'Cabin volume is ' + str(varVals['V_{cabin}_Fuselage'].magnitude) + '.'
+    print 'Fuselage width is ' + str(varVals['w_{fuse}_Fuselage'].magnitude) + '.'
+    print  'Fuselage angle is ' + str(varVals['\\theta_{db}_Fuselage'].magnitude) + '.'
+    print 'Fuselage radius is ' + str(varVals['R_{fuse}_Fuselage'].magnitude) + '.'
