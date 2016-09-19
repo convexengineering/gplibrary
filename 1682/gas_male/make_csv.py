@@ -4,7 +4,7 @@ from gasmale import GasMALE
 from gpkit.small_scripts import unitstr
 import xlsxwriter
 
-def output_csv(M, sol, varnames, margins):
+def mission_vars(M, sol, varnames, margins):
     """
     This ouputs variables relevant accross a mission
     """
@@ -76,25 +76,36 @@ def output_csv(M, sol, varnames, margins):
     df.columns = colnames
     return df
 
-def bd_csv_output(sol, varname):
+def bd_vars(M, sol, varname, morevars):
 
     colnames = ["Value", "Units", "Margin", "Margin Sens", "Label"]
-    if varname in sol["sensitivities"]["constants"]:
-        colnames.insert(2, "Sensitivitiy")
 
     data = {}
     for sv in sol(varname):
         name = max(list(sv.keys), key=len)
         data[name] = [sol(sv).magnitude]
         data[name].append(unitstr(sv.units))
-        if varname in sol["sensitivities"]["constants"]:
-            data[name].append(sol["sensitivities"]["constants"][sv])
         for mfac in sol("m_{fac}"):
             if not sv.models == mfac.models:
                 continue
             data[name].append(sol(mfac).magnitude)
             data[name].append(sol["sensitivities"]["constants"][mfac])
+        if len(data[name]) != 4:
+            data[name] += [""]*2
         data[name].append(sv.label)
+
+    for name in morevars:
+        sv = sol(name)
+        data[name] = [sv.magnitude]
+        data[name].append(unitstr(M[name].descr["units"]))
+        for mfac in sol("m_{fac}"):
+            if not M[name].descr["models"] == mfac.models:
+                continue
+            data[name].append(sol(mfac).magnitude)
+            data[name].append(sol["sensitivities"]["constants"][mfac])
+        if len(data[name]) != 4:
+            data[name] += [""]*2
+        data[name].append(M[name].descr["label"])
 
     df = pd.DataFrame(data)
     df = df.transpose()
@@ -181,15 +192,15 @@ if __name__ == "__main__":
     Sol = M.solve("mosek")
     PATH = "/Users/mjburton11/Dropbox (MIT)/16.82GasMALE/GpkitReports/csvs/"
 
-    Mission_vars = ["RPM", "RPM_{max}", "BSFC", "V", "P_{shaft}", "P_{shaft-tot}",
-                    "h_{dot}", "h", "T_{atm}", "\\mu", "\\rho", "W_{fuel}",
-                    "W_{N}", "W_{N+1}", "C_D", "C_L", "\\eta_{prop}", "T",
-                    "h_{loss}", "P_{shaft-max}", "t", "Re", "C_{f-fuse}",
-                    "C_{D-fuse}", "c_{dp}", "V_{wind}"]
+    Mission_vars = ["RPM", "RPM_{max}", "BSFC", "V", "P_{shaft}",
+                    "P_{shaft-tot}", "h_{dot}", "h", "T_{atm}", "\\mu",
+                    "\\rho", "W_{fuel}", "W_{N}", "W_{N+1}", "C_D", "C_L",
+                    "\\eta_{prop}", "T", "h_{loss}", "P_{shaft-max}", "t",
+                    "Re", "C_{f-fuse}", "C_{D-fuse}", "c_{dp}", "V_{wind}"]
     Margins = ["BSFC", "c_{dp}"]
     Sens_boundaries = {"bad": 0.8, "good": 0.2}
-    DF = output_csv(M, Sol, Mission_vars, Margins)
+    DF = mission_vars(M, Sol, Mission_vars, Margins)
     DF.to_csv("test.csv")
     write_to_excel(PATH, "Mission_params.xlsx", DF, Sens_boundaries)
-    DF = bd_csv_output(Sol, "W")
+    DF = bd_vars(M, Sol, "W", ["MTOW", "W_{fuel-tot}", "W_{zfw}"])
     write_to_excel(PATH, "W_breakdown.xlsx", DF, Sens_boundaries)
