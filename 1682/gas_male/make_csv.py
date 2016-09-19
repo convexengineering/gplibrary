@@ -192,7 +192,7 @@ if __name__ == "__main__":
     Sol = M.solve("mosek")
     PATH = "/Users/mjburton11/Dropbox (MIT)/16.82GasMALE/GpkitReports/csvs/"
 
-    Mission_vars = ["RPM", "RPM_{max}", "BSFC", "V", "P_{shaft}",
+    Mission_vars = ["RPM", "BSFC", "V", "P_{shaft}",
                     "P_{shaft-tot}", "h_{dot}", "h", "T_{atm}", "\\mu",
                     "\\rho", "W_{fuel}", "W_{N}", "W_{N+1}", "C_D", "C_L",
                     "\\eta_{prop}", "T", "h_{loss}", "P_{shaft-max}", "t",
