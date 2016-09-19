@@ -43,7 +43,7 @@ hptexp1 = hptgamma * HPTeta / (hptgamma - 1)
 #Exhaust and Thrust
 #station 8, fan exit
 sta8gamma = 1.4
-fanexexp = (st8gamma - 1)/ sta8gamma
+fanexexp = (sta8gamma - 1)/ sta8gamma
 
 #station 6, turbine exit
 sta6gamma = 1.387
@@ -247,7 +247,8 @@ class CombustorCooling(Model):
                     SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
 
                     #this is a stagnation relation...need to fix it to not be signomial
-                    TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
+##                    TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
+                    SignomialEquality(T41, Tt41-.5*(u41**2)/Cpc),
 
                     #here we assume no pressure loss in mixing so P41=P4a
                     Pt41 == P4a*(Tt41/T41)**(ccexp1),
