@@ -184,7 +184,7 @@ class EngineOffDesign(Model):
                 '\pi_{b}': sol('\pi_{b}'),
                 '\pi_{d}': sol('\pi_{d}'),
                 '\pi_{fn}': sol('\pi_{fn}'),
-               
+
                 'A_5': sol('A_5'),
                 'A_7': sol('A_7'),
                 'T_{ref}': 288.15,
@@ -231,5 +231,5 @@ if __name__ == "__main__":
     
     engineOffD = EngineOffDesign(solOn)
     
-##    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
-    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)
+    solOff = engineOffD.localsolve(verbosity = 4, solver="mosek",iteration_limit=100)
+##    bounds, sol = engineOnD.determine_unbounded_variables(engineOffD, solver="mosek",verbosity=4, iteration_limit=100)

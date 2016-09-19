@@ -5,6 +5,51 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 
 #Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/property_tables/air/air_Cp_Cv.html
 
+#Fan
+faneta = .9
+fgamma = 1.4
+
+fexp1 = (fgamma - 1)/(faneta * fgamma)
+
+#LPC
+lpcgamma = 1.398
+LPCeta = .9
+
+lpcexp1 = (lpcgamma - 1)/(LPCeta * lpcgamma)
+
+#HPC
+HPCeta = .9
+hpcgamma = 1.354
+
+hpcexp1 = (hpcgamma - 1)/(HPCeta * hpcgamma)
+
+#combustor cooling exponents
+ccgamma = 1.313    #gamma value of air @ 1400 K
+
+ccexp1 = ccgamma/(1 - ccgamma)
+ccexp2 = -ccgamma/(1 - ccgamma)
+
+#Turbines
+#LPT
+lptgamma = 1.354
+LPTeta = .9
+lptexp1 = lptgamma * LPTeta / (lptgamma - 1)
+
+#HPT
+hptgamma = 1.318
+HPTeta = .9
+hptexp1 = hptgamma * HPTeta / (hptgamma - 1)
+
+#Exhaust and Thrust
+#station 8, fan exit
+sta8gamma = 1.4
+fanexexp = (st8gamma - 1)/ sta8gamma
+
+#station 6, turbine exit
+sta6gamma = 1.387
+turbexexp = (sta6gamma - 1) / sta6gamma
+
+
 class FanAndLPC(Model):
     """
     Free Stream, Fan, and LPC Calcs for the Engine Model
@@ -90,7 +135,7 @@ class FanAndLPC(Model):
                         
             #fan exit constraints (station 2.1)
             Pt21 == pif * Pt2,  #16.50
-            Tt21 == Tt2 * pif ** (.31746),   #16.50
+            Tt21 == Tt2 * pif ** (fexp1),   #16.50
             ht21 == Cpair * Tt21,   #16.50
 
             #fan nozzle exit (station 7)
@@ -100,12 +145,12 @@ class FanAndLPC(Model):
 
             #LPC exit (station 2.5)
             Pt25 == pilc * Pt2,
-            Tt25 == Tt2 * pilc ** (.320961),
+            Tt25 == Tt2 * pilc ** (lpcexp1),
             ht25 == Tt25 * Cp1,
 
             #HPC Exit
             Pt3 == pihc * Pt25,
-            Tt3 == Tt25 * pihc ** (.2947548622),
+            Tt3 == Tt25 * pihc ** (hpcexp1),
             ht3 == Cp2 * Tt3
             ]
         Model.__init__(self, ht3, constraints, **kwargs)
@@ -205,11 +250,11 @@ class CombustorCooling(Model):
                     TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
 
                     #here we assume no pressure loss in mixing so P41=P4a
-                    Pt41 == P4a*(Tt41/T41)**(1.313/.313),
+                    Pt41 == P4a*(Tt41/T41)**(ccexp1),
                     #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
                     u4a == M4a*((1.313*R*Tt4)**.5)/hold4a,
                     uc == ruc*u4a,
-                    P4a == Pt4*hold4a**(-1.313/.313),
+                    P4a == Pt4*hold4a**(ccexp2),
                     ])
             else:
                 constraints.extend([
@@ -289,12 +334,12 @@ class Turbine(Model):
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
-                pihpt == (Tt45/Tt41)**(4.60517),      #turbine efficiency is 0.9
+                pihpt == (Tt45/Tt41)**(hptexp1),      #turbine efficiency is 0.9
                 ht45 == Cpt1 * Tt45,
 
                 #LPT Exit States
                 Pt49 == pilpt * Pt45,
-                pilpt == (Tt49/Tt45)**(4.2498431),    #turbine efficiency is 0.9
+                pilpt == (Tt49/Tt45)**(lptexp1),    #turbine efficiency is 0.9
                 ht49 == Cpt2 * Tt49,
 
                 #turbine nozzle exit states
@@ -382,14 +427,14 @@ class ExhaustAndThrust(Model):
                 h8 == Cpfanex * T8,
                 TCS([u8**2 + 2*h8 <= 2*ht8]),
 ##               SignomialEquality(u8**2 + 2*h8, 2*ht8),
-                (P8/Pt8)**(.2857) == T8/Tt8,
+                (P8/Pt8)**(fanexexp) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
                 #core exhaust
                 P6 == P0,   #B.4.11 intro
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
-                (P6/Pt6)**(.279) == T6/Tt6,
+                (P6/Pt6)**(turbexexp) == T6/Tt6,
                 TCS([u6**2 + 2*h6 <= 2*ht6]),
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
