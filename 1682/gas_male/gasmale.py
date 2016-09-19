@@ -13,26 +13,16 @@ INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "P_{shaft-maxMSL}",
            "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}", "g"]
 
 class Mission(Model):
-    def __init__(self, h_station, wind, DF70, discrete, **kwargs):
+    def __init__(self, h_station, wind, DF70, N, Nloiter, **kwargs):
 
-        if discrete:
-            self.submodels = [
-                Climb(5, [0.502]*5, np.linspace(1, 5000, 5), False, wind,
-                      DF70, dh=5000),
-                Cruise(5, [0.684]*5, [5000]*5, False, wind, DF70, R=180),
-                Climb(5, [0.567]*5, np.linspace(5000, h_station, 5), False,
-                      wind, DF70, dh=10000),
-                Loiter(20, [0.647]*20, [h_station]*20, True, wind, DF70),
-                Cruise(5, [0.684]*5, [5000]*5, False, wind, DF70, R=200)
-                ]
-        else:
-            self.submodels = [
-                Climb(1, [0.502], [5000], False, wind, DF70, dh=5000),
-                Cruise(1, [0.684], [5000], False, wind, DF70, R=180),
-                Climb(1, [0.567], [h_station], False, wind, DF70, dh=10000),
-                Loiter(5, [0.647]*5, [h_station]*5, True, wind, DF70),
-                Cruise(1, [0.684], [5000], False, wind, DF70, R=200)
-                ]
+        self.submodels = [
+            Climb(N, [0.502]*N, [5000]*N, False, wind, DF70, dh=5000),
+            Cruise(N, [0.684]*N, [5000]*N, False, wind, DF70, R=180),
+            Climb(N, [0.567]*N, [h_station]*N, False, wind, DF70, dh=10000),
+            Loiter(Nloiter, [0.647]*Nloiter, [h_station]*Nloiter, True, wind,
+                   DF70),
+            Cruise(N, [0.684]*N, [5000]*N, False, wind, DF70, R=200)
+            ]
 
         mtow = Variable("MTOW", "lbf", "Max take off weight")
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
@@ -670,10 +660,10 @@ class GasMALE(Model):
     possible.  Model should be combed for variables that are incorrectly
     fixed.
     """
-    def __init__(self, h_station=15000, wind=False, DF70=False,
-                 discrete=False, margin=False, **kwargs):
+    def __init__(self, h_station=15000, wind=False, DF70=False, N=1,
+                 Nloiter=5, margin=False, **kwargs):
 
-        mission = Mission(h_station, wind, DF70, discrete)
+        mission = Mission(h_station, wind, DF70, N, Nloiter)
         engineweight = EngineWeight(DF70)
         wing = Wing()
         tail = Tail()
