@@ -18,7 +18,7 @@ def fix_vars(model, solution, var_names):
         value = solution(name).magnitude
         model.substitutions.update({name: value + var_names[name]})
 
-def plot_sweep(model, xvarname, xsweep, yvarname=None, ylim=None, fig=None, ax=None):
+def plot_sweep(model, xvarname, xsweep, yvarnames=None, ylim=None, fig=None, axis=None):
     """
     Takes model with sweep input and returns figure with desired output var
 
@@ -41,26 +41,32 @@ def plot_sweep(model, xvarname, xsweep, yvarname=None, ylim=None, fig=None, ax=N
     model.substitutions.update({xvarname: ("sweep", xsweep)})
     sol = model.solve("mosek", skipsweepfailures=True)
 
-    if not fig and not ax:
-        fig, ax = plt.subplots()
-    if yvarname:
-        ax.plot(sol(xvarname), sol(yvarname))
-        ax.set_ylabel("%s [%s]" % (model[yvarname].descr["label"],
-                                   unitstr(model[yvarname].units)))
-    else:
-        ax.plot(sol(xvarname), sol["sensitivities"]["constants"][xvarname])
-        ax.set_ylabel("%s sens" % model[xvarname].descr["label"])
+    if not fig and not axis:
+        fig, axis = plt.subplots(len(yvarnames))
+    for yvarname, ax in zip(yvarnames, axis):
 
-    ax.set_xlabel("%s [%s]" % (model[xvarname].descr["label"],
-                               unitstr(model[xvarname].units)))
-    if ylim:
-        ax.set_ylim((ylim[0], ylim[1]))
+        if yvarname:
+            if yvarname not in model.substitutions:
+                ax.plot(sol(xvarname), sol(yvarname))
+            else:
+                ax.plot(sol(xvarname),
+                        [sol(yvarname).magnitude]*len(sol(xvarname)))
+            ax.set_ylabel("%s [%s]" % (model[yvarname].descr["label"],
+                                       unitstr(model[yvarname].units)))
+        else:
+            ax.plot(sol(xvarname), sol["sensitivities"]["constants"][xvarname])
+            ax.set_ylabel("%s sens" % model[xvarname].descr["label"])
 
-    plt.grid()
+        ax.set_xlabel("%s [%s]" % (model[xvarname].descr["label"],
+                                   unitstr(model[xvarname].units)))
+        if ylim:
+            ax.set_ylim((ylim[0], ylim[1]))
 
-    model.substitutions.update({xvarname: oldsub})
+        plt.grid()
 
-    return fig, ax
+        model.substitutions.update({xvarname: oldsub})
+
+    return fig, axis
 
 def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
     """
