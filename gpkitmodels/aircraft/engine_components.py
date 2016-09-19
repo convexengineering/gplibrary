@@ -182,7 +182,7 @@ class CombustorCooling(Model):
 
                 #compute the station 4.1 enthalpy
                 ht41 == Cpc * Tt41,
-                
+
                 #making f+1 GP compatible --> needed for convergence
                 SignomialEquality(fp1,f+1),
                 ]
@@ -194,17 +194,16 @@ class CombustorCooling(Model):
                     TCS([f*hf >= (1-ac)*ht4-(1-ac)*ht3]),
 ##                    TCS([f*hf + ht3 >= ht4]),
 
-                    
                     #compute Tt41...mixing causes a temperature drop
                     #had to include Tt4 here to prevent it from being pushed down to zero
                     TCS([ht41 <= ((1-ac+f)*ht4 +ac*ht3)/fp1]),
-                    
+
                     #comptue the rest of the station 4.1 variables
                     SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),          
-                    
+
                     #this is a stagnation relation...need to fix it to not be signomial
                     TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
-                    
+
                     #here we assume no pressure loss in mixing so P41=P4a
                     Pt41 == P4a*(Tt41/T41)**(1.313/.313),
                     #compute station 4a quantities, assumes a gamma value of 1.313 (air @ 1400K)
@@ -220,7 +219,7 @@ class CombustorCooling(Model):
                     Pt41 == Pt4,
                     Tt41 == Tt4,
                     ])
-            
+
         Model.__init__(self, 1/f, constraints, **kwargs)
 
 class Turbine(Model):
@@ -381,8 +380,8 @@ class ExhaustAndThrust(Model):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpfanex * T8,
-##                TCS([u8**2 + 2*h8 <= 2*ht8]),
-               SignomialEquality(u8**2 + 2*h8, 2*ht8),
+                TCS([u8**2 + 2*h8 <= 2*ht8]),
+##               SignomialEquality(u8**2 + 2*h8, 2*ht8),
                 (P8/Pt8)**(.2857) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -897,6 +896,7 @@ class OffDesign(Model):
         #speeds
         Nf = Variable('N_f', '-', 'Fan Speed')
         N1 = Variable('N_1', '-', 'LPC Speed')
+        N2 = Variable('N_2', '-', 'HPC Speed')
 
         NlcD = Variable('N_{lcD}', 1, '-', 'LPC Design Spool Speed')    #B.221
         NhcD =Variable('N_{hcD}', 1, '-', 'HPC Design Spool Speed') #B.222
@@ -1012,8 +1012,8 @@ class OffDesign(Model):
 ##                N1 <= 10000,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity
-##                N1 >= .1,
-##                N1 <= 2,
+                N2 >= .8*N1,
+                N2 <= 1.2*N1,
 
                 #note residuals 2 and 3 differ from TASOPT, by replacing mhc with mlc
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality

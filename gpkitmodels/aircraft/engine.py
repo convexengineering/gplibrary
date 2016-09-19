@@ -159,7 +159,7 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 0
+        res7 = 1
         
         offD = OffDesign(res7, mixing)
 
@@ -169,7 +169,7 @@ class EngineOffDesign(Model):
         if res7 == 1 and SPmaps == True:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         else:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
             
         with SignomialsEnabled():
 
@@ -184,7 +184,7 @@ class EngineOffDesign(Model):
                 '\pi_{b}': sol('\pi_{b}'),
                 '\pi_{d}': sol('\pi_{d}'),
                 '\pi_{fn}': sol('\pi_{fn}'),
-                
+               
                 'A_5': sol('A_5'),
                 'A_7': sol('A_7'),
                 'T_{ref}': 288.15,
@@ -226,8 +226,8 @@ class EngineOffDesign(Model):
 if __name__ == "__main__":
     engineOnD = EngineOnDesign()
     
-    solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
-##    bounds, sol = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
+##    solOn = engineOnD.localsolve(verbosity = 4, solver="mosek")
+    bounds, solOn = engineOnD.determine_unbounded_variables(engineOnD, solver="mosek",verbosity=4, iteration_limit=100)
     
     engineOffD = EngineOffDesign(solOn)
     
