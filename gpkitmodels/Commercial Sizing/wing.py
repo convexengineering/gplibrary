@@ -17,26 +17,25 @@ class Wing(CostedConstraintSet):
 
         #Variables
         Afuel   = Variable('\\bar{A}_{fuel, max}', '-', 'Non-dim. fuel area')
-        AR      = Variable('AR_w', '-', 'Wing aspect ratio')
+        
         CLwmax  = Variable('C_{L_{wmax}}', '-', 'Max lift coefficient, wing')
-        Lmax    = Variable('L_{max_{w}}', 'N', 'Maximum load')
-        Sw      = Variable('S_w', 'm^2', 'Wing area')
+        
+        
         Vfuel   = Variable('V_{fuel, max}', 'm^3', 'Available fuel volume')
-        Vne     = Variable('V_{ne}', 'm/s', 'Never exceed velocity')
-        Wfuel   = Variable('W_{fuel}', 'N', 'Fuel weight')
-        Wfuelmax= Variable('W_{fuel,max}', 'N', 'Max fuel weight')
-        Ww      = Variable('W_{wing}', 'N', 'Wing weight')
+        
+        
+        
+        
         amax    = Variable('\\alpha_{max,w}', '-', 'Max angle of attack')
-        b       = Variable('b_w', 'm', 'Wing span')
+        
         cosL    = Variable('\\cos(\\Lambda)', '-',
                            'Cosine of quarter-chord sweep angle')
         croot   = Variable('c_{root}', 'm', 'Wing root chord')
         ctip    = Variable('c_{tip}', 'm', 'Wing tip chord')
-        cwma    = Variable('\\bar{c}_w', 'm',
-                          'Mean aerodynamic chord (wing)')
-        e       = Variable('e', '-', 'Oswald efficiency factor')
-        eta     = Variable('\\eta_w', '-',                         'Lift efficiency (diff b/w sectional, actual lift)')
-        fl      = Variable('f(\\lambda_w)', '-',                          'Empirical efficiency function of taper')
+        
+        
+        eta     = Variable('\\eta_w', '-', 'Lift efficiency (diff b/w sectional, actual lift)')
+        fl      = Variable('f(\\lambda_w)', '-', 'Empirical efficiency function of taper')
         g       = Variable('g', 'm/s^2', 'Gravitational acceleration')
         p       = Variable('p_w', '-', 'Substituted variable = 1 + 2*taper')
         q       = Variable('q_w', '-', 'Substituted variable = 1 + taper')
@@ -53,29 +52,49 @@ class Wing(CostedConstraintSet):
         ymac    = Variable('y_{\\bar{c}_w}', 'm',
                            'Spanwise location of mean aerodynamic chord')
 
-        #Vector Variables (quantities which change from one flight segment to another)
-        rho     = VectorVariable(N, '\\rho', 'kg/m^3', 'Air density (35,000 ft)')
-        a       = VectorVariable(N, 'a', 'm/s', 'Speed of sound (35,000 ft)')
+        #Linked Variables
+        AR      = Variable('AR_w', '-', 'Wing aspect ratio')
+##        Lmax    = Variable('L_{max_{w}}', 'N', 'Maximum load')
+        Sw      = Variable('S_w', 'm^2', 'Wing area')
+##        Vne     = Variable('V_{ne}', 'm/s', 'Never exceed velocity')
+        Wfuel   = Variable('W_{fuel}', 'N', 'Fuel weight')
+        Ww      = Variable('W_{wing}', 'N', 'Wing weight')
+        b       = Variable('b_w', 'm', 'Wing span')
+        #the following two variables have the same name in the flight profile and
+        #will be automatically linked by the linked constraint set
+        cwma    = Variable('\\bar{c}_w', 'm',
+                          'Mean aerodynamic chord (wing)')
+        e       = Variable('e', '-', 'Oswald efficiency factor')
+
+        #Vector Variables
         alpha   = VectorVariable(N, '\\alpha_w', '-', 'Wing angle of attack')
-        W       = VectorVariable(N, 'W', 'N', 'Aircraft weight')
-        W0      = VectorVariable(N, 'W_0', 'N', 'Weight excluding wing')
+        CLaw    = VectorVariable(N, 'C_{L_{aw}}', '-', 'Lift curve slope, wing')
+        
+        #Linked Vector Variables (quantities which change from one flight segment to another)
+##        rho     = VectorVariable(N, '\\rho', 'kg/m^3', 'Air density (35,000 ft)')
+##        a       = VectorVariable(N, 'a1', 'm/s', 'Speed of sound')
+##        W       = VectorVariable(N, 'W', 'N', 'Aircraft weight')
+
         M       = VectorVariable(N, 'M', '-', 'Cruise Mach number')
         Re      = VectorVariable(N, 'Re_w', '-', 'Reynolds number (wing)')
         CDp     = VectorVariable(N, 'C_{D_{p_w}}', '-',
                            'Wing parasitic drag coefficient')
         CDw     = VectorVariable(N, 'C_{D_w}', '-', 'Drag coefficient, wing')
         CLw     = VectorVariable(N, 'C_{L_w}', '-', 'Lift coefficient, wing')
-        CLaw    = VectorVariable(N, 'C_{L_{aw}}', '-', 'Lift curve slope, wing')
-        D       = VectorVariable(N, 'D_{wing}', 'N', 'Wing drag')
-        Lw      = VectorVariable(N, 'L_w', 'N', 'Wing lift')
         Vinf    = VectorVariable(N, 'V_{\\infty}', 'm/s', 'Freestream velocity')
-        mu      = VectorVariable(N, '\\mu', 'N*s/m^2', 'Dynamic viscosity (35,000 ft)')
+##        mu      = VectorVariable(N, '\\mu', 'N*s/m^2', 'Dynamic viscosity')
 
-        objective = D
 
+##        D       = VectorVariable(N, 'D_{wing}', 'N', 'Wing drag')
+##        Lw      = VectorVariable(N, 'L_w', 'N', 'Wing lift')
+##        W0      = VectorVariable(N, 'W_0', 'N', 'Weight excluding wing')
+        
+##        objective = D
+        objective = CDw[0]
+        
         with SignomialsEnabled():
             constraints = [
-                           Lw == 0.5*rho*Vinf**2*Sw*CLw,
+##                           Lw == 0.5*rho*Vinf**2*Sw*CLw,
 
                            p >= 1 + 2*taper,
                            2*q >= 1 + p,
@@ -92,9 +111,9 @@ class Wing(CostedConstraintSet):
                            alpha <= amax,
 
                            # Drag
-                           D == 0.5*rho*Vinf**2*Sw*CDw,
+##                           D == 0.5*rho*Vinf**2*Sw*CDw,
                            CDw >= CDp + CLw**2/(pi*e*AR),
-                           Re == rho*Vinf*cwma/mu,
+##                           Re == rho*Vinf*cwma/mu,
                            1 >= (2.56*CLw**5.88/(Re**1.54*tau**3.32*CDp**2.62)
                               + 3.8e-9*tau**6.23/(CLw**0.92*Re**1.38*CDp**9.57)
                               + 2.2e-3*Re**0.14*tau**0.033/(CLw**0.01*CDp**0.73)
@@ -110,7 +129,7 @@ class Wing(CostedConstraintSet):
                            TCS([e*(1 + fl*AR) <= 1]),
                            taper >= 0.2, # TODO
 
-                           Lmax == 0.5*rho0*Vne**2*Sw*CLwmax,
+##                           Lmax == 0.5*rho0*Vne**2*Sw*CLwmax,
 
                            # Fuel volume [TASOPT doc]
                            Afuel <= w*0.92*tau,
@@ -120,17 +139,18 @@ class Wing(CostedConstraintSet):
                            Wfuel <= rhofuel*Afuel*Vfuel*g,
                           ]
 
-            standalone_constraints = [W >= W0 + Ww + Wfuel,
-                                      Lw == W,
-                                      M == Vinf/a,
-                                      ]
+##            standalone_constraints = [
+##                W >= W0 + Ww + Wfuel,
+##                                      Lw == W,
+##                                      M == Vinf/a,
+##                                      ]
 
-            self.standalone_constraints = standalone_constraints
+##            self.standalone_constraints = standalone_constraints
 
         wb = WingBox()
         wb.subinplace({'A': AR,
                        'b': b,
-                       'L_{max}': Lmax,
+##                       'L_{max}': Lmax,
                        'p': p,
                        'q': q,
                        'S': Sw,
@@ -160,6 +180,7 @@ class Wing(CostedConstraintSet):
                          '\\rho_0': 1.225,
                          '\\rho_{fuel}': 817, # Kerosene [TASOPT]
                          '\\tan(\\Lambda)': tan(sweep*pi/180),
+                         'a': 297,
                          'g': 9.81,
                         }
 
