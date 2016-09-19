@@ -16,30 +16,33 @@ class Fuselage(Model):
         # for cross-compatibility (to be able to switch models quickly)
 
         # Fixed variables
-        SPR      = Variable('SPR', 8, '-', 'Number of seats per row')
-        nseats    = Variable('n_{seat}',192,'-','Number of seats')
-        nrows    = Variable('n_{rows}', '-', 'Number of rows')
-        pitch    = Variable('p_s',81, 'cm', 'Seat pitch')
-        #Nland    = Variable('N_{land}', '-', 'Emergency landing load factor')
-        #Pfloor   = Variable('P_{floor}', 'N', 'Distributed floor load')
+        SPR          = Variable('SPR', 8, '-', 'Number of seats per row')
+        nseats       = Variable('n_{seat}',192,'-','Number of seats')
+        nrows        = Variable('n_{rows}', '-', 'Number of rows')
+        pitch        = Variable('p_s',81, 'cm', 'Seat pitch')
+        #Nland       = Variable('N_{land}', '-', 'Emergency landing load factor')
+        #Pfloor      = Variable('P_{floor}', 'N', 'Distributed floor load')
         #Pcargofloor = Variable ('P_{cargo floor}','N','Distributed cargo floor load')
-        dPover = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
+        dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
+        Sfloor       = Variable('S_{floor}', 'N', 'Maximum shear in floor beams')
+        Mfloor       = Variable('M_{floor}', 'N*m', 'Max bending moment in floor beams')
         
         # Cross sectional parameters (free)
-        #Afloor   = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
-        Afuse  = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
-        #Ahold = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
-        Askin  = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
         Adb    = Variable('A_{db}', 'm^2', 'Web cross sectional area')
+        Afloor   = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
+        Afuse  = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
+        Ahold = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
+        Askin  = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
         hdb    = Variable('h_{db}','m', 'Web half-height')
         Rfuse  = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there is no under-fuselage extension deltaR
-        tdb    = Variable('t_{db}', 'm', 'Web thickness')
+        tdb     = Variable('t_{db}', 'm', 'Web thickness')
         #tshell = Variable('t_{shell}', 'm', 'Shell thickness')
-        tskin  = Variable('t_{skin}', 'm', 'Skin thickness')
-        waisle = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
-        wdb    = Variable('w_{db}','m','DB added half-width')
-        wfuse  = Variable('w_{fuse}', 'm', 'Fuselage width')
-        wseat  = Variable('w_{seat}',0.5,'m', 'Seat width')
+        tskin   = Variable('t_{skin}', 'm', 'Skin thickness')
+        waisle  = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
+        wdb     = Variable('w_{db}','m','DB added half-width')
+        wfuse   = Variable('w_{fuse}', 'm', 'Fuselage width')
+        wfloor  = Variable('w_{floor}', 'm', 'Floor width')
+        wseat   = Variable('w_{seat}',0.5,'m', 'Seat width')
 
 
         # Lengths (free)
@@ -51,13 +54,13 @@ class Fuselage(Model):
         Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
         Snose    = Variable('S_{nose}', 'm^2', 'Nose surface area')
 
-        # Volumes (free)
-        Vdb    = Variable('V_{db}', 'm^3', 'Web volume')
-        Vcyl   = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')
-        Vnose  = Variable('V_{nose}', 'm^3', 'Nose skin volume')
+        # Volumes (free)        
         Vbulk  = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
         Vcabin = Variable('V_{cabin}', 'm^3', 'Cabin volume')
-
+        Vcyl   = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')   
+        Vdb    = Variable('V_{db}', 'm^3', 'Web volume')
+        Vfloor   = Variable('V_{floor}', 'm^3', 'Floor volume')
+        Vnose  = Variable('V_{nose}', 'm^3', 'Nose skin volume')
 
         # Weights (free)
         #Wbuoy    = Variable('W_{buoy}', 'N', 'Buoyancy weight')
@@ -85,6 +88,8 @@ class Fuselage(Model):
         thetadb = Variable('\\theta_{db}','-','DB fuselage joining angle')
 
         # Material properties
+        sigfloor = Variable('\\sigma_{floor}', 'N/m^2', 'Max allowable floor stress')
+        taufloor = Variable('\\tau_{floor}', 'N/m^2', 'Max allowable shear web stress')
         rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
         sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
                             'Max allowable skin stress') # again notional 
@@ -120,6 +125,7 @@ class Fuselage(Model):
             wfuse >= SPR*wseat + 2*waisle + tdb + 2*tskin,
             wfuse >= 2*(Rfuse + wdb),
             wfuse <= 15*units('m'),
+            wfloor <= wdb + Rfuse, # half of the total floor width in fuselage
 
             # Fuselage volume relations
             Vcyl == Askin*lshell,
@@ -127,15 +133,21 @@ class Fuselage(Model):
             Vbulk == Sbulk*tskin,
             Vdb == Adb*lshell,
             Vcabin >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
+            Vfloor >= wfloor*Afloor,
+
 
             # Fuselage weight relations
             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
             Wfuse >= Wfix + Wshell,
             
-            # Stress relations
+            ## Stress relations
+            #Pressure shell loading
             tskin == dPover*Rfuse/sigskin,
-            tdb == 2*dPover*wdb/sigskin
+            tdb == 2*dPover*wdb/sigskin,
+            # Floor loading
+            Mfloor == 9/256*Pfloor*wfloor,
+            Afloor <= 2.*Mfloor/(sigfloor*hfloor) + 1.5*Sfloor/
             ]
 
         objective = Wfuse + Afuse*units('N/m**2') + Vcabin*units('N/m**3') + Rfuse*units('N/m')
