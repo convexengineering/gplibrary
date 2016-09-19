@@ -137,7 +137,6 @@ $endif$
 \usepackage{longtable}
 \usepackage{booktabs}
 \usepackage{fancyhdr}
-\usepackage[pdftex]{graphicx}
 \usepackage{float}
 \restylefloat{table}
 

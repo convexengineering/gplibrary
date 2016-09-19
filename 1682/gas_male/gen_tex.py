@@ -65,17 +65,26 @@ def gen_tex_fig(fig, filename, caption=None):
         f.write("\\end{center}")
         f.write("\\end{figure}")
 
-def gen_fixvars_tex(model, solution, fixvars):
-    with open('tex/fixvars.table.generated.tex', 'w') as f:
-        f.write("\\begin{longtable}{llll}\n \\toprule\n")
+def gen_fixvars_tex(model, solution, fixvars, filename=None):
+    if filename:
+        texname = "%s.table.generated.tex" % filename
+    else:
+        texname = "tex/fixvars.table.generated.tex"
+    with open(texname, 'w') as f:
+        f.write("\\begin{longtable}{lllll}\n \\toprule\n")
         f.write("\\toprule\n")
         f.write("Variables & Value & Units & Description \\\\ \n")
         f.write("\\midrule\n")
         for varname in fixvars:
+            name = model[varname].descr["name"]
             val = "%0.3f" % solution(varname).magnitude
             unitstring = unitstr(model[varname].units)
             label = model[varname].descr["label"]
-            f.write("$%s$ & %s & %s & %s \\\\\n" %
-                    (varname, val, unitstring, label))
+            if varname in solution["sensitivities"]["constants"]:
+                sens = "%0.3f" % solution["sensitivities"]["constants"][varname]
+            else:
+                sens = ""
+            f.write("$%s$ & %s & %s & %s & %s \\\\\n" %
+                    (name, val, unitstring, sens, label))
         f.write("\\bottomrule\n")
         f.write("\\end{longtable}\n")

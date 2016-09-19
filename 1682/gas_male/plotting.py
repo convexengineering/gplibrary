@@ -18,7 +18,7 @@ def fix_vars(model, solution, var_names):
         value = solution(name).magnitude
         model.substitutions.update({name: value + var_names[name]})
 
-def plot_sweep(model, xvarname, xsweep, yvarname, ylim=[0, 10]):
+def plot_sweep(model, xvarname, xsweep, yvarname=None, ylim=None, fig=None, ax=None):
     """
     Takes model with sweep input and returns figure with desired output var
 
@@ -41,14 +41,21 @@ def plot_sweep(model, xvarname, xsweep, yvarname, ylim=[0, 10]):
     model.substitutions.update({xvarname: ("sweep", xsweep)})
     sol = model.solve("mosek", skipsweepfailures=True)
 
-    fig, ax = plt.subplots()
-    ax.plot(sol(xvarname), sol(yvarname))
+    if not fig and not ax:
+        fig, ax = plt.subplots()
+    if yvarname:
+        ax.plot(sol(xvarname), sol(yvarname))
+        ax.set_ylabel("%s [%s]" % (model[yvarname].descr["label"],
+                                   unitstr(model[yvarname].units)))
+    else:
+        ax.plot(sol(xvarname), sol["sensitivities"]["constants"][xvarname])
+        ax.set_ylabel("%s sens" % model[xvarname].descr["label"])
+
     ax.set_xlabel("%s [%s]" % (model[xvarname].descr["label"],
                                unitstr(model[xvarname].units)))
-    ax.set_ylabel("%s [%s]" % (model[yvarname].descr["label"],
-                               unitstr(model[yvarname].units)))
-    ax.set_title("CDR " + yvarname + " vs " + xvarname)
-    ax.set_ylim((ylim[0], ylim[1]))
+    if ylim:
+        ax.set_ylim((ylim[0], ylim[1]))
+
     plt.grid()
 
     model.substitutions.update({xvarname: oldsub})
