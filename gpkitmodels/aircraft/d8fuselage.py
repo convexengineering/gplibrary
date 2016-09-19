@@ -98,9 +98,9 @@ class Fuselage(Model):
             lshell == nrows*pitch,
             # Fuselage joint angle relations
             thetadb == wdb/Rfuse, # first order Taylor works...
-            thetadb >= 0.1, thetadb <= 0.3,
+            thetadb >= 0.05, thetadb <= 0.3,
             hdb >= Rfuse*(1.0-.5*thetadb**2),
-            Rfuse == 5.0*units('m'),
+            Rfuse >= 2*units('m'), Rfuse <= 5.0*units('m'),
             Askin >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
             Adb == (2*hdb)*tdb,
             Afuse >= (pi + 2*thetadb + thetadb)*Rfuse**2,
@@ -138,7 +138,7 @@ class Fuselage(Model):
             tdb == 2*dPover*wdb/sigskin
             ]
 
-        objective = Wfuse + Afuse*units('N/m**2') + Vcabin*units('N/m**3')
+        objective = Wfuse + Afuse*units('N/m**2') + Vcabin*units('N/m**3') + Rfuse*units('N/m')
 
         Model.__init__(self, objective, constraints, **kwargs)
 
