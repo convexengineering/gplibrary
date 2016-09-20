@@ -18,12 +18,12 @@ class Mission(Model):
         self.submodels = [
             Climb(N, [0.502]*N, np.linspace(0, 5000, N+1)[1:], False, wind,
                   DF70, dh=5000),
-            Cruise(N, [0.684]*N, [5000]*N, False, wind, DF70, R=180),
+            Cruise(1, [0.684], [5000], False, wind, DF70, R=180),
             Climb(N, [0.567]*N, np.linspace(5000, h_station, N+1)[1:], False,
                   wind, DF70, dh=10000),
             Loiter(Nloiter, [0.647]*Nloiter, [h_station]*Nloiter, True, wind,
                    DF70),
-            Cruise(N, [0.684]*N, [5000]*N, False, wind, DF70, R=200)
+            Cruise(1, [0.684], [5000], False, wind, DF70, R=200)
             ]
 
         mtow = Variable("MTOW", "lbf", "Max take off weight")
@@ -68,13 +68,15 @@ class Cruise(FlightSegment):
     def __init__(self, N, eta_p, alt, onStation, wind, DF70, R=200, **kwargs):
         FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
-        breguetrange = BreguetRange(N, R)
+        breguetendurance = BreguetEndurance(N)
 
-        self.submodels.extend([breguetrange])
+        R = Variable("R", R, "nautical_miles", "Range to station")
 
-        self.constraints = []
+        self.submodels.extend([breguetendurance])
 
-        lc = LinkedConstraintSet([self.submodels], exclude=self.exclude)
+        constraints = [R/N <= self.slf["V"]*breguetendurance["t"]]
+
+        lc = LinkedConstraintSet([self.submodels, constraints], exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -307,34 +309,6 @@ class BreguetEndurance(Model):
 
         constraints = [
             z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
-            f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
-            ]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
-class BreguetRange(Model):
-    """
-    Discritized Breguet Range model
-    """
-    def __init__(self, N, R, **kwargs):
-        z_bre = VectorVariable(N, "z_{bre}", "-", "Breguet coefficient")
-        t = VectorVariable(N, "t", "days", "Time per flight segment")
-        R = Variable("R", R, "nautical_miles", "Range to station")
-        f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
-        P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
-                                    "Total power, avionics included")
-        bsfc = VectorVariable(N, "BSFC", "lb/hr/hp",
-                              "Brake specific fuel consumption")
-        W_nplus1 = VectorVariable(N, "W_{N+1}", "lbf", "vector-end weight")
-        V = VectorVariable(N, "V", "m/s", "Cruise speed")
-        W_fuel = VectorVariable(N, "W_{fuel}", "lbf",
-                                "Segment-fuel weight")
-        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
-
-        constraints = [
-            z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
-            R/N <= V*t,
             f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
             ]
 
