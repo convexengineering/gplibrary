@@ -16,32 +16,26 @@ class Mission(Model):
     def __init__(self, h_station, wind, DF70, N, Nloiter, **kwargs):
 
         self.submodels = [
-            Climb(0.502, 5000, False, wind, DF70, dh=5000),
-            Cruise(0.684, 5000, False, wind, DF70, R=180),
-            Climb(0.567, h_station, False, wind, DF70, dh=10000)]
-
-        i = 0
-        while i < Nloiter:
-            self.submodels.append(Loiter(0.647, h_station, True, wind, DF70))
-            i += 1
-
-        self.submodels.append(Cruise(0.684, 5000, False, wind, DF70, R=200))
+            Climb(N, [0.502]*N, np.linspace(0, 5000, N+1)[1:], False, wind,
+                  DF70, dh=5000),
+            Cruise(N, [0.684]*N, [5000]*N, False, wind, DF70, R=180),
+            Climb(N, [0.567]*N, np.linspace(5000, h_station, N+1)[1:], False,
+                  wind, DF70, dh=10000),
+            Loiter(Nloiter, [0.647]*Nloiter, [h_station]*Nloiter, True, wind,
+                   DF70),
+            Cruise(N, [0.684]*N, [5000]*N, False, wind, DF70, R=200)
+            ]
 
         mtow = Variable("MTOW", "lbf", "Max take off weight")
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
         m_fac = Variable("m_{fac}", 1.0, "-", "MTOW margin factor")
-        t_loiter = Variable("t_{loiter}", "days", "time loitering")
 
         constraints = [
             mtow/m_fac >= self.submodels[0]["W_{start}"],
             W_zfw <= self.submodels[-1]["W_{end}"],
-            W_fueltot >= sum(fs["W_{fuel}"] for fs in self.submodels)
+            W_fueltot >= sum(fs["W_{fuel-fs}"] for fs in self.submodels)
             ]
-
-        for fs in self.submodels:
-            if fs.__class__.__name__ == "Loiter":
-                constraints.extend([fs["t"] >= t_loiter/5])
 
         for i, fs in enumerate(self.submodels[1:]):
             constraints.extend([
@@ -55,59 +49,69 @@ class Mission(Model):
         Model.__init__(self, None, lc, **kwargs)
 
 class FlightSegment(Model):
-    def __init__(self, eta_p, alt, onStation, wind, DF70, **kwargs):
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, **kwargs):
 
-        self.aero = Aerodynamics()
-        self.slf = SteadyLevelFlight(eta_p)
-        self.engine = EnginePerformance(alt, onStation, DF70)
-        self.atm = Atmosphere(alt)
-        self.wind = Wind(alt, wind)
+        self.aero = Aerodynamics(N)
+        self.fuel = Fuel(N)
+        self.slf = SteadyLevelFlight(N, eta_p)
+        self.engine = EnginePerformance(N, alt, onStation, DF70)
+        self.atm = Atmosphere(N, alt)
+        self.wind = Wind(N, alt, wind)
 
+        self.N = N
         self.exclude = ["m_{fac}"]
 
-        self.submodels = [self.aero, self.slf, self.engine, self.atm, self.wind]
+        self.submodels = [self.aero, self.fuel, self.slf, self.engine,
+                          self.atm, self.wind]
 
 class Cruise(FlightSegment):
-    def __init__(self, eta_p, alt, onStation, wind, DF70, R=200, **kwargs):
-        FlightSegment.__init__(self, eta_p, alt, onStation, wind, DF70)
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, R=200, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
-        breguetrange = BreguetRange(R)
+        breguetrange = BreguetRange(N, R)
 
         self.submodels.extend([breguetrange])
+
+        self.constraints = []
 
         lc = LinkedConstraintSet([self.submodels], exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
 class Loiter(FlightSegment):
-    def __init__(self, eta_p, alt, onStation, wind, DF70, **kwargs):
-        FlightSegment.__init__(self, eta_p, alt, onStation, wind, DF70)
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
-        breguetendurance = BreguetEndurance()
+        breguetendurance = BreguetEndurance(N)
+
+        t_loiter = Variable("t_{loiter}", "days", "time loitering")
+
+        constraints = [breguetendurance["t"] >= t_loiter/N]
 
         self.submodels.extend([breguetendurance])
 
-        lc = LinkedConstraintSet([self.submodels], exclude=self.exclude)
+        lc = LinkedConstraintSet([self.submodels, constraints],
+                                 exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
 class Climb(FlightSegment):
-    def __init__(self, eta_p, alt, onStation, wind, DF70, dh=5000,
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dh=5000,
                  **kwargs):
-        FlightSegment.__init__(self, eta_p, alt, onStation, wind, DF70)
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
-        breguetendurance = BreguetEndurance()
+        breguetendurance = BreguetEndurance(N)
 
         deltah = Variable("\\delta_h", dh, "ft", "altitude difference")
-        h_dot = Variable("h_{dot}", "ft/min", "Climb rate")
+        h_dot = VectorVariable(N, "h_{dot}", "ft/min", "Climb rate")
         h_dotmin = Variable("h_{dot-min}", 100, "ft/min",
                             "minimum climb rate")
         constraints = [
-            h_dot*breguetendurance["t"] >= deltah,
+            h_dot*breguetendurance["t"] >= deltah/N,
             h_dot >= h_dotmin,
             self.slf["T"] >= (0.5*self.slf["\\rho"]*self.slf["V"]**2*
                               self.slf["C_D"]*self.slf["S"] +
-                              self.slf["W_{start}"]*h_dot/self.slf["V"])
+                              self.slf["W_{N}"]*h_dot/self.slf["V"])
             ]
 
         self.submodels.extend([breguetendurance])
@@ -121,22 +125,23 @@ class Atmosphere(Model):
     """
     Model to capture density changes with altitude
     """
-    def __init__(self, alt, **kwargs):
+    def __init__(self, N, alt, **kwargs):
 
-        h = Variable("h", alt, "ft", "Altitude")
+        h = VectorVariable(N, "h", alt, "ft", "Altitude")
         p_sl = Variable("p_{sl}", 101325, "Pa", "Pressure at sea level")
         L_atm = Variable("L_{atm}", 0.0065, "K/m", "Temperature lapse rate")
         T_sl = Variable("T_{sl}", 288.15, "K", "Temperature at sea level")
 
-        T_atm = Variable("T_{atm}", T_sl.value - L_atm.value*h.value, "K",
-                         "Air temperature")
-        mu_atm = Variable("\\mu", "N*s/m^2", "Dynamic viscosity")
+        T_atm = VectorVariable(N, "T_{atm}",
+                               [T_sl.value - L_atm.value*v.value for v in h],
+                               "K", "Air temperature")
+        mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
         mu_sl = Variable("\\mu_{sl}", 1.789*10**-5, "N*s/m^2",
                          "Dynamic viscosity at sea level")
         R_spec = Variable("R_{spec}", 287.058, "J/kg/K",
                           "Specific gas constant of air")
         h_ref = Variable("h_{ref}", 15000, "ft", "Reference altitude")
-        rho = Variable("\\rho", "kg/m^3", "Air density")
+        rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
 
         # Atmospheric variation with altitude (valid from 0-7km of altitude)
         constraints = [rho == p_sl*T_atm**(5.257-1)/R_spec/(T_sl**5.257),
@@ -145,26 +150,63 @@ class Atmosphere(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class Fuel(Model):
+    """
+    Fuel weight model
+    """
+    def __init__(self, N, **kwargs):
+
+        #----------------------------------------------------
+        # Fuel weight model
+
+        W_start = Variable("W_{start}", "lbf",
+                           "weight at beginning of flight segment")
+        W_nplus1 = VectorVariable(N, "W_{N+1}", "lbf", "vector-end weight")
+        W_fuel = VectorVariable(N, "W_{fuel}", "lbf",
+                                "Segment-fuel weight")
+        W_fuelfs = Variable("W_{fuel-fs}", "lbf",
+                            "flight segment fuel weight")
+        W_end = Variable("W_{end}", "lbf",
+                         "weight at beginning of flight segment")
+        W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
+
+        # end of first segment weight + first segment fuel weight must be
+        # greater  than MTOW.  Each end of segment weight must be greater
+        # than the next end of segment weight + the next segment fuel weight.
+        # The last end segment weight must be greater than the zero fuel
+        # weight
+        constraints = [W_start >= W_nplus1[0] + W_fuel[0],
+                       W_fuelfs >= W_fuel.sum(),
+                       W_nplus1[-1] >= W_end,
+                       W_n[0] == W_start]
+
+        if N == 1:
+            pass
+        else:
+            constraints.extend([W_nplus1[:-1] >= W_nplus1[1:] + W_fuel[1:],
+                                W_n[1:] == W_nplus1[:-1],
+                               ])
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class SteadyLevelFlight(Model):
     """
     Captures steady level flight mode
     """
-    def __init__(self, eta_p, **kwargs):
+    def __init__(self, N, eta_p, **kwargs):
 
-        CD = Variable("C_D", "-", "Drag coefficient")
-        CL = Variable("C_L", "-", "Lift coefficient")
-        V = Variable("V", "m/s", "Cruise speed")
+        CD = VectorVariable(N, "C_D", "-", "Drag coefficient")
+        CL = VectorVariable(N, "C_L", "-", "Lift coefficient")
+        V = VectorVariable(N, "V", "m/s", "Cruise speed")
         S = Variable("S", "ft^2", "wing area")
-        eta_prop = Variable("\\eta_{prop}", eta_p, "-",
-                            "Propulsive efficiency")
-        P_shaft = Variable("P_{shaft}", "hp", "Shaft power")
-        T = Variable("T", "lbf", "Thrust")
+        eta_prop = VectorVariable(N, "\\eta_{prop}", eta_p, "-",
+                                  "Propulsive efficiency")
+        P_shaft = VectorVariable(N, "P_{shaft}", "hp", "Shaft power")
+        T = VectorVariable(N, "T", "lbf", "Thrust")
 
-        rho = Variable("\\rho", "kg/m^3", "Air density")
-        W_start = Variable("W_{start}", "lbf",
-                           "weight at beginning of flight segment")
-        W_end = Variable("W_{end}", "lbf", "weight at end of flight segment")
-        W_fuel = Variable("W_{fuel}", "lbf", "Segment-fuel weight")
+        rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
+        W_nplus1 = VectorVariable(N, "W_{N+1}", "lbf", "vector-end weight")
+        W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         # Climb model
         # Currently climb rate is being optimized to reduce fuel consumption.
@@ -173,8 +215,7 @@ class SteadyLevelFlight(Model):
         constraints = [
             P_shaft == T*V/eta_prop,
             T >= 0.5*rho*V**2*CD*S,
-            0.5*rho*CL*S*V**2 == (W_start*W_end)**0.5,
-            W_start >= W_end + W_fuel
+            0.5*rho*CL*S*V**2 == (W_nplus1*W_n)**0.5,
             ]
         # Propulsive efficiency variation with different flight segments,
         # will change depending on propeller characteristics
@@ -185,23 +226,26 @@ class EnginePerformance(Model):
     """
     Engine performance and weight model for small engine
     """
-    def __init__(self, alt, onStation, DF70, **kwargs):
+    def __init__(self, N, alt, onStation, DF70, **kwargs):
 
-        h = Variable("h", alt, "ft", "Altitude")
+        h = VectorVariable(N, "h", alt, "ft", "Altitude")
         h_ref = Variable("h_{ref}", 15000, "ft", "Reference altitude")
-        P_shaft = Variable("P_{shaft}", "hp", "Shaft power")
-        bsfc = Variable("BSFC", "lb/hr/hp", "Brake specific fuel consumption")
-        rpm = Variable("RPM", "rpm", "Engine operating RPM")
+        P_shaft = VectorVariable(N, "P_{shaft}", "hp", "Shaft power")
+        bsfc = VectorVariable(N, "BSFC", "lb/hr/hp",
+                              "Brake specific fuel consumption")
+        rpm = VectorVariable(N, "RPM", "rpm", "Engine operating RPM")
         P_avn = Variable("P_{avn}", 40, "watts", "Avionics power")
         P_pay = Variable("P_{pay}", 10, "watts", "Payload power")
-        P_shafttot = Variable("P_{shaft-tot}", "hp",
-                              "Total power, avionics included")
+        P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
+                                    "Total power, avionics included")
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
                                   "alternator efficiency")
-        lfac = 1 - 0.906**(1/0.15)*(h.value/h_ref.value)**0.92
-        h_loss = Variable("h_{loss}", lfac, "-", "Max shaft power loss factor")
-        P_shaftmax = Variable("P_{shaft-max}", "hp",
-                              "Max shaft power at altitude")
+        lfac = [1 - 0.906**(1/0.15)*(v.value/h_ref.value)**0.92
+                for v in h]
+        h_loss = VectorVariable(N, "h_{loss}", lfac, "-",
+                                "Max shaft power loss factor")
+        P_shaftmax = VectorVariable(N, "P_{shaft-max}",
+                                    "hp", "Max shaft power at altitude")
         m_fac = Variable("m_{fac}", 1.0, "-", "BSFC margin factor")
 
         if DF70:
@@ -247,20 +291,23 @@ class BreguetEndurance(Model):
     """
     Discritized Breguet Range model
     """
-    def __init__(self, **kwargs):
-        z_bre = Variable("z_{bre}", "-", "Breguet coefficient")
-        t = Variable("t", "days", "Time per flight segment")
+    def __init__(self, N, **kwargs):
+        z_bre = VectorVariable(N, "z_{bre}", "-", "Breguet coefficient")
+        t = VectorVariable(N, "t", "days", "Time per flight segment")
         f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
-        P_shafttot = Variable("P_{shaft-tot}", "hp",
-                              "Total power, avionics included")
-        bsfc = Variable("BSFC", "lb/hr/hp", "Brake specific fuel consumption")
-        W_end = Variable("W_{end}", "lbf", "weight at end of flight segment")
-        W_fuel = Variable("W_{fuel}", "lbf", "Segment-fuel weight")
+        P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
+                                    "Total power, avionics included")
+        bsfc = VectorVariable(N, "BSFC", "lb/hr/hp",
+                              "Brake specific fuel consumption")
+        W_nplus1 = VectorVariable(N, "W_{N+1}", "lbf", "vector-end weight")
+        W_fuel = VectorVariable(N, "W_{fuel}", "lbf",
+                                "Segment-fuel weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         constraints = [
-            z_bre >= P_shafttot*t*bsfc*g/W_end,
-            f_fueloil*W_fuel/W_end >= te_exp_minus1(z_bre, 3)
+            z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
+            f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -269,23 +316,26 @@ class BreguetRange(Model):
     """
     Discritized Breguet Range model
     """
-    def __init__(self, R, **kwargs):
-        z_bre = Variable("z_{bre}", "-", "Breguet coefficient")
-        t = Variable("t", "days", "Time per flight segment")
+    def __init__(self, N, R, **kwargs):
+        z_bre = VectorVariable(N, "z_{bre}", "-", "Breguet coefficient")
+        t = VectorVariable(N, "t", "days", "Time per flight segment")
         R = Variable("R", R, "nautical_miles", "Range to station")
-        V = Variable("V", "m/s", "Cruise speed")
         f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
-        P_shafttot = Variable("P_{shaft-tot}", "hp",
-                              "Total power, avionics included")
-        bsfc = Variable("BSFC", "lb/hr/hp", "Brake specific fuel consumption")
-        W_end = Variable("W_{end}", "lbf", "weight at end of flight segment")
-        W_fuel = Variable("W_{fuel}", "lbf", "Segment-fuel weight")
+        P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
+                                    "Total power, avionics included")
+        bsfc = VectorVariable(N, "BSFC", "lb/hr/hp",
+                              "Brake specific fuel consumption")
+        W_nplus1 = VectorVariable(N, "W_{N+1}", "lbf", "vector-end weight")
+        V = VectorVariable(N, "V", "m/s", "Cruise speed")
+        W_fuel = VectorVariable(N, "W_{fuel}", "lbf",
+                                "Segment-fuel weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         constraints = [
-            z_bre >= P_shafttot*t*bsfc*g/W_end,
-            R <= V*t,
-            f_fueloil*W_fuel/W_end >= te_exp_minus1(z_bre, 3)
+            z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
+            R/N <= V*t,
+            f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -294,31 +344,32 @@ class Aerodynamics(Model):
     """
     Aero model assuming jh01 airfoil, designed by Mark Drela
     """
-    def __init__(self, **kwargs):
+    def __init__(self, N, **kwargs):
 
         CLmax = Variable("C_{L-max}", 1.5, "-", "Maximum lift coefficient")
         e = Variable("e", 0.9, "-", "Spanwise efficiency")
         AR = Variable("AR", "-", "Aspect ratio")
         b = Variable("b", "ft", "Span")
-        Re = Variable("Re", "-", "Reynolds number")
+        Re = VectorVariable(N, "Re", "-", "Reynolds number")
 
         # fuselage drag
         Kfuse = Variable("K_{fuse}", 1.1, "-", "Fuselage form factor")
         S_fuse = Variable("S_{fuse}", "ft^2", "Fuselage surface area")
-        Cffuse = Variable("C_{f-fuse}", "-",
-                          "Fuselage skin friction coefficient")
-        CDfuse = Variable("C_{D-fuse}", "-", "fueslage drag")
+        Cffuse = VectorVariable(N, "C_{f-fuse}", "-",
+                                "Fuselage skin friction coefficient")
+        CDfuse = VectorVariable(N, "C_{D-fuse}", "-", "fueslage drag")
         l_fuse = Variable("l_{fuse}", "ft", "Fuselage length")
-        Refuse = Variable("Re_{fuse}", "-", "Fuselage Reynolds number")
+        Refuse = VectorVariable(N, "Re_{fuse}", "-",
+                                "Fuselage Reynolds number")
         Re_ref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
-        cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
+        cdp = VectorVariable(N, "c_{dp}", "-", "wing profile drag coeff")
 
-        CD = Variable("C_D", "-", "Drag coefficient")
-        CL = Variable("C_L", "-", "Lift coefficient")
-        V = Variable("V", "m/s", "Cruise speed")
+        CD = VectorVariable(N, "C_D", "-", "Drag coefficient")
+        CL = VectorVariable(N, "C_L", "-", "Lift coefficient")
+        V = VectorVariable(N, "V", "m/s", "Cruise speed")
         S = Variable("S", "ft^2", "wing area")
-        rho = Variable("\\rho", "kg/m^3", "Air density")
-        mu_atm = Variable("\\mu", "N*s/m^2", "Dynamic viscosity")
+        rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
+        mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
         m_fac = Variable("m_{fac}", 1.0, "-", "c_{dp} margin factor")
 
         constraints = [
@@ -353,13 +404,13 @@ class LandingGear(Model):
         CDAland = Variable("CDA_{land}", "-",
                            "normalized drag coefficient landing gear")
 
-        CD = Variable(NSeg, "C_D", "-", "Drag coefficient")
-        CL = Variable(NSeg, "C_L", "-", "Lift coefficient")
-        CDfuse = Variable(NSeg, "C_{D-fuse}", "-", "fueslage drag")
+        CD = VectorVariable(NSeg, "C_D", "-", "Drag coefficient")
+        CL = VectorVariable(NSeg, "C_L", "-", "Lift coefficient")
+        CDfuse = VectorVariable(NSeg, "C_{D-fuse}", "-", "fueslage drag")
         S = Variable("S", "ft^2", "wing area")
         e = Variable("e", 0.95, "-", "Spanwise efficiency")
         AR = Variable("AR", "-", "Aspect ratio")
-        cdp = Variable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
+        cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
 
         constraints = [
             CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR) + CDAland,
@@ -496,10 +547,10 @@ class Wind(Model):
     Model for wind speed
     wind = True, wind speed has specific value
     """
-    def __init__(self, alt, wind, **kwargs):
+    def __init__(self, N, alt, wind, **kwargs):
 
-        V = Variable("V", "m/s", "Cruise speed")
-        h = Variable("h", alt, "ft", "Altitude")
+        V = VectorVariable(N, "V", "m/s", "Cruise speed")
+        h = VectorVariable(N, "h", alt, "ft", "Altitude")
 
         if wind:
 
@@ -508,7 +559,7 @@ class Wind(Model):
 
         else:
 
-            V_wind = Variable("V_{wind}", "m/s", "Wind speed")
+            V_wind = VectorVariable(N, "V_{wind}", "m/s", "Wind speed")
             h_ref = Variable("h_{ref}", 15000, "ft", "Reference altitude")
             V_ref = Variable("V_{ref}", 25, "m/s", "Reference wind speed")
 

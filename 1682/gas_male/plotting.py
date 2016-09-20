@@ -115,7 +115,6 @@ def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
 
     return figures, axis
 
-
 def plot_mission_var(model, sol, yvarname, ylim, yaxis_name=None):
     """
     Plots a mission varible against mission time.
@@ -189,4 +188,4 @@ def plot_mission_var(model, sol, yvarname, ylim, yaxis_name=None):
     ax.plot([14, 14], [ylim[0], ylim[1]], '--', color='r')
     ax.plot([34, 34], [ylim[0], ylim[1]], '--', color='r')
 
-    return fig, ax
+    return fig, ax, t, y
