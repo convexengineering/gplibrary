@@ -18,14 +18,14 @@ class Mission(Model):
         self.submodels = [
             Climb(0.502, 5000, False, wind, DF70, dh=5000),
             Cruise(0.684, 5000, False, wind, DF70, R=180),
-            Climb(0.567, h_station, False, wind, DF70, dh=10000),
-            Loiter(0.647, h_station, True, wind, DF70),
-            Loiter(0.647, h_station, True, wind, DF70),
-            Loiter(0.647, h_station, True, wind, DF70),
-            Loiter(0.647, h_station, True, wind, DF70),
-            Loiter(0.647, h_station, True, wind, DF70),
-            Cruise(0.684, 5000, False, wind, DF70, R=200)
-            ]
+            Climb(0.567, h_station, False, wind, DF70, dh=10000)]
+
+        i = 0
+        while i < Nloiter:
+            self.submodels.append(Loiter(0.647, h_station, True, wind, DF70))
+            i += 1
+
+        self.submodels.append(Cruise(0.684, 5000, False, wind, DF70, R=200))
 
         mtow = Variable("MTOW", "lbf", "Max take off weight")
         W_zfw = Variable("W_{zfw}", "lbf", "Zero fuel weight")
@@ -74,8 +74,6 @@ class Cruise(FlightSegment):
         breguetrange = BreguetRange(R)
 
         self.submodels.extend([breguetrange])
-
-        self.constraints = []
 
         lc = LinkedConstraintSet([self.submodels], exclude=self.exclude)
 
