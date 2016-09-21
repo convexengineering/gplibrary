@@ -110,6 +110,11 @@ class Fuselage(Model):
         sigth    = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
         sigx     = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
 
+        # Bending inertias (ported from TASOPT)
+        Ivshell = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
+        Ihshell = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
+
+
         with SignomialsEnabled():
             constraints = [
             # Passenger constraints (assuming 737-sixed aircraft)
@@ -123,7 +128,7 @@ class Fuselage(Model):
             # Fuselage joint angle relations
             thetadb == wdb/Rfuse, # first order Taylor works...
             thetadb >= 0.05, thetadb <= 0.25,
-            hdb >= Rfuse*(1.0-.5*thetadb**2),
+            hdb >= Rfuse*(1.0-.5*thetadb**2), #[SP]
 
             # Fuselage cross-sectional relations
             Askin >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
@@ -176,9 +181,11 @@ class Fuselage(Model):
             Wfloor >= rhofloor*g*Vfloor + wfloor*lfloor*Wppfloor,
             Sfloor == (5./16.)*Pfloor,
             # Added synthetic constraint on hfloor to keep it from growing too large
-            hfloor <= .1*Rfuse
+            hfloor <= .1*Rfuse,
 
-
+            # Fuselage bending model
+            Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell, # [SP]
+            Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell #approx needs to be improved [SP]
             ]
 
         objective = Wfuse + Afuse*units('N/m**2') + wfloor*units('N/m') + Pfloor + Vcabin*units('N/m^3') + hfloor*units('N/m')
