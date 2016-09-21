@@ -13,14 +13,15 @@ INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "P_{shaft-maxMSL}",
            "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}", "g"]
 
 class Mission(Model):
-    def __init__(self, h_station, wind, DF70, N, Nloiter, **kwargs):
+    def __init__(self, h_station, wind, DF70, Nclimb, Nloiter, **kwargs):
 
         self.submodels = [
-            Climb(N, [0.502]*N, np.linspace(0, 5000, N+1)[1:], False, wind,
-                  DF70, dh=5000),
+            Climb(Nclimb, [0.502]*Nclimb, np.linspace(0, 5000, Nclimb+1)[1:],
+                  False, wind, DF70, dh=5000),
             Cruise(1, [0.684], [5000], False, wind, DF70, R=180),
-            Climb(N, [0.567]*N, np.linspace(5000, h_station, N+1)[1:], False,
-                  wind, DF70, dh=10000),
+            Climb(Nclimb, [0.567]*Nclimb,
+                  np.linspace(5000, h_station, Nclimb+1)[1:], False, wind,
+                  DF70, dh=10000),
             Loiter(Nloiter, [0.647]*Nloiter, [h_station]*Nloiter, True, wind,
                    DF70),
             Cruise(1, [0.684], [5000], False, wind, DF70, R=200)
@@ -123,6 +124,17 @@ class Climb(FlightSegment):
                                  exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
+
+    def process_solution(self, sol):
+
+        super(Climb, self).process_solution(sol)
+        Vstall = ((sol("MTOW")*2/sol(self.slf["\\rho"][0])/
+                   sol("S")/1.5)**0.5).to("m/s")
+        Vland = ((sol("W_{zfw}")*2/sol(self.slf["\\rho"][0])/
+                  sol("S")/1.5)**0.5).to("m/s")
+        print "Stall speed at bottom of climb is: %0.3f [%s]" % \
+                (Vstall.magnitude, Vstall.units)
+        print "Landing speed is : %0.3f [%s]" % (Vland.magnitude, Vland.units)
 
 class Atmosphere(Model):
     """
@@ -639,10 +651,10 @@ class GasMALE(Model):
     possible.  Model should be combed for variables that are incorrectly
     fixed.
     """
-    def __init__(self, h_station=15000, wind=False, DF70=False, N=1,
+    def __init__(self, h_station=15000, wind=False, DF70=False, Nclimb=5,
                  Nloiter=5, margin=False, **kwargs):
 
-        mission = Mission(h_station, wind, DF70, N, Nloiter)
+        mission = Mission(h_station, wind, DF70, Nclimb, Nloiter)
         engineweight = EngineWeight(DF70)
         wing = Wing()
         tail = Tail()
