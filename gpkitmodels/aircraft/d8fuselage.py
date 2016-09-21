@@ -119,7 +119,7 @@ class Fuselage(Model):
             thetadb == wdb/Rfuse, # first order Taylor works...
             thetadb >= 0.05, thetadb <= 0.3,
             hdb >= Rfuse*(1.0-.5*thetadb**2),
-            Rfuse >= 2*units('m'), Rfuse <= 5.0*units('m'),
+            Rfuse >= 1*units('m'), Rfuse <= 5.0*units('m'),
             Askin >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
             Adb == (2*hdb)*tdb,
             Afuse >= (pi + 2*thetadb + thetadb)*Rfuse**2,
@@ -137,9 +137,8 @@ class Fuselage(Model):
 
             # Fuselage width relations
             wfuse >= SPR*wseat + 2*waisle + tdb + 2*tskin,
-            wfuse >= 2*(Rfuse + wdb),
-            wfuse <= 15*units('m'),
-            wfloor <= wdb + Rfuse, # half of the total floor width in fuselage
+            wfuse <= 2*(Rfuse + wdb),
+            wfloor >= wdb + Rfuse, # half of the total floor width in fuselage
 
             # Fuselage volume relations
             Vcyl == Askin*lshell,
@@ -147,8 +146,6 @@ class Fuselage(Model):
             Vbulk == Sbulk*tskin,
             Vdb == Adb*lshell,
             Vcabin >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
-            Vfloor >= wfloor*Afloor,
-
 
             # Fuselage weight relations
             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
@@ -254,8 +251,9 @@ if __name__ == "__main__":
     bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=4, iteration_limit=100)
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     # sol = M.localsolve("mosek",tolerance = 0.01, x0 = subs, verbosity = 1, iteration_limit=50)
-    # varVals = sol['variables']
-    # print 'Cabin volume is ' + str(varVals['V_{cabin}_Fuselage'].magnitude) + '.'
-    # print 'Fuselage width is ' + str(varVals['w_{fuse}_Fuselage'].magnitude) + '.'
-    # print  'Fuselage angle is ' + str(varVals['\\theta_{db}_Fuselage'].magnitude) + '.'
-    # print 'Fuselage radius is ' + str(varVals['R_{fuse}_Fuselage'].magnitude) + '.'
+    varVals = sol['variables']
+    print 'Cabin volume is ' + str(varVals['V_{cabin}_Fuselage'].magnitude) + '.'
+    print 'Fuselage width is ' + str(varVals['w_{fuse}_Fuselage'].magnitude) + '.'
+    print  'Fuselage angle is ' + str(varVals['\\theta_{db}_Fuselage'].magnitude) + '.'
+    print 'Fuselage radius is ' + str(varVals['R_{fuse}_Fuselage'].magnitude) + '.'
+    print 'Floor total loading is ' + str(varVals['P_{floor}_Fuselage'].magnitude) + '.'
