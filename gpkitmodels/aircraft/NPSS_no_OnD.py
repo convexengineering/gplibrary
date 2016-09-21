@@ -20,7 +20,9 @@ class OffDesignTOC(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 0
+        res7 = 1
+
+        #need to give a Tt4 to run with res7 = 0
 
         M2 = .8
         M25 = .65
@@ -152,7 +154,7 @@ class OffDesignOnDRerun(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 0
+        res7 = 1
 
         M2 = .65
         M25 = .65
@@ -224,7 +226,7 @@ class OffDesignOnDRerun(Model):
                     'F_{spec}': 5496.4*4.4,
                 })
             
-        Model.__init__(self, thrust.cost, lc, substitutions)
+        Model.__init__(self, offD.cost, lc, substitutions)
 
 if __name__ == "__main__":
     W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
@@ -232,7 +234,7 @@ if __name__ == "__main__":
     engine1 = OffDesignTOC()
     engine2 = OffDesignOnDRerun()
     
-    sol1 = engine1.localsolve(verbosity = 4, solver="mosek", reltol = 1e-3)
+##    sol1 = engine1.localsolve(verbosity = 4, solver="mosek")
 ##    bounds, sol = engine1.determine_unbounded_variables(engine1, solver="mosek",verbosity=4, iteration_limit=50)
 
 ##    sol2 = engine2.localsolve(verbosity = 4, solver="mosek")
@@ -242,7 +244,7 @@ if __name__ == "__main__":
 
     constraints = ConstraintSet([submodels])
 
-    lc = LinkedConstraintSet(constraints, include_only = {'A_5', 'A_7', '\pi_{tn}', '\pi_{b}', '\pi_{d}', '\pi_{fn}',
+    lc = LinkedConstraintSet(constraints, include_only = {'A_5', 'A_7', 'A_2', 'A_{2.5}', '\pi_{tn}', '\pi_{b}', '\pi_{d}', '\pi_{fn}',
                                                           'T_{ref}', 'P_{ref}', '\eta_{HPshaft}', '\eta_{LPshaft}',
                                                           'eta_{B}','W_{engine}'})
 
@@ -260,7 +262,7 @@ if __name__ == "__main__":
     'eta_{B}': .9827,
     }
 
-##    m = Model((engine1.cost+engine2.cost)* (units('1/hr'))*(W_engine/units('N'))**.00001, constraints, valsubs)
+    m = Model((engine2.cost+engine1.cost), constraints, valsubs)
 
-##    sol = m.localsolve(verbosity = 4, solver="mosek")
+    sol = m.localsolve(verbosity = 4, solver="mosek")
 ##    bounds, sol = engine1.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=50)

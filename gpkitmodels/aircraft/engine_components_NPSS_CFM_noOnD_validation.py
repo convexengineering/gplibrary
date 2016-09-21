@@ -1207,10 +1207,6 @@ class OffDesign(Model):
                 pif >= 1,
                 pilc >= 1,
                 pihc >= 1,
-
-               Tt41 <= 1400*units('K'),
-
-               Tt41 >= 800.0*units('K'),
             ]
             
         if res7 == 0:
@@ -1218,8 +1214,8 @@ class OffDesign(Model):
                     #residual 7
                     #option #1, constrain the engine's thrust
                     F == Fspec,
-##                    Tt4 <= 2500*units('K'),
-##                    Tt4 >= 500*units('K'),
+                    Tt4 <= 2500*units('K'),
+                    Tt4 >= 500*units('K'),
                     ])
         
         if res7 == 1:
