@@ -23,7 +23,7 @@ class Fuselage(CostedConstraintSet):
         Mfloor   = Variable('M_{floor}', 'N*m',
                             'Max bending moment in floor beams')
         Nland    = Variable('N_{land}', '-', 'Emergency landing load factor')
-        Pfloor   = Variable('P_{floor}', 'N', 'Distributed floor load')
+        Pfloor   = Variable('P_{floor}',2,'psi', 'Distributed floor load')
         Qv       = Variable('Q_v', 'N*m', 'Torsion moment imparted by tail')
         R        = Variable('R', 287, 'J/(kg*K)', 'Universal gas constant')
         Rfuse    = Variable('R_{fuse}', 'm', 'Fuselage radius')
