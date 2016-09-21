@@ -229,8 +229,8 @@ if __name__ == "__main__":
     engine1 = OffDesignTOC()
     engine2 = OffDesignOnDRerun()
     
-    sol1 = engine1.localsolve(verbosity = 4, solver="mosek")
-##    bounds, sol = engine1.determine_unbounded_variables(engine1, solver="mosek",verbosity=4, iteration_limit=100)
+##    sol1 = engine1.localsolve(verbosity = 4, solver="mosek")
+    bounds, sol = engine1.determine_unbounded_variables(engine1, solver="mosek",verbosity=4, iteration_limit=100)
 
 ##    sol2 = engine2.localsolve(verbosity = 4, solver="mosek")
 
