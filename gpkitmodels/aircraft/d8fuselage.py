@@ -119,7 +119,6 @@ class Fuselage(Model):
             thetadb == wdb/Rfuse, # first order Taylor works...
             thetadb >= 0.05, thetadb <= 0.3,
             hdb >= Rfuse*(1.0-.5*thetadb**2),
-            Rfuse >= 1*units('m'), Rfuse <= 5.0*units('m'),
             Askin >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
             Adb == (2*hdb)*tdb,
             Afuse >= (pi + 2*thetadb + thetadb)*Rfuse**2,
