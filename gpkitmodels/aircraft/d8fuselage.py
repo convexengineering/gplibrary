@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units, SignomialsEnabled
 #from gpkit import LinkedConstraintSet
 #from gpkit.tools import BoundedConstraintSet
+from gpkit.constraints.tight import TightConstraintSet 
 from gpkit.tools import te_exp_minus1
 from collections import defaultdict
 from gpkit.small_scripts import mag
@@ -54,6 +55,7 @@ class Fuselage(Model):
         lfuse    = Variable('l_{fuse}', 'm', 'Fuselage length')
         lnose    = Variable('l_{nose}', 'm', 'Nose length')
         lshell   = Variable('l_{shell}', 'm', 'Shell length')
+        lfloor = Variable('l_{floor}', 'm', 'FLoor length')
       
         # Surface areas (free)
         Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
@@ -99,6 +101,7 @@ class Fuselage(Model):
         sigfloor = Variable('\\sigma_{floor}',30000/0.000145, 'N/m^2', 'Max allowable floor stress') #TASOPT value used
         rhofloor = Variable('\\rho_{floor}',2700, 'kg/m^3', 'Floor material density') #TASOPT value used
         taufloor = Variable('\\tau_{floor}',30000/0.000145, 'N/m^2', 'Max allowable shear web stress') #TASOPT value used
+        Wppfloor = Variable('W\'\'_{floor}', 60,'N/m^2', 'Floor weight/area density') #TAS
         rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
         sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
                             'Max allowable skin stress') # again notional 
@@ -111,13 +114,12 @@ class Fuselage(Model):
             #Temporarily
             Wpay == 150000*units('N'),
             Wseat == 50000*units('N'),
-            Pfloor >= Nland*(Wpay + Wseat),
 
             nrows == nseats/SPR,
             lshell == nrows*pitch,
             # Fuselage joint angle relations
             thetadb == wdb/Rfuse, # first order Taylor works...
-            thetadb >= 0.05, thetadb <= 0.3,
+            thetadb >= 0.05, thetadb <= 0.25,
             hdb >= Rfuse*(1.0-.5*thetadb**2),
             Askin >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
             Adb == (2*hdb)*tdb,
@@ -155,16 +157,21 @@ class Fuselage(Model):
             #Pressure shell loading
             tskin == dPover*Rfuse/sigskin,
             tdb == 2*dPover*wdb/sigskin,
-            # Floor loading
+
+            # Floor loading (don't understand some of these relations,
+            # so might be useful to go through them with someone)
+            lfloor >= lshell + 2*Rfuse,
+            Pfloor >= Nland*(Wpay + Wseat),
             Mfloor >= 9./256.*Pfloor*wfloor,
-            Afloor <= 2.*Mfloor*(sigfloor*hfloor)**-1 + 1.5*Sfloor/taufloor,
+            Afloor >= 2.*Mfloor/(sigfloor*hfloor) + 1.5*Sfloor/taufloor,
             Vfloor == 2*wfloor*Afloor,
-            Wfloor == rhofloor*g*Vfloor, #temporarily
-            Sfloor == (5./16.)*Pfloor
+            Wfloor >= rhofloor*g*Vfloor + wfloor*lfloor*Wppfloor,
+            Sfloor == (5./16.)*Pfloor,
+            # Added synthetic constraint on hfloor
+            hfloor <= .1*Rfuse
             ]
 
-        objective = Wfuse + Afuse*units('N/m**2') + Vcabin*units('N/m**3') + Rfuse*units('N/m')
-
+        objective = Wfuse + Afuse*units('N/m**2') + wfloor*units('N/m') + Pfloor + Vcabin*units('N/m^3') + hfloor*units('N/m')
         Model.__init__(self, objective, constraints, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
@@ -253,6 +260,13 @@ if __name__ == "__main__":
     varVals = sol['variables']
     print 'Cabin volume is ' + str(varVals['V_{cabin}_Fuselage'].magnitude) + '.'
     print 'Fuselage width is ' + str(varVals['w_{fuse}_Fuselage'].magnitude) + '.'
+    print 'Web height is ' + str(2*varVals['h_{db}_Fuselage'].magnitude) + '.'
+    print 'Floor width is ' + str(varVals['w_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor height is ' + str(varVals['h_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor length is ' + str(varVals['l_{floor}_Fuselage'].magnitude) + '.'
     print  'Fuselage angle is ' + str(varVals['\\theta_{db}_Fuselage'].magnitude) + '.'
     print 'Fuselage radius is ' + str(varVals['R_{fuse}_Fuselage'].magnitude) + '.'
     print 'Floor total loading is ' + str(varVals['P_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor weight is ' + str(varVals['W_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor volume is ' + str(varVals['V_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor bending moment is ' + str(varVals['M_{floor}_Fuselage'].magnitude) + '.'
