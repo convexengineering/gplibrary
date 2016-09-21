@@ -40,9 +40,9 @@ class Fuselage(Model):
         Askin   = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
         hdb     = Variable('h_{db}','m', 'Web half-height')
         hfloor   = Variable('h_{floor}', 'm', 'Floor beam height')
-        Rfuse   = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there is no under-fuselage extension deltaR
+        Rfuse   = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there: no under-fuselage extension deltaR
         tdb     = Variable('t_{db}', 'm', 'Web thickness')
-        #tshell = Variable('t_{shell}', 'm', 'Shell thickness')
+        tshell = Variable('t_{shell}', 'm', 'Shell thickness')
         tskin   = Variable('t_{skin}', 'm', 'Skin thickness')
         waisle  = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
         wdb     = Variable('w_{db}','m','DB added half-width')
@@ -105,8 +105,10 @@ class Fuselage(Model):
         rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
         sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
                             'Max allowable skin stress') # again notional 
-        #sigth    = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
-        #sigx     = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
+        rE       = Variable('r_E', 1,'-', 'Ratio of stringer/skin moduli')
+        rhobend  = Variable('\\rho_{bend}',2700, 'kg/m^3', 'Stringer density')
+        sigth    = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
+        sigx     = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
 
         with SignomialsEnabled():
             constraints = [
@@ -117,13 +119,17 @@ class Fuselage(Model):
 
             nrows == nseats/SPR,
             lshell == nrows*pitch,
+
             # Fuselage joint angle relations
             thetadb == wdb/Rfuse, # first order Taylor works...
             thetadb >= 0.05, thetadb <= 0.25,
             hdb >= Rfuse*(1.0-.5*thetadb**2),
+
+            # Fuselage cross-sectional relations
             Askin >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
             Adb == (2*hdb)*tdb,
             Afuse >= (pi + 2*thetadb + thetadb)*Rfuse**2,
+            tshell >= tskin*(1+rE*fstring*rhoskin/rhobend),
             
             # Fuselage surface area relations
             Snose >= (2*pi + 4*thetadb)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
@@ -157,6 +163,8 @@ class Fuselage(Model):
             #Pressure shell loading
             tskin == dPover*Rfuse/sigskin,
             tdb == 2*dPover*wdb/sigskin,
+            sigx == dPover*Rfuse/(2*tshell),
+            sigth == dPover*Rfuse/tskin,
 
             # Floor loading (don't understand some of these relations,
             # so might be useful to go through them with someone)
@@ -167,8 +175,10 @@ class Fuselage(Model):
             Vfloor == 2*wfloor*Afloor,
             Wfloor >= rhofloor*g*Vfloor + wfloor*lfloor*Wppfloor,
             Sfloor == (5./16.)*Pfloor,
-            # Added synthetic constraint on hfloor
+            # Added synthetic constraint on hfloor to keep it from growing too large
             hfloor <= .1*Rfuse
+
+
             ]
 
         objective = Wfuse + Afuse*units('N/m**2') + wfloor*units('N/m') + Pfloor + Vcabin*units('N/m^3') + hfloor*units('N/m')
@@ -258,15 +268,18 @@ if __name__ == "__main__":
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     # sol = M.localsolve("mosek",tolerance = 0.01, x0 = subs, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
-    print 'Cabin volume is ' + str(varVals['V_{cabin}_Fuselage'].magnitude) + '.'
-    print 'Fuselage width is ' + str(varVals['w_{fuse}_Fuselage'].magnitude) + '.'
-    print 'Web height is ' + str(2*varVals['h_{db}_Fuselage'].magnitude) + '.'
-    print 'Floor width is ' + str(varVals['w_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor height is ' + str(varVals['h_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor length is ' + str(varVals['l_{floor}_Fuselage'].magnitude) + '.'
-    print  'Fuselage angle is ' + str(varVals['\\theta_{db}_Fuselage'].magnitude) + '.'
-    print 'Fuselage radius is ' + str(varVals['R_{fuse}_Fuselage'].magnitude) + '.'
-    print 'Floor total loading is ' + str(varVals['P_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor weight is ' + str(varVals['W_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor volume is ' + str(varVals['V_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor bending moment is ' + str(varVals['M_{floor}_Fuselage'].magnitude) + '.'
+    print 'Cabin volume: ' + str(varVals['V_{cabin}_Fuselage'].magnitude) + '.'
+    print 'Fuselage width: ' + str(varVals['w_{fuse}_Fuselage'].magnitude) + '.'
+    print 'Web height: ' + str(2*varVals['h_{db}_Fuselage'].magnitude) + '.'
+    print 'Floor width: ' + str(varVals['w_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor height: ' + str(varVals['h_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor length: ' + str(varVals['l_{floor}_Fuselage'].magnitude) + '.'
+    print  'Fuselage angle: ' + str(varVals['\\theta_{db}_Fuselage'].magnitude) + '.'
+    print 'Fuselage radius: ' + str(varVals['R_{fuse}_Fuselage'].magnitude) + '.'
+    print 'Floor total loading: ' + str(varVals['P_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor weight: ' + str(varVals['W_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor volume: ' + str(varVals['V_{floor}_Fuselage'].magnitude) + '.'
+    print 'Floor bending moment: ' + str(varVals['M_{floor}_Fuselage'].magnitude) + '.'
+    print 'Shell thickness: ' + str(varVals['t_{shell}_Fuselage'].magnitude) + '.'
+    print 'Skin hoop stress: ' + str(varVals['\\sigma_{\\theta}_Fuselage'].magnitude) + '.'
+    print 'Skin axial stress: ' + str(varVals['\\sigma_x_Fuselage'].magnitude) + '.'
