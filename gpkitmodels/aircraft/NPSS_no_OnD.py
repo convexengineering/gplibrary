@@ -20,9 +20,9 @@ class OffDesignTOC(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 1
+        res7 = 0
 
-        M2 = .65
+        M2 = .8
         M25 = .65
         M4a = .1025
         Mexit = 1
@@ -34,7 +34,7 @@ class OffDesignTOC(Model):
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
         if res7 == 1 and SPmaps == True:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
-        else:
+        if res7 == 1 and SPmaps == False:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
             
         with SignomialsEnabled():
@@ -47,6 +47,8 @@ class OffDesignTOC(Model):
                 'M_0': .8,
                 'M_2': M2,
                 'M_{2.5}':M25,
+                'hold_{2}': 1+.5*(1.398-1)*M2**2,
+                'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
                 
                 '\pi_{tn}': .98,
                 '\pi_{b}': .94,
@@ -90,6 +92,7 @@ class OffDesignTOC(Model):
             else:
                 substitutions.update({
                     'F_{spec}': 5961.9*4.4,
+##                    'T_{t_4}': 1450,
                 })
             
             
@@ -182,7 +185,7 @@ class OffDesignOnDRerun(Model):
 ##                '\pi_{d}': .98,
 ##                '\pi_{fn}': .98,
 
-                'A_5': .2727,
+##                'A_5': .2727,
 ##                'A_7': 1.1,
 ##                'T_{ref}': 288.15,
 ##                'P_{ref}': 101.325,
@@ -229,8 +232,8 @@ if __name__ == "__main__":
     engine1 = OffDesignTOC()
     engine2 = OffDesignOnDRerun()
     
-##    sol1 = engine1.localsolve(verbosity = 4, solver="mosek")
-    bounds, sol = engine1.determine_unbounded_variables(engine1, solver="mosek",verbosity=4, iteration_limit=100)
+    sol1 = engine1.localsolve(verbosity = 4, solver="mosek", reltol = 1e-3)
+##    bounds, sol = engine1.determine_unbounded_variables(engine1, solver="mosek",verbosity=4, iteration_limit=50)
 
 ##    sol2 = engine2.localsolve(verbosity = 4, solver="mosek")
 

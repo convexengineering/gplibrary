@@ -1158,7 +1158,7 @@ class OffDesign(Model):
                 (P5/Pt5) == (T5/Tt5)**(3.583979),
                 (T5/Tt5)**-1 >= 1 + .2 * M5**2,
                 M5 <= 1,
-               u5 >= u0,
+                u5 >= u0,
                 a5 == (1.387*R*T5)**.5,
                 a5*M5 == u5,
                 rho5 == P5/(R*T5),
@@ -1182,9 +1182,9 @@ class OffDesign(Model):
                 TCS([W_engine >= ((mFan/alpha)*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
                 
 ##                A5 <= 10*units('m^2'),
-##                A7 <= 1000*units('m^2'),
+                A7 <= 1000*units('m^2'),
 ##                A5 >= .10*units('m^2'),
-##                A7 >= .1000*units('m^2'),
+                A7 >= .1000*units('m^2'),
 ##                A5 <= .8*A2,
 
                 #component area sizing
@@ -1207,6 +1207,10 @@ class OffDesign(Model):
                 pif >= 1,
                 pilc >= 1,
                 pihc >= 1,
+
+               Tt41 <= 1400*units('K'),
+
+               Tt41 >= 800.0*units('K'),
             ]
             
         if res7 == 0:
