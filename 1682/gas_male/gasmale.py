@@ -76,7 +76,8 @@ class Cruise(FlightSegment):
 
         constraints = [R/N <= self.slf["V"]*breguetendurance["t"]]
 
-        lc = LinkedConstraintSet([self.submodels, constraints], exclude=self.exclude)
+        lc = LinkedConstraintSet([self.submodels, constraints],
+                                 exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
