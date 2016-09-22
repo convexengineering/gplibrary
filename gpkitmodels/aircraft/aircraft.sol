@@ -1,6 +1,6 @@
 Beginning signomial solve.
-Allowing negative dual variable(s) as small as -1.23104238986e-11.
-Solving took 6 GP solves and 2.54 seconds.
+Allowing negative dual variable(s) as small as -1.22553109382e-11.
+Solving took 6 GP solves and 2.53 seconds.
 
 Cost
 ----
@@ -376,7 +376,6 @@ HorizontalTail, Aircraft |
               C_{D_{wm}} : 0.5                    Windmill drag coefficient                               
             C_{L_{vmax}} : 2.6                    Max lift coefficient                                    
                      V_1 : 70         [m/s]       Minimum takeoff velocity                                
-                  \rho_c : 0.38       [kg/m**3]   Air density (35,000ft)                                  
                \rho_{TO} : 1.225      [kg/m**3]   Air density (SL))                                       
       \tan(\Lambda_{vt}) : 0.8391                 Tangent of leading edge sweep (40 deg)                  
               c_{l_{vt}} : 0.5                    Sectional lift force coefficient (engine out)           
@@ -399,7 +398,6 @@ Sensitivities
           \alpha_{max,w} : -0.2513  Max angle of attack                                     
                                                                                             
   VerticalTail, Aircraft |                                                                  
-                  \rho_c : 0.03472  Air density (35,000ft)                                  
             C_{L_{vmax}} : 0.0266   Max lift coefficient                                    
                      e_v : -0.01605 Span efficiency of vertical tail                        
                \rho_{TO} : -0.04466 Air density (SL))                                       
@@ -464,7 +462,7 @@ HorizontalTail, Aircraft |
               \rho_{web} : 0.02241  Density of shear web material                           
       \sigma_{max,shear} : -0.02241 Allowable shear stress                                  
                        w : -0.04182 Wingbox-width-to-chord ratio                            
-                    \rho : -0.1102  Air density (cruise)                                    
+                    \rho : -0.07551 Air density (cruise)                                    
             \sigma_{max} : -0.3166  Allowable tensile stress                                
                        a : -1.164   Speed of sound (35,000 ft)                              
                        M : -1.312   Cruise Mach number                                      

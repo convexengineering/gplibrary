@@ -322,6 +322,7 @@ class LandingGear(CostedConstraintSet):
         """Tests the standalone landing gear model"""
         m = cls.standalone737()
         sol = m.localsolve()
+        print sol.table()
 
 if __name__ == "__main__":
     LandingGear.test()

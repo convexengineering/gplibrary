@@ -66,7 +66,7 @@ class VerticalTail(CostedConstraintSet):
                           'Dummy variable = 1 + 2\\lambda') # fuselage
         q      = Variable('q_{vt}', '-', 'Substituted variable = 1 + taper')
         rho0   = Variable('\\rho_{TO}', 'kg/m^3', 'Air density (SL))')
-        rho_c  = Variable('\\rho_c', 'kg/m^3', 'Air density (35,000ft)')
+        rho    = Variable('\\rho', 'kg/m^3', 'Air density (cruise)')
         tanL   = Variable('\\tan(\\Lambda_{vt})', '-',
                           'Tangent of leading edge sweep (40 deg)')
         taper  = Variable('\\lambda_{vt}', '-', 'Vertical tail taper ratio')
@@ -122,7 +122,7 @@ class VerticalTail(CostedConstraintSet):
                            # TODO: Constrain taper by tip Reynolds number
                            # source: b737.org.uk
 
-                           Dvt >= 0.5*rho_c*Vinf**2*Svt*CDvis,
+                           Dvt >= 0.5*rho*Vinf**2*Svt*CDvis,
                            CDvis**0.125 >= 0.19*(tau)**0.0075 *(Rec)**0.0017
                                         + 1.83e+04*(tau)**3.54*(Rec)**-0.494
                                         + 0.118*(tau)**0.0082 *(Rec)**0.00165
@@ -130,7 +130,7 @@ class VerticalTail(CostedConstraintSet):
                            # Vertical tail viscous drag in cruise
                            # Data fit from Xfoil
 
-                           Rec == rho_c*Vinf*cma/mu,
+                           Rec == rho*Vinf*cma/mu,
                            # Cruise Reynolds number
 
                            S == Svt*2,
@@ -180,7 +180,7 @@ class VerticalTail(CostedConstraintSet):
                          'V_{\\infty}': 234, # [7]
                          'V_{ne}': 144, # [2]
                          '\\mu': 1.4e-5, # [5]
-                         '\\rho_c': 0.38, # [6]
+                         '\\rho': 0.38, # [6]
                          '\\rho_{TO}': 1.225,
                          '\\tan(\\Lambda_{vt})': np.tan(40*np.pi/180),
                          'c_{l_{vt}}': 0.5, # [2]
@@ -221,6 +221,7 @@ class VerticalTail(CostedConstraintSet):
     def test(cls):
         vt = cls.standalone737()
         sol = vt.localsolve()
+        print sol.table()
 
 if __name__ == "__main__":
     VerticalTail.test()

@@ -51,7 +51,7 @@ class Wing(CostedConstraintSet):
         mu      = Variable('\\mu', 'N*s/m^2', 'Dynamic viscosity (35,000 ft)')
         p       = Variable('p_w', '-', 'Substituted variable = 1 + 2*taper')
         q       = Variable('q_w', '-', 'Substituted variable = 1 + taper')
-        rho     = Variable('\\rho', 'kg/m^3', 'Air density (35,000 ft)')
+        rho     = Variable('\\rho', 'kg/m^3', 'Air density (cruise)')
         rho0    = Variable('\\rho_0', 'kg/m^3', 'Air density (0 ft)')
         rhofuel = Variable('\\rho_{fuel}', 'kg/m^3', 'Density of fuel')
         tanL    = Variable('\\tan(\\Lambda)', '-',
@@ -155,6 +155,7 @@ class Wing(CostedConstraintSet):
                          '\\rho_0': 1.225,
                          '\\rho_{fuel}': 817, # Kerosene [TASOPT]
                          '\\tan(\\Lambda)': tan(sweep*pi/180),
+                         'a': 297,
                          'g': 9.81,
                         }
 
@@ -187,6 +188,7 @@ class Wing(CostedConstraintSet):
     def test(cls):
         w = cls.standalone737()
         sol = w.localsolve()
+        print sol.table()
 
 if __name__ == "__main__":
     Wing.test()

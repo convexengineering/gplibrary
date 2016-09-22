@@ -72,7 +72,7 @@ class HorizontalTail(CostedConstraintSet):
         mu      = Variable(r'\mu', 'N*s/m^2', 'Dynamic viscosity (35,000 ft)')
         p       = Variable('p_{ht}', '-', 'Substituted variable = 1 + 2*taper')
         q       = Variable('q_{ht}', '-', 'Substituted variable = 1 + taper')
-        rho     = Variable(r'\rho', 'kg/m^3', 'Air density (35,000 ft)')
+        rho     = Variable(r'\rho', 'kg/m^3', 'Air density (cruise)')
         rho0    = Variable(r'\rho_0', 'kg/m^3', 'Air density (0 ft)')
         tanLh   = Variable(r'\tan(\Lambda_{ht})', '-',
                            'tangent of horizontal tail sweep')
@@ -238,6 +238,7 @@ class HorizontalTail(CostedConstraintSet):
     def test(cls):
         ht = cls.standalone737()
         sol = ht.localsolve()
+        print sol.table()
 
 if __name__ == "__main__":
     HorizontalTail.test()
