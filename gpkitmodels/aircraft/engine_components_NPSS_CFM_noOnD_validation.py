@@ -220,6 +220,8 @@ class CombustorCooling(Model):
 
         #burner efficiency
         etaB = Variable('eta_{B}', '-', 'Burner Efficiency')
+
+        test = Variable('test', '-', 'test')
         
         with SignomialsEnabled():
         
@@ -247,11 +249,17 @@ class CombustorCooling(Model):
                     #compute Tt41...mixing causes a temperature drop
                     #had to include Tt4 here to prevent it from being pushed down to zero
 ##                    TCS([ht41 <= ((fp1)*ht4 +ac*ht3)/fp1]),
-                    SignomialEquality(ht41, ((1-ac+f)*ht4 +ac*ht3)/fp1),
-
+                    SignomialEquality(ht41*fp1, ((1-ac+f)*ht4 +ac*ht3)),
+##                    TCS([test <= 1-ac+f]),
+##                    SignomialEquality(test, 1-ac+f),
+##                    ht41*fp1 == ((test)*ht4*ac*ht3)**.5,
                     #comptue the rest of the station 4.1 variables
 ##                    SignomialEquality(fp1*u41, (u4a*(1-ac)+f*u4a+ac*uc)),
 ##                    TCS([fp1*u41 >= (u4a*(fp1-ac)+ac*uc)]),
+
+                    #CHECK THIS
+
+
                     fp1*u41 == (u4a*(fp1)*ac*uc)**.5,
                     #this is a stagnation relation...need to fix it to not be signomial
 ##                    TCS([T41 >= Tt41-.5*(u41**2)/Cpc]),
@@ -784,8 +792,8 @@ class LPCMap(Model):
             else:
                 constraints=[
                     pilc*(26/3.26) == (1.38 * (N1)**0.566)**10,
-                    pilc*(26/3.26) <= 1.04*(1.38 * (mtildlc)**0.122)**10,
-                    pilc*(26/3.26) >= .96*(1.38 * (mtildlc)**0.122)**10,
+                    pilc*(26/3.26) <= 1.02*(1.38 * (mtildlc)**0.122)**10,
+                    pilc*(26/3.26) >= .98*(1.38 * (mtildlc)**0.122)**10,
                     ]
                 
         constraints.extend([
@@ -922,8 +930,8 @@ class FanMap(Model):
             else:
                 constraints = [
                     TCS([pif*(1.7/1.5) == (1.05*Nf**.0614)**10]),
-                    pif*(1.7/1.5) >= .96*(1.04 * ((mtildf)**0.022))**10,
-                    pif*(1.7/1.5) <= 1.04*(1.04 * ((mtildf)**0.022))**10,
+                    pif*(1.7/1.5) >= .98*(1.04 * ((mtildf)**0.022))**10,
+                    pif*(1.7/1.5) <= 1.02*(1.04 * ((mtildf)**0.022))**10,
                 ]
         constraints.extend([
             #define mbar
@@ -1130,8 +1138,8 @@ class OffDesign(Model):
 ##                N1 <= 10000,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity
-                N2 >= .8*N1,
-                N2 <= 1.2*N1,
+##                N2 >= .8*N1,
+##                N2 <= 1.2*N1,
 
                 #note residuals 2 and 3 differ from TASOPT, by replacing mhc with mlc
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality
@@ -1181,11 +1189,11 @@ class OffDesign(Model):
 
                 TCS([W_engine >= ((mFan/alpha)*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
                 
-##                A5 <= 10*units('m^2'),
-                A7 <= 1000*units('m^2'),
+##                A5 <= .8*units('m^2'),
+##                A7 <= 1000*units('m^2'),
 ##                A5 >= .10*units('m^2'),
-                A7 >= .1000*units('m^2'),
-##                A5 <= .8*A2,
+##                A7 >= .1000*units('m^2'),
+                A5 + A7 <= A2,
 
                 #component area sizing
                 #fan area
@@ -1215,7 +1223,7 @@ class OffDesign(Model):
                     #option #1, constrain the engine's thrust
                     F == Fspec,
                     Tt4 <= 2500*units('K'),
-                    Tt4 >= 500*units('K'),
+                    Tt4 >= 1285*units('K'),
                     ])
         
         if res7 == 1:
