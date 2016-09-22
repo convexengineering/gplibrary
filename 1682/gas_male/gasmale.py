@@ -406,6 +406,38 @@ class LandingGear(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class Beam(Model):
+    def __init__(self, N, q, **kwargs):
+
+        qbar = VectorVariable(N, "\\bar{q}", q, "-", "normalized loading")
+        Sbar = VectorVariable(N, "\\bar{S}", "-", "normalized shear")
+        Sbar_tip = Variable("\\bar{S}_{tip}", 1e-10, "-", "Tip loading")
+        Mbar = VectorVariable(N, "\\bar{M}", "-", "normalized moment")
+        Mbar_tip = Variable("\\bar{M}_{tip}", 1e-10, "-", "Tip moment")
+        th = VectorVariable(N, "\\theta", "-", "deflection slope")
+        th_root = Variable("\\theta_{root}", 1e-10, "-", "Base angle")
+        dbar = VectorVariable(N, "\\bar{\\delta}", "-",
+                              "normalized displacement")
+        dbar_root = Variable("\\bar{\\delta}_{root}", 1e-10, "-",
+                             "Base deflection")
+        dx = Variable("dx", "-", "normalized length of element")
+        EIbar = VectorVariable(N-1, "\\bar{EI}", "-",
+                               "normalized YM and moment of inertia")
+
+        constraints = [
+            Sbar[:-1] >= Sbar[1:] + 0.5*dx*(qbar[:-1] + qbar[1:]),
+            Sbar[-1] >= Sbar_tip,
+            Mbar[:-1] >= Mbar[1:] + 0.5*dx*(Sbar[:-1] + Sbar[1:]),
+            Mbar[-1] >= Mbar_tip,
+            th[0] >= th_root,
+            th[1:] >= th[:-1] + 0.5*dx*(Mbar[1:] + Mbar[:-1])/EIbar,
+            dbar[0] >= dbar_root,
+            dbar[1:] >= dbar[:-1] + 0.5*dx*(th[1:] + th[:-1]),
+            1 == (N-1)*dx
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 def c_bar(lam, N):
     eta = np.linspace(0, 1, N)
     c = 2/(1+lam)*(1+(lam-1)*eta)
@@ -415,18 +447,16 @@ class Spar(Model):
     def __init__(self, N=5, **kwargs):
 
         # phyiscal properties
-        rho_cap = Variable("\\rho_{cap}", 1.76, "g/cm^3", "Density of CF cap")
+        rho = Variable("\\rho", 1.76, "g/cm^3", "Density of CF cap")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CF")
-        sigma_cap = Variable("\\sigma_{cap}", 475e6, "Pa", "Cap stress")
+        sigma = Variable("\\sigma", 475e6, "Pa", "Cap stress")
 
         # Structural lengths
         cb = c_bar(0.5, N)
         cbavg = (cb[:-1] + cb[1:])/2
-        dx = Variable("dx", "m", "Length of an element")
-        cbar = VectorVariable(N, "\\bar{c}", cb, "-",
-                              "normalized distributed load at each point")
+        cbar = VectorVariable(N-1, "\\bar{c}", cbavg, "-",
+                              "normalized chord at mid element")
         h = VectorVariable(N-1, "h", "in", "spar height")
-        t = VectorVariable(N-1, "t", "in", "thickness")
         w = VectorVariable(N-1, "w", "in", "spar width")
         I = VectorVariable(N-1, "I", "m^4", "spar x moment of inertia")
         dm = VectorVariable(N-1, "dm", "kg", "segment spar mass")
@@ -439,37 +469,23 @@ class Spar(Model):
         N_max = Variable("N_{max}", 5, "-", "Load factor")
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
 
-        Q = VectorVariable(N, "Q", "N/m", "net wing loading")
-        V = VectorVariable(N, "V", "N", "Internal shear")
-        V_tip = Variable("V_{tip}", 1e-10, "N", "Tip loading")
-        M = VectorVariable(N, "M", "N*m", "Internal moment")
-        M_tip = Variable("M_{tip}", 1e-10, "N*m", "Tip moment")
-        th = VectorVariable(N, "\\theta", "-", "Slope")
-        th_root = Variable("\\theta_{root}", 1e-10, "-", "Base angle")
-        delta = VectorVariable(N, "\\delta", "m", "Displacement")
-        delta_root = Variable("\\delta_{root}", 1e-10, "m", "Base deflection")
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
 
-        constraints = [Q >= cbar*W_cent*N_max/b,
-                       I <= w*h**3/12,
-                       dm >= rho_cap*w*h*b/2/(N-1),
-                       m >= dm.sum(),
-                       h <= t,
-                       t <= S/b*cbavg*tau,
-                       V[:-1] >= V[1:] + 0.5*dx*(Q[:-1] + Q[1:]),
-                       V[-1] >= V_tip,
-                       M[:-1] >= M[1:] + 0.5*dx*(V[:-1] + V[1:]),
-                       M[-1] >= M_tip,
-                       M[:-1]/w/h**2 <= sigma_cap,
-                       th[0] >= th_root,
-                       th[1:] >= th[:-1] + 0.5*dx*(M[1:] + M[:-1])/E/I,
-                       delta[0] >= delta_root,
-                       delta[1:] >= delta[:-1] + 0.5*dx*(th[1:] + th[:-1]),
-                       b/2 == (N-1)*dx,
-                       delta[-1]/(b/2) <= kappa
-                      ]
+        beam = Beam(N, cb)
 
-        Model.__init__(self, None, constraints, **kwargs)
+        constraints = [
+            I <= w*h**3/12,
+            dm >= rho*w*h*b/2/(N-1),
+            m >= dm.sum(),
+            h <= S/b*cbar*tau,
+            beam["\\bar{\\delta}"][-1] <= kappa,
+            beam["\\bar{M}"][:-1]*(b/2)**2*W_cent*N_max/w/h**2/b <= sigma,
+            beam["\\bar{EI}"] <= E*I/N_max/W_cent*b/(b/2)**3
+            ]
+
+        lc = LinkedConstraintSet([beam, constraints])
+
+        Model.__init__(self, None, lc, **kwargs)
 
 class Wing(Model):
     """
