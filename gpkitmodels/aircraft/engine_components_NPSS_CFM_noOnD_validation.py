@@ -441,8 +441,8 @@ class ExhaustAndThrust(Model):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpfanex * T8,
-                TCS([u8**2 + 2*h8 <= 2*ht8]),
-##               SignomialEquality(u8**2 + 2*h8, 2*ht8),
+##                TCS([u8**2 + 2*h8 <= 2*ht8]),
+               SignomialEquality(u8**2 + 2*h8, 2*ht8),
                 (P8/Pt8)**(fanexexp) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -451,8 +451,8 @@ class ExhaustAndThrust(Model):
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
                 (P6/Pt6)**(turbexexp) == T6/Tt6,
-                TCS([u6**2 + 2*h6 <= 2*ht6]),
-##                SignomialEquality(u6**2 + 2*h6, 2*ht6),
+##                TCS([u6**2 + 2*h6 <= 2*ht6]),
+                SignomialEquality(u6**2 + 2*h6, 2*ht6),
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
@@ -1215,6 +1215,7 @@ class OffDesign(Model):
                 pif >= 1,
                 pilc >= 1,
                 pihc >= 1,
+                
             ]
             
         if res7 == 0:
@@ -1222,8 +1223,8 @@ class OffDesign(Model):
                     #residual 7
                     #option #1, constrain the engine's thrust
                     F == Fspec,
-                    Tt4 <= 2500*units('K'),
-                    Tt4 >= 1285*units('K'),
+                    Tt41 <= 1600*units('K'),
+##                    Tt4 >= 1285*units('K'),
                     ])
         
         if res7 == 1:

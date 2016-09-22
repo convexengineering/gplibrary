@@ -20,7 +20,7 @@ class OffDesignTOC(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 1
+        res7 = 0
 
         #need to give a Tt4 to run with res7 = 0
 
@@ -154,9 +154,11 @@ class OffDesignOnDRerun(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 1
+        res7 = 0
 
-        M2 = .65
+        #need to give a Tt4 to run with res7 = 0
+
+        M2 = .8
         M25 = .65
         M4a = .1025
         Mexit = 1
@@ -181,16 +183,18 @@ class OffDesignOnDRerun(Model):
                 'M_0': .8,
                 'M_2': M2,
                 'M_{2.5}':M25,
+                'hold_{2}': 1+.5*(1.398-1)*M2**2,
+                'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
                 
-##                '\pi_{tn}': .98,
-##                '\pi_{b}': .94,
-##                '\pi_{d}': .98,
-##                '\pi_{fn}': .98,
+                '\pi_{tn}': .98,
+                '\pi_{b}': .94,
+                '\pi_{d}': .98,
+                '\pi_{fn}': .98,
 
 ##                'A_5': .2727,
 ##                'A_7': 1.1,
-##                'T_{ref}': 288.15,
-##                'P_{ref}': 101.325,
+                'T_{ref}': 288.15,
+                'P_{ref}': 101.325,
                 'm_{htD}': 4.127,
                 'm_{ltD}': 9.376,
                 
@@ -198,15 +202,15 @@ class OffDesignOnDRerun(Model):
 ##                'alpha': 5,
 ##                'alphap1': 6,
                 
-##                '\eta_{HPshaft}': .99,
-##                '\eta_{LPshaft}': .98,
+                '\eta_{HPshaft}': .99,
+                '\eta_{LPshaft}': .98,
                 'M_{takeoff}': .95,
                 
 ##                'm_{hc_D}': 18.29,
                 'm_{lc_D}': 46.69,
                 'm_{fan_bar_D}': 253.4,
 
-##                'eta_{B}': .9827,
+                'eta_{B}': .9827,
             }
             
             if mixing == True:
@@ -219,13 +223,13 @@ class OffDesignOnDRerun(Model):
                 })
             if res7 == 1:
                substitutions.update({
-                    'T_{t_{4spec}}': 1400,
+                    'T_{t_{4spec}}': 1450,
                 })
             else:
                 substitutions.update({
-                    'F_{spec}': 5496.4*4.4,
+                    'F_{spec}': 5496.4
+##                    'T_{t_4}': 1450,
                 })
-            
         Model.__init__(self, offD.cost, lc, substitutions)
 
 class OffDesignTO(Model):
@@ -242,7 +246,7 @@ class OffDesignTO(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 1
+        res7 = 0
 
         M2 = .65
         M25 = .65
@@ -311,7 +315,7 @@ class OffDesignTO(Model):
                 })
             else:
                 substitutions.update({
-                    'F_{spec}': 5496.4*4.4,
+                    'F_{spec}': 22781*4.4,
                 })
             
         Model.__init__(self, offD.cost, lc, substitutions)
@@ -335,7 +339,7 @@ if __name__ == "__main__":
 
     lc = LinkedConstraintSet(constraints, include_only = {'A_5', 'A_7', 'A_2', 'A_{2.5}', '\pi_{tn}', '\pi_{b}', '\pi_{d}', '\pi_{fn}',
                                                           'T_{ref}', 'P_{ref}', '\eta_{HPshaft}', '\eta_{LPshaft}',
-                                                          'eta_{B}','W_{engine}'})
+                                                          'eta_{B}','W_{engine}', 'm_{fan_bar_D}', 'm_{lc_D}'})
 
     valsubs = {
 ##    'A_5': .2727,
@@ -349,9 +353,12 @@ if __name__ == "__main__":
     '\eta_{HPshaft}': .99,
     '\eta_{LPshaft}': .98,
     'eta_{B}': .9827,
+##    'm_{lc_D}': 46.69,
+##    'm_{fan_bar_D}': 253.4,
+##    'm_{hc_D}': 18.29,
     }
 
-    m = Model((engine2.cost+engine1.cost+engine3.cost), constraints, valsubs)
+    m = Model((engine2.cost+2*engine1.cost+engine3.cost), constraints, valsubs)
 
-    sol = m.localsolve(verbosity = 4, solver="mosek", iteration_limit=50)
-##    bounds, sol = engine1.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=50)
+##    sol = m.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
+    bounds, sol = engine1.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=50)
