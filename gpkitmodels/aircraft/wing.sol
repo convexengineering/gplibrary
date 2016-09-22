@@ -1,5 +1,5 @@
 Beginning signomial solve.
-Solving took 5 GP solves and 0.466 seconds.
+Solving took 5 GP solves and 0.541 seconds.
 
 Cost
 ----
@@ -72,6 +72,7 @@ Constants
          f_{w,add} : 0.4                  Wing added weight fraction                       
                  g : 9.81      [m/s**2]   Gravitational acceleration                       
                r_h : 0.75                 Fractional wing thickness at spar web            
+             taper : 0.45                 Taper ratio                                      
                  w : 0.5                  Wingbox-width-to-chord ratio                     
 
 Sensitivities

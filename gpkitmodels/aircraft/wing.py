@@ -177,6 +177,7 @@ class Wing(CostedConstraintSet):
         ccs = cls()
 
         dsubs = ccs.default737subs()
+        del dsubs['a']
         linkedsubs = ['M', 'W_0', 'W_{fuel}']
         substitutions = {key: value for key, value in dsubs.items()
                                     if key not in linkedsubs}

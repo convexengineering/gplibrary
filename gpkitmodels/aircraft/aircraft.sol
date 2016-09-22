@@ -1,6 +1,5 @@
 Beginning signomial solve.
-Allowing negative dual variable(s) as small as -1.22553109382e-11.
-Solving took 6 GP solves and 2.53 seconds.
+Solving took 6 GP solves and 2.87 seconds.
 
 Cost
 ----
@@ -388,6 +387,11 @@ HorizontalTail, Aircraft |
                   \eta_w : 0.97                   Lift efficiency (diff b/w sectional, actual lift)       
              \rho_{fuel} : 817        [kg/m**3]   Density of fuel                                         
            \tan(\Lambda) : 0.5774                 Tangent of quarter-chord sweep angle                    
+                                                                                                          
+                 WingBox |                                                                                
+                   taper : 0.45                   Taper ratio                                             
+                   taper : 0.45                   Taper ratio                                             
+                   taper : 0.45                   Taper ratio                                             
 
 Sensitivities
 -------------
@@ -418,7 +422,7 @@ HorizontalTail, Aircraft |
                \eta_{ht} : -0.04177 Tail efficiency                                         
                                                                                             
       Fuselage, Aircraft |                                                                  
-                n_{seat} : 0.7349    Number of seats                                        
+                n_{seat} : 0.7348    Number of seats                                        
                       LF : 0.5094   Load factor                                             
            W_{avg. pass} : 0.4494   Average passenger weight                                
                 w_{seat} : 0.3223   Seat width                                              
