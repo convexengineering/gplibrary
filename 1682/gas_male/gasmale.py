@@ -406,49 +406,40 @@ class LandingGear(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+def c_bar(lam, N):
+    eta = np.linspace(0, 1, N)
+    c = 2/(1+lam)*(1+(lam-1)*eta)
+    return c
 
 class Wing(Model):
     """
     Structural wing model.  Simple beam.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, N=5, **kwargs):
 
         # Structural parameters
         rho_skin = Variable("\\rho_{skin}", 0.1, "g/cm^2",
                             "Wing skin density")
         rho_cap = Variable("\\rho_{cap}", 1.76, "g/cm^3", "Density of CF cap")
-        E_cap = Variable("E_{cap}", 2e7, "psi", "Youngs modulus of CF cap")
+        E = Variable("E", 2e7, "psi", "Youngs modulus of CF")
         sigma_cap = Variable("\\sigma_{cap}", 475e6, "Pa", "Cap stress")
 
         # Structural lengths
-        h_spar = Variable("h_{spar}", "m", "Spar height")
-        t_cap = Variable("t_{cap}", 0.028, "in", "Spar cap thickness")
-        #arbitrarily placed based on available cf
-        w_cap = Variable("w_{cap}", "in", "Spar cap width")
+        h = VectorVariable(N-1, "h", "in", "spar height")
+        t = VectorVariable(N-1, "t", "in", "thickness")
+        w = VectorVariable(N-1, "w", "in", "spar width")
         c = Variable("c", "ft", "Wing chord")
         #assumes straight, untapered wing
 
         # Structural ratios
         tau = Variable("\\tau", 0.115, "-", "Airfoil thickness ratio")
         #find better number
-        LoverA = Variable("LoverA", "lbf/ft^2", "Wing loading")
-
-        # Structural areas
-        A_capcent = Variable("A_{capcent}", "m**2", "Cap area at center")
-        #currently assumes constant area
-
-        # Structural volumes
-        Vol_cap = Variable("Vol_{cap}", "m**3", "Cap volume")
+        wingloading = Variable("W/S", "lbf/ft^2", "Wing loading")
 
         # Structural evaluation parameters
         M_cent = Variable("M_cent", "N*m", "Center bending moment")
         F = Variable("F", "N", "Load on wings")
         N_max = Variable("N_{max}", 5, "-", "Load factor")
-        #load rating for max number of g"s
-        P_cap = Variable("P_{cap}", "N", "Cap load")
-        delta_tip = Variable("\\delta_{tip}", "ft", "Tip deflection")
-        delta_tip_max = Variable("\\delta_{tip-max}", 0.2, "-",
-                                 "Max tip deflection ratio")
 
         S = Variable("S", "ft^2", "wing area")
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
@@ -456,26 +447,49 @@ class Wing(Model):
         b = Variable("b", "ft", "Span")
         m_cap = Variable("m_{cap}", "kg", "Cap mass")
         mtow = Variable("MTOW", "lbf", "Max take off weight")
-        m_cap = Variable("m_{cap}", "kg", "Cap mass")
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
         W = Variable("W", "lbf", "Total wing structural weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         m_fac = Variable("m_{fac}", 1.0, "-", "Wing weight margin factor")
 
+        cb = c_bar(0.5, N)
+        cbavg = (cb[:-1] + cb[1:])/2
+        I = VectorVariable(N-1, "I", "m^4", "spar x moment of inertia")
+        dx = Variable("dx", "m", "Length of an element")
+        cbar = VectorVariable(N, "\\bar{c}", cb, "-",
+                              "normalized distributed load at each point")
+        Q = VectorVariable(N, "Q", "N/m", "net wing loading")
+        V = VectorVariable(N, "V", "N", "Internal shear")
+        V_tip = Variable("V_{tip}", 1e-10, "N", "Tip loading")
+        M = VectorVariable(N, "M", "N*m", "Internal moment")
+        M_tip = Variable("M_{tip}", 1e-10, "N*m", "Tip moment")
+        th = VectorVariable(N, "\\theta", "-", "Slope")
+        th_base = Variable("\\theta_{base}", 1e-10, "-", "Base angle")
+        delta = VectorVariable(N, "\\delta", "m", "Displacement")
+        delta_base = Variable("\\delta_{base}", 1e-10, "m", "Base deflection")
+        kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
+        m = VectorVariable(N-1, "m", "kg", "spar mass")
+
         constraints = [m_skin >= rho_skin*S*2,
-                       F >= W_cent*N_max,
-                       c == S/b,
-                       M_cent >= b*F/8,
-                       P_cap >= M_cent/h_spar,
-                       A_capcent >= P_cap/sigma_cap,
-                       Vol_cap >= A_capcent*b/3,
-                       m_cap == rho_cap*Vol_cap,
-                       h_spar <= tau*c,
-                       w_cap == A_capcent/t_cap,
-                       LoverA == mtow/S,
-                       delta_tip == b**2*sigma_cap/(4*E_cap*h_spar),
-                       delta_tip/b <= delta_tip_max,
-                       W/m_fac >= m_skin*g + 1.2*m_cap*g
+                       wingloading == mtow/S,
+                       W/m_fac >= m_skin*g + m_cap*g,
+                       Q >= cbar*W_cent*N_max/b,
+                       I <= w*h**3/12,
+                       m >= rho_cap*w*h*b/2/(N-1),
+                       m_cap >= m.sum(),
+                       h <= t,
+                       t <= S/b*cbavg*tau,
+                       V[:-1] >= V[1:] + 0.5*dx*(Q[:-1] + Q[1:]),
+                       V[-1] >= V_tip,
+                       M[:-1] >= M[1:] + 0.5*dx*(V[:-1] + V[1:]),
+                       M[-1] >= M_tip,
+                       M[:-1]/w/h**2 <= sigma_cap,
+                       th[0] >= th_base,
+                       th[1:] >= th[:-1] + 0.5*dx*(M[1:] + M[:-1])/E/I,
+                       delta[0] >= delta_base,
+                       delta[1:] >= delta[:-1] + 0.5*dx*(th[1:] + th[:-1]),
+                       b/2 == (N-1)*dx,
+                       delta[-1]/(b/2) <= kappa
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -660,8 +674,8 @@ class GasMALE(Model):
         tail = Tail()
         avionics = Avionics()
         fuselage = Fuselage()
-        center_loads = [wing, fuselage, avionics, engineweight]
-        zf_loads = center_loads + [tail]
+        center_loads = [fuselage, avionics, engineweight]
+        zf_loads = center_loads + [tail, wing]
         weight = Weight(center_loads, zf_loads)
 
         self.submodels = zf_loads + [weight, mission]
