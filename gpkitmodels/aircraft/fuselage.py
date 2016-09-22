@@ -207,7 +207,7 @@ class Fuselage(CostedConstraintSet):
                             # Floor
                             Pfloor >= Nland*(Wpay + Wseat),
                             Sfloor == 0.5*Pfloor, # without support
-                            Mfloor == 0.25*Pfloor*wfloor/2,
+                            Mfloor == Pfloor/2*wfloor/2, # Corrected
                             lnose >= 5.2*units.m, # TODO less arbitrary
                             Afloor >= 2*Mfloor/(sigfloor*hfloor)
                                       + 1.5*Sfloor/taufloor,
@@ -241,7 +241,7 @@ class Fuselage(CostedConstraintSet):
                             TCS([Ahold <= (2./3)*wfloor*hhold + hhold**3/(2*wfloor)], reltol=1E-5),
                             # [SP] Harris stocker 1998 (wolfram)
                             TCS([dh + hhold + hfloor <= Rfuse]),
-                            Wpay >= Wpass + Wlugg + Wcargo,
+                            Wpay >= Wpass + Wlugg + Wcargo, #Wlugg is oversizing the cargo/hold volume
 
                             # Total fuselage weight
                             Wfuse >= Wfix + Wapu + Wpadd + Wseat + Wshell
