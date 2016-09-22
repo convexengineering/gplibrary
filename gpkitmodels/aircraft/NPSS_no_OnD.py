@@ -33,7 +33,7 @@ class OffDesignTOC(Model):
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         if res7 == 1 and SPmaps == True:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
         if res7 == 1 and SPmaps == False:
@@ -167,7 +167,7 @@ class OffDesignOnDRerun(Model):
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         if res7 == 1 and SPmaps == True:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
         if res7 == 1 and SPmaps == False:
@@ -257,7 +257,7 @@ class OffDesignTO(Model):
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
-            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
         if res7 == 1 and SPmaps == True:
             self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
         if res7 == 1 and SPmaps == False:
@@ -339,7 +339,7 @@ if __name__ == "__main__":
 
     lc = LinkedConstraintSet(constraints, include_only = {'A_5', 'A_7', 'A_2', 'A_{2.5}', '\pi_{tn}', '\pi_{b}', '\pi_{d}', '\pi_{fn}',
                                                           'T_{ref}', 'P_{ref}', '\eta_{HPshaft}', '\eta_{LPshaft}',
-                                                          'eta_{B}','W_{engine}', 'm_{fan_bar_D}', 'm_{lc_D}'})
+                                                         'eta_{B}','W_{engine}', 'm_{fan_bar_D}', 'm_{lc_D}', 'm_{hc_D}'})
 
     valsubs = {
 ##    'A_5': .2727,
@@ -360,5 +360,5 @@ if __name__ == "__main__":
 
     m = Model((engine2.cost+2*engine1.cost+engine3.cost), constraints, valsubs)
 
-##    sol = m.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
-    bounds, sol = engine1.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=50)
+    sol = m.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
+##    bounds, sol = engine1.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=200)

@@ -429,6 +429,7 @@ class ExhaustAndThrust(Model):
 
         #core mass flow
         mCore = Variable('m_{core}', 'kg/s', 'Core Mass Flow')
+        mFan = Variable('m_{fan}', 'kg/s', 'Fan Mass Flow')
 
         #flow faction f
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
@@ -466,7 +467,7 @@ class ExhaustAndThrust(Model):
 ##                #SIGNOMIAL
 ##                TCS([F <= F6 + F8]),
 
-                TCS([F + alphap1*mCore*u0 <= Mtakeoff*mCore*u6+mCore*alpha*u8]), 
+                TCS([F + alphap1*mCore*u0 <= Mtakeoff*mCore*u6+mFan*u8]), 
 
 
                 Fsp == F/((alphap1)*Mtakeoff*mCore*a0),   #B.191
@@ -940,6 +941,7 @@ class FanMap(Model):
 
             #define mtild
             mtildf == mf/mFanBarD,   #B.282
+            mFanBarD == 253.4*units('kg/s'),
             ])
 
                             #won't work because it's key to have some vairation in pressure ration with each mass flow
@@ -1127,6 +1129,14 @@ class OffDesign(Model):
 
         TSFC = Variable('TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
 
+        mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
+
+        test = Variable('test', 'kg/s', 'test')
+        test1 = Variable('test1', 'kg/s', 'test')
+        mlcD = Variable('m_{lc_D}', 'kg/s', 'On Design LPC Corrected Mass Flow')
+
+        mtot = Variable('m_{total}', 'kg/s', 'Total Engine Mass Flux')
+
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
@@ -1159,7 +1169,7 @@ class OffDesign(Model):
                 a7 == (1.4*R*T7)**.5,
                 a7*M7==u7,
                 rho7 == P7/(R*T7),
-                mf*(Pt2/Pref)*(Tref/Tt2)**.5 == rho7*A7*u7,
+                mf*(Pt2/Pref)*(Tref/Tt2)**.5 == mFan,
                 
                 #residual 5 core nozzle mass flow
                 P5 >= P0,
@@ -1187,8 +1197,10 @@ class OffDesign(Model):
                 alpha == mFan / mCore,
                 SignomialEquality(alphap1, alpha + 1),
 
-                TCS([W_engine >= ((mFan/alpha)*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
-                
+                mtot >= mFan + mCore,
+
+                TCS([W_engine >= ((mtot*alpha/mFan*units('kg/s'))*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
+
 ##                A5 <= .8*units('m^2'),
 ##                A7 <= 1000*units('m^2'),
 ##                A5 >= .10*units('m^2'),
@@ -1215,6 +1227,14 @@ class OffDesign(Model):
                 pif >= 1,
                 pilc >= 1,
                 pihc >= 1,
+
+                mFan >= mCore,
+
+                A7 >= A5,
+##                mlcD >= 46*units('kg/s'), 
+##                mlcD <= 48.75*units('kg/s'),
+                mlcD >= test1 * (800/288) / (300/101.325),
+                mFanBarD == test * (288/288) / (30/101.325),
                 
             ]
             
@@ -1242,3 +1262,4 @@ class OffDesign(Model):
                     ])
                  
         Model.__init__(self, TSFC * (W_engine * units('1/hr/N'))**.0001, constraints, **kwargs)
+#
