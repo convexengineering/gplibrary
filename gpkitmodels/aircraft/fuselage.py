@@ -108,6 +108,7 @@ class Fuselage(CostedConstraintSet):
         pitch    = Variable('p_s', 'in', 'Seat pitch')
         plamv    = Variable('p_{\\lambda_v}', '-', '1 + 2*Tail taper ratio')
         rE       = Variable('r_E', '-', 'Ratio of stringer/skin moduli')
+        rho      = Variable('\\rho', 'kg/m^3', 'Air density (cruise)')
         rhobend  = Variable('\\rho_{bend}', 'kg/m^3', 'Stringer density')
         rhocabin = Variable('\\rho_{cabin}', 'kg/m^3', 'Air density in cabin')
         rhocargo = Variable('\\rho_{cargo}', 'kg/m^3', 'Cargo density')
@@ -115,8 +116,6 @@ class Fuselage(CostedConstraintSet):
                             'Cone material density')
         rhofloor = Variable('\\rho_{floor}', 'kg/m^3',
                             'Floor material density')
-        rhoinf   = Variable('\\rho_{\\infty}', 'kg/m^3',
-                            'Air density (35,000ft)')
         rholugg  = Variable('\\rho_{lugg}', 'kg/m^3', 'Luggage density')
         rhoskin  = Variable('\\rho_{skin}', 'kg/m^3', 'Skin density')
         sigfloor = Variable('\\sigma_{floor}', 'N/m^2',
@@ -193,7 +192,7 @@ class Fuselage(CostedConstraintSet):
                             # Cabin volume and buoyancy weight
                             rhocabin == (1/(R*Tcabin))*pcabin,
                             Vcabin >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
-                            TCS([Wbuoy >= (rhocabin - rhoinf)*g*Vcabin], reltol=1E-3), # [SP]
+                            TCS([Wbuoy >= (rhocabin - rho)*g*Vcabin], reltol=1E-3), # [SP]
 
                             # Windows and insulation
                             Wwindow == Wpwindow * lshell,
@@ -254,7 +253,7 @@ class Fuselage(CostedConstraintSet):
                             f == lfuse/((4/np.pi*Afuse)**0.5), # fineness ratio
                             FF >= 1 + 60/f**3 + f/400, # form factor
                             Dfrict >= FF * np.pi*Rfuse * mu*Vinf
-                                      * 0.074*(rhoinf*Vinf*lfuse/mu)**0.8,
+                                      * 0.074*(rho*Vinf*lfuse/mu)**0.8,
 
                             # Drag due to fuselage upsweep (Raymer p286)
                             xshell2 >= xshell1 + lshell,
@@ -262,7 +261,7 @@ class Fuselage(CostedConstraintSet):
                             x_upswp + lcone <= lfuse,
                             1.13226*phi**1.03759 == Rfuse/lcone, # monomial fit
                                                                  # of tan(phi)
-                            Dupswp >= 3.83*phi**2.5*Afuse * 0.5*rhoinf*Vinf**2,
+                            Dupswp >= 3.83*phi**2.5*Afuse * 0.5*rho*Vinf**2,
                             Dfuse >= Dfrict + Dupswp
                           ]
 
@@ -310,7 +309,7 @@ class Fuselage(CostedConstraintSet):
                          '\\Delta h': 1,
                          '\\Delta p': 52000,
                          '\\mu': 1.4E-5,
-                         '\\rho_{\\infty}': 0.38,
+                         '\\rho': 0.38,
                          '\\rho_{bend}': 2700, # [TAS]
                          '\\rho_{cargo}': 150, # b757 freight doc
                          '\\rho_{cone}': 2700, # [TAS]
@@ -372,6 +371,7 @@ class Fuselage(CostedConstraintSet):
     def test(cls):
         fu = cls.standalone737()
         sol = fu.localsolve()
+        print sol.table()
 
 
 if __name__ == "__main__":

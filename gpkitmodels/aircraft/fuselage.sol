@@ -1,5 +1,5 @@
 Beginning signomial solve.
-Solving took 5 GP solves and 0.876 seconds.
+Solving took 5 GP solves and 0.668 seconds.
 
 Cost
 ----
@@ -90,7 +90,7 @@ Constants
       \Delta h : 1          [m]        Distance from floor to widest part of fuselage 
       \Delta p : 5.2e+04    [Pa]       Pressure difference across fuselage skin       
            \mu : 1.4e-05    [N*s/m**2] Dynamic viscosity (35,000 ft)                  
- \rho_{\infty} : 0.38       [kg/m**3]  Air density (35,000ft)                         
+          \rho : 0.38       [kg/m**3]  Air density (cruise)                           
    \rho_{bend} : 2700       [kg/m**3]  Stringer density                               
   \rho_{cargo} : 150        [kg/m**3]  Cargo density                                  
    \rho_{cone} : 2700       [kg/m**3]  Cone material density                          
@@ -129,7 +129,7 @@ W_{avg. pass} : 0.3324   Average passenger weight
    V_{\infty} : 0.2858   Cruise velocity                                
           p_s : 0.2144   Seat pitch                                     
     W'_{seat} : 0.158    Weight per seat                                
-\rho_{\infty} : 0.1273   Air density (35,000ft)                         
+         \rho : 0.1273   Air density (cruise)                           
             g : 0.1001   Gravitational acceleration                     
   \rho_{skin} : 0.08902  Skin density                                   
      \Delta p : 0.08902  Pressure difference across fuselage skin       

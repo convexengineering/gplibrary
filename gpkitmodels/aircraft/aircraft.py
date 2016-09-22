@@ -49,7 +49,7 @@ class Aircraft(Model):
         a      = Variable('a', 'm/s', 'Speed of sound (35,000 ft)')
         g      = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
         lr     = Variable('l_r', 5000, 'ft', 'Runway length')
-        rho    = Variable('\\rho', 'kg/m^3', 'Air density (35,000 ft)')
+        rho    = Variable('\\rho', 'kg/m^3', 'Air density (cruise)')
         rho0   = Variable('\\rho_0', 'kg/m^3', 'Air density (sea level)')
         xCG    = Variable('x_{CG}', 'm', 'x-location of CG')
         xCGeng = Variable('x_{CG_{eng}}', 'm', 'x-location of engine CG')
@@ -131,4 +131,5 @@ class Aircraft(Model):
 if __name__ == "__main__":
     a = Aircraft()
     sol = a.test()
+    print sol.table()
 
