@@ -9,8 +9,8 @@ from helpers import SummingConstraintSet
 from gpkit.tools import te_exp_minus1
 PLOT = False
 
-INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "P_{shaft-maxMSL}",
-           "S_{fuse}", "W_{cent}", "W_{zfw}", "W_{fuel-tot}", "g"]
+INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "W_{zfw}",
+           "P_{shaft-maxMSL}", "S_{fuse}", "W_{cent}", "W_{fuel-tot}", "g"]
 
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, Nclimb, Nloiter, **kwargs):
@@ -411,72 +411,49 @@ def c_bar(lam, N):
     c = 2/(1+lam)*(1+(lam-1)*eta)
     return c
 
-class Wing(Model):
-    """
-    Structural wing model.  Simple beam.
-    """
+class Spar(Model):
     def __init__(self, N=5, **kwargs):
 
-        # Structural parameters
-        rho_skin = Variable("\\rho_{skin}", 0.1, "g/cm^2",
-                            "Wing skin density")
+        # phyiscal properties
         rho_cap = Variable("\\rho_{cap}", 1.76, "g/cm^3", "Density of CF cap")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CF")
         sigma_cap = Variable("\\sigma_{cap}", 475e6, "Pa", "Cap stress")
 
         # Structural lengths
-        h = VectorVariable(N-1, "h", "in", "spar height")
-        t = VectorVariable(N-1, "t", "in", "thickness")
-        w = VectorVariable(N-1, "w", "in", "spar width")
-        c = Variable("c", "ft", "Wing chord")
-        #assumes straight, untapered wing
-
-        # Structural ratios
-        tau = Variable("\\tau", 0.115, "-", "Airfoil thickness ratio")
-        #find better number
-        wingloading = Variable("W/S", "lbf/ft^2", "Wing loading")
-
-        # Structural evaluation parameters
-        M_cent = Variable("M_cent", "N*m", "Center bending moment")
-        F = Variable("F", "N", "Load on wings")
-        N_max = Variable("N_{max}", 5, "-", "Load factor")
-
-        S = Variable("S", "ft^2", "wing area")
-        W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
-        m_skin = Variable("m_{skin}", "kg", "Skin mass")
-        b = Variable("b", "ft", "Span")
-        m_cap = Variable("m_{cap}", "kg", "Cap mass")
-        mtow = Variable("MTOW", "lbf", "Max take off weight")
-        m_skin = Variable("m_{skin}", "kg", "Skin mass")
-        W = Variable("W", "lbf", "Total wing structural weight")
-        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        m_fac = Variable("m_{fac}", 1.0, "-", "Wing weight margin factor")
-
         cb = c_bar(0.5, N)
         cbavg = (cb[:-1] + cb[1:])/2
-        I = VectorVariable(N-1, "I", "m^4", "spar x moment of inertia")
         dx = Variable("dx", "m", "Length of an element")
         cbar = VectorVariable(N, "\\bar{c}", cb, "-",
                               "normalized distributed load at each point")
+        h = VectorVariable(N-1, "h", "in", "spar height")
+        t = VectorVariable(N-1, "t", "in", "thickness")
+        w = VectorVariable(N-1, "w", "in", "spar width")
+        I = VectorVariable(N-1, "I", "m^4", "spar x moment of inertia")
+        dm = VectorVariable(N-1, "dm", "kg", "segment spar mass")
+        m = Variable("m", "kg", "spar mass")
+
+        S = Variable("S", "ft^2", "wing area")
+        tau = Variable("\\tau", 0.115, "-", "Airfoil thickness ratio")
+        b = Variable("b", "ft", "Span")
+
+        N_max = Variable("N_{max}", 5, "-", "Load factor")
+        W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
+
         Q = VectorVariable(N, "Q", "N/m", "net wing loading")
         V = VectorVariable(N, "V", "N", "Internal shear")
         V_tip = Variable("V_{tip}", 1e-10, "N", "Tip loading")
         M = VectorVariable(N, "M", "N*m", "Internal moment")
         M_tip = Variable("M_{tip}", 1e-10, "N*m", "Tip moment")
         th = VectorVariable(N, "\\theta", "-", "Slope")
-        th_base = Variable("\\theta_{base}", 1e-10, "-", "Base angle")
+        th_root = Variable("\\theta_{root}", 1e-10, "-", "Base angle")
         delta = VectorVariable(N, "\\delta", "m", "Displacement")
-        delta_base = Variable("\\delta_{base}", 1e-10, "m", "Base deflection")
+        delta_root = Variable("\\delta_{root}", 1e-10, "m", "Base deflection")
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
-        m = VectorVariable(N-1, "m", "kg", "spar mass")
 
-        constraints = [m_skin >= rho_skin*S*2,
-                       wingloading == mtow/S,
-                       W/m_fac >= m_skin*g + m_cap*g,
-                       Q >= cbar*W_cent*N_max/b,
+        constraints = [Q >= cbar*W_cent*N_max/b,
                        I <= w*h**3/12,
-                       m >= rho_cap*w*h*b/2/(N-1),
-                       m_cap >= m.sum(),
+                       dm >= rho_cap*w*h*b/2/(N-1),
+                       m >= dm.sum(),
                        h <= t,
                        t <= S/b*cbavg*tau,
                        V[:-1] >= V[1:] + 0.5*dx*(Q[:-1] + Q[1:]),
@@ -484,15 +461,50 @@ class Wing(Model):
                        M[:-1] >= M[1:] + 0.5*dx*(V[:-1] + V[1:]),
                        M[-1] >= M_tip,
                        M[:-1]/w/h**2 <= sigma_cap,
-                       th[0] >= th_base,
+                       th[0] >= th_root,
                        th[1:] >= th[:-1] + 0.5*dx*(M[1:] + M[:-1])/E/I,
-                       delta[0] >= delta_base,
+                       delta[0] >= delta_root,
                        delta[1:] >= delta[:-1] + 0.5*dx*(th[1:] + th[:-1]),
                        b/2 == (N-1)*dx,
                        delta[-1]/(b/2) <= kappa
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
+
+class Wing(Model):
+    """
+    Structural wing model.  Simple beam.
+    """
+    def __init__(self, **kwargs):
+
+        # Structural parameters
+        rho_skin = Variable("\\rho_{skin}", 0.1, "g/cm^2",
+                            "Wing skin density")
+
+        # wing parameters
+        S = Variable("S", "ft^2", "wing area")
+        #find better number
+        wingloading = Variable("W/S", "lbf/ft^2", "Wing loading")
+
+        # Structural evaluation parameters
+
+        m_skin = Variable("m_{skin}", "kg", "Skin mass")
+        mtow = Variable("MTOW", "lbf", "Max take off weight")
+        m_skin = Variable("m_{skin}", "kg", "Skin mass")
+        W = Variable("W", "lbf", "Total wing structural weight")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Wing weight margin factor")
+
+        self.spar = Spar(5)
+
+        constraints = [m_skin >= rho_skin*S*2,
+                       wingloading == mtow/S,
+                       W/m_fac >= m_skin*g + self.spar["m"]*g,
+                      ]
+
+        lc = LinkedConstraintSet([self.spar, constraints])
+
+        Model.__init__(self, None, lc, **kwargs)
 
 class Fuselage(Model):
     """
