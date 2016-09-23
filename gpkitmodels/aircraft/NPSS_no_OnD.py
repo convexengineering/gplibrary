@@ -52,15 +52,15 @@ class OffDesignTOC(Model):
                 'hold_{2}': 1+.5*(1.398-1)*M2**2,
                 'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
                 
-                '\pi_{tn}': .98,
-                '\pi_{b}': .94,
-                '\pi_{d}': .98,
-                '\pi_{fn}': .98,
+##                '\pi_{tn}': .98,
+##                '\pi_{b}': .94,
+##                '\pi_{d}': .98,
+##                '\pi_{fn}': .98,
 
 ##                'A_5': .2727,
 ##                'A_7': 1.1,
-                'T_{ref}': 288.15,
-                'P_{ref}': 101.325,
+##                'T_{ref}': 288.15,
+##                'P_{ref}': 101.325,
                 'm_{htD}': 4.127,
                 'm_{ltD}': 9.376,
                 
@@ -68,15 +68,15 @@ class OffDesignTOC(Model):
 ##                'alpha': 5,
 ##                'alphap1': 6,
                 
-                '\eta_{HPshaft}': .99,
-                '\eta_{LPshaft}': .98,
+##                '\eta_{HPshaft}': .99,
+##                '\eta_{LPshaft}': .98,
                 'M_{takeoff}': .95,
                 
 ##                'm_{hc_D}': 18.29,
-                'm_{lc_D}': 46.69,
-                'm_{fan_bar_D}': 253.4,
-
-                'eta_{B}': .9827,
+##                'm_{lc_D}': 46.69,
+##                'm_{fan_bar_D}': 253.4,
+##
+##                'eta_{B}': .9827,
             }
             
             if mixing == True:
@@ -186,15 +186,15 @@ class OffDesignOnDRerun(Model):
                 'hold_{2}': 1+.5*(1.398-1)*M2**2,
                 'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
                 
-                '\pi_{tn}': .98,
-                '\pi_{b}': .94,
-                '\pi_{d}': .98,
-                '\pi_{fn}': .98,
+##                '\pi_{tn}': .98,
+##                '\pi_{b}': .94,
+##                '\pi_{d}': .98,
+##                '\pi_{fn}': .98,
 
 ##                'A_5': .2727,
 ##                'A_7': 1.1,
-                'T_{ref}': 288.15,
-                'P_{ref}': 101.325,
+##                'T_{ref}': 288.15,
+##                'P_{ref}': 101.325,
                 'm_{htD}': 4.127,
                 'm_{ltD}': 9.376,
                 
@@ -202,13 +202,13 @@ class OffDesignOnDRerun(Model):
 ##                'alpha': 5,
 ##                'alphap1': 6,
                 
-                '\eta_{HPshaft}': .99,
-                '\eta_{LPshaft}': .98,
+##                '\eta_{HPshaft}': .99,
+##                '\eta_{LPshaft}': .98,
                 'M_{takeoff}': .95,
                 
 ##                'm_{hc_D}': 18.29,
-                'm_{lc_D}': 46.69,
-                'm_{fan_bar_D}': 253.4,
+##                'm_{lc_D}': 46.69,
+##                'm_{fan_bar_D}': 253.4,
 
                 'eta_{B}': .9827,
             }
@@ -295,8 +295,8 @@ class OffDesignTO(Model):
                 'M_{takeoff}': .95,
                 
 ##                'm_{hc_D}': 18.29,
-                'm_{lc_D}': 46.69,
-                'm_{fan_bar_D}': 253.4,
+##                'm_{lc_D}': 46.69,
+##                'm_{fan_bar_D}': 253.4,
 
 ##                'eta_{B}': .9827,
             }
@@ -383,8 +383,8 @@ class OffDesignSLS(Model):
                 'M_{takeoff}': .95,
                 
 ##                'm_{hc_D}': 18.29,
-                'm_{lc_D}': 46.69,
-                'm_{fan_bar_D}': 253.4,
+##                'm_{lc_D}': 46.69,
+##                'm_{fan_bar_D}': 253.4,
 
 ##                'eta_{B}': .9827,
             }
@@ -448,6 +448,8 @@ if __name__ == "__main__":
     '\pi_{f_D}': 1.685,
     '\pi_{hc_D}': 1.935,
     '\pi_{lc_D}': 9.369,
+
+    'alpha_OffDesignOnDRerun': 5.105,
     }
 
     m = Model((engine2.cost+2*engine1.cost+engine3.cost+engine4.cost), constraints, valsubs)
