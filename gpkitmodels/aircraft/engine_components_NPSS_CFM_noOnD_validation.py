@@ -793,15 +793,14 @@ class LPCMap(Model):
                    ]
             else:
                 constraints=[
-                    pilc*(26/3.26) == (1.38 * (N1)**0.566)**10,
-                    pilc*(26/3.26) <= 1.05*(1.38 * (mtildlc)**0.122)**10,
-                    pilc*(26/3.26) >= .95*(1.38 * (mtildlc)**0.122)**10,
+                    pilc*(26/pilcD) == (1.38 * (N1)**0.566)**10,
+                    pilc*(26/pilcD) <= 1.05*(1.38 * (mtildlc)**0.122)**10,
+                    pilc*(26/pilcD) >= .95*(1.38 * (mtildlc)**0.122)**10,
                     ]
                 
         constraints.extend([
             #define mbar..technially not needed b/c constrained in res 2 and/or 3
             TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
-            pilc>=1,
             #define mtild
             mtildlc == mlc/mlcD,   #B.282
             ])
@@ -860,13 +859,12 @@ class HPCMap(Model):
                    ]
             else:
                 constraints=[
-                    pihc*(26/10) == (1.35 * (N2)**0.383)**10,
-                    pihc*(26/10) >= .95*(1.38 * (mtildhc)**0.122)**10,
-                    pihc*(26/10) <= 1.05*(1.38 * (mtildhc)**0.122)**10,
+                    pihc*(26/pihcD) == (1.35 * (N2)**0.383)**10,
+                    pihc*(26/pihcD) >= .95*(1.38 * (mtildhc)**0.122)**10,
+                    pihc*(26/pihcD) <= 1.05*(1.38 * (mtildhc)**0.122)**10,
                     ]
 
         constraints.extend([
-            pihc >= 1,
             mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref),    #B.280
             #define mtild
             mtildhc == mhc/mhcD,   #B.282
@@ -931,14 +929,13 @@ class FanMap(Model):
                    ]
             else:
                 constraints = [
-                    TCS([pif*(1.7/1.5) == (1.05*Nf**.0614)**10]),
-                    pif*(1.7/1.5) >= .95*(1.04 * ((mtildf)**0.022))**10,
-                    pif*(1.7/1.5) <= 1.05*(1.04 * ((mtildf)**0.022))**10,
+                    TCS([pif*(1.7/piFanD) == (1.05*Nf**.0614)**10]),
+                    pif*(1.7/piFanD) >= .95*(1.04 * ((mtildf)**0.022))**10,
+                    pif*(1.7/piFanD) <= 1.05*(1.04 * ((mtildf)**0.022))**10,
                 ]
         constraints.extend([
             #define mbar
             mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
-            pif >= 1,
 
             #define mtild
             mtildf == mf/mFanBarD,   #B.282
@@ -1132,8 +1129,6 @@ class OffDesign(Model):
 
         mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
 
-        test = Variable('test', 'kg/s', 'test')
-        test1 = Variable('test1', 'kg/s', 'test')
         mlcD = Variable('m_{lc_D}', 'kg/s', 'On Design LPC Corrected Mass Flow')
 
         mtot = Variable('m_{total}', 'kg/s', 'Total Engine Mass Flux')
@@ -1229,14 +1224,9 @@ class OffDesign(Model):
                 pilc >= 1,
                 pihc >= 1,
 
-                mFan >= mCore,
+##                mFan >= mCore,
 
-                A7 >= A5,
-##                mlcD >= 46*units('kg/s'), 
-##                mlcD <= 48.75*units('kg/s'),
-##                mlcD >= test1 * (800/288) / (300/101.325),
-##                mFanBarD == test * (288/288) / (30/101.325),
-                
+##                A7 >= A5,
             ]
             
         if res7 == 0:
@@ -1244,8 +1234,7 @@ class OffDesign(Model):
                     #residual 7
                     #option #1, constrain the engine's thrust
                     F == Fspec,
-                    Tt41 <= 1600*units('K'),
-##                    Tt4 >= 1285*units('K'),
+                    Tt41 <= 1700*units('K'),
                     ])
         
         if res7 == 1:

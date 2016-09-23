@@ -248,8 +248,8 @@ class OffDesignTO(Model):
 
         res7 = 0
 
-        M2 = .65
-        M25 = .65
+        M2 = .25
+        M25 = .25
         M4a = .1025
         Mexit = 1
         
@@ -320,26 +320,115 @@ class OffDesignTO(Model):
             
         Model.__init__(self, offD.cost, lc, substitutions)
 
+class OffDesignSLS(Model):
+
+    def __init__(self):
+        mixing = True
+        SPmaps = False
+        
+        lpc = FanAndLPC()
+        combustor = CombustorCooling(mixing)
+        turbine = Turbine()
+        thrust = ExhaustAndThrust()
+        fanmap = FanMap(SPmaps)
+        lpcmap = LPCMap(SPmaps)
+        hpcmap = HPCMap(SPmaps)
+
+        res7 = 0
+
+        M2 = .01
+        M25 = .25
+        M4a = .1025
+        Mexit = 1
+        
+        offD = OffDesign(res7, mixing)
+
+        #only add the HPCmap if residual 7 specifies a thrust
+        if res7 ==0:
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap, hpcmap]
+        if res7 == 1 and SPmaps == True:
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+        if res7 == 1 and SPmaps == False:
+            self.submodels = [lpc, combustor, turbine, thrust, offD, fanmap, lpcmap]
+            
+        with SignomialsEnabled():
+
+            lc = LinkedConstraintSet([self.submodels])
+
+            substitutions = {
+                'T_0': 288,   #36K feet
+                'P_0': 101.325,    #36K feet
+                'M_0': .01,
+                'M_2': M2,
+                'M_{2.5}':M25,
+                
+##                '\pi_{tn}': .98,
+##                '\pi_{b}': .94,
+##                '\pi_{d}': .98,
+##                '\pi_{fn}': .98,
+
+##                'A_5': .2727,
+##                'A_7': 1.1,
+##                'T_{ref}': 288.15,
+##                'P_{ref}': 101.325,
+                'm_{htD}': 4.127,
+                'm_{ltD}': 9.376,
+                
+                'G_f': 1,
+##                'alpha': 5,
+##                'alphap1': 6,
+                
+##                '\eta_{HPshaft}': .99,
+##                '\eta_{LPshaft}': .98,
+                'M_{takeoff}': .95,
+                
+##                'm_{hc_D}': 18.29,
+                'm_{lc_D}': 46.69,
+                'm_{fan_bar_D}': 253.4,
+
+##                'eta_{B}': .9827,
+            }
+            
+            if mixing == True:
+                substitutions.update({
+                    'M_{4a}': M4a,
+                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
+                    'r_{uc}': .01,
+                    '\\alpha_c': .1,
+                    'T_{t_f}': 600,
+                })
+            if res7 == 1:
+               substitutions.update({
+                    'T_{t_{4spec}}': 1400,
+                })
+            else:
+                substitutions.update({
+                    'F_{spec}': 27299.8*4.4,
+                })
+            
+        Model.__init__(self, offD.cost, lc, substitutions)
+
 if __name__ == "__main__":
     W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
     
     engine1 = OffDesignTOC()
     engine2 = OffDesignOnDRerun()
     engine3 = OffDesignTO()
-    
+    engine4 = OffDesignSLS()
 ##    sol1 = engine1.localsolve(verbosity = 4, solver="mosek")
 ##    bounds, sol = engine1.determine_unbounded_variables(engine1, solver="mosek",verbosity=4, iteration_limit=50)
 
 ##    sol2 = engine2.localsolve(verbosity = 4, solver="mosek")
 
     #create the big linked engine model
-    submodels = [engine1, engine2, engine3]
+    submodels = [engine1, engine2, engine3, engine4]
 
     constraints = ConstraintSet([submodels])
 
     lc = LinkedConstraintSet(constraints, include_only = {'A_5', 'A_7', 'A_2', 'A_{2.5}', '\pi_{tn}', '\pi_{b}', '\pi_{d}', '\pi_{fn}',
-                                                          'T_{ref}', 'P_{ref}', '\eta_{HPshaft}', '\eta_{LPshaft}',
-                                                         'eta_{B}','W_{engine}', 'm_{fan_bar_D}', 'm_{lc_D}', 'm_{hc_D}'})
+                                                          'T_{ref}', 'P_{ref}', '\eta_{HPshaft}', '\eta_{LPshaft}', 'eta_{B}',
+                                                          'W_{engine}', 'm_{fan_bar_D}', 'm_{lc_D}', 'm_{hc_D}', '\pi_{f_D}',
+                                                          '\pi_{hc_D}', '\pi_{lc_D}'})
 
     valsubs = {
 ##    'A_5': .2727,
@@ -356,9 +445,12 @@ if __name__ == "__main__":
 ##    'm_{lc_D}': 46.69,
 ##    'm_{fan_bar_D}': 253.4,
 ##    'm_{hc_D}': 18.29,
+    '\pi_{f_D}': 1.685,
+    '\pi_{hc_D}': 1.935,
+    '\pi_{lc_D}': 9.369,
     }
 
-    m = Model((engine2.cost+2*engine1.cost+engine3.cost), constraints, valsubs)
+    m = Model((engine2.cost+2*engine1.cost+engine3.cost+engine4.cost), constraints, valsubs)
 
     sol = m.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
 ##    bounds, sol = engine1.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=200)
