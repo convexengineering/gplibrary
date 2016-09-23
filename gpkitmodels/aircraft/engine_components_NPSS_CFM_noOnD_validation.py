@@ -785,7 +785,7 @@ class LPCMap(Model):
 ##                            + 7.99e-15 * (N1)**2.07e+04 * (mtildlc)**592
 ##                            + 1.22e-50 * (N1)**-2.84e+03 * (mtildlc)**598)),
 
-                   (10*pilc)**(-.163) <= ( 5.28e-10 * (N1)**-88.8 * (mtildlc)**2.05
+                   ((26/pilcD)*(pilc))**(-.163) <= ( 5.28e-10 * (N1)**-88.8 * (mtildlc)**2.05
                             + 0.0115 * (N1)**-16.5 * (mtildlc)**4.89
                             + 0.575 * (N1)**-0.491 * (mtildlc)**-0.0789
                             + 7.99e-15 * (N1)**2.07e+04 * (mtildlc)**592
@@ -851,7 +851,7 @@ class HPCMap(Model):
 ##                            + 7.99e-15 * (N2)**2.07e+04 * (mtildhc)**592
 ##                            + 1.22e-50 * (N2)**-2.84e+03 * (mtildhc)**598)),
 
-                   (3*pihc)**(-.163) <= ( 5.28e-10 * (N2)**-88.8 * (mtildhc)**2.05
+                   ((pihc)*(26/pihcD))**(-.163) <= ( 5.28e-10 * (N2)**-88.8 * (mtildhc)**2.05
                             + 0.0115 * (N2)**-16.5 * (mtildhc)**4.89
                             + 0.575 * (N2)**-0.491 * (mtildhc)**-0.0789
                             + 7.99e-15 * (N2)**2.07e+04 * (mtildhc)**592
@@ -920,7 +920,7 @@ class FanMap(Model):
 ##                            + 0.179 * (Nf)**-0.131 * (mtildf)**0.0189
 ##                            + 0.174 * (Nf)**-0.124 * (mtildf)**0.0104)),
 
-                   pif**(-.187) <= (0.179 * (Nf)**-0.14 * (mtildf)**0.0288
+                   (pif*(1.7/piFanD))**(-.187) <= (0.179 * (Nf)**-0.14 * (mtildf)**0.0288
                             + 0.187 * (Nf)**-0.136 * (mtildf)**0.0253
                             + 0.02 * (Nf)**-6.58 * (mtildf)**10.3
                             + 0.176 * (Nf)**-0.0569 * (mtildf)**-0.0665
@@ -929,7 +929,7 @@ class FanMap(Model):
                    ]
             else:
                 constraints = [
-                    TCS([pif*(1.7/piFanD) == (1.05*Nf**.0614)**10]),
+                    pif*(1.7/piFanD) == (1.05*Nf**.0614)**10,
                     pif*(1.7/piFanD) >= .95*(1.04 * ((mtildf)**0.022))**10,
                     pif*(1.7/piFanD) <= 1.05*(1.04 * ((mtildf)**0.022))**10,
                 ]
@@ -1130,8 +1130,10 @@ class OffDesign(Model):
         mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
 
         mlcD = Variable('m_{lc_D}', 'kg/s', 'On Design LPC Corrected Mass Flow')
-
+        mhcD = Variable('m_{hc_D}', 'kg/s', 'On Design HPC Corrected Mass Flow')
         mtot = Variable('m_{total}', 'kg/s', 'Total Engine Mass Flux')
+
+        mCoreD = Variable('m_{coreD}', 'kg/s', 'Estimated on Design Mass Flow')
 
         with SignomialsEnabled():
             constraints = [
@@ -1195,7 +1197,7 @@ class OffDesign(Model):
 
                 mtot >= mFan + mCore,
 
-                TCS([W_engine >= ((mtot*alpha/mFan*units('kg/s'))*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s')]),
+                W_engine >= ((mtot*alpha/mFan*units('kg/s'))*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s'),
 
 ##                A5 <= .8*units('m^2'),
 ##                A7 <= 1000*units('m^2'),
@@ -1224,6 +1226,14 @@ class OffDesign(Model):
                 pilc >= 1,
                 pihc >= 1,
 
+##                mhtD >= .99*fp1*mCoreD *((1400/288)**.5)/(1500/101.325),
+                mhtD == 1.0*fp1*mCoreD *((1400/288)**.5)/(1500/101.325),
+                mltD == fp1*mCoreD *((800/288)**.5)/(800/101.325),
+##                mlcD >= .9*mCoreD *((250.0/288)**.5)/(60/101.325),
+##                mlcD <= 1.1*mCoreD *((250.0/288)**.5)/(60/101.325),
+##                mhcD >= .9*mCoreD *((500.0/288)**.5)/(140/101.325),
+##                mhcD <= 1.1*mCoreD *((500.0/288)**.5)/(140/101.325),
+##                mlcD <= 70*units('kg/s'),
 ##                mFan >= mCore,
 
 ##                A7 >= A5,

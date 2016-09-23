@@ -61,8 +61,8 @@ class OffDesignTOC(Model):
 ##                'A_7': 1.1,
 ##                'T_{ref}': 288.15,
 ##                'P_{ref}': 101.325,
-                'm_{htD}': 4.127,
-                'm_{ltD}': 9.376,
+##                'm_{htD}': 4.127,
+##                'm_{ltD}': 9.376,
                 
                 'G_f': 1,
 ##                'alpha': 5,
@@ -154,7 +154,7 @@ class OffDesignOnDRerun(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 1
+        res7 = 0
 
         #need to give a Tt4 to run with res7 = 0
 
@@ -195,8 +195,8 @@ class OffDesignOnDRerun(Model):
 ##                'A_7': 1.1,
 ##                'T_{ref}': 288.15,
 ##                'P_{ref}': 101.325,
-                'm_{htD}': 4.127,
-                'm_{ltD}': 9.376,
+##                'm_{htD}': 4.127,
+##                'm_{ltD}': 9.376,
                 
                 'G_f': 1,
 ##                'alpha': 5,
@@ -283,8 +283,8 @@ class OffDesignTO(Model):
 ##                'A_7': 1.1,
 ##                'T_{ref}': 288.15,
 ##                'P_{ref}': 101.325,
-                'm_{htD}': 4.127,
-                'm_{ltD}': 9.376,
+##                'm_{htD}': 4.127,
+##                'm_{ltD}': 9.376,
                 
                 'G_f': 1,
 ##                'alpha': 5,
@@ -371,8 +371,8 @@ class OffDesignSLS(Model):
 ##                'A_7': 1.1,
 ##                'T_{ref}': 288.15,
 ##                'P_{ref}': 101.325,
-                'm_{htD}': 4.127,
-                'm_{ltD}': 9.376,
+##                'm_{htD}': 4.127,
+##                'm_{ltD}': 9.376,
                 
                 'G_f': 1,
 ##                'alpha': 5,
@@ -428,7 +428,7 @@ if __name__ == "__main__":
     lc = LinkedConstraintSet(constraints, include_only = {'A_5', 'A_7', 'A_2', 'A_{2.5}', '\pi_{tn}', '\pi_{b}', '\pi_{d}', '\pi_{fn}',
                                                           'T_{ref}', 'P_{ref}', '\eta_{HPshaft}', '\eta_{LPshaft}', 'eta_{B}',
                                                           'W_{engine}', 'm_{fan_bar_D}', 'm_{lc_D}', 'm_{hc_D}', '\pi_{f_D}',
-                                                          '\pi_{hc_D}', '\pi_{lc_D}'})
+                                                          '\pi_{hc_D}', '\pi_{lc_D}', 'm_{htD}', 'm_{ltD}', 'm_{coreD}'})
 
     valsubs = {
 ##    'A_5': .2727,
@@ -448,6 +448,9 @@ if __name__ == "__main__":
     '\pi_{f_D}': 1.685,
     '\pi_{hc_D}': 1.935,
     '\pi_{lc_D}': 9.369,
+
+##    'm_{htD}': 4.127,
+##    'm_{ltD}': 9.376,
 
     'alpha_OffDesignOnDRerun': 5.105,
     }
