@@ -461,13 +461,14 @@ class ExhaustAndThrust(Model):
                 u8 >= u0,
 
                 #overall thrust values
-##                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-##                TCS([F6/(Mtakeoff*mCore) + u0 <= (1+f)*u6]),      #B.189
-##
-##                #SIGNOMIAL
-##                TCS([F <= F6 + F8]),
+                TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
+                TCS([F6/(Mtakeoff*mCore) + u0 <= (1+f)*u6]),      #B.189
 
-                TCS([F + alphap1*mCore*u0 <= Mtakeoff*mCore*u6+mFan*u8]), 
+                #SIGNOMIAL
+                TCS([F <= F6 + F8]),
+
+##                TCS([F + alphap1*mCore*u0 <= Mtakeoff*mCore*u6+mFan*u8]),
+##                SignomialEquality(F + alphap1*mCore*u0, Mtakeoff*mCore*u6+mFan*u8),
 
 
                 Fsp == F/((alphap1)*Mtakeoff*mCore*a0),   #B.191
@@ -793,8 +794,8 @@ class LPCMap(Model):
             else:
                 constraints=[
                     pilc*(26/3.26) == (1.38 * (N1)**0.566)**10,
-                    pilc*(26/3.26) <= 1.02*(1.38 * (mtildlc)**0.122)**10,
-                    pilc*(26/3.26) >= .98*(1.38 * (mtildlc)**0.122)**10,
+                    pilc*(26/3.26) <= 1.05*(1.38 * (mtildlc)**0.122)**10,
+                    pilc*(26/3.26) >= .95*(1.38 * (mtildlc)**0.122)**10,
                     ]
                 
         constraints.extend([
@@ -860,8 +861,8 @@ class HPCMap(Model):
             else:
                 constraints=[
                     pihc*(26/10) == (1.35 * (N2)**0.383)**10,
-                    pihc*(26/10) >= .9*(1.38 * (mtildhc)**0.122)**10,
-                    pihc*(26/10) <= 1.1*(1.38 * (mtildhc)**0.122)**10,
+                    pihc*(26/10) >= .95*(1.38 * (mtildhc)**0.122)**10,
+                    pihc*(26/10) <= 1.05*(1.38 * (mtildhc)**0.122)**10,
                     ]
 
         constraints.extend([
@@ -931,8 +932,8 @@ class FanMap(Model):
             else:
                 constraints = [
                     TCS([pif*(1.7/1.5) == (1.05*Nf**.0614)**10]),
-                    pif*(1.7/1.5) >= .98*(1.04 * ((mtildf)**0.022))**10,
-                    pif*(1.7/1.5) <= 1.02*(1.04 * ((mtildf)**0.022))**10,
+                    pif*(1.7/1.5) >= .95*(1.04 * ((mtildf)**0.022))**10,
+                    pif*(1.7/1.5) <= 1.05*(1.04 * ((mtildf)**0.022))**10,
                 ]
         constraints.extend([
             #define mbar
@@ -1233,8 +1234,8 @@ class OffDesign(Model):
                 A7 >= A5,
 ##                mlcD >= 46*units('kg/s'), 
 ##                mlcD <= 48.75*units('kg/s'),
-                mlcD >= test1 * (800/288) / (300/101.325),
-                mFanBarD == test * (288/288) / (30/101.325),
+##                mlcD >= test1 * (800/288) / (300/101.325),
+##                mFanBarD == test * (288/288) / (30/101.325),
                 
             ]
             

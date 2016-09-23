@@ -9,7 +9,7 @@ from gpkit.small_scripts import mag
 class OffDesignTOC(Model):
 
     def __init__(self):
-        mixing = False
+        mixing = True
         SPmaps = False
         
         lpc = FanAndLPC()
@@ -143,7 +143,7 @@ class OffDesignTOC(Model):
 class OffDesignOnDRerun(Model):
 
     def __init__(self):
-        mixing = False
+        mixing = True
         SPmaps = False
         
         lpc = FanAndLPC()
@@ -154,7 +154,7 @@ class OffDesignOnDRerun(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 0
+        res7 = 1
 
         #need to give a Tt4 to run with res7 = 0
 
@@ -227,7 +227,7 @@ class OffDesignOnDRerun(Model):
                 })
             else:
                 substitutions.update({
-                    'F_{spec}': 5496.4
+                    'F_{spec}': 5496.4 * 4.4,
 ##                    'T_{t_4}': 1450,
                 })
         Model.__init__(self, offD.cost, lc, substitutions)
@@ -235,7 +235,7 @@ class OffDesignOnDRerun(Model):
 class OffDesignTO(Model):
 
     def __init__(self):
-        mixing = False
+        mixing = True
         SPmaps = False
         
         lpc = FanAndLPC()
