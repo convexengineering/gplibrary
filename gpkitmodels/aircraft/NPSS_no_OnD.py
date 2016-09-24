@@ -449,8 +449,8 @@ if __name__ == "__main__":
     '\pi_{hc_D}': 1.935,
     '\pi_{lc_D}': 9.369,
 
-##    'm_{htD}': 4.127,
-##    'm_{ltD}': 9.376,
+    'm_{htD}': 4.127,
+    'm_{ltD}': 9.376,
 
     'alpha_OffDesignOnDRerun': 5.105,
     }

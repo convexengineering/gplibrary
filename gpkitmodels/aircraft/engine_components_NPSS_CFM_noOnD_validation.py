@@ -1235,8 +1235,8 @@ class OffDesign(Model):
 ##                mhcD <= 1.1*mCoreD *((500.0/288)**.5)/(140/101.325),
 ##                mlcD <= 70*units('kg/s'),
 ##                mFan >= mCore,
-                 mlcD <= mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
-                 mhcD >= mCore*((Tt25/Tref)**.5)/(Pt25/Pref), #B.226 
+##                 mlcD >= mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226
+##                 mhcD >= mCore*((Tt25/Tref)**.5)/(Pt25/Pref), #B.226
 ##                A7 >= A5,
             ]
             
@@ -1245,7 +1245,7 @@ class OffDesign(Model):
                     #residual 7
                     #option #1, constrain the engine's thrust
                     F == Fspec,
-                    Tt41 <= 1700*units('K'),
+                    Tt41 <= 2000*units('K'),
                     ])
         
         if res7 == 1:
