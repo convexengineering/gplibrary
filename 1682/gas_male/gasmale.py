@@ -7,6 +7,7 @@ from gpkit import LinkedConstraintSet, ConstraintSet
 from helpers import SummingConstraintSet
 #from gpkit.tools import BoundedConstraintSet
 from gpkit.tools import te_exp_minus1
+from gpkit.constraints.tight import TightConstraintSet as TCS
 PLOT = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "W_{zfw}",
@@ -190,7 +191,7 @@ class Fuel(Model):
         # than the next end of segment weight + the next segment fuel weight.
         # The last end segment weight must be greater than the zero fuel
         # weight
-        constraints = [W_start >= W_nplus1[0] + W_fuel[0],
+        constraints = [TCS([W_start >= W_nplus1[0] + W_fuel[0]]),
                        W_fuelfs >= W_fuel.sum(),
                        W_nplus1[-1] >= W_end,
                        W_n[0] == W_start]
@@ -198,9 +199,10 @@ class Fuel(Model):
         if N == 1:
             pass
         else:
-            constraints.extend([W_nplus1[:-1] >= W_nplus1[1:] + W_fuel[1:],
-                                W_n[1:] == W_nplus1[:-1],
-                               ])
+            constraints.extend([
+                TCS([W_nplus1[:-1] >= W_nplus1[1:] + W_fuel[1:]]),
+                W_n[1:] == W_nplus1[:-1],
+                ])
 
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -321,8 +323,9 @@ class BreguetEndurance(Model):
         W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         constraints = [
-            z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
-            f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
+            TCS([z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5]),
+            # TCS([z_bre >= P_shafttot*t*bsfc*g/W_nplus1]),
+            TCS([f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)])
             ]
 
         Model.__init__(self, None, constraints, **kwargs)

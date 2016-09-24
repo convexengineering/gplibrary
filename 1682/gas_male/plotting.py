@@ -2,6 +2,7 @@ from gpkit.small_scripts import unitstr
 from gasmale import GasMALE
 import numpy as np
 import matplotlib.pyplot as plt
+from gpkit import Variable
 
 def fix_vars(model, solution, var_names):
     """
@@ -115,7 +116,7 @@ def plot_altitude_sweeps(hvals, yvarnames, vars_to_fix):
 
     return figures, axis
 
-def plot_mission_var(model, sol, yvarname, ylim, yaxis_name=None):
+def plot_mission_var(model, sol, yvarname, ylim=False, yaxis_name=None):
     """
     Plots a mission varible against mission time.
 
@@ -129,63 +130,51 @@ def plot_mission_var(model, sol, yvarname, ylim, yaxis_name=None):
              by mission profile inhereint in model.
     """
 
-    sv = sol(yvarname)
-    for seg in ["Loiter", "Cruise", "Climb"]:
-        if seg in sv.items()[0][0].descr["models"]:
-            ind = sv.items()[0][0].descr["models"].index(seg)
+    y = []
+    flightseg = []
+    shape = [0]
+    for subm in model.submodels:
+        if subm.__class__.__name__ == "Mission":
+            for i, fs in enumerate(subm.submodels):
+                y.append(sol(fs[yvarname]).magnitude)
+                yunits = unitstr(fs[yvarname].units)
+                ylabel = (fs[yvarname][0].descr["label"] if not
+                          isinstance(fs[yvarname], Variable) else
+                          fs[yvarname].descr["label"])
+                flightseg.append(fs.__class__.__name__ + "%s" % fs.num)
+                shape.append(shape[i] +
+                             (fs[yvarname][0].descr["shape"][0] if not
+                              isinstance(fs[yvarname], Variable) else 1))
 
-    shape = 0
-    modelnum = []
-    for key, value in sv.items():
-        shape += key.descr["shape"][0]
-        modelnum.append(key.descr["modelnums"][ind])
-        if key.descr["models"][ind] != "Loiter":
-            N = key.descr["shape"][0]
-
-    y = np.zeros(shape)
-    for key, value in sv.items():
-        if key.descr["models"][ind] == "Climb":
-            if key.descr["modelnums"][ind] == max(modelnum):
-                y[2*N:3*N] = value.magnitude[0:]
-            else:
-                y[0:N] = value.magnitude[0:]
-        elif key.descr["models"][ind] == "Cruise":
-            if key.descr["modelnums"][ind] == max(modelnum):
-                y[shape - N:shape] = value.magnitude[0:]
-            else:
-                y[N:2*N] = value.magnitude[0:]
-        else:
-            y[3*N:shape - N] = value.magnitude[0:]
+    y = np.hstack(np.array(y))
+    shape[1:] = [x-1 for x in shape[1:]]
 
     # define tick step on plot
-    t = np.linspace(0, shape - 1, shape)
+    N = range(len(y))
 
     # create plot
     fig, ax = plt.subplots()
-    line, = ax.plot(t, y)
+    line, = ax.plot(N, y)
 
     # label time axis
-    ax.xaxis.set_ticks(np.arange(0, shape - 1, 1))
+    ax.xaxis.set_ticks(np.arange(0, len(y) - 1, 1))
     labels = [item.get_text() for item in ax.get_xticklabels()]
-    labels[2] = 'Climb'
-    labels[7] = 'Cruise'
-    labels[12] = 'Climb'
-    labels[25] = 'Loiter'
-    labels[37] = 'Cruise'
-    ax.set_xticklabels(labels)
+    for i, seg in enumerate(flightseg):
+        labels[shape[i]] = seg
+    ax.set_xticklabels(labels, rotation=-45)
 
     # mark mission profile changes
+    if not ylim:
+        ylim = [min(y), max(y)]
+
     ax.set_ylim([ylim[0], ylim[1]])
     if yaxis_name:
         ax.set_ylabel(yaxis_name)
     else:
-        ax.set_ylabel("%s [%s]" %
-                      (model.variables_byname(yvarname)[0].descr["label"],
-                       unitstr(model.variables_byname(yvarname)[0].units)))
-    ax.grid()
-    ax.plot([4, 4], [ylim[0], ylim[1]], '--', color='r')
-    ax.plot([9, 9], [ylim[0], ylim[1]], '--', color='r')
-    ax.plot([14, 14], [ylim[0], ylim[1]], '--', color='r')
-    ax.plot([34, 34], [ylim[0], ylim[1]], '--', color='r')
+        ax.set_ylabel("%s [%s]" % (ylabel, yunits))
 
-    return fig, ax, t, y
+    ax.grid()
+    for s in shape:
+        ax.plot([s, s], [ylim[0], ylim[1]], '--', color='r')
+
+    return fig, ax
