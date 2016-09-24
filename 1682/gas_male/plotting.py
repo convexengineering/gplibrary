@@ -136,15 +136,26 @@ def plot_mission_var(model, sol, yvarname, ylim=False, yaxis_name=None):
     for subm in model.submodels:
         if subm.__class__.__name__ == "Mission":
             for i, fs in enumerate(subm.submodels):
-                y.append(sol(fs[yvarname]).magnitude)
-                yunits = unitstr(fs[yvarname].units)
-                ylabel = (fs[yvarname][0].descr["label"] if not
-                          isinstance(fs[yvarname], Variable) else
-                          fs[yvarname].descr["label"])
-                flightseg.append(fs.__class__.__name__ + "%s" % fs.num)
+                if "/" in yvarname:
+                    vname1 = yvarname.split("/")[0]
+                    vname2 = yvarname.split("/")[1]
+                    value = (sol(fs[vname1])/sol(fs[vname2]))
+                    yunits = "%s/%s" % (unitstr(fs[vname1].units),
+                                        unitstr(fs[vname2].units))
+                    ylabel = yvarname
+                    name = vname1
+                else:
+                    value = sol(fs[yvarname])
+                    yunits = unitstr(fs[yvarname].units)
+                    ylabel = (fs[yvarname][0].descr["label"] if not
+                              isinstance(fs[yvarname], Variable) else
+                              fs[yvarname].descr["label"])
+                    name = yvarname
                 shape.append(shape[i] +
-                             (fs[yvarname][0].descr["shape"][0] if not
-                              isinstance(fs[yvarname], Variable) else 1))
+                             (fs[name][0].descr["shape"][0] if not
+                              isinstance(fs[name], Variable) else 1))
+                flightseg.append(fs.__class__.__name__ + "%s" % fs.num)
+                y.append(value.magnitude)
 
     y = np.hstack(np.array(y))
     shape[1:] = [x-1 for x in shape[1:]]
@@ -178,3 +189,14 @@ def plot_mission_var(model, sol, yvarname, ylim=False, yaxis_name=None):
         ax.plot([s, s], [ylim[0], ylim[1]], '--', color='r')
 
     return fig, ax
+
+def solution_value(eqstr, sol, units, submodel):
+    if "/" in eqstr:
+        varnames = eqstr.split("/")
+        value = (sol(submodel[varnames[0]])/
+                 sol(submodel[varnames[1]])).to(units)
+    else:
+        value = sol(eqstr)
+
+    return value
+
