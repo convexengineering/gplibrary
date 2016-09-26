@@ -63,6 +63,13 @@ class FlightSegment(Model):
         self.N = N
         self.exclude = ["m_{fac}"]
 
+        Vstall = VectorVariable(N, "V_{stall}", "m/s", "stall speed")
+
+        self.constraints = [
+            Vstall == ((self.fuel["W_{N}"]*2/self.slf["\\rho"]/
+                        self.aero["S"]/1.5)**0.5)
+            ]
+
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
                           self.atm, self.wind]
 
@@ -76,9 +83,9 @@ class Cruise(FlightSegment):
 
         self.submodels.extend([breguetendurance])
 
-        constraints = [R/N <= self.slf["V"]*breguetendurance["t"]]
+        self.constraints.extend([R/N <= self.slf["V"]*breguetendurance["t"]])
 
-        lc = LinkedConstraintSet([self.submodels, constraints],
+        lc = LinkedConstraintSet([self.submodels, self.constraints],
                                  exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
@@ -91,11 +98,11 @@ class Loiter(FlightSegment):
 
         t_loiter = Variable("t_{loiter}", "days", "time loitering")
 
-        constraints = [breguetendurance["t"] >= t_loiter/N]
+        self.constraints.extend([breguetendurance["t"] >= t_loiter/N])
 
         self.submodels.extend([breguetendurance])
 
-        lc = LinkedConstraintSet([self.submodels, constraints],
+        lc = LinkedConstraintSet([self.submodels, self.constraints],
                                  exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
@@ -111,31 +118,29 @@ class Climb(FlightSegment):
         h_dot = VectorVariable(N, "h_{dot}", "ft/min", "Climb rate")
         h_dotmin = Variable("h_{dot-min}", 100, "ft/min",
                             "minimum climb rate")
-        constraints = [
+        self.constraints.extend([
             h_dot*breguetendurance["t"] >= deltah/N,
             h_dot >= h_dotmin,
             self.slf["T"] >= (0.5*self.slf["\\rho"]*self.slf["V"]**2*
                               self.slf["C_D"]*self.slf["S"] +
                               self.slf["W_{N}"]*h_dot/self.slf["V"])
-            ]
+            ])
 
         self.submodels.extend([breguetendurance])
 
-        lc = LinkedConstraintSet([self.submodels, constraints],
+        lc = LinkedConstraintSet([self.submodels, self.constraints],
                                  exclude=self.exclude)
 
         Model.__init__(self, None, lc, **kwargs)
 
-    def process_solution(self, sol):
+    # def process_solution(self, sol):
 
-        super(Climb, self).process_solution(sol)
-        Vstall = ((sol("MTOW")*2/sol(self.slf["\\rho"][0])/
-                   sol("S")/1.5)**0.5).to("m/s")
-        Vland = ((sol("W_{zfw}")*2/sol(self.slf["\\rho"][0])/
-                  sol("S")/1.5)**0.5).to("m/s")
-        print "Stall speed at bottom of climb is: %0.3f [%s]" % \
-                (Vstall.magnitude, Vstall.units)
-        print "Landing speed is : %0.3f [%s]" % (Vland.magnitude, Vland.units)
+        # super(Climb, self).process_solution(sol)
+        # Vland = ((sol("W_{zfw}")*2/sol(self.slf["\\rho"][0])/
+        #           sol("S")/1.5)**0.5).to("m/s")
+        # print "Stall speed at bottom of climb is: %0.3f [%s]" % \
+        #         (Vstall.magnitude, Vstall.units)
+        # print "Landing speed is : %0.3f [%s]" % (Vland.magnitude, Vland.units)
 
 class Atmosphere(Model):
     """
