@@ -8,42 +8,28 @@ from gpkit.tools import te_exp_minus1
 from collections import defaultdict
 from gpkit.small_scripts import mag
 pi = 3.1415926
-class GasMale(Model):
-	def __init__(self):
-		g      = 9.81*units('m*s**-2')
+g = 9.81*units('m*s**-2')
+
+class dartTail(Model):
+    def __init__(self,**kwargs):
+
+        # Aircraft properties
         W      = Variable('W',713.5,'N','Total aircraft weight')
         WNoPay = Variable('W_{NoPay}',624.3,'N','Aircraft no-payload weight')
         ACloc  = Variable('AC_{location}',0.655,'ft','Aerodynamic center location')
         M_CG   = Variable('M_{CG}',52,'N*m','Torque around AC due to CG')
         S      = Variable('S',23.69,'ft^2','Wing area')
-        b      = Variable('b',25.15,'ft','Wing span')
-        cbar   = Variable('c_{bar}',1.02,'ft','Mean aerodynamic chord')
         AR     = Variable('AR',26.7,'-','Aspect ratio')
-        e      = Variable('e',0.95,'-','Oswald efficiency')
-        N      = Variable('N','-','Load factor')
-
-        # Takeoff conditions
-        rhoTO  = Variable('\\rho_{t/o}',1.225,'kg*m^-3','Takeoff density')
-        Vstall = Variable('V_{stall}','m/s','Stall speed')
-        VTO    = Variable('V_{TO}','m/s', 'Takeoff speed')
-        m_TO   = Variable('m_{TO}',1.3,'-','Stall margin')
-        CLmax  = Variable('C_{Lmax}',1.5,'-','Maximum lift coefficient')
-        TmaxTO = Variable('T_{maxTO}',13.9,'lbf','Maximum thrust at takeoff (static)') #based off DF70                                                                     # 22x8 prop
-        KTO    = Variable('K_{TO}','-','Induced drag multiplier at takeoff')
-        CD0TO  = Variable('CD_{0TO}',0.0250,'-','Form drag coefficient at takeoff')
-        CDTO   = Variable('CD_{TO}',0.0375,'-','Drag coefficient at takeoff')
-
-        
-
-        # Landing conditions
-        Vland = Variable('V_{land}',12,'m/s','Landing speed')
-        Vwindcross = Variable('V_wind_cross}',20,'mph','Landing cross-wind speed')
-class dartTail(Model):
-    def __init__(self):
-        
 
         # Airfoil properties (NACA0008)
         areaAF = Variable('A_{ratio-airfoil}',0.0548,'ft','Airfoil area/chord ratio') #for NACA0008
+
+        # Takeoff conditions
+
+        rhoTO  = Variable('\\rho_{t/o}',1.225,'kg*m^-3','Takeoff density')
+        Vstall = Variable('V_{stall}','m/s','Stall speed')
+        VTO    = Variable('V_{TO}','m/s', 'Takeoff speed')
+        CLmax  = Variable('C_{Lmax}',1.5,'-','Maximum lift coefficient')
 
         # # Material properties
         # rhoCFRP     = Variable('\\rho_{CFRP}',1.6,'kg/m^3','Density of CFRP')
@@ -83,28 +69,15 @@ class dartTail(Model):
         # crvtail     = Variable('c_r_{vtail}','m','Vertical tail root chord')
         Lmaxvtail = Variable('L_{max-vtail}','N/m','Maximum vertical tail moment')
 
-        # Other performance variables
-        nmax   = Variable('n_{max}','-','Maximum load factor')
-        RturnTO = Variable('R_{turn}','m','Turning radius at takeoff')
-        RpullTO = Variable('R_{pull-up}','m','Pull-up radius at takeoff')
-
         with SignomialsEnabled():
             #a = TmaxTO/W
             #b = .5*rhoTO*VTO**2*CD0TO/(W*S)
             #print a, a.units, a.units.to_base_units()
             #print b, b.units, b.units.to_base_units()
             constraints = [
-            Vstall == (2/rhoTO*W/S/CLmax)**.5,
             #ARvtail == hvtail**2/(Svtail/2),        #ARhtail == bhtail**2/Shtail,
-            VTO == 1.3*Vstall,
-            KTO == 1/(pi*e*AR),
+            
             #CD0TO >= CDTO + KTO,
-
-
-            # Performance metric calculations
-            nmax**2 <= .5*rhoTO*VTO**2/(KTO*W/S)*(TmaxTO/W - .5*rhoTO*VTO**2*CD0TO/(W/S)),
-            RturnTO**2*g**2*(nmax**2-1.0) >= VTO**4,
-            (RpullTO*g*(nmax+1))**2 >= VTO**4,
 
             # Boom sizing
             M_CG <= 2*Ffacboom*Fboom*(lboom-deltatail-ACloc),
@@ -122,12 +95,66 @@ class dartTail(Model):
             # Vertical tail relations (sized for cross-wind landing)
 
             ]
+
+        Model.__init__(self, None, constraints,**kwargs)
+
+class GasMALE(Model):
+	def __init__(self,**kwargs):
+            W      = Variable('W',713.5,'N','Total aircraft weight')
+        WNoPay = Variable('W_{NoPay}',624.3,'N','Aircraft no-payload weight')
+        ACloc  = Variable('AC_{location}',0.655,'ft','Aerodynamic center location')
+        M_CG   = Variable('M_{CG}',52,'N*m','Torque around AC due to CG')
+        S      = Variable('S',23.69,'ft^2','Wing area')
+        b      = Variable('b',25.15,'ft','Wing span')
+        cbar   = Variable('c_{bar}',1.02,'ft','Mean aerodynamic chord')
+        AR     = Variable('AR',26.7,'-','Aspect ratio')
+        e      = Variable('e',0.95,'-','Oswald efficiency')
+        N      = Variable('N','-','Load factor')
+
+        # Takeoff conditions
+        rhoTO  = Variable('\\rho_{t/o}',1.225,'kg*m^-3','Takeoff density')
+        Vstall = Variable('V_{stall}','m/s','Stall speed')
+        VTO    = Variable('V_{TO}','m/s', 'Takeoff speed')
+        m_TO   = Variable('m_{TO}',1.3,'-','Stall margin')
+        CLmax  = Variable('C_{Lmax}',1.5,'-','Maximum lift coefficient')
+        TmaxTO = Variable('T_{maxTO}',13.9,'lbf','Maximum thrust at takeoff (static)') #based off DF70                                                                     # 22x8 prop
+        KTO    = Variable('K_{TO}','-','Induced drag multiplier at takeoff')
+        CD0TO  = Variable('CD_{0TO}',0.0250,'-','Form drag coefficient at takeoff')
+        CDTO   = Variable('CD_{TO}',0.0375,'-','Drag coefficient at takeoff')
+
+        # Landing conditions
+        Vland = Variable('V_{land}',12,'m/s','Landing speed')
+        Vwindcross = Variable('V_wind_cross}',20,'mph','Landing cross-wind speed')
+
+        # Other performance variables
+        nmax   = Variable('n_{max}','-','Maximum load factor')
+        RturnTO = Variable('R_{turn}','m','Turning radius at takeoff')
+        RpullTO = Variable('R_{pull-up}','m','Pull-up radius at takeoff')
+
+        tail = dartTail()
+
+        self.submodels = [tail]
+
+        with SignomialsEnabled():
+            constraints = [
+          # Performance metric calculations
+            Vstall == (2/rhoTO*W/S/CLmax)**.5,
+            VTO == 1.3*Vstall,
+            KTO == 1/(pi*e*AR),
+            nmax**2 <= .5*rhoTO*VTO**2/(KTO*W/S)*(TmaxTO/W - .5*rhoTO*VTO**2*CD0TO/(W/S)),
+            RturnTO**2*g**2*(nmax**2-1.0) >= VTO**4,
+            (RpullTO*g*(nmax+1))**2 >= VTO**4
+            ]
+
+        lc = LCS([self.submodels, constraints])
+
         objective = (nmax)**-1 + Fboom/units('N') + 1/CLmaxhtail + Whtail/units('lbf') + RturnTO/units('m') + RpullTO/units('m')
 
-        Model.__init__(self, objective, constraints,)
+        Model.__init__(self, objective, lc, **kwargs)
+
 
 if __name__ == "__main__":
-    M = dartTail()
+    M = GasMALE()
     #M = Model(M.cost, BCS(M))
     #subs=[]
     sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
