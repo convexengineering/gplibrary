@@ -481,7 +481,8 @@ class Spar(Model):
         cbavg = (cb[:-1] + cb[1:])/2
         cbar = VectorVariable(N-1, "\\bar{c}", cbavg, "-",
                               "normalized chord at mid element")
-        h = VectorVariable(N-1, "h", "in", "spar height")
+        t = VectorVariable(N-1, "t", "in", "spar cap thickness")
+        hin = VectorVariable(N-1, "h_{in}", "in", "inner spar height")
         w = VectorVariable(N-1, "w", "in", "spar width")
         I = VectorVariable(N-1, "I", "m^4", "spar x moment of inertia")
         dm = VectorVariable(N-1, "dm", "kg", "segment spar mass")
@@ -499,12 +500,12 @@ class Spar(Model):
         beam = Beam(N, cb)
 
         constraints = [
-            I <= w*h**3/12,
-            dm >= rho*w*h*b/2/(N-1),
+            I <= 2*w*t*(hin/2)**2,
+            dm >= rho*w*t*b/2/(N-1),
             m >= dm.sum(),
-            h <= S/b*cbar*tau,
+            S/b*cbar*tau >= hin + 2*t,
             beam["\\bar{\\delta}"][-1] <= kappa,
-            beam["\\bar{M}"][:-1]*(b/2)**2*W_cent*N_max/w/h**2/b <= sigma,
+            beam["\\bar{M}"][:-1]*(b/2)**2*W_cent*N_max/2/w/t**2/b <= sigma,
             beam["\\bar{EI}"] <= E*I/N_max/W_cent*b/(b/2)**3
             ]
 
@@ -540,7 +541,7 @@ class Wing(Model):
 
         constraints = [m_skin >= rho_skin*S*2,
                        wingloading == mtow/S,
-                       W/m_fac >= m_skin*g + self.spar["m"]*g,
+                       W/m_fac >= m_skin*g + 2*self.spar["m"]*g,
                       ]
 
         lc = LinkedConstraintSet([self.spar, constraints])
