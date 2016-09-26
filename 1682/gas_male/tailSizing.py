@@ -17,12 +17,13 @@ class dartTail(Model):
         W      = Variable('W',713.5,'N','Total aircraft weight')
         WNoPay = Variable('W_{NoPay}',624.3,'N','Aircraft no-payload weight')
         ACloc  = Variable('AC_{location}',0.655,'ft','Aerodynamic center location')
-        M_CG   = Variable('M_{CG}',52,'N*m','Torque around AC due to CG')
+        M_CG   = Variable('M_{CG}',12,'N*m','Torque around AC due to CG')
         S      = Variable('S',23.69,'ft^2','Wing area')
         AR     = Variable('AR',26.7,'-','Aspect ratio')
 
         # Airfoil properties (NACA0008)
-        areaAF = Variable('A_{ratio-airfoil}',0.0548,'ft','Airfoil area/chord ratio') #for NACA0008
+        areaAF = Variable('A_{ratio-airfoil}',0.0548,'ft^2','Airfoil area/chord ratio') #for NACA0008
+        crefAF = Variable('c_{ref}_{AF}',1,'ft','Reference chord for airfoil')
 
         # Takeoff conditions
 
@@ -53,7 +54,6 @@ class dartTail(Model):
         Shtail      = Variable('S_{htail}','ft^2','Horizontal tail area')
         ARhtail     = Variable('AR_{htail}',5,'-','Horizontal tail aspect ratio')
         lamhtail    = Variable('\\lambda_{htail}',.6,'-','Horizontal tail taper ratio')
-        # tauhtail    = Variable('\\tau_{htail}',.08,'-', 'Horizontal tail thickness ratio')
         bhtail      = Variable('b_{htail}','m', 'Horizontal tail span')
         crhtail     = Variable('c_r_{htail}','m','Horizontal tail root chord')
         deltatail = Variable('\\delta_{tail}',.2,'m','Horizontal-vertical tail offset')
@@ -64,7 +64,6 @@ class dartTail(Model):
         # Svtail      = Variable('S_{vtail}','m^2','Vertical tail area')
         # ARvtail     = Variable('AR_{vtail}','-','Vertical tail aspect ratio')
         # lamvtail    = Variable('\\lambda_{vtail}','-','Vertical tail taper ratio')
-        # tauvtail    = Variable('\\tau_{vtail}',.08,'-', 'Vertical tail thickness ratio')
         # hvtail      = Variable('b_{vtail}','m', 'Vertical tail height')
         # crvtail     = Variable('c_r_{vtail}','m','Vertical tail root chord')
         Lmaxvtail = Variable('L_{max-vtail}','N/m','Maximum vertical tail moment')
@@ -90,7 +89,7 @@ class dartTail(Model):
             Shtail <= bhtail*crhtail*(1+lamhtail)/2, #[SP]
             CLmaxhtail*(1+2/ARhtail) <= CLmax*(1+2/AR),
             # Assuming solid foam-core wing with a min-gauge Kevlar skin
-            Whtail**2 >= (rhoFoamular*bhtail*areaAF)**2*(crhtail**2 + (crhtail*lamhtail)**2.)+(1.1*g*rhoskin*Shtail)**2
+            Whtail**2 >= (rhoFoamular*bhtail*areaAF)**2*((crhtail/crefAF)**4 + (crhtail*lamhtail/crefAF)**4)+(1.1*g*rhoskin*Shtail)**2
             
             # Vertical tail relations (sized for cross-wind landing)
 
