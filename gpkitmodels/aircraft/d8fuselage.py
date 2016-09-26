@@ -3,9 +3,8 @@ from numpy import pi
 import numpy as np
 import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units, SignomialsEnabled
-#from gpkit import LinkedConstraintSet
-#from gpkit.tools import BoundedConstraintSet
-from gpkit.constraints.tight import TightConstraintSet 
+from gpkit import LinkedConstraintSet as LSC
+from gpkit.constraints.bounded import BoundedConstraintSet as BCS
 from gpkit.tools import te_exp_minus1
 from collections import defaultdict
 from gpkit.small_scripts import mag
@@ -191,45 +190,6 @@ class Fuselage(Model):
         objective = Wfuse + Afuse*units('N/m**2') + wfloor*units('N/m') + Pfloor + Vcabin*units('N/m^3') + hfloor*units('N/m')
         Model.__init__(self, objective, constraints, **kwargs)
 
-    def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
-        "Returns model with additional constraints bounding all free variables"
-        lb = lower if lower else eps
-        ub = upper if upper else 1/eps
-        constraints = []
-        freevks = tuple(vk for vk in model.varkeys if "value" not in vk.descr)
-        for varkey in freevks:
-            units = varkey.descr.get("units", 1)
-            constraints.append([ub*units >= Variable(**varkey.descr),
-                                Variable(**varkey.descr) >= lb*units])
-        m = Model(model.cost, [constraints, model], model.substitutions)
-        m.bound_all = {"lb": lb, "ub": ub, "varkeys": freevks}
-        return m
-
-
-        # pylint: disable=too-many-locals
-    def determine_unbounded_variables(self, model, solver=None, verbosity=0,
-                                          eps=1e-30, lower=None, upper=None, **kwargs):
-        "Returns labeled dictionary of unbounded variables."
-        m = self.bound_all_variables(model, eps, lower, upper)
-        sol = m.localsolve(solver, verbosity, **kwargs)
-        solhold = sol
-        lam = sol["sensitivities"]["la"][1:]
-        out = defaultdict(list)
-        for i, varkey in enumerate(m.bound_all["varkeys"]):
-            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
-            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
-                out["sensitive to upper bound"].append(varkey)
-            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
-                out["sensitive to lower bound"].append(varkey)
-            value = mag(sol["variables"][varkey])
-            distance_below = np.log(value/m.bound_all["lb"])
-            distance_above = np.log(m.bound_all["ub"]/value)
-            if distance_below <= 3:  # arbitrary threshold
-                out["value near lower bound"].append(varkey)
-            elif distance_above <= 3:  # arbitrary threshold
-                out["value near upper bound"].append(varkey)
-        return out, solhold
-
 
 # class Aircraft(Model):
 #     """
@@ -271,9 +231,10 @@ class Fuselage(Model):
 
 if __name__ == "__main__":
     M = Fuselage()
-    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=4, iteration_limit=100)
+    M = Model(M.cost, BCS(M))
+    #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=4, iteration_limit=100)
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
-    # sol = M.localsolve("mosek",tolerance = 0.01, x0 = subs, verbosity = 1, iteration_limit=50)
+    sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
     print 'Cabin volume: ' + str(varVals['V_{cabin}_Fuselage'].magnitude) + '.'
     print 'Fuselage width: ' + str(varVals['w_{fuse}_Fuselage'].magnitude) + '.'
