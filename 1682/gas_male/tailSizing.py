@@ -1,7 +1,7 @@
 import numpy as np
 from gpkit import VectorVariable, Variable, Model, SignomialsEnabled, units
 from gpkit.constraints.costed import CostedConstraintSet
-from gpkit import LinkedConstraintSet, ConstraintSet
+from gpkit import LinkedConstraintSet as LCS
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from gpkit.constraints.bounded import BoundedConstraintSet as BCS
 from gpkit.tools import te_exp_minus1
@@ -99,8 +99,8 @@ class dartTail(Model):
         Model.__init__(self, None, constraints,**kwargs)
 
 class GasMALE(Model):
-	def __init__(self,**kwargs):
-            W      = Variable('W',713.5,'N','Total aircraft weight')
+    def __init__(self,**kwargs):
+        W      = Variable('W',713.5,'N','Total aircraft weight')
         WNoPay = Variable('W_{NoPay}',624.3,'N','Aircraft no-payload weight')
         ACloc  = Variable('AC_{location}',0.655,'ft','Aerodynamic center location')
         M_CG   = Variable('M_{CG}',52,'N*m','Torque around AC due to CG')
@@ -110,6 +110,8 @@ class GasMALE(Model):
         AR     = Variable('AR',26.7,'-','Aspect ratio')
         e      = Variable('e',0.95,'-','Oswald efficiency')
         N      = Variable('N','-','Load factor')
+        Whtail = Variable('W_{htail}','lbf','Horizontal tail weight')
+
 
         # Takeoff conditions
         rhoTO  = Variable('\\rho_{t/o}',1.225,'kg*m^-3','Takeoff density')
@@ -130,9 +132,10 @@ class GasMALE(Model):
         nmax   = Variable('n_{max}','-','Maximum load factor')
         RturnTO = Variable('R_{turn}','m','Turning radius at takeoff')
         RpullTO = Variable('R_{pull-up}','m','Pull-up radius at takeoff')
+        Fboom = Variable('F_{boom}','N','Tail downforce')
+        CLmaxhtail = Variable('CL_{max-htail}','-','Horizontal tail maximum lift coefficient')
 
         tail = dartTail()
-
         self.submodels = [tail]
 
         with SignomialsEnabled():
@@ -142,20 +145,19 @@ class GasMALE(Model):
             VTO == 1.3*Vstall,
             KTO == 1/(pi*e*AR),
             nmax**2 <= .5*rhoTO*VTO**2/(KTO*W/S)*(TmaxTO/W - .5*rhoTO*VTO**2*CD0TO/(W/S)),
-            RturnTO**2*g**2*(nmax**2-1.0) >= VTO**4,
-            (RpullTO*g*(nmax+1))**2 >= VTO**4
+            RturnTO**2*g**2*(nmax**2-1.0) >= VTO**4, 
+            (RpullTO*g*(nmax+1))**2 <= VTO**4
             ]
 
         lc = LCS([self.submodels, constraints])
 
-        objective = (nmax)**-1 + Fboom/units('N') + 1/CLmaxhtail + Whtail/units('lbf') + RturnTO/units('m') + RpullTO/units('m')
-
+        objective = (nmax)**-1 + Whtail/units('lbf') + RturnTO/units('m') + 1/RpullTO*units('m') + Fboom/units('N') + 1/CLmaxhtail
         Model.__init__(self, objective, lc, **kwargs)
 
 
 if __name__ == "__main__":
     M = GasMALE()
-    #M = Model(M.cost, BCS(M))
+    M = Model(M.cost, BCS(M))
     #subs=[]
     sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
