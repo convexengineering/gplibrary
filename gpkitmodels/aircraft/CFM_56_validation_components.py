@@ -144,8 +144,8 @@ class FanAndLPC(Model):
             ht7 == ht21,    #B.127
 
             #LPC exit (station 2.5)
-            Pt25 == pilc * Pt2,
-            Tt25 == Tt2 * pilc ** (lpcexp1),
+            Pt25 == pilc * pif * Pt2,
+            Tt25 == Tt2 * (pif*pilc) ** (lpcexp1),
             ht25 == Tt25 * Cp1,
 
             #HPC Exit
@@ -329,6 +329,8 @@ class Turbine(Model):
         #BPR
         alpha = Variable('alpha', '-', 'By Pass Ratio')
 
+        alphap1 = Variable('alphap1', '-', '1 plus BPR')
+
         #relavent pressure ratio
         pitn = Variable('\pi_{tn}', '-', 'Turbine Nozzle Pressure Ratio')
 
@@ -346,7 +348,7 @@ class Turbine(Model):
 
                 #LPT shaft power balance
                 #SIGNOMIAL  
-                SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
+                SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alphap1*(ht21 - ht2))),    #B.165
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
@@ -434,6 +436,9 @@ class ExhaustAndThrust(Model):
         #flow faction f
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
+        #f plus one
+        fp1 = Variable('fp1', '-', 'f + 1')
+
         Mtakeoff = Variable('M_{takeoff}', '-', '1 Minus Percent mass flow loss for de-ice, pressurization, etc.')
 
         with SignomialsEnabled():
@@ -442,8 +447,8 @@ class ExhaustAndThrust(Model):
                 Tt8 == Tt7, #B.180
                 P8 == P0,
                 h8 == Cpfanex * T8,
-##                TCS([u8**2 + 2*h8 <= 2*ht8]),
-               SignomialEquality(u8**2 + 2*h8, 2*ht8),
+                TCS([u8**2 + 2*h8 <= 2*ht8]),
+##               SignomialEquality(u8**2 + 2*h8, 2*ht8),
                 (P8/Pt8)**(fanexexp) == T8/Tt8,
                 ht8 == Cpfanex * Tt8,
                 
@@ -452,8 +457,8 @@ class ExhaustAndThrust(Model):
                 Pt6 == Pt5, #B.183
                 Tt6 == Tt5, #B.184
                 (P6/Pt6)**(turbexexp) == T6/Tt6,
-##                TCS([u6**2 + 2*h6 <= 2*ht6]),
-                SignomialEquality(u6**2 + 2*h6, 2*ht6),
+                TCS([u6**2 + 2*h6 <= 2*ht6]),
+##                SignomialEquality(u6**2 + 2*h6, 2*ht6),
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
@@ -462,7 +467,7 @@ class ExhaustAndThrust(Model):
 
                 #overall thrust values
                 TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-                TCS([F6/(Mtakeoff*mCore) + u0 <= (1+f)*u6]),      #B.189
+                TCS([F6/(Mtakeoff*mCore) + (f+1)*u0 <= (fp1)*u6]),      #B.189
 
                 #SIGNOMIAL
                 TCS([F <= F6 + F8]),
@@ -1147,7 +1152,6 @@ class OffDesign(Model):
                 #residual 1 Fan/LPC speed
 ##                Nf*Gf >= .9*N1,
                 Nf*Gf == N1,
-##                N1 <= 10000,
                 #loose constraints on speed needed to prevent N from sliding out
                 #to zero or infinity
 ##                N2 >= .8*N1,
@@ -1201,7 +1205,7 @@ class OffDesign(Model):
 ##                alpha <=6.5,
                 mtot >= mFan + mCore,
 
-                W_engine >= ((mtot/alphap1)*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s'),
+                W_engine >= ((mtot/(alphap1*mCore)*mCore)*.0984)*(1684.5+17.7*(pif*pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s'),
 
 ##                A5 <= .8*units('m^2'),
 ##                A7 <= 1000*units('m^2'),
@@ -1250,7 +1254,7 @@ class OffDesign(Model):
                     #residual 7
                     #option #1, constrain the engine's thrust
                     F == Fspec,
-                    Tt41 <= 2000*units('K'),
+##                    Tt41 <= 1800*units('K'),
                     ])
         
         if res7 == 1:
@@ -1267,5 +1271,5 @@ class OffDesign(Model):
                     Tt4 == Tt4spec,  #B.265
                     ])
                  
-        Model.__init__(self, TSFC * (W_engine * units('1/hr/N'))**.0001, constraints, **kwargs)
+        Model.__init__(self, TSFC * (W_engine * units('1/hr/N'))**.00001, constraints, **kwargs)
 #

@@ -2,7 +2,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units, ConstraintSet
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components_NPSS_CFM_noOnD_validation import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap, HPCMap
+from CFM_56_validation_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap, HPCMap
 from collections import defaultdict
 from gpkit.small_scripts import mag
 
@@ -432,6 +432,10 @@ if __name__ == "__main__":
 
     M4a = .1025
 
+    fan = 1.685
+    lpc  = 1.935
+    hpc = 9.369
+
     valsubs = {
 ##    'A_5': .2727,
 ##    'A_7': 1.1,
@@ -447,9 +451,9 @@ if __name__ == "__main__":
 ##    'm_{lc_D}': 46.69,
 ##    'm_{fan_bar_D}': 253.4,
 ##    'm_{hc_D}': 18.29,
-    '\pi_{f_D}': 1.685,
-    '\pi_{hc_D}': 9.369,
-    '\pi_{lc_D}': 1.935,
+    '\pi_{f_D}': fan,
+    '\pi_{hc_D}': hpc,
+    '\pi_{lc_D}': lpc,
 
 ##    'm_{htD}': 4.127,
 ##    'm_{ltD}': 9.376,
@@ -460,10 +464,34 @@ if __name__ == "__main__":
     'hold_{4a}': 1+.5*(1.313-1)*M4a**2,#sol('hold_{4a}'),
     'r_{uc}': .01,
     '\\alpha_c': .3,
-    'T_{t_f}': 288,
+    'T_{t_f}': 400,
 
     'M_{takeoff}': .85,
     }
+
+    Pt0 = 40
+    Tt0 = 220
+    Pt3 = Pt0*lpc*fan*hpc
+    Pt21 = fan * Pt0
+    Pt25 = Pt0 * fan * lpc
+
+    Tt21 = Tt0 * (fan)**(.4/(1.4*.9153))
+    Tt25 = Tt21 * (lpc)**(.4/(1.4*.9037))
+    Tt3 = Tt25 * (hpc)**(.4/(1.4*.9247))
+
+    Tt41 = 1400
+
+    Tt45 = Tt41 - (Tt3 - Tt25)
+
+    Tt49 = Tt45 - (Tt25 - Tt21)
+
+    piHPT = (Tt45/Tt41)**(.9121*1.4/.4)
+
+    piLPT = (Tt49/Tt45)**(.9228*1.4/.4)
+
+    Pt45 = piHPT * Pt3
+
+    print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
 
     m = Model((engine2.cost+engine1.cost), constraints, valsubs)
 
