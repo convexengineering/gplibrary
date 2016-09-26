@@ -231,23 +231,23 @@ class Fuselage(Model):
 
 if __name__ == "__main__":
     M = Fuselage()
-    M = Model(M.cost, BCS(M))
+    #M = Model(M.cost, BCS(M))
     #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=4, iteration_limit=100)
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
-    print 'Cabin volume: ' + str(varVals['V_{cabin}_Fuselage'].magnitude) + '.'
-    print 'Fuselage width: ' + str(varVals['w_{fuse}_Fuselage'].magnitude) + '.'
-    print 'Web height: ' + str(2*varVals['h_{db}_Fuselage'].magnitude) + '.'
-    print 'Floor width: ' + str(varVals['w_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor height: ' + str(varVals['h_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor length: ' + str(varVals['l_{floor}_Fuselage'].magnitude) + '.'
-    print  'Fuselage angle: ' + str(varVals['\\theta_{db}_Fuselage'].magnitude) + '.'
-    print 'Fuselage radius: ' + str(varVals['R_{fuse}_Fuselage'].magnitude) + '.'
-    print 'Floor total loading: ' + str(varVals['P_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor weight: ' + str(varVals['W_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor volume: ' + str(varVals['V_{floor}_Fuselage'].magnitude) + '.'
-    print 'Floor bending moment: ' + str(varVals['M_{floor}_Fuselage'].magnitude) + '.'
-    print 'Shell thickness: ' + str(varVals['t_{shell}_Fuselage'].magnitude) + '.'
-    print 'Skin hoop stress: ' + str(varVals['\\sigma_{\\theta}_Fuselage'].magnitude) + '.'
-    print 'Skin axial stress: ' + str(varVals['\\sigma_x_Fuselage'].magnitude) + '.'
+    print 'Cabin volume: ' + str(varVals['V_{cabin}_Fuselage']) +'.'
+    print 'Fuselage width: ' + str(varVals['w_{fuse}_Fuselage']) + '.'
+    print 'Web height: ' + str(2*varVals['h_{db}_Fuselage']) + '.'
+    print 'Floor width: ' + str(varVals['w_{floor}_Fuselage']) + '.'
+    print 'Floor height: ' + str(varVals['h_{floor}_Fuselage']) + '.'
+    print 'Floor length: ' + str(varVals['l_{floor}_Fuselage']) + '.'
+    print  'Fuselage angle: ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
+    print 'Fuselage radius: ' + str(varVals['R_{fuse}_Fuselage']) + '.'
+    print 'Floor total loading: ' + str(varVals['P_{floor}_Fuselage']) + '.'
+    print 'Floor weight: ' + str(varVals['W_{floor}_Fuselage']) + '.'
+    print 'Floor volume: ' + str(varVals['V_{floor}_Fuselage']) + '.'
+    print 'Floor bending moment: ' + str(varVals['M_{floor}_Fuselage']) + '.'
+    print 'Shell thickness: ' + str(varVals['t_{shell}_Fuselage']) + '.'
+    print 'Skin hoop stress: ' + str(varVals['\\sigma_{\\theta}_Fuselage']) + '.'
+    print 'Skin axial stress: ' + str(varVals['\\sigma_x_Fuselage']) + '.'
