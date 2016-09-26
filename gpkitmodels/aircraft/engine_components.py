@@ -311,6 +311,9 @@ class Turbine(Model):
         #flow faction f
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
+        #define the f plus one variable, limits the number of signomials
+        fp1 = Variable('fp1', '-', 'f + 1')
+
         #BPR
         alpha = Variable('alpha', '-', 'By Pass Ratio')
 
@@ -327,11 +330,11 @@ class Turbine(Model):
             constraints = [
                 #HPT shafter power balance
                 #SIGNOMIAL   
-                SignomialEquality(Mtakeoff*etaHPshaft*(1+f)*(ht41-ht45),ht3 - ht25),    #B.161
+                SignomialEquality(Mtakeoff*etaHPshaft*(fp1)*(ht41-ht45),ht3 - ht25),    #B.161
 
                 #LPT shaft power balance
                 #SIGNOMIAL  
-                SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
+                SignomialEquality(Mtakeoff*etaLPshaft*(fp1)*(ht49 - ht45),-((ht25-ht18)+alpha*(ht21 - ht2))),    #B.165
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
@@ -453,7 +456,7 @@ class ExhaustAndThrust(Model):
                 TCS([F + alphap1*mCore*u0 <= Mtakeoff*mCore*u6+mCore*alpha*u8]), 
 
 
-                Fsp == F/((alphap1)*Mtakeoff*mCore*a0),   #B.191
+                Fsp == F/((alphap1)*mCore*a0),   #B.191
 
                 #ISP
                 Isp == Fsp*a0*(alphap1)/(f*g),  #B.192

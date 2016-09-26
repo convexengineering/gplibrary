@@ -796,6 +796,10 @@ class LPCMap(Model):
                     pilc*(26/pilcD) == (1.38 * (N1)**0.566)**10,
                     pilc*(26/pilcD) <= 1.05*(1.38 * (mtildlc)**0.122)**10,
                     pilc*(26/pilcD) >= .95*(1.38 * (mtildlc)**0.122)**10,
+
+##                    pilc*(1.7/pilcD) == (1.05*N1**.0614)**10,
+##                    pilc*(1.7/pilcD) >= .95*(1.04 * ((mtildlc)**0.022))**10,
+##                    pilc*(1.7/pilcD) <= 1.05*(1.04 * ((mtildlc)**0.022))**10,
                     ]
                 
         constraints.extend([
@@ -1153,10 +1157,10 @@ class OffDesign(Model):
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality
                 #in residual 6 which allows for convergence
                 #residual 2 HPT mass flow
-                TCS([mhtD == (fp1)*mhc*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
+                TCS([mhtD == (fp1)*mhc*Mtakeoff*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
                 
                 #residual 3 LPT mass flow
-                TCS([(fp1)*mlc*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
+                TCS([(fp1)*mlc*Mtakeoff*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
                 
                 #residual 4
                 P7 >= P0,
@@ -1197,7 +1201,7 @@ class OffDesign(Model):
 
                 mtot >= mFan + mCore,
 
-                W_engine >= ((mtot*alpha/mFan*units('kg/s'))*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s'),
+                W_engine >= ((mtot/alphap1)*.0984)*(1684.5+17.7*(pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s'),
 
 ##                A5 <= .8*units('m^2'),
 ##                A7 <= 1000*units('m^2'),
@@ -1226,13 +1230,14 @@ class OffDesign(Model):
                 pilc >= 1,
                 pihc >= 1,
 
-##                mhtD >= .99*fp1*mCoreD *((1400/288)**.5)/(1500/101.325),
-##                mhtD == 1.0*fp1*mCoreD *((1400/288)**.5)/(1500/101.325),
-##                mltD == fp1*mCoreD *((800/288)**.5)/(800/101.325),
-##                mlcD >= .9*mCoreD *((250.0/288)**.5)/(60/101.325),
-##                mlcD <= 1.1*mCoreD *((250.0/288)**.5)/(60/101.325),
-##                mhcD >= .9*mCoreD *((500.0/288)**.5)/(140/101.325),
-##                mhcD <= 1.1*mCoreD *((500.0/288)**.5)/(140/101.325),
+                mhtD <= 1.1*fp1*Mtakeoff*mCoreD *((1400/288)**.5)/(1250/101.325),
+                mhtD >= .9*fp1*Mtakeoff*mCoreD *((1400/288)**.5)/(1250/101.325),
+                mltD <= 1.1*fp1*Mtakeoff*mCoreD *((800/288)**.5)/(330/101.325),
+                mltD >= .9*fp1*Mtakeoff*mCoreD *((800/288)**.5)/(330/101.325),
+                mlcD >= .9*mCoreD *((250.0/288)**.5)/(60/101.325),
+                mlcD <= 1.1*mCoreD *((250.0/288)**.5)/(60/101.325),
+                mhcD >= .9*mCoreD *((330.0/288)**.5)/(140/101.325),
+                mhcD <= 1.1*mCoreD *((330.0/288)**.5)/(140/101.325),
 ##                mlcD <= 70*units('kg/s'),
 ##                mFan >= mCore,
 ##                 mlcD >= mCore*((Tt2/Tref)**.5)/(Pt2/Pref), #B.226

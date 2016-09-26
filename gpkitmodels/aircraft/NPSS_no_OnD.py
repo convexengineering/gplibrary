@@ -70,7 +70,7 @@ class OffDesignTOC(Model):
                 
 ##                '\eta_{HPshaft}': .99,
 ##                '\eta_{LPshaft}': .98,
-                'M_{takeoff}': .95,
+##                'M_{takeoff}': .95,
                 
 ##                'm_{hc_D}': 18.29,
 ##                'm_{lc_D}': 46.69,
@@ -79,14 +79,14 @@ class OffDesignTOC(Model):
 ##                'eta_{B}': .9827,
             }
             
-            if mixing == True:
-                substitutions.update({
-                    'M_{4a}': M4a,
-                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
-                    'r_{uc}': .01,
-                    '\\alpha_c': .1,
-                    'T_{t_f}': 600,
-                })
+##            if mixing == True:
+##                substitutions.update({
+##                    'M_{4a}': M4a,
+##                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
+##                    'r_{uc}': .01,
+##                    '\\alpha_c': .1,
+##                    'T_{t_f}': 600,
+##                })
             if res7 == 1:
                substitutions.update({
                     'T_{t_{4spec}}': 1450,
@@ -204,7 +204,7 @@ class OffDesignOnDRerun(Model):
                 
 ##                '\eta_{HPshaft}': .99,
 ##                '\eta_{LPshaft}': .98,
-                'M_{takeoff}': .95,
+##                'M_{takeoff}': .95,
                 
 ##                'm_{hc_D}': 18.29,
 ##                'm_{lc_D}': 46.69,
@@ -213,14 +213,14 @@ class OffDesignOnDRerun(Model):
                 'eta_{B}': .9827,
             }
             
-            if mixing == True:
-                substitutions.update({
-                    'M_{4a}': M4a,
-                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
-                    'r_{uc}': .01,
-                    '\\alpha_c': .1,
-                    'T_{t_f}': 600,
-                })
+##            if mixing == True:
+##                substitutions.update({
+##                    'M_{4a}': M4a,
+##                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
+##                    'r_{uc}': .01,
+##                    '\\alpha_c': .1,
+##                    'T_{t_f}': 600,
+##                })
             if res7 == 1:
                substitutions.update({
                     'T_{t_{4spec}}': 1450,
@@ -249,7 +249,7 @@ class OffDesignTO(Model):
         res7 = 0
 
         M2 = .25
-        M25 = .25
+        M25 = .15
         M4a = .1025
         Mexit = 1
         
@@ -292,7 +292,7 @@ class OffDesignTO(Model):
                 
 ##                '\eta_{HPshaft}': .99,
 ##                '\eta_{LPshaft}': .98,
-                'M_{takeoff}': .95,
+##                'M_{takeoff}': .95,
                 
 ##                'm_{hc_D}': 18.29,
 ##                'm_{lc_D}': 46.69,
@@ -301,14 +301,14 @@ class OffDesignTO(Model):
 ##                'eta_{B}': .9827,
             }
             
-            if mixing == True:
-                substitutions.update({
-                    'M_{4a}': M4a,
-                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
-                    'r_{uc}': .01,
-                    '\\alpha_c': .1,
-                    'T_{t_f}': 600,
-                })
+##            if mixing == True:
+##                substitutions.update({
+##                    'M_{4a}': M4a,
+##                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
+##                    'r_{uc}': .01,
+##                    '\\alpha_c': .1,
+##                    'T_{t_f}': 600,
+##                })
             if res7 == 1:
                substitutions.update({
                     'T_{t_{4spec}}': 1400,
@@ -337,7 +337,7 @@ class OffDesignSLS(Model):
         res7 = 0
 
         M2 = .01
-        M25 = .25
+        M25 = .1
         M4a = .1025
         Mexit = 1
         
@@ -380,7 +380,7 @@ class OffDesignSLS(Model):
                 
 ##                '\eta_{HPshaft}': .99,
 ##                '\eta_{LPshaft}': .98,
-                'M_{takeoff}': .95,
+##                'M_{takeoff}': .95,
                 
 ##                'm_{hc_D}': 18.29,
 ##                'm_{lc_D}': 46.69,
@@ -389,14 +389,14 @@ class OffDesignSLS(Model):
 ##                'eta_{B}': .9827,
             }
             
-            if mixing == True:
-                substitutions.update({
-                    'M_{4a}': M4a,
-                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
-                    'r_{uc}': .01,
-                    '\\alpha_c': .1,
-                    'T_{t_f}': 600,
-                })
+##            if mixing == True:
+##                substitutions.update({
+##                    'M_{4a}': M4a,
+##                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
+##                    'r_{uc}': .01,
+##                    '\\alpha_c': .1,
+##                    'T_{t_f}': 600,
+##                })
             if res7 == 1:
                substitutions.update({
                     'T_{t_{4spec}}': 1400,
@@ -421,14 +421,16 @@ if __name__ == "__main__":
 ##    sol2 = engine2.localsolve(verbosity = 4, solver="mosek")
 
     #create the big linked engine model
-    submodels = [engine1, engine2, engine3, engine4]
-
+    submodels = [engine1, engine2]
     constraints = ConstraintSet([submodels])
 
     lc = LinkedConstraintSet(constraints, include_only = {'A_5', 'A_7', 'A_2', 'A_{2.5}', '\pi_{tn}', '\pi_{b}', '\pi_{d}', '\pi_{fn}',
                                                           'T_{ref}', 'P_{ref}', '\eta_{HPshaft}', '\eta_{LPshaft}', 'eta_{B}',
                                                           'W_{engine}', 'm_{fan_bar_D}', 'm_{lc_D}', 'm_{hc_D}', '\pi_{f_D}',
-                                                          '\pi_{hc_D}', '\pi_{lc_D}', 'm_{htD}', 'm_{ltD}', 'm_{coreD}'})
+                                                          '\pi_{hc_D}', '\pi_{lc_D}', 'm_{htD}', 'm_{ltD}', 'm_{coreD}', 'M_{4a}',
+                                                          'hold_{4a}', 'r_{uc}', '\\alpha_c', 'T_{t_f}', 'M_{takeoff}'})
+
+    M4a = .1025
 
     valsubs = {
 ##    'A_5': .2727,
@@ -446,16 +448,24 @@ if __name__ == "__main__":
 ##    'm_{fan_bar_D}': 253.4,
 ##    'm_{hc_D}': 18.29,
     '\pi_{f_D}': 1.685,
-    '\pi_{hc_D}': 1.935,
-    '\pi_{lc_D}': 9.369,
+    '\pi_{hc_D}': 9.369,
+    '\pi_{lc_D}': 1.935,
 
-    'm_{htD}': 4.127,
-    'm_{ltD}': 9.376,
+##    'm_{htD}': 4.127,
+##    'm_{ltD}': 9.376,
 
     'alpha_OffDesignOnDRerun': 5.105,
+
+    'M_{4a}': M4a,
+    'hold_{4a}': 1+.5*(1.313-1)*M4a**2,#sol('hold_{4a}'),
+    'r_{uc}': .01,
+    '\\alpha_c': .3,
+    'T_{t_f}': 288,
+
+    'M_{takeoff}': .85,
     }
 
-    m = Model((engine2.cost+2*engine1.cost+engine3.cost+engine4.cost), constraints, valsubs)
+    m = Model((engine2.cost+engine1.cost), constraints, valsubs)
 
     sol = m.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
 ##    bounds, sol = engine1.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=200)

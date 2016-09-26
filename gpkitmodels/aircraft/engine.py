@@ -163,7 +163,7 @@ class EngineOffDesign(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 1
+        res7 = 0
         
         offD = OffDesign(res7, mixing)
 
