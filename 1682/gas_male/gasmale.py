@@ -17,6 +17,7 @@ class Mission(Model):
     def __init__(self, h_station, wind, DF70, Nclimb, Nloiter, **kwargs):
 
         self.submodels = [
+            TakeOff(1, [0.684], [0.1], False, wind, DF70),
             Climb(Nclimb, [0.502]*Nclimb, np.linspace(0, 5000, Nclimb+1)[1:],
                   False, wind, DF70, dh=5000),
             Cruise(1, [0.684], [5000], False, wind, DF70, R=180),
@@ -63,15 +64,31 @@ class FlightSegment(Model):
         self.N = N
         self.exclude = ["m_{fac}"]
 
-        Vstall = VectorVariable(N, "V_{stall}", "m/s", "stall speed")
+        self.Vstall = VectorVariable(N, "V_{stall}", "m/s", "stall speed")
 
         self.constraints = [
-            Vstall == ((self.fuel["W_{N}"]*2/self.slf["\\rho"]/
-                        self.aero["S"]/1.5)**0.5)
+            self.Vstall == ((self.fuel["W_{N}"]*2/self.slf["\\rho"]/
+                             self.aero["S"]/1.5)**0.5)
             ]
 
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
                           self.atm, self.wind]
+
+class TakeOff(FlightSegment):
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
+
+        breguetendurance = BreguetEndurance(N)
+
+        self.submodels.extend([breguetendurance])
+
+        self.constraints.extend([breguetendurance["t"] >= 1e-3*units("days"),
+                                 self.slf["V"] >= 1.3*self.Vstall])
+
+        lc = LinkedConstraintSet([self.submodels, self.constraints],
+                                 exclude=self.exclude)
+
+        Model.__init__(self, None, lc, **kwargs)
 
 class Cruise(FlightSegment):
     def __init__(self, N, eta_p, alt, onStation, wind, DF70, R=200, **kwargs):
