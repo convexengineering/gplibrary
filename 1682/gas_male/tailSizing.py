@@ -27,10 +27,10 @@ class dartTail(Model):
 
         # Takeoff conditions
 
-        rhoTO  = Variable('\\rho_{t/o}',1.225,'kg*m^-3','Takeoff density')
+        rhoTO  = Variable('\\rho_{t/o}','kg*m^-3','Takeoff density')
         Vstall = Variable('V_{stall}','m/s','Stall speed')
         VTO    = Variable('V_{TO}','m/s', 'Takeoff speed')
-        CLmax  = Variable('C_{Lmax}',1.5,'-','Maximum lift coefficient')
+        CLmax  = Variable('C_{Lmax}','-','Maximum lift coefficient')
 
         # # Material properties
         rhoCFRP     = Variable('\\rho_{CFRP}',1.6,'kg/m^3','Density of CFRP')
@@ -46,7 +46,7 @@ class dartTail(Model):
         I0boom = Variable('I_0_{boom}','m^4','Tail boom root moment of inertia')
         d0boom = Variable('d_0_{boom}','m','Tail boom root diameter')
         t0boom = Variable('t_0_{boom}','m','Tail boom root wall thickness')
-        Eboom = Variable('E_{boom}',150*10**9,'N/m^2','Tail boom modulus of elasticity')
+        Eboom = Variable('E_{boom}','N/m^2','Tail boom modulus of elasticity')
         Fboom = Variable('F_{boom}','N','Tail downforce')
         kboom = Variable('k_{boom}','-','Tail boom index (1-.5k)') # k = 0, uniform thickness, 1, constant taper to zero
         #yboom = Variable('y_{boom}','m','Tail deflection at max force')
@@ -79,7 +79,8 @@ class dartTail(Model):
             # Boom sizing
             kboom >= 0.6, kboom <= 1, # Constraining boom inertia variable
             M_CG <= 2*Ffacboom*Fboom*(lboom),
-            I0boom == pi*t0boom*d0boom**3/8,
+            TCS([I0boom == pi*t0boom*d0boom**3/8]),
+            Eboom == 150*10**9*units('N/m^2'),
             Wboom == pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
             thetaboom <= 0.01,
             thetaboom >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
@@ -87,7 +88,7 @@ class dartTail(Model):
             # Horizontal tail relations (sized for heavy forward CG (20 lb payload))
             bhtail**2/Shtail == ARhtail,
             Shtail == bhtail*crhtail*(1+.8)/2,
-            CLmaxhtail*(1+2/ARhtail) <= CLmax*(1+2/AR),
+            TCS([CLmaxhtail*(1+2/ARhtail) <= CLmax*(1+2/AR)]),
 
             # Boom materials constraints
             t0boom >= 0.25*units('mm'),
@@ -116,7 +117,7 @@ class GasMALE(Model):
         Wtail = Variable('W_{tail}','N','Total tail weight')
 
         # Takeoff conditions
-        rhoTO  = Variable('\\rho_{t/o}',1.225,'kg*m^-3','Takeoff density')
+        rhoTO  = Variable('\\rho_{t/o}','kg*m^-3','Takeoff density')
         Vstall = Variable('V_{stall}','m/s','Stall speed')
         VTO    = Variable('V_{TO}','m/s', 'Takeoff speed')
         m_TO   = Variable('m_{TO}',1.3,'-','Stall margin')
@@ -143,8 +144,10 @@ class GasMALE(Model):
         
         constraints = [
                   # Performance metric calculations
-                    Vstall**2 == (2/rhoTO*W/S/CLmax),
-                    VTO == 1.3*Vstall
+                    TCS([Vstall**2 == (2/rhoTO*W/S/CLmax)]),
+                    TCS([VTO == 1.3*Vstall]),
+                    TCS([CLmax == 1.5]),
+                    TCS([rhoTO == 1.225*units('kg*m^-3')])
                     #KTO == 1/(pi*e*AR),
                     #nmax**2 <= .5*rhoTO*VTO**2/(KTO*W/S)*(TmaxTO/W - .5*rhoTO*VTO**2*CD0TO/(W/S)),
                     #RturnTO**2*g**2*(nmax**2-1.0) >= VTO**4, 
