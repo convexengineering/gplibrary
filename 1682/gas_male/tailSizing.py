@@ -44,7 +44,7 @@ class dartTail(Model):
         t0boom = Variable('t_0_{boom}','m','Tail boom root wall thickness')
         Eboom = Variable('E_{boom}',150*10**9,'N/m^2','Tail boom modulus of elasticity')
         Fboom = Variable('F_{boom}','N','Tail downforce')
-        kboom = Variable('k_{boom}','-','Tail boom index (1-2k)') # k = 0, uniform thickness, 1, constant taper to zero
+        kboom = Variable('k_{boom}',0.75,'-','Tail boom index (1-2k)') # k = 0, uniform thickness, 1, constant taper to zero
         #yboom = Variable('y_{boom}','m','Tail deflection at max force')
         #yolboom = Variable('y/l_{boom}','-','Max tolerated tail deflection factor')
         thetaboom = Variable('\\theta_{boom}','-','Tail boom deflection angle')
@@ -76,11 +76,10 @@ class dartTail(Model):
             #CD0TO >= CDTO + KTO,
 
             # Boom sizing
-            M_CG <= 2*Ffacboom*Fboom*(lboom-deltatail-ACloc),
+            M_CG <= 2*Ffacboom*Fboom*(lboom),#-deltatail-ACloc),
             I0boom == pi*t0boom*d0boom**3/8,
             Wboom == 2*pi*g*rhoCFRP*lboom*t0boom*units('m')*(kboom),
-            #yboom/lboom <= yolboom,
-            thetaboom <= 0.02,
+            thetaboom <= 0.01,
             thetaboom >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
             Fboom == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
             # Horizontal tail relations (sized for heavy forward CG (20 lb payload))
@@ -156,7 +155,7 @@ class GasMALE(Model):
 
 if __name__ == "__main__":
     M = GasMALE()
-    #M = Model(M.cost, BCS(M))
+    M = Model(M.cost, BCS(M))
     #subs=[]
     sol = M.solve("mosek")#,tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
