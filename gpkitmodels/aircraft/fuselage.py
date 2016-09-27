@@ -46,7 +46,6 @@ class Fuselage(CostedConstraintSet):
         Wavgpass = Variable('W_{avg. pass}', 'lbf', 'Average passenger weight')
         Wbuoy    = Variable('W_{buoy}', 'N', 'Buoyancy weight')
         Wcargo   = Variable('W_{cargo}', 'N', 'Cargo weight')
-        Wcarryon = Variable('W_{carry on}', 'lbf', 'Ave. carry-on weight')
         Wchecked = Variable('W_{checked}', 'lbf', 'Ave. checked bag weight')
         Wcone    = Variable('W_{cone}', 'N', 'Cone weight')
         Wfix     = Variable('W_{fix}', 'lbf',
@@ -236,15 +235,15 @@ class Fuselage(CostedConstraintSet):
                             nseat == nrows*SPR,
                             Wpass == npass*Wavgpass,
                             Wlugg >= flugg2*npass*2*Wchecked
-                                     + flugg1*npass*Wchecked + Wcarryon,
+                                     + flugg1*npass*Wchecked, #Removed the carryon
                             Wlugg == Vlugg*g*rholugg,
                             Wcargo == Vcargo*g*rhocargo,
                             Vhold >= Vcargo + Vlugg,
                             Vhold == Ahold*lshell,
                             TCS([Ahold <= (2./3)*wfloor*hhold + hhold**3/(2*wfloor)], reltol=1E-5),
                             # [SP] Harris stocker 1998 (wolfram)
-                            TCS([dh + hhold + hfloor <= Rfuse]),
-                            Wpay >= Wpass + Wlugg + Wcargo, #Wlugg is oversizing the cargo/hold volume
+                            TCS([dh + hhold + 2*hfloor <= Rfuse]), #There are two florrs, one for pass and one for cargo
+                            Wpay >= Wpass + Wlugg + Wcargo, 
 
                             # Total fuselage weight
                             Wfuse >= Wfix + Wapu + Wpadd + Wseat + Wshell
@@ -294,7 +293,7 @@ class Fuselage(CostedConstraintSet):
     def default737subs(self):
 
         substitutions = {
-                         'LF': 0.898,
+                         'LF': 0.898, # Might want to look into other values
                          'L_{v_{max}}': 35000,
                          'N_{land}': 6.0, # [TAS]
                          'SPR': 6,
@@ -306,7 +305,6 @@ class Fuselage(CostedConstraintSet):
                          'W\'_{window}': 145.*3, # [TAS]
                          'W_{avg. pass}': 180,
                          'W_{cargo}': 10000,
-                         'W_{carry on}': 15,
                          'W_{checked}': 40,
                          'W_{fix}': 3000,
                          '\\Delta h': 1,
@@ -330,7 +328,6 @@ class Fuselage(CostedConstraintSet):
                          'f_{lugg,1}': 0.4,
                          'f_{lugg,2}': 0.1,
                          'f_{padd}': 0.4, # [TAS]
-                         'f_{seat}': 0.10,
                          'f_{string}': 0.35, # [TAS]
                          'n_{seat}': 186,
                          'p_s': 31,
@@ -339,8 +336,6 @@ class Fuselage(CostedConstraintSet):
                          'w_{aisle}': 0.51, # Boeing
                          'w_{seat}': 0.5,
                          'w_{sys}': 0.10,
-                         'xapu': 120,
-                         'xfix': 2.1
                         }
 
         return substitutions
@@ -374,9 +369,11 @@ class Fuselage(CostedConstraintSet):
 
     @classmethod
     def test(cls):
+    	
         fu = cls.standalone737()
-        sol = fu.localsolve()
+
+        return fu.localsolve(verbosity=4)
 
 
 if __name__ == "__main__":
-    Fuselage.test()
+    sol = Fuselage.test()
