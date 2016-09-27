@@ -82,7 +82,9 @@ class TakeOff(FlightSegment):
 
         self.submodels.extend([breguetendurance])
 
-        self.constraints.extend([breguetendurance["t"] >= 1e-3*units("days"),
+        t_to = Variable("t_{TO}", 10, "minutes", "take off time")
+
+        self.constraints.extend([breguetendurance["t"] >= t_to,
                                  self.slf["V"] >= 1.3*self.Vstall])
 
         lc = LinkedConstraintSet([self.submodels, self.constraints],

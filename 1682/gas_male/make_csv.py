@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from gasmale import GasMALE
 from gpkit.small_scripts import unitstr
+from gpkit import Variable
 import xlsxwriter
 
 def mission_vars(M, sol, varnames, margins):
@@ -10,66 +11,51 @@ def mission_vars(M, sol, varnames, margins):
     """
     sens = sol["sensitivities"]["constants"]
 
-    fseg = {}
-    for subm in M.submodels:
-        if subm.__class__.__name__ == "Mission":
-            for fs in subm.submodels:
-                fseg[fs.name] = {"index": [], "shape": [], "start": []}
-
-    start = [1]
+    data = {}
+    n = []
     colnames = ["Units"]
     for subm in M.submodels:
         if subm.__class__.__name__ == "Mission":
-            for i, fs in enumerate(subm.submodels):
-                fseg[fs.name]["index"].append(fs.num)
-                fseg[fs.name]["shape"].append(fs.N)
-                start.append(start[i] + fs.N)
-                fseg[fs.name]["start"].append(start[i])
-                colnames += [fs.name + "%d.%d" %
-                             (fs.num, n) for n in range(fs.N)]
+            mission = subm
+            for fs in mission.submodels:
+                n.append(fs.N)
+                for i in range(fs.N):
+                    colnames.append(fs.__class__.__name__ +
+                                    "%s.%s" % (fs.num, i))
     colnames.append("Label")
 
-    data = {}
-    for vname in varnames:
-        data[vname] = [0]*(start[-1] + 1)
-        if vname in sens:
-            data[vname + " Sens"] = [""] + [0]*(start[-1]-1) + [""]
-        if vname in margins:
-            data[vname + " Margin"] = [""] + [0]*(start[-1]-1) + [""]
-            data[vname+" Margin Sens"] = [""] + [0]*(start[-1]-1) + [""]
-
-    i = 0
-    for vname in varnames:
-        for sv in sol(vname):
-            for fs in fseg:
-                if fs not in sv.models:
-                    continue
-                ind = sv.models.index(fs)
-                ifs = fseg[fs]["index"].index(sv.modelnums[ind])
-                st = fseg[fs]["start"][ifs]
-                data[vname][0] = unitstr(sv.units)
-                data[vname][-1] = sv.label
-                if "shape" in sv.descr:
-                    data[vname][st:st + sv.shape[0]] = sol(sv).magnitude[0:]
-                    if vname in sens:
-                        data[vname+" Sens"][st:st+sv.shape[0]] = sens[sv][0:]
+    for varname in varnames:
+        data[varname] = [""]
+        for flightseg in mission.submodels:
+            if varname in flightseg.varkeys:
+                if flightseg[varname] in sens:
+                    data[varname + " sens"] = [""]
+        for i, fs in enumerate(mission.submodels):
+            if varname not in fs.varkeys:
+                data[varname].append([""]*n[i])
+                if varname+" sens" in data:
+                    data[varname+" sens"].append([""]*n[i])
+                continue
+            nonvector = isinstance(fs[varname], Variable)
+            units = (unitstr(fs[varname][0].descr["units"]) if not nonvector
+                     else unitstr(fs[varname].descr["units"]))
+            data[varname].append(sol(fs[varname]).magnitude if not nonvector
+                                 else [sol(fs[varname]).magnitude]*n[i])
+            if fs[varname] in sens:
+                if not nonvector:
+                    data[varname+" sens"].append(sens[fs[varname]])
                 else:
-                    data[vname][st:st + fseg[fs]["shape"][ifs]] = \
-                            [sol(sv).magnitude]*fseg[fs]["shape"][ifs]
-                    if vname in sens:
-                        data[vname+" Sens"][st:st+fseg[fs]["shape"][ifs]] = \
-                                [sens[sv]]*fseg[fs]["shape"][ifs]
-                if vname not in margins:
-                    continue
-                for mfac in sol("m_{fac}"):
-                    # the varname must be in the m_fac label or it won't work
-                    if not vname in mfac.label:
-                        continue
-                    data[vname+" Margin"][st:st+sv.shape[0]] = \
-                        [sol(mfac).magnitude]*sv.shape[0]
-                    data[vname+" Margin Sens"][st:st+sv.shape[0]] = \
-                        [sens[mfac]]*sv.shape[0]
+                    data[varname+" sens"].append(list(sens[fs[varname]])*n[i])
+            if i == len(mission.submodels)-1:
+                data[varname].append(fs[varname][0].descr["label"] if not
+                                     nonvector else fs[varname].descr["label"])
+        data[varname][0] = units
+        data[varname] = np.hstack(data[varname])
 
+    for d in data:
+        if "sens" in d or len(data[d]) < sum(n)+2:
+            data[d] = np.hstack(data[d])
+            data[d] = np.append(data[d], [""])
 
     df = pd.DataFrame(data)
     df = df.transpose()
@@ -190,7 +176,7 @@ if __name__ == "__main__":
     M.substitutions.update({"t_{loiter}": 6})
     M.cost = M["MTOW"]
     Sol = M.solve("mosek")
-    PATH = "/Users/mjburton11/Dropbox (MIT)/16.82GasMALE/GpkitReports/csvs/"
+    PATH = "/Users/mjburton11/Dropbox (MIT)/16.82GasMALE/Management/GpkitReports/"
 
     Mission_vars = ["RPM", "BSFC", "V", "P_{shaft}",
                     "P_{shaft-tot}", "h_{dot}", "h", "T_{atm}", "\\mu",
