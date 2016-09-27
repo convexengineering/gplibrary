@@ -152,15 +152,6 @@ class Climb(FlightSegment):
 
         Model.__init__(self, None, lc, **kwargs)
 
-    # def process_solution(self, sol):
-
-        # super(Climb, self).process_solution(sol)
-        # Vland = ((sol("W_{zfw}")*2/sol(self.slf["\\rho"][0])/
-        #           sol("S")/1.5)**0.5).to("m/s")
-        # print "Stall speed at bottom of climb is: %0.3f [%s]" % \
-        #         (Vstall.magnitude, Vstall.units)
-        # print "Landing speed is : %0.3f [%s]" % (Vland.magnitude, Vland.units)
-
 class Atmosphere(Model):
     """
     Model to capture density changes with altitude
@@ -498,6 +489,7 @@ class Spar(Model):
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
 
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
+        w_lim = Variable("w_{lim}", 0.1, "-", "spar width to chord ratio")
 
         beam = Beam(N, cb)
 
@@ -505,9 +497,10 @@ class Spar(Model):
             I <= 2*w*t*(hin/2)**2,
             dm >= rho*w*t*b/2/(N-1),
             m >= dm.sum(),
+            w <= w_lim*S/b*cbar,
             S/b*cbar*tau >= hin + 2*t,
             beam["\\bar{\\delta}"][-1] <= kappa,
-            beam["\\bar{M}"][:-1]*(b/2)**2*W_cent*N_max/2/w/t**2/b <= sigma,
+            beam["\\bar{M}"][:-1]*b*W_cent*N_max/4/w/t/hin**2*(hin+t) <= sigma,
             beam["\\bar{EI}"] <= E*I/N_max/W_cent*b/(b/2)**3
             ]
 
