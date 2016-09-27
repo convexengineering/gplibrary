@@ -4,7 +4,7 @@ from gpkit import Variable, Model, SignomialsEnabled, units
 from gpkit.constraints.costed import CostedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 
-class Fuselage(CostedConstraintSet):
+class Fuselage(CostedConstraintSet, fuselage_type = 'narrowbody'):
     """
     Fuselage model
     """
@@ -267,6 +267,32 @@ class Fuselage(CostedConstraintSet):
                             Dfuse >= Dfrict + Dupswp
                           ]
 
+
+        if fuselage_type == 'narrowbody':
+
+            constraints = [constraints,
+
+
+
+
+                            ]
+
+        elif fuselage_type == 'widebody'
+
+            constraints = [constraints,
+
+
+
+
+                            ]
+
+        elif fuselage_type == 'D8'
+            raise NotImplementedError
+
+        else
+            raise NameError
+
+
         CG_constraints = [
                           xVcyl >= 0.5*(xshell1+xshell2)*Vcyl,
                           xVnose >= 0.5*(xshell1)*Vnose,
@@ -285,6 +311,8 @@ class Fuselage(CostedConstraintSet):
                                   + xWcone + xWwindow + xWinsul + xWfloor,
                           xCGfu == xWfuse/Wfuse,
                          ]
+
+
         self.CG_constraints = CG_constraints
 
         CostedConstraintSet.__init__(self, objective, constraints)
@@ -339,6 +367,79 @@ class Fuselage(CostedConstraintSet):
                         }
 
         return substitutions
+
+
+
+
+
+
+
+
+
+    def default777subs(self):
+
+        substitutions = {
+                         'LF': 0.898, # Might want to look into other values
+                         'L_{v_{max}}': 35000,
+                         'N_{land}': 6.0, # [TAS]
+                         'SPR': 9,
+                         'T_{cabin}': 300,
+                         'V_{\\infty}': 248,
+                         'W\'\'_{floor}': 60, # [TAS]
+                         'W\'\'_{insul}': 22, # [TAS]
+                         'W\'_{seat}': 150, # Boeing
+                         'W\'_{window}': 145.*3, # [TAS]
+                         'W_{avg. pass}': 180,
+                         'W_{cargo}': 100000, # up for debate, 10x of 737
+                         'W_{checked}': 40,
+                         'W_{fix}': 3000, #should be comparable to 737 weight
+                         '\\Delta h': 1,
+                         '\\Delta p': 52000, #should be comparable to 737 weight
+                         '\\mu': 1.4E-5,
+                         '\\rho_{\\infty}': 0.38,
+                         '\\rho_{bend}': 2700, # [TAS]
+                         '\\rho_{cargo}': 150, # b757 freight doc
+                         '\\rho_{cone}': 2700, # [TAS]
+                         '\\rho_{floor}': 2700, # [TAS]
+                         '\\rho_{lugg}': 100,
+                         '\\rho_{skin}': 2700, # [TAS]
+                         '\\sigma_{floor}': 30000/0.000145, # [TAS]
+                         '\\sigma_{skin}': 15000/0.000145, # [TAS]
+                         '\\tau_{floor}': 30000/0.000145, # [TAS]
+                         'b_{vt}': 9.24,
+                         'c_{vt}': 5.78,
+                         'f_{apu}': 0.035, # [TAS]
+                         'f_{fadd}': 0.20, # [TAS]
+                         'f_{frame}': 0.25,
+                         'f_{lugg,1}': 0.4,
+                         'f_{lugg,2}': 0.1,
+                         'f_{padd}': 0.4, # [TAS]
+                         'f_{string}': 0.35, # [TAS]
+                         'n_{seat}': 540,
+                         'p_s': 31,
+                         'p_{cabin}': 75000,
+                         'r_E': 1.0, # [TAS]
+                         'w_{aisle}': 0.51, # Boeing
+                         'w_{seat}': 0.5,
+                         'w_{sys}': 0.10, #update?
+                        }
+
+        return substitutions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     @classmethod
     def standalone737(cls):
