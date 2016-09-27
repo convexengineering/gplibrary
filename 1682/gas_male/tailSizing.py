@@ -35,7 +35,7 @@ class dartTail(Model):
         CLmax  = Variable('C_{Lmax}','-','Maximum lift coefficient')
 
         # # Material properties
-        rhoCFRP     = Variable('\\rho_{CFRP}',1.6,'kg/m^3','Density of CFRP')
+        rhoCFRP     = Variable('\\rho_{CFRP}',1.6,'g/cm^3','Density of CFRP')
         rhoFoamular = Variable('\\rho_{Foamular}',1.5,'lbf/ft^3','Density of Foamular 250')
         rhoskin = Variable('\\rho_{skin}',.1,'g/cm^2','Skin density')
         
@@ -44,7 +44,7 @@ class dartTail(Model):
         FNE = Variable('F_{NE}','-','Boom flexibility factor')
 
         # # Tail boom variables
-        Wboom = Variable('W_{boom}','N','Tail boom weight')
+        Wboom = Variable('W_{boom}','lbf','Tail boom weight')
         lboom = Variable('l_{boom}','ft','Tail boom length')
         I0boom = Variable('I_0_{boom}','m^4','Tail boom root moment of inertia')
         d0boom = Variable('d_0_{boom}','m','Tail boom root diameter')
@@ -85,8 +85,8 @@ class dartTail(Model):
             M_CG <= 2*Ffacboom*Fboom*(lboom),
             TCS([I0boom == pi*t0boom*d0boom**3/8]),
             Eboom == 150*10**9*units('N/m^2'),
-            Wboom == pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
-            thetaboom <= 0.01,
+            Wboom >= pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
+            thetaboom <= 0.05,
             thetaboom >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
             Fboom == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
             FNE**-1 >= 1 + mhtail*qNE*Shtail*lboom**2*kboom/(Eboom*I0boom),
@@ -105,7 +105,7 @@ class dartTail(Model):
 
             # Assuming solid foam-core wing with a min-gauge Kevlar skin
             Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
-            Wtail >= Wboom + Whtail
+            Wtail >= 2*(Wboom + Whtail)
             # Vertical tail relations (sized for cross-wind landing)
 
             ]
@@ -179,7 +179,11 @@ if __name__ == "__main__":
     #subs=[]
     sol = M.solve("mosek")
     varVals = sol['variables']
+    print 'Boom weight: ' + str(varVals['W_{boom}'])
+    print 'Horizontal tail weight: ' + str(varVals['W_{htail}'])
     print 'Boom thickness: ' + str(varVals['t_0_{boom}'])
     print 'Boom length: ' + str(varVals['l_{boom}'])
+    print 'Boom diameter: ' + str(varVals['d_0_{boom}'])
+    print 'Boom thickness ' + str(varVals['t_0_{boom}'])
     print 'Htail surface area: ' + str(varVals['S_{htail}'])
     print 'qNE: ' + str(varVals['q_{NE}'])
