@@ -4,13 +4,14 @@ from gpkit import Variable, Model, SignomialsEnabled, units
 from gpkit.constraints.costed import CostedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 
-class Fuselage(CostedConstraintSet, fuselage_type = 'narrowbody'):
+class Fuselage(CostedConstraintSet):
     """
     Fuselage model
     """
-    def __init__(self):
+    def __init__(self, fuselage_type = 'narrowbody'):
 
-        Afloor   = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
+        Apassfl  = Variable('A_{pass_{floor}}', 'm^2', 'Passenger floor beam x-sectional area')
+        Acargofl = Variable('A_{cargo_{floor}}', 'm^2', 'Cargo floor beam x-sectional area')
         Afuse    = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
         Ahold    = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
         Askin    = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
@@ -20,16 +21,20 @@ class Fuselage(CostedConstraintSet, fuselage_type = 'narrowbody'):
         FF       = Variable('FF', '-','Fuselage form factor')
         LF       = Variable('LF', '-', 'Load factor')
         Lvmax    = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
-        Mfloor   = Variable('M_{floor}', 'N*m',
-                            'Max bending moment in floor beams')
+        Mpassfl  = Variable('M_{pass_{floor}}', 'N*m',
+                            'Max bending moment in passenger floor beams')
+        Mcargofl = Variable('M_{cargo_{floor}}', 'N*m',
+                            'Max bending moment in cargo floor beams')
         Nland    = Variable('N_{land}', '-', 'Emergency landing load factor')
-        Pfloor   = Variable('P_{floor}', 'N', 'Distributed floor load')
+        Ppassfl  = Variable('P_{pass_{floor}}', 'N', 'Distributed passenger floor load')
+        Pcargofl = Variable('P_{cargo_{floor}}', 'N', 'Distributed cargo floor load')
         Qv       = Variable('Q_v', 'N*m', 'Torsion moment imparted by tail')
         R        = Variable('R', 287, 'J/(kg*K)', 'Universal gas constant')
         Rfuse    = Variable('R_{fuse}', 'm', 'Fuselage radius')
         SPR      = Variable('SPR', '-', 'Number of seats per row')
         Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
-        Sfloor   = Variable('S_{floor}', 'N', 'Maximum shear in floor beams')
+        Spassfl  = Variable('S_{pass_{floor}}', 'N', 'Maximum shear in pasenger floor beams')
+        Scargofl = Variable('S_{cargo_{floor}}', 'N', 'Maximum shear in cargo floor beams')
         Snose    = Variable('S_{nose}', 'm^2', 'Nose surface area')
         Tcabin   = Variable('T_{cabin}', 'K', 'Cabin temperature')
         Vbulk    = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
@@ -207,13 +212,18 @@ class Fuselage(CostedConstraintSet, fuselage_type = 'narrowbody'):
                             Wpadd == Wpay*fpadd,
 
                             # Floor
-                            Pfloor >= Nland*(Wpay + Wseat),
-                            Sfloor == 0.5*Pfloor, # without support
-                            Mfloor == Pfloor/2*wfloor/2, # Corrected
+                            Ppassfl >= Nland*(Wpass + Wseat),
+                            Pcargofl >= Nland*(Wlugg + Wcargo),
+                            Spassfl == 0.5*Ppassfl, # without support
+                            Scargofl == 0.5*Pcargofl, # without support
+                            Mpassfl == Ppassfl/2*wfloor/2, # TODO: The cargo floor is not as wide as the pass
+                            Mcargofl == Pcargofl/2*wfloor/2, # TODO: The cargo floor is not as wide as the pass
                             lnose >= 5.2*units.m, # TODO less arbitrary
-                            Afloor >= 2*Mfloor/(sigfloor*hfloor)
-                                      + 1.5*Sfloor/taufloor,
-                            Vfloor >= wfloor*Afloor,
+                            Apassfl >= 2*Mpassfl/(sigfloor*hfloor)
+                                      + 1.5*Spassfl/taufloor,
+                            Acargofl >= 2*Mcargofl/(sigfloor*hfloor)
+                                      + 1.5*Scargofl/taufloor,
+                            Vfloor >= wfloor*(Apassfl + Acargofl), # TODO: The cargo floor is not as wide as the pass
                             lfloor >= lshell + 2*Rfuse,
                             lshell >= nrows*pitch,
                             (wfloor/2)**2 + dh**2 >= Rfuse**2, # [SP]
@@ -277,7 +287,7 @@ class Fuselage(CostedConstraintSet, fuselage_type = 'narrowbody'):
 
                             ]
 
-        elif fuselage_type == 'widebody'
+        elif fuselage_type == 'widebody':
 
             constraints = [constraints,
 
@@ -286,10 +296,10 @@ class Fuselage(CostedConstraintSet, fuselage_type = 'narrowbody'):
 
                             ]
 
-        elif fuselage_type == 'D8'
+        elif fuselage_type == 'D8':
             raise NotImplementedError
 
-        else
+        else:
             raise NameError
 
 
