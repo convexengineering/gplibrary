@@ -1202,7 +1202,9 @@ class OffDesign(Model):
                 #constrain the new BPR
                 alpha == mFan / mCore,
                 SignomialEquality(alphap1, alpha + 1),
+
 ##                alpha <=6.5,
+               
                 mtot >= mFan + mCore,
 
                 W_engine >= ((mtot/(alphap1*mCore)*mCore)*.0984)*(1684.5+17.7*(pif*pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s'),

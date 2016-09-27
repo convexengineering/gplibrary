@@ -7,7 +7,8 @@ from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
 from gpkit.small_scripts import mag
-from atm_test import Atmosphere
+from atm import Atmosphere
+from flight_profile_engine import EngineThrust, EngineTemp
 
 #packages just needed for plotting since this is for sweeps
 import matplotlib.pyplot as plt
@@ -49,7 +50,7 @@ class CommericalMissionConstraints(Model):
         W_total = Variable('W_{total}', 'N', 'Total Aircraft Weight')
         W_startClimb = VectorVariable(Nclimb, 'W_{startClimb}', 'N', 'Segment Start Weight')
         W_fuelClimb = VectorVariable(Nclimb, 'W_{fuelClimb}', 'N', 'Segment Fuel Weight')
-        W_endClimb = VectorVariable(Nclimb, 'W_{enDClimb}', 'N', 'Segment End Weight')
+        W_endClimb = VectorVariable(Nclimb, 'W_{endClimb}', 'N', 'Segment End Weight')
         W_avgClimb = VectorVariable(Nclimb, 'W_{avgClimb}', 'N', 'Geometric Average of Segment Start and End Weight')
         W_startCruise = VectorVariable(Ncruise, 'W_{startCruise}', 'N', 'Segment Start Weight')
         W_fuelCruise = VectorVariable(Ncruise, 'W_{fuelCruise}', 'N', 'Segment Fuel Weight')
@@ -256,7 +257,7 @@ class Climb(Model):
             WLoadClimb[icl] == .5*CLClimb[icl]*S*rhoClimb[icl]*VClimb[icl]**2/S,
             
             #compute fuel burn from TSFC
-            W_fuelClimb[icl]  == numeng*TSFCcl[icl] * thoursClimb[icl] * thrustcl[icl],
+            W_fuelClimb[icl]  == numeng * TSFCcl[icl] * thoursClimb[icl] * thrustcl[icl],
 
             #compute the dh
             dhftClimb[icl] == hftCruise/Nclimb,
@@ -421,15 +422,32 @@ class CommercialAircraft(Model):
         climb = Climb(Nclimb, Ncruise)
         cruise = Cruise(Nclimb, Ncruise)
 
+        evec = []
+
+        #create the proper number of engines
+##        for i in range(Nclimb):
+##            evec.append(EngineTemp())
+##
+##        for i in range(Ncruise):
+##            evec.append(EngineThrust())
+
         atmvec = []
 
         for i in range(Nseg):
             atmvec.append(Atmosphere())
 
+        submodels = [cmc, climb, cruise]
+
+        for i in range(Nseg):
+            submodels.extend(atmvec[i])
+##            submodels.extend(evec[i])
+
+        constraints = ConstraintSet([submodels])
+
         substitutions = {      
             'V_{stall}': 120,
             'ReqRng': 1000, #('sweep', np.linspace(500,2000,4)),
-##            'hftCruise': 30000, #('sweep', np.linspace(20000,40000,4)),
+            'hftCruise': 30000, #('sweep', np.linspace(20000,40000,4)),
             'numeng': 2,
             'W_{Load_max}': 6664,
             'W_{engine}': 1000,
@@ -445,32 +463,70 @@ class CommercialAircraft(Model):
             "T_{sl}": 288.15,
             "L_{atm}": .0065,
             "M_{atm}":.0289644,
-            "R_{atm}": 8.31447
+            "R_{atm}": 8.31447,
+
+            #engine subs
+##            '\pi_{tn}': .98,
+##            '\pi_{b}': .94,
+##            '\pi_{d}': .98,
+##            '\pi_{fn}': .98,
+##            'T_{ref}': 288.15,
+##            'P_{ref}': 101.325,
+##            '\eta_{HPshaft}': .99,
+##            '\eta_{LPshaft}': .98,
+##            'eta_{B}': .9827,
+##
+##            '\pi_{f_D}': fan,
+##            '\pi_{hc_D}': hpc,
+##            '\pi_{lc_D}': lpc,
+##
+##            'G_f': 1,
+##
+##            'M_{4a}': M4a,
+##            'hold_{4a}': 1+.5*(1.313-1)*M4a**2,
+##            'r_{uc}': .01,
+##            '\\alpha_c': .3,
+##            'T_{t_f}': 400,
+##
+##            'M_{takeoff}': .85,
             }
 
-        submodels = [cmc, climb, cruise]
-
-        for i in range(len(atmvec)):
-            submodels.extend(atmvec[i])
-
-        constraints = ConstraintSet([submodels])
-
-        subs= {}
+        subs= {}#cmc['W_{engine}']: evec[0]['W_{engine}']}
 
         for i in range(Nclimb):
             subs.update({
-                climb["\\rhoClimb"][i]: atmvec[i]["\\rho"], climb["TClimb"][i]: atmvec[i]["T_{atm}"], cmc['hftClimb'][i]: atmvec[i]["h"]
+                climb["\\rhoClimb"][i]: atmvec[i]["\\rho"], climb["TClimb"][i]:
+                atmvec[i]["T_{atm}"], cmc['hftClimb'][i]: atmvec[i]["h"],
+                climb['hftClimb'][i]: atmvec[i]["h"],
+##                climb['TSFC_{cl}'][i]: evec[i]['TSFC'], #climb['thrust_{cl}'][i]: evec[i]['F'],
+##                climb['MClimb'][i]: evec[i]['M_0'], climb['MClimb'][i]: evec[i]['M_2'],
+##                evec[i]['T_0']: atmvec[i]["T_{atm}"],
+##                evec[i]['P_0']: atmvec[i]["P_{atm}"],
                 })
-
+            
         for i in range(Ncruise):
             subs.update({
-                cruise["\\rhoCruise"][i]: atmvec[i + Nclimb]["\\rho"], cruise["TCruise"][i]:atmvec[i + Nclimb]["T_{atm}"],
-                cmc['hCruise']: atmvec[i + Nclimb]["h"]
+                cruise["\\rhoCruise"][i]: atmvec[i + Nclimb]["\\rho"], cruise["TCruise"][i]:
+                atmvec[i + Nclimb]["T_{atm}"], cmc['hCruise']: atmvec[i + Nclimb]["h"],
+##                cruise['TSFC_{cr}'][i]: evec[i + Nclimb]['TSFC'],
+##                cruise['DragCruise'][i]: evec[i + Nclimb]['F'],
+##                cruise['MCruise'][i]: evec[i + Nclimb]['M_0'],
+##                cruise['MCruise'][i]: evec[i + Nclimb]['M_2'],
+##                evec[i + Nclimb]['T_0']: atmvec[i + Nclimb]["T_{atm}"],
+##                evec[i + Nclimb]['P_0']: atmvec[i + Nclimb]["P_{atm}"],
                 })
 
         constraints.subinplace(subs)
-
+        
         lc = LinkedConstraintSet(constraints, exclude={"T_{atm}", "P_{atm}", '\\rho', "h"})
+
+        M4a = .1025
+
+        fan = 1.685
+        lpc  = 1.935
+        hpc = 9.369
+
+
 
         Model.__init__(self, cmc.cost, lc, substitutions, **kwargs)
 
@@ -514,6 +570,35 @@ class CommercialAircraft(Model):
 
 if __name__ == '__main__':
     m = CommercialAircraft()
-    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
+##    sol = m.localsolve(solver="mosek", verbosity = 4, iteration_limit=100, skipsweepfailures=True)
 
-##    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+    sol, solhold = m.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=100)
+
+
+
+##    include_only = {'A_5', 'A_7', 'A_2', 'A_{2.5}',
+##                                                              '\pi_{tn}', '\pi_{b}', '\pi_{d}',
+##                                                              '\pi_{fn}','T_{ref}', 'P_{ref}',
+##                                                              '\eta_{HPshaft}', '\eta_{LPshaft}',
+##                                                              'eta_{B}','W_{engine}',
+##                                                              'm_{fan_bar_D}', 'm_{lc_D}',
+##                                                              'm_{hc_D}', '\pi_{f_D}','\pi_{hc_D}',
+##                                                              '\pi_{lc_D}', 'm_{htD}', 'm_{ltD}',
+##                                                              'm_{coreD}', 'M_{4a}','hold_{4a}',
+##                                                              'r_{uc}', '\\alpha_c', 'T_{t_f}',
+##                                                              'M_{takeoff}', 'G_f', "R_{atm}",
+##                                                              "M_{atm}", "L_{atm}", "T_{sl}",
+##                                                              "p_{sl}", 'V_{stall}', 'ReqRng',
+##                                                              'hftCruise', 'numeng', 'W_{Load_max}',
+##                                                              'W_{engine}', 'W_{pax}','n_{pax}',
+##                                                              'pax_{area}', 'C_{d_fuse}', 'e',
+##                                                              'span_{max}', 'W_{fuelCruise}',
+##                                                               'W_{fuelClimb}', 'A_{fuse}',
+##                                                               'W_{endCruise}',  'W_{startClimb}',
+##                                                              'W_{endClimb}', 'W_{avgClimb}',
+##                                                              'W_{startCruise}', 'W_{fuelCruise}',
+##                                                              'W_{endCruise}', 'W_{avgCruise}',
+##                                                              'dhftClimb', 'hClimb', 'hftClimb',
+##                                                              'hCruise', 'hftCruise', 'S', 'AR',
+##                                                              'span', 'thrust_{cr}'
+##                                                              })

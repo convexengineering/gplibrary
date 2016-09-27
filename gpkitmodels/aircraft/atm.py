@@ -49,7 +49,7 @@ class Atmosphere(Model):
 
                 #constraint on mu
 ##                SignomialEquality((T_atm + T_s) * mu, C_1 * T_atm**1.5),
-                TCS([(T_atm + T_s) * mu >= C_1 * T_atm**1.5])
+##                TCS([(T_atm + T_s) * mu >= C_1 * T_atm**1.5])
                 ]
 
 
