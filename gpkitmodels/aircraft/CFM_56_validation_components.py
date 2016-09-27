@@ -462,8 +462,8 @@ class ExhaustAndThrust(Model):
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
-                u6 >= u0,
-                u8 >= u0,
+##                u6 >= u0,
+##                u8 >= u0,
 
                 #overall thrust values
                 TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
@@ -476,7 +476,7 @@ class ExhaustAndThrust(Model):
 ##                SignomialEquality(F + alphap1*mCore*u0, Mtakeoff*mCore*u6+mFan*u8),
 
 
-                Fsp == F/((alphap1)*Mtakeoff*mCore*a0),   #B.191
+                Fsp == F/((alphap1)*mCore*a0),   #B.191
 
                 #ISP
                 Isp == Fsp*a0*(alphap1)/(f*g),  #B.192
