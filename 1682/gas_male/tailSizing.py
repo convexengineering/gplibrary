@@ -20,6 +20,8 @@ class dartTail(Model):
         M_CG   = Variable('M_{CG}',52,'N*m','Torque around AC due to CG')
         S      = Variable('S',23.69,'ft^2','Wing area')
         AR     = Variable('AR',26.7,'-','Aspect ratio')
+        qNE    = Variable('q_{NE}','Pa','Never-exceed dynamic pressure')
+        VNE    = Variable('V_{NE}',46,'m/s','Never-exceed speed')
 
         # Airfoil properties (NACA0008)
         areaAF = Variable('A_{ratio-airfoil}',0.0548,'ft^2','Airfoil area/chord ratio') #for NACA0008
@@ -39,6 +41,7 @@ class dartTail(Model):
         
         # Tail properties
         Wtail = Variable('W_{tail}','N','Total tail weight')
+        FNE = Variable('F_{NE}','-','Boom flexibility factor')
 
         # # Tail boom variables
         Wboom = Variable('W_{boom}','N','Tail boom weight')
@@ -64,6 +67,7 @@ class dartTail(Model):
         crhtail     = Variable('c_r_{htail}','m','Horizontal tail root chord')
         deltatail = Variable('\\delta_{tail}',.2,'m','Horizontal-vertical tail offset')
         Whtail = Variable('W_{htail}','lbf','Horizontal tail weight')
+        mhtail = Variable('m_{htail}','-','Horizontal tail moment coefficient')
 
         # # Vertical tail variables
         #Vvtail = Variable('V_{vtail}','-','Vertical tail volume coefficient') # 0.02 common for sailplanes
@@ -85,17 +89,22 @@ class dartTail(Model):
             thetaboom <= 0.01,
             thetaboom >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
             Fboom == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
+            FNE**-1 >= 1 + mhtail*qNE*Shtail*lboom**2*kboom/(Eboom*I0boom),
+            FNE <= 1,
+            TCS([mhtail*(1+2/ARhtail) <= 2*pi]),
+
             # Horizontal tail relations (sized for heavy forward CG (20 lb payload))
             bhtail**2/Shtail == ARhtail,
-            Shtail <= bhtail*crhtail*(1+lamhtail)/2,
+            Shtail <= bhtail*crhtail*(1+.8)/2, #[SP]
             TCS([CLmaxhtail*(1+2/ARhtail) <= CLmax*(1+2/AR)]),
 
-            # Boom materials constraints
+            # Boom physical constraints
             t0boom >= 0.25*units('mm'),
             d0boom <= 1*units('in'),
+            lboom <= 7*units('ft'),
 
             # Assuming solid foam-core wing with a min-gauge Kevlar skin
-            Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*lamhtail/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
+            Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
             Wtail >= Wboom + Whtail
             # Vertical tail relations (sized for cross-wind landing)
 
@@ -114,6 +123,9 @@ class GasMALE(Model):
         cbar   = Variable('\\bar_c',1.02,'ft','Mean aerodynamic chord')
         AR     = Variable('AR',26.7,'-','Aspect ratio')
         e      = Variable('e',0.95,'-','Oswald efficiency')
+        qNE    = Variable('q_{NE}','Pa','Never-exceed dynamic pressure')
+        VNE    = Variable('V_{NE}',46,'m/s','Never-exceed speed')
+        rhoh   = Variable('rho_[h}',.776,'kg/m^3','Density at 15,000 ft')
         Wtail = Variable('W_{tail}','N','Total tail weight')
 
         # Takeoff conditions
@@ -147,7 +159,8 @@ class GasMALE(Model):
                     TCS([Vstall**2 == (2/rhoTO*W/S/CLmax)]),
                     TCS([VTO == 1.3*Vstall]),
                     TCS([CLmax == 1.5]),
-                    TCS([rhoTO == 1.225*units('kg*m^-3')])
+                    TCS([rhoTO == 1.225*units('kg*m^-3')]),
+                    TCS([qNE == .5*rhoh*VNE**2])
                     #KTO == 1/(pi*e*AR),
                     #nmax**2 <= .5*rhoTO*VTO**2/(KTO*W/S)*(TmaxTO/W - .5*rhoTO*VTO**2*CD0TO/(W/S)),
                     #RturnTO**2*g**2*(nmax**2-1.0) >= VTO**4, 
@@ -162,7 +175,11 @@ class GasMALE(Model):
 
 if __name__ == "__main__":
     M = GasMALE()
-    #M = Model(M.cost, BCS(M))
+    M = Model(M.cost, BCS(M))
     #subs=[]
-    sol = M.localsolve("mosek")
+    sol = M.solve("mosek")
     varVals = sol['variables']
+    print 'Boom thickness: ' + str(varVals['t_0_{boom}'])
+    print 'Boom length: ' + str(varVals['l_{boom}'])
+    print 'Htail surface area: ' + str(varVals['S_{htail}'])
+    print 'qNE: ' + str(varVals['q_{NE}'])
