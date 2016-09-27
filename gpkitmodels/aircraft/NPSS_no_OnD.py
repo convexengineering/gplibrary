@@ -334,7 +334,7 @@ class OffDesignSLS(Model):
         lpcmap = LPCMap(SPmaps)
         hpcmap = HPCMap(SPmaps)
 
-        res7 = 0
+        res7 = 1
 
         M2 = .01
         M25 = .1
@@ -421,7 +421,7 @@ if __name__ == "__main__":
 ##    sol2 = engine2.localsolve(verbosity = 4, solver="mosek")
 
     #create the big linked engine model
-    submodels = [engine1, engine2]
+    submodels = [engine1, engine2, engine3]
     constraints = ConstraintSet([submodels])
 
     lc = LinkedConstraintSet(constraints, include_only = {'A_5', 'A_7', 'A_2', 'A_{2.5}', '\pi_{tn}', '\pi_{b}', '\pi_{d}', '\pi_{fn}',
@@ -493,7 +493,7 @@ if __name__ == "__main__":
 
     print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
 
-    m = Model((engine2.cost+engine1.cost), constraints, valsubs)
+    m = Model((engine2.cost+engine1.cost+engine3.cost), constraints, valsubs)
 
     sol = m.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
 ##    bounds, sol = engine1.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=200)
