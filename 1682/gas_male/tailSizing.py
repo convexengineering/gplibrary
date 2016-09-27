@@ -59,7 +59,7 @@ class dartTail(Model):
         Vhtail = Variable('V_{htail}','-','Horizontal tail volume coefficient') # 0.5 common for sailplane
         Shtail      = Variable('S_{htail}','ft^2','Horizontal tail area')
         ARhtail     = Variable('AR_{htail}',5,'-','Horizontal tail aspect ratio')
-        lamhtail    = Variable('\\lambda_{htail}',.8,'-','Horizontal tail taper ratio')
+        lamhtail    = Variable('\\lambda_{htail}','-','Horizontal tail taper ratio')
         bhtail      = Variable('b_{htail}','m', 'Horizontal tail span')
         crhtail     = Variable('c_r_{htail}','m','Horizontal tail root chord')
         deltatail = Variable('\\delta_{tail}',.2,'m','Horizontal-vertical tail offset')
@@ -87,7 +87,7 @@ class dartTail(Model):
             Fboom == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
             # Horizontal tail relations (sized for heavy forward CG (20 lb payload))
             bhtail**2/Shtail == ARhtail,
-            Shtail == bhtail*crhtail*(1+.8)/2,
+            Shtail <= bhtail*crhtail*(1+lamhtail)/2,
             TCS([CLmaxhtail*(1+2/ARhtail) <= CLmax*(1+2/AR)]),
 
             # Boom materials constraints
@@ -162,7 +162,7 @@ class GasMALE(Model):
 
 if __name__ == "__main__":
     M = GasMALE()
-    M = Model(M.cost, BCS(M))
+    #M = Model(M.cost, BCS(M))
     #subs=[]
-    sol = M.solve("mosek")
+    sol = M.localsolve("mosek")
     varVals = sol['variables']
