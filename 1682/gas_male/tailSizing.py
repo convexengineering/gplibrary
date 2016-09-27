@@ -36,6 +36,10 @@ class dartTail(Model):
         rhoCFRP     = Variable('\\rho_{CFRP}',1.6,'kg/m^3','Density of CFRP')
         rhoFoamular = Variable('\\rho_{Foamular}',1.5,'lbf/ft^3','Density of Foamular 250')
         rhoskin = Variable('\\rho_{skin}',.1,'g/cm^2','Skin density')
+        
+        # Tail properties
+        Wtail = Variable('W_{tail}','N','Total tail weight')
+
         # # Tail boom variables
         Wboom = Variable('W_{boom}','N','Tail boom weight')
         lboom = Variable('l_{boom}','ft','Tail boom length')
@@ -44,7 +48,7 @@ class dartTail(Model):
         t0boom = Variable('t_0_{boom}','m','Tail boom root wall thickness')
         Eboom = Variable('E_{boom}',150*10**9,'N/m^2','Tail boom modulus of elasticity')
         Fboom = Variable('F_{boom}','N','Tail downforce')
-        kboom = Variable('k_{boom}',0.75,'-','Tail boom index (1-2k)') # k = 0, uniform thickness, 1, constant taper to zero
+        kboom = Variable('k_{boom}','-','Tail boom index (1-.5k)') # k = 0, uniform thickness, 1, constant taper to zero
         #yboom = Variable('y_{boom}','m','Tail deflection at max force')
         #yolboom = Variable('y/l_{boom}','-','Max tolerated tail deflection factor')
         thetaboom = Variable('\\theta_{boom}','-','Tail boom deflection angle')
@@ -62,33 +66,36 @@ class dartTail(Model):
         Whtail = Variable('W_{htail}','lbf','Horizontal tail weight')
 
         # # Vertical tail variables
-        Vvtail = Variable('V_{vtail}','-','Vertical tail volume coefficient') # 0.02 common for sailplanes
+        #Vvtail = Variable('V_{vtail}','-','Vertical tail volume coefficient') # 0.02 common for sailplanes
         # Svtail      = Variable('S_{vtail}','m^2','Vertical tail area')
         # ARvtail     = Variable('AR_{vtail}','-','Vertical tail aspect ratio')
         # lamvtail    = Variable('\\lambda_{vtail}','-','Vertical tail taper ratio')
         # hvtail      = Variable('b_{vtail}','m', 'Vertical tail height')
         # crvtail     = Variable('c_r_{vtail}','m','Vertical tail root chord')
-        Lmaxvtail = Variable('L_{max-vtail}','N/m','Maximum vertical tail moment')
 
         with SignomialsEnabled():
 
             constraints = [        
-            #CD0TO >= CDTO + KTO,
-
             # Boom sizing
-            M_CG <= 2*Ffacboom*Fboom*(lboom),#-deltatail-ACloc),
+            kboom >= 0.6, kboom <= 1, # Constraining boom inertia variable
+            M_CG <= 2*Ffacboom*Fboom*(lboom),
             I0boom == pi*t0boom*d0boom**3/8,
-            Wboom == 2*pi*g*rhoCFRP*lboom*t0boom*units('m')*(kboom),
+            Wboom == pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
             thetaboom <= 0.01,
             thetaboom >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
             Fboom == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
             # Horizontal tail relations (sized for heavy forward CG (20 lb payload))
             bhtail**2/Shtail == ARhtail,
-            Shtail <= bhtail*crhtail*(1+.8)/2, #[SP]
+            Shtail == bhtail*crhtail*(1+.8)/2,
             CLmaxhtail*(1+2/ARhtail) <= CLmax*(1+2/AR),
+
+            # Boom materials constraints
+            t0boom >= 0.25*units('mm'),
+            d0boom <= 1*units('in'),
+
             # Assuming solid foam-core wing with a min-gauge Kevlar skin
-            Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*lamhtail/crefAF)**2)/2+(1.1*g*rhoskin*Shtail)
-            
+            Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*lamhtail/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
+            Wtail >= Wboom + Whtail
             # Vertical tail relations (sized for cross-wind landing)
 
             ]
@@ -106,10 +113,7 @@ class GasMALE(Model):
         cbar   = Variable('\\bar_c',1.02,'ft','Mean aerodynamic chord')
         AR     = Variable('AR',26.7,'-','Aspect ratio')
         e      = Variable('e',0.95,'-','Oswald efficiency')
-        N      = Variable('N','-','Load factor')
-        Whtail = Variable('W_{htail}','lbf','Horizontal tail weight')
-        Wboom = Variable('W_{boom}','N','Tail boom weight')
-
+        Wtail = Variable('W_{tail}','N','Total tail weight')
 
         # Takeoff conditions
         rhoTO  = Variable('\\rho_{t/o}',1.225,'kg*m^-3','Takeoff density')
@@ -136,20 +140,20 @@ class GasMALE(Model):
         tail = dartTail()
         self.submodels = [tail]
 
-        with SignomialsEnabled():
-            constraints = [
-          # Performance metric calculations
-            Vstall**2 == (2/rhoTO*W/S/CLmax),
-            VTO == 1.3*Vstall
-            #KTO == 1/(pi*e*AR),
-            #nmax**2 <= .5*rhoTO*VTO**2/(KTO*W/S)*(TmaxTO/W - .5*rhoTO*VTO**2*CD0TO/(W/S)),
-            #RturnTO**2*g**2*(nmax**2-1.0) >= VTO**4, 
-            #(RpullTO*g*(nmax+1))**2 <= VTO**4
-            ]
+        
+        constraints = [
+                  # Performance metric calculations
+                    Vstall**2 == (2/rhoTO*W/S/CLmax),
+                    VTO == 1.3*Vstall
+                    #KTO == 1/(pi*e*AR),
+                    #nmax**2 <= .5*rhoTO*VTO**2/(KTO*W/S)*(TmaxTO/W - .5*rhoTO*VTO**2*CD0TO/(W/S)),
+                    #RturnTO**2*g**2*(nmax**2-1.0) >= VTO**4, 
+                    #(RpullTO*g*(nmax+1))**2 <= VTO**4
+                    ]    
 
         lc = LCS([self.submodels, constraints])
 
-        objective = Whtail/units('lbf') + Wboom/units('N')
+        objective = tail['W_{tail}']
         Model.__init__(self, objective, lc, **kwargs)
 
 
@@ -157,5 +161,5 @@ if __name__ == "__main__":
     M = GasMALE()
     M = Model(M.cost, BCS(M))
     #subs=[]
-    sol = M.solve("mosek")#,tolerance = 0.01, verbosity = 1, iteration_limit=50)
+    sol = M.solve("mosek")
     varVals = sol['variables']
