@@ -17,7 +17,7 @@ class dartTail(Model):
         W      = Variable('W',713.5,'N','Total aircraft weight')
         WNoPay = Variable('W_{NoPay}',624.3,'N','Aircraft no-payload weight')
         ACloc  = Variable('AC_{location}',0.655,'ft','Aerodynamic center location')
-        M_CG   = Variable('M_{CG}',52,'N*m','Torque around AC due to CG')
+        M_CG   = Variable('M_{CG}',32,'N*m','Torque around AC due to CG')
         S      = Variable('S',23.69,'ft^2','Wing area')
         AR     = Variable('AR',26.7,'-','Aspect ratio')
         qNE    = Variable('q_{NE}','Pa','Never-exceed dynamic pressure')
@@ -59,10 +59,11 @@ class dartTail(Model):
 
         # # Horizontal tail variables
         CLmaxhtail = Variable('CL_{max-htail}','-','Horizontal tail maximum lift coefficient')
+        Re_tiphtail = Variable('Re_{tip-htail}','-','Horizontal tail tip Reynolds number')
         Vhtail = Variable('V_{htail}','-','Horizontal tail volume coefficient') # 0.5 common for sailplane
         Shtail      = Variable('S_{htail}','ft^2','Horizontal tail area')
         ARhtail     = Variable('AR_{htail}',5,'-','Horizontal tail aspect ratio')
-        lamhtail    = Variable('\\lambda_{htail}','-','Horizontal tail taper ratio')
+        lamhtail    = Variable('\\lambda_{htail}',.8,'-','Horizontal tail taper ratio')
         bhtail      = Variable('b_{htail}','m', 'Horizontal tail span')
         crhtail     = Variable('c_r_{htail}','m','Horizontal tail root chord')
         deltatail = Variable('\\delta_{tail}',.2,'m','Horizontal-vertical tail offset')
@@ -117,7 +118,7 @@ class GasMALE(Model):
         W      = Variable('W',713.5,'N','Total aircraft weight')
         WNoPay = Variable('W_{NoPay}',624.3,'N','Aircraft no-payload weight')
         ACloc  = Variable('AC_{location}',0.655,'ft','Aerodynamic center location')
-        M_CG   = Variable('M_{CG}',52,'N*m','Torque around AC due to CG')
+        M_CG   = Variable('M_{CG}',32,'N*m','Torque around AC due to CG')
         S      = Variable('S',23.69,'ft^2','Wing area')
         b      = Variable('b',25.15,'ft','Wing span')
         cbar   = Variable('\\bar_c',1.02,'ft','Mean aerodynamic chord')
@@ -126,6 +127,8 @@ class GasMALE(Model):
         qNE    = Variable('q_{NE}','Pa','Never-exceed dynamic pressure')
         VNE    = Variable('V_{NE}',46,'m/s','Never-exceed speed')
         rhoh   = Variable('rho_[h}',.776,'kg/m^3','Density at 15,000 ft')
+        mu_atm = Variable("\\mu",1.8*10**-5,"N*s/m^2", "Dynamic viscosity")
+
         Wtail = Variable('W_{tail}','N','Total tail weight')
 
         # Takeoff conditions
@@ -160,7 +163,9 @@ class GasMALE(Model):
                     TCS([VTO == 1.3*Vstall]),
                     TCS([CLmax == 1.5]),
                     TCS([rhoTO == 1.225*units('kg*m^-3')]),
-                    TCS([qNE == .5*rhoh*VNE**2])
+                    TCS([qNE == .5*rhoh*VNE**2]),
+                    #TCS([Re_tiphtail >= 100000]),
+                    #TCS([Re_tiphtail == rhoh*crhtail*lamhtail*Vstall/mu_atm])
                     #KTO == 1/(pi*e*AR),
                     #nmax**2 <= .5*rhoTO*VTO**2/(KTO*W/S)*(TmaxTO/W - .5*rhoTO*VTO**2*CD0TO/(W/S)),
                     #RturnTO**2*g**2*(nmax**2-1.0) >= VTO**4, 
@@ -179,11 +184,14 @@ if __name__ == "__main__":
     #subs=[]
     sol = M.solve("mosek")
     varVals = sol['variables']
+    print 'Tail downforce: ' + str(varVals['F_{boom}'])
     print 'Boom weight: ' + str(varVals['W_{boom}'])
-    print 'Horizontal tail weight: ' + str(varVals['W_{htail}'])
     print 'Boom thickness: ' + str(varVals['t_0_{boom}'])
     print 'Boom length: ' + str(varVals['l_{boom}'])
     print 'Boom diameter: ' + str(varVals['d_0_{boom}'])
-    print 'Boom thickness ' + str(varVals['t_0_{boom}'])
+    print 'Horizontal tail weight: ' + str(varVals['W_{htail}'])
     print 'Htail surface area: ' + str(varVals['S_{htail}'])
+    print 'Htail span: ' + str(varVals['b_{htail}'])
+    print 'Htail root chord: ' + str(varVals['c_r_{htail}'])
+    print 'CLmaxhtail: ' + str(varVals['CL_{max-htail}'])
     print 'qNE: ' + str(varVals['q_{NE}'])
