@@ -103,8 +103,7 @@ class dartTail(Model):
             #TCS([Vhtail                   == Shtail*lboom/(S*mac)]),
             
             # Boom physical constraints
-            t0boom                        >= 0.25*units('mm'),
-            d0boom                        <= 1*units('in'),
+            t0boom                        >= 0.3*units('mm'),
             lboom                         <= 7*units('ft'),
             
             # Assuming solid foam-core wing with a min-gauge Kevlar skin
