@@ -5,7 +5,16 @@ class SummingConstraintSet(ConstraintSet):
         summedvars = set([v.key for v in variables])
         alreadysummed = set()
         for model in models:
-            mvars = model[varname]
+            twovars = 0
+            for var in model.varkeys:
+                if var.name == varname:
+                    twovars += 1
+            if twovars > 1:
+                for dvar in model.variables_byname(varname):
+                    if model.__class__.__name__ == dvar.descr["models"][0]:
+                        mvars = dvar
+            else:
+                mvars = model[varname]
             if not hasattr(mvars, "__len__"):
                 mvars = [mvars]
             # next line makes the recursion stop at depth one

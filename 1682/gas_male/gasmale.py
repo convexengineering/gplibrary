@@ -647,15 +647,44 @@ class EngineWeight(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class TailBoom(Model):
+    def __init__(self, **kwargs):
+
+        F = Variable("F", 22.4, "N", "point force from tail")
+        L = Variable("L", 4.67, "ft", "tail boom length")
+        E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
+        kfac = Variable("(1-k/2)", 0.6, "-", "(1-k/2) tail boom inertia value")
+        I0 = Variable("I_0", "m^4", "tail boom moment of inertia")
+        d0 = Variable("d_0", "m", "tail boom diameter")
+        t0 = Variable("t_0", 0.25, "m", "tail boom thickness")
+        rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        W = Variable("W", "lbf", "tail boom weight")
+        th = Variable("\\theta", "-", "tail boom deflection angle")
+        thmax = Variable("\\theta_{max}", 0.5, "-",
+                         "max tail boom deflection angle")
+
+        constraints = [I0 == pi*t0*d0**3/8.0,
+                       W >= pi*g*rho_cfrp*d0*L*t0*kfac,
+                       th <= thmax,
+                       th >= F*L**2/E/I0*kfac
+                      ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class Tail(Model):
     def __init__(self, **kwargs):
         W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
         m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "Tail weight")
 
-        constraints = [W/m_fac >= W_vtail]
+        tailboom = TailBoom()
 
-        Model.__init__(self, None, constraints, **kwargs)
+        constraints = [W/m_fac >= W_vtail + tailboom["W"]]
+
+        lc = LinkedConstraintSet([tailboom, constraints], exclude=["W"])
+
+        Model.__init__(self, None, lc, **kwargs)
 
 class Avionics(Model):
     def __init__(self, **kwargs):
