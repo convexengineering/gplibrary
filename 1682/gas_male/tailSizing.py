@@ -115,18 +115,18 @@ class dartTail(Model):
         lboom                         <= 7*units('ft'),
             
         # Vertical tail relations (sized for cross-wind landing)
-        #TCS([CLmaxvtail*(1+2/ARvtail) <= CLmax*(1+2/27)]), #Substituted the aspect ratio of aircraft so it wouldn't be SP
+        TCS([CLmaxvtail*(1+2/ARvtail) <= CLmax*(1+2/27)]), #Substituted the aspect ratio of aircraft so it wouldn't be SP
         hvtail**2/Svtail              == ARvtail,
         Svtail                        == hvtail*crvtail*(1+.8)/2, ##Substituted lambda so it wouldn't be SP
         # Landing conditions
-        #TCS([Vrel**2 >= Vland**2 + Vwindcross**2]),
+        TCS([Vrel**2 >= Vland**2 + Vwindcross**2]),
         #Vrel == 18.3*units('m/s'),
-        CLmaxvtail == 1,
+        #CLmaxvtail == 1,
         #TCS([Vwindcross**2*S*CDy == 2*Vrel**2*Svtail*CLmaxvtail]),
         # Assuming solid foam-core wing with a min-gauge Kevlar skin
         Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
-        #Wvtail >= (rhoFoamular*hvtail*areaAF)*((crvtail/crefAF)**2 + (crvtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Svtail),
-        Wtail  >= 2*(Wboom + Whtail) #+ Wvtail),
+        Wvtail >= (rhoFoamular*hvtail*areaAF)*((crvtail/crefAF)**2 + (crvtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Svtail),
+        Wtail  >= 2*(Wboom + Whtail + Wvtail),
         ]
 
         Model.__init__(self, None, constraints,**kwargs)
@@ -212,6 +212,9 @@ if __name__ == "__main__":
     print 'Htail root chord: ' + str(varVals['c_r_{htail}'])
     print 'CLmaxhtail: ' + str(varVals['CL_{max-htail}'])
     print 'qNE: ' + str(varVals['q_{NE}'])
-    print 'Vtail height: ' + str(varVals['h_{vtail}'])
+    print 'Vtail weight: ' + str(varVals['W_{vtail}'])
     print 'Vtail surface area: ' + str(varVals['S_{vtail}'])
+    print 'Vtail height: ' + str(varVals['h_{vtail}'])
+    print 'Vtail root chord: ' + str(varVals['c_r_{htail}'])
     #print 'Vtail root chord: ' + str(varVals['cr_{vtail}']) 
+    print 'CLmaxvtail: ' + str(varVals['CL_{max-vtail}'])
