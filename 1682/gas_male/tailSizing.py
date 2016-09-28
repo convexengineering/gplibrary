@@ -20,7 +20,7 @@ class dartTail(Model):
         S      = Variable('S',23.69,'ft^2','Wing area')
         AR     = Variable('AR',26.7,'-','Aspect ratio')
         mac    = Variable('mac',1.02,'ft','Wing mean aerodynamic chord')
-
+        rhoh   = Variable('rho_[h}',.776,'kg/m^3','Density at 15,000 ft')
         qNE    = Variable('q_{NE}','Pa','Never-exceed dynamic pressure')
         VNE    = Variable('V_{NE}',46,'m/s','Never-exceed speed')
 
@@ -52,11 +52,12 @@ class dartTail(Model):
         t0boom      = Variable('t_0_{boom}','m','Tail boom root wall thickness')
         Eboom       = Variable('E_{boom}','N/m^2','Tail boom modulus of elasticity')
         Fboom       = Variable('F_{boom}','N','Tail downforce')
+        Fboommax    = Variable('F_{boom-max}','N','Max tail force')
         kboom       = Variable('k_{boom}','-','Tail boom index (1-.5k)') # k = 0, uniform thickness, 1, constant taper to zero
         #yboom      = Variable('y_{boom}','m','Tail deflection at max force')
         #yolboom    = Variable('y/l_{boom}','-','Max tolerated tail deflection factor')
         thetaboom   = Variable('\\theta_{boom}','-','Tail boom deflection angle')
-        Ffacboom    = Variable('F_{fac-boom}',.5,'-','Tail downforce factor')
+        Ffacboom    = Variable('F_{fac-boom}',.4,'-','Tail downforce factor')
 
         # # Horizontal tail variables
         CLmaxhtail  = Variable('CL_{max-htail}','-','Horizontal tail maximum lift coefficient')
@@ -74,7 +75,7 @@ class dartTail(Model):
 
         # # Vertical tail variables
         #Vvtail = Variable('V_{vtail}','-','Vertical tail volume coefficient') # 0.02 common for sailplanes
-        Svtail      = Variable('S_{vtail}',.5,'m^2','Vertical tail area')
+        Svtail      = Variable('S_{vtail}','ft^2','Vertical tail area')
         ARvtail     = Variable('AR_{vtail}',4,'-','Vertical tail aspect ratio')
         lamvtail    = Variable('\\lambda_{vtail}',.8,'-','Vertical tail taper ratio')
         hvtail      = Variable('h_{vtail}','m', 'Vertical tail height')
@@ -86,12 +87,12 @@ class dartTail(Model):
         # Crosswind landing variables
         Vland      = Variable('V_{land}',12,'m/s','Landing speed')
         Vwindcross = Variable('V_{wind_cross}',20,'mph','Landing cross-wind speed')
-        CDy = Variable('C_{Dy}',.7,'-','Crosswind drag coefficient')
+        CDy = Variable('C_{Dy}',.5,'-','Crosswind drag coefficient')
         Vrel = Variable('V_{rel}','m/s','Relative wind in crosswind')
 
         constraints = [        
         # Boom sizing
-        kboom       >= 0.6, 
+        kboom       >= 0.75, 
         kboom       <= 1, # Constraining boom inertia variable
         M_CG        <= 2*Ffacboom*Fboom*(lboom),
         TCS([I0boom == pi*t0boom*d0boom**3/8]),
@@ -99,7 +100,10 @@ class dartTail(Model):
         Wboom       >= pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
         thetaboom   <= 0.05,
         thetaboom   >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
-        Fboom       == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
+        Fboommax    >= .5*rhoh*(46*units('m/s'))**2*Shtail*CLmaxhtail,
+        Fboommax    >= .5*rhoh*(46*units('m/s'))**2*Svtail*CLmaxvtail,
+        Fboom       >= .5*rhoTO*Vrel**2*Svtail*CLmaxvtail,
+        Fboom       >= .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
         FNE**-1     >= 1 + mhtail*qNE*Shtail*lboom**2*kboom/(Eboom*I0boom),
         FNE         <= 1,
         TCS([mhtail*(1+2/ARhtail) <= 2*pi]),
@@ -116,13 +120,12 @@ class dartTail(Model):
             
         # Vertical tail relations (sized for cross-wind landing)
         TCS([CLmaxvtail*(1+2/ARvtail) <= CLmax*(1+2/27)]), #Substituted the aspect ratio of aircraft so it wouldn't be SP
-        hvtail**2/Svtail              == ARvtail,
+        hvtail**2/(Svtail)              == ARvtail,
         Svtail                        == hvtail*crvtail*(1+.8)/2, ##Substituted lambda so it wouldn't be SP
         # Landing conditions
         TCS([Vrel**2 >= Vland**2 + Vwindcross**2]),
-        #Vrel == 18.3*units('m/s'),
-        #CLmaxvtail == 1,
-        #TCS([Vwindcross**2*S*CDy == 2*Vrel**2*Svtail*CLmaxvtail]),
+        Vrel <= 16*units('m/s'),
+        TCS([Vwindcross**2*23.67*units('ft^2')*CDy == 2*Vrel**2*Svtail*CLmaxvtail]), #substituted S because of errors with BCS... too hacky
         # Assuming solid foam-core wing with a min-gauge Kevlar skin
         Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
         Wvtail >= (rhoFoamular*hvtail*areaAF)*((crvtail/crefAF)**2 + (crvtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Svtail),
@@ -205,6 +208,7 @@ if __name__ == "__main__":
     print 'Boom thickness: ' + str(varVals['t_0_{boom}'])
     print 'Boom length: ' + str(varVals['l_{boom}'])
     print 'Boom diameter: ' + str(varVals['d_0_{boom}'])
+    print 'Boom k-value: ' + str((varVals['k_{boom}'].magnitude-0.5)*2)
     #print 'Horizontal tail volume coeff: ' + str(varVals['V_{htail}'])
     print 'Htail weight: ' + str(varVals['W_{htail}'])
     print 'Htail surface area: ' + str(varVals['S_{htail}'])
@@ -218,3 +222,4 @@ if __name__ == "__main__":
     print 'Vtail root chord: ' + str(varVals['c_r_{htail}'])
     #print 'Vtail root chord: ' + str(varVals['cr_{vtail}']) 
     print 'CLmaxvtail: ' + str(varVals['CL_{max-vtail}'])
+    print 'Relative wind: ' + str(varVals['V_{rel}'])
