@@ -105,8 +105,8 @@ class dartTail(Model):
             
         # Horizontal tail relations (sized for heavy forward CG (20 lb payload))
         bhtail**2/Shtail              == ARhtail,
-        Shtail                        <= bhtail*crhtail*(1+.8)/2, #[SP potentially]
-        TCS([CLmaxhtail*(1+2/ARhtail) <= CLmax*(1+2/27)]),
+        Shtail                        <= bhtail*crhtail*(1+.8)/2, #Substituted lambda so it wouldn't be SP
+        TCS([CLmaxhtail*(1+2/ARhtail) <= CLmax*(1+2/27)]), #Substituted the aspect ratio of aircraft so it wouldn't be SP
         #TCS([Vhtail                   == Shtail*lboom/(S*mac)]),
         
         # Boom physical constraints
@@ -114,11 +114,11 @@ class dartTail(Model):
         lboom                         <= 7*units('ft'),
             
         # Vertical tail relations (sized for cross-wind landing)
-        TCS([CLmaxvtail*(1+2/ARvtail) <= CLmax*(1+2/27)]),
+        TCS([CLmaxvtail*(1+2/ARvtail) <= CLmax*(1+2/27)]), #Substituted the aspect ratio of aircraft so it wouldn't be SP
         hvtail**2/Svtail              == ARvtail,
-        Svtail                        <= hvtail*crvtail*(1+.8)/2, #[SP potentially]
+        Svtail                        <= hvtail*crvtail*(1+.8)/2, ##Substituted lambda so it wouldn't be SP
         # Landing conditions
-        Vrel**2 >= Vland**2 + Vwindcross**2,
+        TCS([Vrel**2 >= Vland**2 + Vwindcross**2]),
         Vwindcross**2*S*CDy == Vrel**2*Svtail*CLmaxvtail,
         # Assuming solid foam-core wing with a min-gauge Kevlar skin
         Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
