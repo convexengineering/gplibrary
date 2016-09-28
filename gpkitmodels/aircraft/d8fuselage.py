@@ -36,24 +36,35 @@ class Fuselage(Model):
         Afloor  = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
         Afuse   = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
         Ahold   = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
-        Askin   = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
-        hdb     = Variable('h_{db}','m', 'Web half-height')
-        hfloor   = Variable('h_{floor}', 'm', 'Floor beam height')
-        Rfuse   = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there: no under-fuselage extension deltaR
-        tdb     = Variable('t_{db}', 'm', 'Web thickness')
+        Askin  = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
+        hdb    = Variable('h_{db}','m', 'Web half-height')
+        hfloor = Variable('h_{floor}', 'm', 'Floor beam height')
+        Rfuse  = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there: no under-fuselage extension deltaR
+        tdb    = Variable('t_{db}', 'm', 'Web thickness')
         tshell = Variable('t_{shell}', 'm', 'Shell thickness')
-        tskin   = Variable('t_{skin}', 'm', 'Skin thickness')
-        waisle  = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
+        tskin  = Variable('t_{skin}', 'm', 'Skin thickness')
+        waisle = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
         wdb     = Variable('w_{db}','m','DB added half-width')
         wfuse   = Variable('w_{fuse}', 'm', 'Fuselage width')
         wfloor  = Variable('w_{floor}', 'm', 'Floor width')
         wseat   = Variable('w_{seat}',0.5,'m', 'Seat width')
 
+        # Tail cone variables
+        Lvmax    = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
+        bvt      = Variable('b_{vt}', 'm', 'Vertical tail span')
+        plamv    = Variable('p_{\\lambda_v}', '-', '1 + 2*Tail taper ratio')
+        Qv       = Variable('Q_{v}', 'N*m', 'Torsion moment imparted by tail')
+        taucone  = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
+        rhocone  = Variable('\\rho_{cone}', 'kg/m^3','Cone material density')
+        lamcone  = Variable('\\lambda_{cone}', '-','Tailcone radius taper ratio (xshell2->xtail)')
+        Vcone    = Variable('V_{cone}', 'm^3', 'Cone skin volume')
+        lcone    = Variable('l_{cone}', 'm', 'Cone length')
+        tcone    = Variable('t_{cone}', 'm', 'Cone thickness')
 
         # Lengths (free)
         lfuse    = Variable('l_{fuse}', 'm', 'Fuselage length')
         lnose    = Variable('l_{nose}', 'm', 'Nose length')
-        lshell   = Variable('l_{shell}', 'm', 'Shell length')
+        lshell = Variable('l_{shell}', 'm', 'Shell length')
         lfloor = Variable('l_{floor}', 'm', 'FLoor length')
       
         # Surface areas (free)
@@ -76,6 +87,7 @@ class Fuselage(Model):
         Wskin    = Variable('W_{skin}', 'N', 'Skin weight')
         Wpay     = Variable('W_{pay}', 'N', 'Payload weight')
         Wseat    = Variable('W_{seat}', 'N', 'Seating weight')
+        Wcone    = Variable('W_{cone}', 'N', 'Cone weight')
 
         # Weights (fixed)
         #Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
@@ -161,7 +173,7 @@ class Fuselage(Model):
             # Fuselage weight relations
             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
-            Wfuse >= Wfix + Wshell + Wfloor,
+            Wfuse >= Wfix + Wshell + Wfloor + Wcone,
             
             ## Stress relations
             #Pressure shell loading
@@ -184,7 +196,16 @@ class Fuselage(Model):
 
             # Fuselage bending model
             Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell, # [SP]
-            Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell #approx needs to be improved [SP]
+            Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #approx needs to be improved [SP]
+            
+            # Tail cone loading model
+            Lvmax == 35000*units('N'), # based on 737
+            plamv >= 1.6,
+            3*Qv*(plamv-1) >= Lvmax*bvt*(plamv),
+            #Qv == 2*Acone*taucone*tcone,
+            lamcone == 0.4, # TODO remove
+            Vcone*(1+lamcone)*(pi+4*thetadb) >= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
+            Wcone >= rhocone*g*Vcone*(1+fstring+fframe)
             ]
 
         objective = Wfuse + Afuse*units('N/m**2') + wfloor*units('N/m') + Pfloor + Vcabin*units('N/m^3') + hfloor*units('N/m')
