@@ -4,7 +4,7 @@ from gpkit import LinkedConstraintSet as LCS
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from gpkit.constraints.bounded import BoundedConstraintSet as BCS
 from gpkit.tools import te_exp_minus1
-#rom collections import defaultdict
+from collections import defaultdict
 from gpkit.small_scripts import mag
 pi = 3.1415926
 g = 9.81*units('m*s**-2')
@@ -74,7 +74,7 @@ class dartTail(Model):
 
         # # Vertical tail variables
         #Vvtail = Variable('V_{vtail}','-','Vertical tail volume coefficient') # 0.02 common for sailplanes
-        Svtail      = Variable('S_{vtail}','m^2','Vertical tail area')
+        Svtail      = Variable('S_{vtail}',.5,'m^2','Vertical tail area')
         ARvtail     = Variable('AR_{vtail}',4,'-','Vertical tail aspect ratio')
         lamvtail    = Variable('\\lambda_{vtail}',.8,'-','Vertical tail taper ratio')
         hvtail      = Variable('h_{vtail}','m', 'Vertical tail height')
@@ -85,23 +85,24 @@ class dartTail(Model):
 
         # Crosswind landing variables
         Vland      = Variable('V_{land}',12,'m/s','Landing speed')
-        Vwindcross = Variable('V_wind_cross}',20,'mph','Landing cross-wind speed')
+        Vwindcross = Variable('V_{wind_cross}',20,'mph','Landing cross-wind speed')
         CDy = Variable('C_{Dy}',.7,'-','Crosswind drag coefficient')
         Vrel = Variable('V_{rel}','m/s','Relative wind in crosswind')
 
         constraints = [        
         # Boom sizing
-        kboom                         >= 0.6, kboom <= 1, # Constraining boom inertia variable
-        M_CG                          <= 2*Ffacboom*Fboom*(lboom),
-        TCS([I0boom                   == pi*t0boom*d0boom**3/8]),
-        Eboom                         == 150*10**9*units('N/m^2'),
-        Wboom                         >= pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
-        thetaboom                     <= 0.05,
-        thetaboom                     >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
-        Fboom                         == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
-        FNE**-1                       >= 1 + mhtail*qNE*Shtail*lboom**2*kboom/(Eboom*I0boom),
-        FNE                           <= 1,
-        TCS([mhtail*(1+2/ARhtail)     <= 2*pi]),
+        kboom       >= 0.6, 
+        kboom       <= 1, # Constraining boom inertia variable
+        M_CG        <= 2*Ffacboom*Fboom*(lboom),
+        TCS([I0boom == pi*t0boom*d0boom**3/8]),
+        Eboom       == 150*10**9*units('N/m^2'),
+        Wboom       >= pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
+        thetaboom   <= 0.05,
+        thetaboom   >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
+        Fboom       == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
+        FNE**-1     >= 1 + mhtail*qNE*Shtail*lboom**2*kboom/(Eboom*I0boom),
+        FNE         <= 1,
+        TCS([mhtail*(1+2/ARhtail) <= 2*pi]),
             
         # Horizontal tail relations (sized for heavy forward CG (20 lb payload))
         bhtail**2/Shtail              == ARhtail,
@@ -114,16 +115,18 @@ class dartTail(Model):
         lboom                         <= 7*units('ft'),
             
         # Vertical tail relations (sized for cross-wind landing)
-        TCS([CLmaxvtail*(1+2/ARvtail) <= CLmax*(1+2/27)]), #Substituted the aspect ratio of aircraft so it wouldn't be SP
+        #TCS([CLmaxvtail*(1+2/ARvtail) <= CLmax*(1+2/27)]), #Substituted the aspect ratio of aircraft so it wouldn't be SP
         hvtail**2/Svtail              == ARvtail,
-        Svtail                        <= hvtail*crvtail*(1+.8)/2, ##Substituted lambda so it wouldn't be SP
+        Svtail                        == hvtail*crvtail*(1+.8)/2, ##Substituted lambda so it wouldn't be SP
         # Landing conditions
-        TCS([Vrel**2 >= Vland**2 + Vwindcross**2]),
-        Vwindcross**2*S*CDy == Vrel**2*Svtail*CLmaxvtail,
+        #TCS([Vrel**2 >= Vland**2 + Vwindcross**2]),
+        #Vrel == 18.3*units('m/s'),
+        CLmaxvtail == 1,
+        #TCS([Vwindcross**2*S*CDy == 2*Vrel**2*Svtail*CLmaxvtail]),
         # Assuming solid foam-core wing with a min-gauge Kevlar skin
         Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
-        Wvtail >= (rhoFoamular*hvtail*areaAF)*((crvtail/crefAF)**2 + (crvtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Svtail),
-        Wtail  >= 2*(Wboom + Whtail + Wvtail),
+        #Wvtail >= (rhoFoamular*hvtail*areaAF)*((crvtail/crefAF)**2 + (crvtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Svtail),
+        Wtail  >= 2*(Wboom + Whtail) #+ Wvtail),
         ]
 
         Model.__init__(self, None, constraints,**kwargs)
@@ -203,9 +206,12 @@ if __name__ == "__main__":
     print 'Boom length: ' + str(varVals['l_{boom}'])
     print 'Boom diameter: ' + str(varVals['d_0_{boom}'])
     #print 'Horizontal tail volume coeff: ' + str(varVals['V_{htail}'])
-    print 'Horizontal tail weight: ' + str(varVals['W_{htail}'])
+    print 'Htail weight: ' + str(varVals['W_{htail}'])
     print 'Htail surface area: ' + str(varVals['S_{htail}'])
     print 'Htail span: ' + str(varVals['b_{htail}'])
     print 'Htail root chord: ' + str(varVals['c_r_{htail}'])
     print 'CLmaxhtail: ' + str(varVals['CL_{max-htail}'])
     print 'qNE: ' + str(varVals['q_{NE}'])
+    print 'Vtail height: ' + str(varVals['h_{vtail}'])
+    print 'Vtail surface area: ' + str(varVals['S_{vtail}'])
+    #print 'Vtail root chord: ' + str(varVals['cr_{vtail}']) 
