@@ -66,8 +66,8 @@ class dartTail(Model):
         Shtail      = Variable('S_{htail}','ft^2','Horizontal tail area')
         ARhtail     = Variable('AR_{htail}',5, '-','Horizontal tail aspect ratio')
         lamhtail    = Variable('\\lambda_{htail}',.8,'-','Horizontal tail taper ratio')
-        bhtail      = Variable('b_{htail}','m', 'Horizontal tail span')
-        crhtail     = Variable('c_r_{htail}','m','Horizontal tail root chord')
+        bhtail      = Variable('b_{htail}','ft', 'Horizontal tail span')
+        crhtail     = Variable('c_r_{htail}','ft','Horizontal tail root chord')
         deltatail   = Variable('\\delta_{tail}',.2,'m','Horizontal-vertical tail offset')
         Whtail      = Variable('W_{htail}','lbf','Horizontal tail weight')
         mhtail      = Variable('m_{htail}','-','Horizontal tail moment coefficient')
@@ -76,10 +76,10 @@ class dartTail(Model):
         # # Vertical tail variables
         #Vvtail = Variable('V_{vtail}','-','Vertical tail volume coefficient') # 0.02 common for sailplanes
         Svtail      = Variable('S_{vtail}','ft^2','Vertical tail area')
-        ARvtail     = Variable('AR_{vtail}',4,'-','Vertical tail aspect ratio')
+        ARvtail     = Variable('AR_{vtail}',5,'-','Vertical tail aspect ratio')
         lamvtail    = Variable('\\lambda_{vtail}',.8,'-','Vertical tail taper ratio')
-        hvtail      = Variable('h_{vtail}','m', 'Vertical tail height')
-        crvtail     = Variable('c_r_{vtail}','m','Vertical tail root chord')
+        hvtail      = Variable('h_{vtail}','ft', 'Vertical tail height')
+        crvtail     = Variable('c_r_{vtail}','ft','Vertical tail root chord')
         CLmaxvtail  = Variable('CL_{max-vtail}','-','Vertical tail maximum lift coefficient')
         Wvtail      = Variable('W_{vtail}','lbf','Vertical tail weight')
 
@@ -98,7 +98,7 @@ class dartTail(Model):
         TCS([I0boom == pi*t0boom*d0boom**3/8]),
         Eboom       == 150*10**9*units('N/m^2'),
         Wboom       >= pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
-        thetaboom   <= 0.05,
+        thetaboom   <= 0.02,
         thetaboom   >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
         Fboommax    >= .5*rhoh*(46*units('m/s'))**2*Shtail*CLmaxhtail,
         Fboommax    >= .5*rhoh*(46*units('m/s'))**2*Svtail*CLmaxvtail,
