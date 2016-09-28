@@ -2,7 +2,7 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units, ConstraintSet
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from CFM_56_validation_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OnDesignSizing, OffDesign, FanMap, LPCMap, HPCMap
+from CFM_56_validation_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OffDesign, FanMap, LPCMap, HPCMap
 from collections import defaultdict
 from gpkit.small_scripts import mag
 
@@ -280,7 +280,6 @@ class FullEngineRun(Model):
         engine1 = OffDesignTOC()
         engine2 = OffDesignOnDRerun()
         engine3 = OffDesignTO()
-        engine4 = OffDesignSLS()
     ##    sol1 = engine1.localsolve(verbosity = 4, solver="mosek")
     ##    bounds, sol = engine1.determine_unbounded_variables(engine1, solver="mosek",verbosity=4, iteration_limit=50)
 
@@ -352,11 +351,11 @@ class FullEngineRun(Model):
 
         Pt45 = piHPT * Pt3
 
-        print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
+##        print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
 
-        m = Model((engine2.cost+engine1.cost+engine3.cost), constraints, valsubs)
+        Model.__init__(self, (engine2.cost+engine1.cost+engine3.cost), constraints, valsubs)
 
-        sol = m.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
+        sol = self.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
         print sol.table()
     ##    bounds, sol = engine1.determine_unbounded_variables(m, solver="mosek",verbosity=4, iteration_limit=200)
 
