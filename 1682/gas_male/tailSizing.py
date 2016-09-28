@@ -39,7 +39,7 @@ class dartTail(Model):
         rhoCFRP     = Variable('\\rho_{CFRP}',1.6,'g/cm^3','Density of CFRP')
         rhoFoamular = Variable('\\rho_{Foamular}',1.5,'lbf/ft^3','Density of Foamular 250')
         rhoskin     = Variable('\\rho_{skin}',.1,'g/cm^2','Skin density')
-        
+
         # Tail properties
         Wtail       = Variable('W_{tail}','N','Total tail weight')
         FNE         = Variable('F_{NE}','-','Boom flexibility factor')
@@ -53,6 +53,9 @@ class dartTail(Model):
         Eboom       = Variable('E_{boom}','N/m^2','Tail boom modulus of elasticity')
         Fboom       = Variable('F_{boom}','N','Tail downforce')
         Fboommax    = Variable('F_{boom-max}','N','Max tail force')
+        sigboom       = Variable('\\sigma_{boom}','Pa','Maximum boom stress')
+        sigyieldboom = Variable('\\sigma_{yield-boom}',570*10**6,'Pa','CFRP yield stress') #based on compressive yield
+        Zboom       = Variable('Z_{boom}','m^3','Boom modulus')
         kboom       = Variable('k_{boom}','-','Tail boom index (1-.5k)') # k = 0, uniform thickness, 1, constant taper to zero
         #yboom      = Variable('y_{boom}','m','Tail deflection at max force')
         #yolboom    = Variable('y/l_{boom}','-','Max tolerated tail deflection factor')
@@ -86,7 +89,7 @@ class dartTail(Model):
 
         # Crosswind landing variables
         Vland      = Variable('V_{land}',12,'m/s','Landing speed')
-        Vwindcross = Variable('V_{wind_cross}',20,'mph','Landing cross-wind speed')
+        Vwindcross = Variable('V_{wind_cross}',10,'mph','Landing cross-wind speed')
         CDy = Variable('C_{Dy}',.5,'-','Crosswind drag coefficient')
         Vrel = Variable('V_{rel}','m/s','Relative wind in crosswind')
 
@@ -100,8 +103,11 @@ class dartTail(Model):
         Wboom       >= pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
         thetaboom   <= 0.02,
         thetaboom   >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
-        Fboommax    >= .5*rhoh*(46*units('m/s'))**2*Shtail*CLmaxhtail,
-        Fboommax    >= .5*rhoh*(46*units('m/s'))**2*Svtail*CLmaxvtail,
+        Fboommax    == .5*(.776*units('kg/m^3'))*(46*units('m/s'))**2*Shtail*CLmaxhtail,
+        Fboommax    >= .5*(.776*units('kg/m^3'))*(46*units('m/s'))**2*Svtail*CLmaxvtail,
+        #sigboom     >= Fboommax*lboom/(Zboom),
+        #sigyieldboom >= sigboom,
+        #Zboom*(d0boom/2)+0.78*(d0boom/2)**4 <= 0.78*((d0boom/2+t0boom)**4),
         #Fboom       >= .5*rhoTO*Vrel**2*Svtail*CLmaxvtail,
         Fboom       == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
         FNE**-1     >= 1 + mhtail*qNE*Shtail*lboom**2*kboom/(Eboom*I0boom),
@@ -192,7 +198,7 @@ class GasMALE(Model):
 
         lc = LCS([self.submodels, constraints])
 
-        objective = tail['W_{tail}']
+        objective = tail['W_{tail}'] 
         Model.__init__(self, objective, lc, **kwargs)
 
 
@@ -223,3 +229,4 @@ if __name__ == "__main__":
     #print 'Vtail root chord: ' + str(varVals['cr_{vtail}']) 
     print 'CLmaxvtail: ' + str(varVals['CL_{max-vtail}'])
     print 'Relative wind: ' + str(varVals['V_{rel}'])
+    print 'Maximum boom loading: ' + str(varVals['F_{boom-max}'])
