@@ -18,15 +18,12 @@ class Mission(Model):
 
         self.submodels = [
             TakeOff(1, [0.684], [0.1], False, wind, DF70),
-            Climb(Nclimb, [0.502]*Nclimb, np.linspace(0, 5000, Nclimb+1)[1:],
-                  False, wind, DF70, dh=5000),
-            Cruise(1, [0.684], [5000], False, wind, DF70, R=180),
-            Climb(Nclimb, [0.567]*Nclimb,
-                  np.linspace(5000, h_station, Nclimb+1)[1:], False, wind,
-                  DF70, dh=10000),
+            Climb(Nclimb, [0.502]*Nclimb, np.linspace(0, 15000, Nclimb+1)[1:],
+                  False, wind, DF70, dh=15000),
+            Cruise(1, [0.684], [15000], False, wind, DF70, R=180),
             Loiter(Nloiter, [0.647]*Nloiter, [h_station]*Nloiter, True, wind,
                    DF70),
-            Cruise(1, [0.684], [5000], False, wind, DF70, R=200)
+            Cruise(1, [0.684], [15000], False, wind, DF70, R=200)
             ]
 
         mtow = Variable("MTOW", "lbf", "Max take off weight")
@@ -489,7 +486,7 @@ class Spar(Model):
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
 
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
-        w_lim = Variable("w_{lim}", 0.1, "-", "spar width to chord ratio")
+        w_lim = Variable("w_{lim}", 0.13, "-", "spar width to chord ratio")
 
         beam = Beam(N, cb)
 
@@ -498,6 +495,7 @@ class Spar(Model):
             dm >= rho*w*t*b/2/(N-1),
             m >= dm.sum(),
             w <= w_lim*S/b*cbar,
+            # w < w_lim,
             S/b*cbar*tau >= hin + 2*t,
             beam["\\bar{\\delta}"][-1] <= kappa,
             beam["\\bar{M}"][:-1]*b*W_cent*N_max/4/w/t/hin**2*(hin+t) <= sigma,
@@ -689,18 +687,18 @@ class Tail(Model):
                        "never exceed dynamic pressure")
         Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
 
-        tb = TailBoom()
+        # tb = TailBoom()
 
         constraints = [
-            W/m_fac >= W_vtail + tb["W"],
-            tb["F"] >= 0.5*case["\\rho"][0]*case["V_{stall}"][0]**2*Sh*CLmax,
-            TCS([1.0/Fne >= 1.0+mh*qne*Sh*tb["L"]**2/tb["E"]/tb["I_0"]*tb["(1-k/2)"]]),
-            Fne >= 0.01
+            W/m_fac >= W_vtail, # + tb["W"],
+            # tb["F"] >= 0.5*case["\\rho"][0]*case["V_{stall}"][0]**2*Sh*CLmax,
+            # TCS([1.0/Fne >= 1.0+mh*qne*Sh*tb["L"]**2/tb["E"]/tb["I_0"]*tb["(1-k/2)"]]),
+            # Fne >= 0.01
             ]
 
-        lc = LinkedConstraintSet([tb, constraints], exclude=["W"])
+        # lc = LinkedConstraintSet([tb, constraints], exclude=["W"])
 
-        Model.__init__(self, None, lc, **kwargs)
+        Model.__init__(self, None, constraints, **kwargs)
 
 class Avionics(Model):
     def __init__(self, **kwargs):
@@ -759,7 +757,7 @@ class GasMALE(Model):
     possible.  Model should be combed for variables that are incorrectly
     fixed.
     """
-    def __init__(self, h_station=15000, wind=False, DF70=False, Nclimb=5,
+    def __init__(self, h_station=15000, wind=False, DF70=False, Nclimb=10,
                  Nloiter=5, margin=False, **kwargs):
 
         mission = Mission(h_station, wind, DF70, Nclimb, Nloiter)
