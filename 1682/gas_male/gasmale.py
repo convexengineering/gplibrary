@@ -679,18 +679,26 @@ class Tail(Model):
         W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
         m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "Tail weight")
-        Shtail = Variable("S_{htail}", 2.33, "ft**2", "horizontal tail area")
+        Sh = Variable("S_h", 2.33, "ft**2", "horizontal tail area")
         CLmax = Variable("C_{L-max}", 1.0, "-",
                          "maximum lift of horizontal tail")
 
-        tailboom = TailBoom()
+        mh = Variable("m_h", 4.48, "-", "horizontal tail moment coefficent")
+        ARh = Variable("AR_h", 5, "-", "horizontal tail aspect ratio")
+        qne = Variable("q_{NE}", 1571.4, "kg/m/s**2",
+                       "never exceed dynamic pressure")
+        Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
+
+        tb = TailBoom()
 
         constraints = [
-            W/m_fac >= W_vtail + tailboom["W"],
-            tailboom["F"] >= 0.5*case["\\rho"][0]*case["V_{stall}"][0]**2*Shtail*CLmax
+            W/m_fac >= W_vtail + tb["W"],
+            tb["F"] >= 0.5*case["\\rho"][0]*case["V_{stall}"][0]**2*Sh*CLmax,
+            TCS([1.0/Fne >= 1.0+mh*qne*Sh*tb["L"]**2/tb["E"]/tb["I_0"]*tb["(1-k/2)"]]),
+            Fne >= 0.01
             ]
 
-        lc = LinkedConstraintSet([tailboom, constraints], exclude=["W"])
+        lc = LinkedConstraintSet([tb, constraints], exclude=["W"])
 
         Model.__init__(self, None, lc, **kwargs)
 
