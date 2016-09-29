@@ -11,7 +11,8 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 PLOT = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "W_{zfw}",
-           "P_{shaft-maxMSL}", "S_{fuse}", "W_{cent}", "W_{fuel-tot}", "g"]
+           "P_{shaft-maxMSL}", "S_{fuse}", "W_{cent}", "W_{fuel-tot}", "g",
+           "V_{stall}"]
 
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, Nclimb, Nloiter, **kwargs):
@@ -61,12 +62,13 @@ class FlightSegment(Model):
         self.N = N
         self.exclude = ["m_{fac}"]
 
-        self.Vstall = VectorVariable(N, "V_{stall}", "m/s", "stall speed")
+        # self.Vstall = VectorVariable(N, "V_{stall}", "m/s", "stall speed")
 
-        self.constraints = [
-            self.Vstall == ((self.fuel["W_{N}"]*2/self.slf["\\rho"]/
-                             self.aero["S"]/1.5)**0.5)
-            ]
+        # self.constraints = [
+        #     self.Vstall == ((self.fuel["W_{N}"]*2/self.slf["\\rho"]/
+        #                      self.aero["S"]/1.5)**0.5)
+        #     ]
+        self.constraints = []
 
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
                           self.atm, self.wind]
@@ -80,9 +82,14 @@ class TakeOff(FlightSegment):
         self.submodels.extend([breguetendurance])
 
         t_to = Variable("t_{TO}", 10, "minutes", "take off time")
+        Vstall = Variable("V_{stall}", "m/s", "stall speed")
+        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
+                         "air density at sea level")
 
-        self.constraints.extend([breguetendurance["t"] >= t_to,
-                                 self.slf["V"] >= 1.3*self.Vstall])
+        self.constraints = [breguetendurance["t"] >= t_to,
+                            self.slf["V"] >= 1.3*Vstall,
+                            Vstall >= (self.fuel["W_{N}"][0]*2/rhosl/self.aero["S"]/1.5)**0.5
+                           ]
 
         lc = LinkedConstraintSet([self.submodels, self.constraints],
                                  exclude=self.exclude)
@@ -648,8 +655,8 @@ class EngineWeight(Model):
 class TailBoom(Model):
     def __init__(self, **kwargs):
 
-        F = Variable("F", 42.4, "N", "point force from tail")
-        L = Variable("L", 4.67, "ft", "tail boom length")
+        F = Variable("F", "N", "point force from tail")
+        L = Variable("L", 5, "ft", "tail boom length")
         E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
         kfac = Variable("(1-k/2)", 0.6, "-", "(1-k/2) tail boom inertia value")
         I0 = Variable("I_0", "m^4", "tail boom moment of inertia")
@@ -663,7 +670,7 @@ class TailBoom(Model):
         thmax = Variable("\\theta_{max}", 0.5, "-",
                          "max tail boom deflection angle")
 
-        constraints = [I0 == pi*t0*d0**3/8.0,
+        constraints = [I0 <= pi*t0*d0**3/8.0,
                        W >= pi*g*rho_cfrp*d0*L*t0*kfac,
                        t0 >= tmin,
                        th <= thmax,
@@ -677,28 +684,30 @@ class Tail(Model):
         W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
         m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "Tail weight")
-        Sh = Variable("S_h", 2.33, "ft**2", "horizontal tail area")
-        CLmax = Variable("C_{L-max}", 1.0, "-",
-                         "maximum lift of horizontal tail")
+        Sh = Variable("S_h", "ft**2", "horizontal tail area")
+        CLh = Variable("C_{L_h}", 1.0, "-", "maximum lift of horizontal tail")
+        CLw = Variable("C_{L_w}", 1.5, "-", "maximum lift of win")
+        Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
+        S = Variable("S", "ft^2", "wing area")
+        b = Variable("b", "ft", "Span")
+        Cmw = Variable("C_{m_w}", 0.121, "-", "negative wing moment coefficent")
+        xcg = Variable("x_{cg}-x_{ac}", 4, "in", "distance from AC to CG")
+        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
+                         "air density at sea level")
+        Vstall = Variable("V_{stall}", "m/s", "stall speed")
 
-        mh = Variable("m_h", 4.48, "-", "horizontal tail moment coefficent")
-        ARh = Variable("AR_h", 5, "-", "horizontal tail aspect ratio")
-        qne = Variable("q_{NE}", 1571.4, "kg/m/s**2",
-                       "never exceed dynamic pressure")
-        Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
-
-        # tb = TailBoom()
+        tb = TailBoom()
 
         constraints = [
-            W/m_fac >= W_vtail, # + tb["W"],
-            # tb["F"] >= 0.5*case["\\rho"][0]*case["V_{stall}"][0]**2*Sh*CLmax,
-            # TCS([1.0/Fne >= 1.0+mh*qne*Sh*tb["L"]**2/tb["E"]/tb["I_0"]*tb["(1-k/2)"]]),
-            # Fne >= 0.01
+            W/m_fac >= W_vtail + tb["W"],
+            tb["F"] >= 0.5*rhosl*Vstall**2*Sh*CLh,
+            Cmw + xcg*b/S*CLw <= Vh*CLh,
+            Vh <= Sh*tb["L"]/S**2*b
             ]
 
-        # lc = LinkedConstraintSet([tb, constraints], exclude=["W"])
+        lc = LinkedConstraintSet([tb, constraints], exclude=["W"])
 
-        Model.__init__(self, None, constraints, **kwargs)
+        Model.__init__(self, None, lc, **kwargs)
 
 class Avionics(Model):
     def __init__(self, **kwargs):
