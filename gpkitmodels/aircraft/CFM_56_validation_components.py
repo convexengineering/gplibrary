@@ -557,7 +557,7 @@ class HPCMap(Model):
         with SignomialsEnabled():
 
             constraints=[
-                pihc*(26/pihcD) == (1.35 * (N2)**0.383)**10,
+                pihc*(26/pihcD) == (1.35 * (N2)**0.566)**10,
                 pihc*(26/pihcD) >= .95*(1.38 * (mtildhc)**0.122)**10,
                 pihc*(26/pihcD) <= 1.05*(1.38 * (mtildhc)**0.122)**10,
 

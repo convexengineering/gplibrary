@@ -321,8 +321,8 @@ class FullEngineRun(Model):
         'M_{4a}': M4a,
         'hold_{4a}': 1+.5*(1.313-1)*M4a**2,#sol('hold_{4a}'),
         'r_{uc}': .01,
-        '\\alpha_c': .3,
-        'T_{t_f}': 500,
+        '\\alpha_c': .19036,
+        'T_{t_f}': 435,
 
         'M_{takeoff}': .9,
 
