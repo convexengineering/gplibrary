@@ -81,13 +81,14 @@ class Fuselage(Model):
 
         # Weights (free)
         #Wbuoy    = Variable('W_{buoy}', 'N', 'Buoyancy weight')
+        Wcone    = Variable('W_{cone}', 'N', 'Cone weight')
         Wfloor   = Variable('W_{floor}', 'N', 'Floor weight')
         Wfuse    = Variable('W_{fuse}', 'N', 'Fuselage weight')
+        Winsul   = Variable('W_{insul}', 'N', 'Insulation material weight')
         Wshell = Variable('W_{shell}','N','Shell weight')
         Wskin    = Variable('W_{skin}', 'N', 'Skin weight')
         Wpay     = Variable('W_{pay}', 'N', 'Payload weight')
         Wseat    = Variable('W_{seat}', 'N', 'Seating weight')
-        Wcone    = Variable('W_{cone}', 'N', 'Cone weight')
 
         # Weights (fixed)
         #Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
@@ -113,6 +114,11 @@ class Fuselage(Model):
         rhofloor = Variable('\\rho_{floor}',2700, 'kg/m^3', 'Floor material density') #TASOPT value used
         taufloor = Variable('\\tau_{floor}',30000/0.000145, 'N/m^2', 'Max allowable shear web stress') #TASOPT value used
         Wppfloor = Variable('W\'\'_{floor}', 60,'N/m^2', 'Floor weight/area density') #TAS
+        Wppinsul = Variable('W\'\'_{insul}',22,'N/m^2',
+                            'Weight/area density of insulation material')
+        Wpseat   = Variable('W\'_{seat}', 'N', 'Weight per seat')
+        Wpwindow = Variable('W\'_{window}', 'N/m',
+                            'Weight/length density of windows')
         rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
         sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
                             'Max allowable skin stress') # again notional 
@@ -172,9 +178,10 @@ class Fuselage(Model):
             Vcabin >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
 
             # Fuselage weight relations
+            Winsul >= Wppinsul*((1.1*pi+2*thetadb)*Rfuse*lshell + 0.55*(Snose+Sbulk)),
             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
-            Wfuse >= Wfix + Wshell + Wfloor + Wcone,
+            Wfuse >= Wfix + Winsul + Wshell + Wfloor + Wcone,
             
             ## Stress relations
             #Pressure shell loading
@@ -204,8 +211,8 @@ class Fuselage(Model):
             bvt == 7*units('m'),
             plamv >= 1.6,
             rhocone == 2700*units('kg/m^3'),
+            taucone == sigskin,
             3*Qv*(plamv-1) >= Lvmax*bvt*(plamv),
-            # #Qv == 2*Acone*taucone*tcone,
             lamcone == 0.4, # TODO remove
             Vcone*(1+lamcone)*(pi+4*thetadb) >= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
             Wcone >= rhocone*g*Vcone*(1+fstring+fframe)
