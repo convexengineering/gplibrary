@@ -50,16 +50,16 @@ class Fuselage(Model):
         wseat   = Variable('w_{seat}',0.5,'m', 'Seat width')
 
         # Tail cone variables
-        Lvmax    = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
-        bvt      = Variable('b_{vt}', 'm', 'Vertical tail span')
-        plamv    = Variable('p_{\\lambda_v}', '-', '1 + 2*Tail taper ratio')
-        Qv       = Variable('Q_{v}', 'N*m', 'Torsion moment imparted by tail')
-        taucone  = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
-        rhocone  = Variable('\\rho_{cone}', 'kg/m^3','Cone material density')
-        lamcone  = Variable('\\lambda_{cone}', '-','Tailcone radius taper ratio (xshell2->xtail)')
-        Vcone    = Variable('V_{cone}', 'm^3', 'Cone skin volume')
-        lcone    = Variable('l_{cone}', 'm', 'Cone length')
-        tcone    = Variable('t_{cone}', 'm', 'Cone thickness')
+        Lvmax   = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
+        bvt     = Variable('b_{vt}', 'm', 'Vertical tail span')
+        plamv   = Variable('p_{\\lambda_v}', '-', '1 + 2*Tail taper ratio')
+        Qv      = Variable('Q_{v}', 'N*m', 'Torsion moment imparted by tail')
+        taucone = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
+        rhocone = Variable('\\rho_{cone}', 'kg/m^3','Cone material density')
+        lamcone = Variable('\\lambda_{cone}', '-','Tailcone radius taper ratio (xshell2->xtail)')
+        Vcone   = Variable('V_{cone}', 'm^3', 'Cone skin volume')
+        lcone   = Variable('l_{cone}', 'm', 'Cone length')
+        tcone   = Variable('t_{cone}', 'm', 'Cone thickness')
 
         # Lengths (free)
         lfuse    = Variable('l_{fuse}', 'm', 'Fuselage length')
@@ -157,6 +157,7 @@ class Fuselage(Model):
             # Temporarily
             lnose == 0.3*lshell,
             lfuse == 1.3*lshell,
+            lcone == 0.3*lshell,
 
             # Fuselage width relations
             wfuse >= SPR*wseat + 2*waisle + tdb + 2*tskin,
@@ -188,9 +189,9 @@ class Fuselage(Model):
             Pfloor >= Nland*(Wpay + Wseat),
             Mfloor >= 9./256.*Pfloor*wfloor,
             Afloor >= 2.*Mfloor/(sigfloor*hfloor) + 1.5*Sfloor/taufloor,
-            Vfloor == 2*wfloor*Afloor,
-            Wfloor >= rhofloor*g*Vfloor + wfloor*lfloor*Wppfloor,
-            Sfloor == (5./16.)*Pfloor,
+            Vfloor == 2*lfloor*Afloor, # QUESTIONS??? DID DRELA MISTYPE? 2*wfloor*Afloor
+            Wfloor >= rhofloor*g*Vfloor + 2*wfloor*lfloor*Wppfloor,
+            Sfloor >= (5./16.)*Pfloor,
             # Added synthetic constraint on hfloor to keep it from growing too large
             hfloor <= .1*Rfuse,
 
@@ -200,15 +201,21 @@ class Fuselage(Model):
             
             # Tail cone loading model
             Lvmax == 35000*units('N'), # based on 737
+            bvt == 7*units('m'),
             plamv >= 1.6,
+            rhocone == 2700*units('kg/m^3'),
             3*Qv*(plamv-1) >= Lvmax*bvt*(plamv),
-            #Qv == 2*Acone*taucone*tcone,
+            # #Qv == 2*Acone*taucone*tcone,
             lamcone == 0.4, # TODO remove
             Vcone*(1+lamcone)*(pi+4*thetadb) >= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
             Wcone >= rhocone*g*Vcone*(1+fstring+fframe)
+
+            # Maximum axial stress model (sum of bending and pressurization strain)
+            #rhobend >= rE*(Mh(x)*hfuse)... will be integrated later, since we don't know the forces yet
+
             ]
 
-        objective = Wfuse + Afuse*units('N/m**2') + wfloor*units('N/m') + Pfloor + Vcabin*units('N/m^3') + hfloor*units('N/m')
+        objective = Wfuse + Vcabin*units('N/m^3') 
         Model.__init__(self, objective, constraints, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
@@ -297,8 +304,7 @@ if __name__ == "__main__":
     varVals = sol['variables']
     print 'Cabin volume: ' + str(varVals['V_{cabin}_Fuselage']) +'.'
     print 'Fuselage width: ' + str(varVals['w_{fuse}_Fuselage']) + '.'
-    print 'Web height: ' + str(2*varVals['h_{db}_Fuselage']) + '.'
-    print 'Floor width: ' + str(varVals['w_{floor}_Fuselage']) + '.'
+    print 'Floor area: ' + str(varVals['A_{floor}_Fuselage']) + '.'
     print 'Floor height: ' + str(varVals['h_{floor}_Fuselage']) + '.'
     print 'Floor length: ' + str(varVals['l_{floor}_Fuselage']) + '.'
     print  'Fuselage angle: ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
@@ -310,3 +316,7 @@ if __name__ == "__main__":
     print 'Shell thickness: ' + str(varVals['t_{shell}_Fuselage']) + '.'
     print 'Skin hoop stress: ' + str(varVals['\\sigma_{\\theta}_Fuselage']) + '.'
     print 'Skin axial stress: ' + str(varVals['\\sigma_x_Fuselage']) + '.'
+    print 'Cone weight: ' + str(varVals['W_{cone}_Fuselage'])
+    print 'Cone volume: ' + str(varVals['V_{cone}_Fuselage'])
+    print 'Tail torsion moment: ' + str(varVals['Q_{v}_Fuselage'])
+    print 'Cone taper ratio: ' + str(varVals['\\lambda_{cone}'])
