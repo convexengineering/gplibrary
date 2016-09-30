@@ -431,7 +431,7 @@ class LandingGear(Model):
         Model.__init__(self, None, constraints, **kwargs)
 
 class Beam(Model):
-    def __init__(self, N, q, untapered=False, **kwargs):
+    def __init__(self, N, q, untapered, **kwargs):
 
         qbar = VectorVariable(N, "\\bar{q}", q, "-", "normalized loading")
         Sbar = VectorVariable(N, "\\bar{S}", "-", "normalized shear")
@@ -471,8 +471,10 @@ def c_bar(lam, N):
     c = 2/(1+lam)*(1+(lam-1)*eta)
     return c
 
-class TaperedSpar(Model):
-    def __init__(self, N=5, **kwargs):
+class Spar(Model):
+    def __init__(self, N=5, untapered=False, **kwargs):
+        # NOTE: untapered does not solve with current values.  Relax w_lim
+        # and t_loiter to solve.
 
         # phyiscal properties
         rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
@@ -487,12 +489,16 @@ class TaperedSpar(Model):
         cbavg = (cb[:-1] + cb[1:])/2
         cbar = VectorVariable(N-1, "\\bar{c}", cbavg, "-",
                               "normalized chord at mid element")
-        t = VectorVariable(N-1, "t", "in", "spar cap thickness")
-        hin = VectorVariable(N-1, "h_{in}", "in", "inner spar height")
-        w = VectorVariable(N-1, "w", "in", "spar width")
-        ts = VectorVariable(N-1, "t_s", "in", "shear casing thickness")
-        I = VectorVariable(N-1, "I", "m^4", "spar x moment of inertia")
-        dm = VectorVariable(N-1, "dm", "kg", "segment spar mass")
+        if untapered:
+            n = 1
+        else:
+            n = N-1
+        t = VectorVariable(n, "t", "in", "spar cap thickness")
+        hin = VectorVariable(n, "h_{in}", "in", "inner spar height")
+        w = VectorVariable(n, "w", "in", "spar width")
+        ts = VectorVariable(n, "t_s", "in", "shear casing thickness")
+        I = VectorVariable(n, "I", "m^4", "spar x moment of inertia")
+        dm = VectorVariable(n, "dm", "kg", "segment spar mass")
         m = Variable("m", "kg", "spar mass")
 
         S = Variable("S", "ft^2", "wing area")
@@ -503,14 +509,14 @@ class TaperedSpar(Model):
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
 
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
-        w_lim = Variable("w_{lim}", 0.13, "-", "spar width to chord ratio")
+        w_lim = Variable("w_{lim}", 2, "in", "spar width to chord ratio")
 
-        beam = Beam(N, cb)
+        beam = Beam(N, cb, untapered)
 
         constraints = [
-            dm >= rho_cfrp*w*t*b/(N-1) + rho_fg*b/2/(N-1)*2*ts*(w+hin),
+            dm >= rho_cfrp*w*t*b/n + rho_fg*b/2/n*2*ts*(w+hin),
             m >= dm.sum(),
-            w <= w_lim*S/b*cbar,
+            w <= w_lim,
             S/b*cbar*tau >= hin + 2*t + 2*ts,
             beam["\\bar{S}"][:-1]*W_cent*N_max/b*(b/2)/4/hin/ts <= sigma_fg,
             beam["\\bar{\\delta}"][-1] <= kappa,
@@ -524,56 +530,6 @@ class TaperedSpar(Model):
                 constraints.extend([I <= w*t**3/6 + 2*w*t*(hin/2+t/2)**2])
         else:
             constraints.extend([I <= 2*w*t*(hin/2)**2])
-
-        lc = LinkedConstraintSet([beam, constraints])
-
-        Model.__init__(self, None, lc, **kwargs)
-
-class ConstantSpar(Model):
-    def __init__(self, N=5, **kwargs):
-
-        # phyiscal properties
-        rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
-        rho_fg = Variable("\\rho_{fg}", 0.75, "g/cm^3", "density of fiberglass")
-        E = Variable("E", 2e7, "psi", "Youngs modulus of CF")
-        sigma_cfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
-        sigma_fg = Variable("\\sigma_{fg}", 175e6, "Pa",
-                            "Fiberglass max stress")
-
-        # Structural lengths
-        cb = c_bar(0.5, N)
-        cbavg = (cb[:-1] + cb[1:])/2
-        cbar = VectorVariable(N-1, "\\bar{c}", cbavg, "-",
-                              "normalized chord at mid element")
-        t = Variable("t", "in", "spar cap thickness")
-        hin = Variable("h_{in}", "in", "inner spar height")
-        w = Variable("w", "in", "spar width")
-        ts = Variable("t_s", "in", "shear casing thickness")
-        I = Variable("I", "m^4", "spar x moment of inertia")
-        m = Variable("m", "kg", "spar mass")
-
-        S = Variable("S", "ft^2", "wing area")
-        tau = Variable("\\tau", 0.115, "-", "Airfoil thickness ratio")
-        b = Variable("b", "ft", "Span")
-
-        N_max = Variable("N_{max}", 5, "-", "Load factor")
-        W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
-
-        kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
-        w_lim = Variable("w_{lim}", 3, "in", "spar width to chord ratio")
-
-        beam = Beam(N, cb, untapered=True)
-
-        constraints = [
-            I <= 2*w*t*(hin/2)**2,
-            m >= rho_cfrp*w*t*b + rho_fg*b*ts*(w+hin),
-            w <= w_lim,
-            S/b*cbar*tau >= hin + 2*t + 2*ts,
-            beam["\\bar{S}"][:-1]*W_cent*N_max/b*(b/2)/4/hin/ts <= sigma_fg,
-            beam["\\bar{\\delta}"][-1] <= kappa,
-            beam["\\bar{M}"][:-1]*b*W_cent*N_max/4*(hin+t)/I <= sigma_cfrp,
-            beam["\\bar{EI}"] <= E*I/N_max/W_cent*b/(b/2)**3
-            ]
 
         lc = LinkedConstraintSet([beam, constraints])
 
@@ -603,8 +559,7 @@ class Wing(Model):
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         m_fac = Variable("m_{fac}", 1.0, "-", "Wing weight margin factor")
 
-        self.spar = TaperedSpar(5)
-        # self.spar = ConstantSpar(5)
+        self.spar = Spar(5)
 
         constraints = [m_skin >= rho_skin*S*2,
                        wingloading == mtow/S,
