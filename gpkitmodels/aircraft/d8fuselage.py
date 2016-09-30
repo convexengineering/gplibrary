@@ -89,6 +89,7 @@ class Fuselage(Model):
         Wskin    = Variable('W_{skin}', 'N', 'Skin weight')
         Wpay     = Variable('W_{pay}', 'N', 'Payload weight')
         Wseat    = Variable('W_{seat}', 'N', 'Seating weight')
+        Wwindow  = Variable('W_{window}', 'N', 'Window weight')
 
         # Weights (fixed)
         #Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
@@ -117,7 +118,7 @@ class Fuselage(Model):
         Wppinsul = Variable('W\'\'_{insul}',22,'N/m^2',
                             'Weight/area density of insulation material')
         Wpseat   = Variable('W\'_{seat}', 'N', 'Weight per seat')
-        Wpwindow = Variable('W\'_{window}', 'N/m',
+        Wpwindow = Variable('W\'_{window}', 145.*3,'N/m',
                             'Weight/length density of windows')
         rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
         sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
@@ -179,9 +180,10 @@ class Fuselage(Model):
 
             # Fuselage weight relations
             Winsul >= Wppinsul*((1.1*pi+2*thetadb)*Rfuse*lshell + 0.55*(Snose+Sbulk)),
+            Wwindow >= Wpwindow*lshell,
             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
-            Wfuse >= Wfix + Winsul + Wshell + Wfloor + Wcone,
+            Wfuse >= Wfix + Winsul + Wshell + Wfloor + Wcone + Wwindow,
             
             ## Stress relations
             #Pressure shell loading
