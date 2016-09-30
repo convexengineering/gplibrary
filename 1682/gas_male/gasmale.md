@@ -89,7 +89,7 @@ import numpy as np
 
 M = GasMALE()
 M.substitutions.update({"MTOW": 150})
-fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15), "t_{loiter}")
+fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15), ["t_{loiter}"])
 gen_tex_fig(fig, "tstation_vs_MTOW_rubber")
 ```
 

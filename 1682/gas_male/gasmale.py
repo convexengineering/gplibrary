@@ -212,7 +212,7 @@ class Fuel(Model):
         # than the next end of segment weight + the next segment fuel weight.
         # The last end segment weight must be greater than the zero fuel
         # weight
-        constraints = [TCS([W_start >= W_nplus1[0] + W_fuel[0]]),
+        constraints = [W_start >= W_nplus1[0] + W_fuel[0],
                        W_fuelfs >= W_fuel.sum(),
                        W_nplus1[-1] >= W_end,
                        W_n[0] == W_start]
@@ -221,7 +221,7 @@ class Fuel(Model):
             pass
         else:
             constraints.extend([
-                TCS([W_nplus1[:-1] >= W_nplus1[1:] + W_fuel[1:]]),
+                W_nplus1[:-1] >= W_nplus1[1:] + W_fuel[1:],
                 W_n[1:] == W_nplus1[:-1],
                 ])
 
@@ -344,9 +344,9 @@ class BreguetEndurance(Model):
         W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         constraints = [
-            TCS([z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5]),
+            z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
             # TCS([z_bre >= P_shafttot*t*bsfc*g/W_nplus1]),
-            TCS([f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)])
+            f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -509,14 +509,14 @@ class Spar(Model):
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
 
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
-        w_lim = Variable("w_{lim}", 2, "in", "spar width to chord ratio")
+        w_lim = Variable("w_{lim}", 0.14, "-", "spar width to chord ratio")
 
         beam = Beam(N, cb, untapered)
 
         constraints = [
             dm >= rho_cfrp*w*t*b/n + rho_fg*b/2/n*2*ts*(w+hin),
             m >= dm.sum(),
-            w <= w_lim,
+            w <= w_lim*S/b*cbar,
             S/b*cbar*tau >= hin + 2*t + 2*ts,
             beam["\\bar{S}"][:-1]*W_cent*N_max/b*(b/2)/4/hin/ts <= sigma_fg,
             beam["\\bar{\\delta}"][-1] <= kappa,
