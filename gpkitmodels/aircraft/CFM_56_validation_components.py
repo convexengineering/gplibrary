@@ -7,7 +7,7 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 
 #Fan
 faneta = .9005
-fgamma = 1.4
+fgamma = 1.401
 
 fexp1 = (fgamma - 1)/(faneta * fgamma)
 
@@ -517,7 +517,7 @@ class LPCMap(Model):
                 pilc*(26/pilcD) >= .95*(1.38 * (mtildlc)**0.122)**10,
                 
                 #define mbar..technially not needed b/c constrained in res 2 and/or 3
-                TCS([mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref)]),    #B.280
+                mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
                 #define mtild
                 mtildlc == mlc/mlcD,   #B.282
                 ]
@@ -612,7 +612,10 @@ class FanMap(Model):
         with SignomialsEnabled():
             
              constraints = [
-                pif*(1.7/piFanD) == (1.05*Nf**.0614)**10,
+                pif*(1.7/piFanD) == (1.05*Nf**.0871)**10,
+
+##                pif*(1.7/piFanD) == (1.05*Nf**.0614)**10,
+                
 ##                pif*(1.7/piFanD) >= .95*(1.04 * ((mtildf)**0.022))**10,
 ##                pif*(1.7/piFanD) <= 1.05*(1.04 * ((mtildf)**0.022))**10,
                 (pif*(1.7/piFanD))**(.1) <= 1.025*(1.06 * (mtildf)**0.137),
@@ -817,7 +820,7 @@ class OffDesign(Model):
         with SignomialsEnabled():
             constraints = [
                 #making f+1 GP compatible --> needed for convergence
-               SignomialEquality(fp1,f+1),
+                SignomialEquality(fp1,f+1),
                 
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
@@ -828,10 +831,10 @@ class OffDesign(Model):
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality
                 #in residual 6 which allows for convergence
                 #residual 2 HPT mass flow
-                TCS([mhtD == (fp1)*mhc*Mtakeoff*(Pt25/Pt41)*(Tt41/Tt25)**.5]),
+                mhtD == (fp1)*mhc*Mtakeoff*(Pt25/Pt41)*(Tt41/Tt25)**.5,
                 
                 #residual 3 LPT mass flow
-                TCS([(fp1)*mlc*Mtakeoff*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD]),
+                (fp1)*mlc*Mtakeoff*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD,
                 
                 #residual 4
                 P7 >= P0,
@@ -842,7 +845,6 @@ class OffDesign(Model):
                 a7 == (1.4*R*T7)**.5,
                 a7*M7==u7,
                 rho7 == P7/(R*T7),
-                mf*(Pt2/Pref)*(Tref/Tt2)**.5 == mFan,
                 
                 #residual 5 core nozzle mass flow
                 P5 >= P0,
@@ -860,9 +862,6 @@ class OffDesign(Model):
                 #compute fan mas flow
                 mFan == rho7*A7*u7,
                 
-                #residual 6 LPC/HPC mass flow constraint
-                mlc*(Pt18/Pref)*(Tref/Tt18)**.5 == mCore,
-                
                 #residual 8, constrain the core exit total pressure
                 Pt49*pitn == Pt5, #B.269
 
@@ -870,7 +869,7 @@ class OffDesign(Model):
                 alpha == mFan / mCore,
                 SignomialEquality(alphap1, alpha + 1),
 
-##                alpha <=10,
+##                alpha <=6.5,
                
                 mtot >= mFan + mCore,
 
@@ -885,7 +884,7 @@ class OffDesign(Model):
                 h2 == Cp1 * T2,
                 rho2 == P2/(R * T2),  #B.196
                 u2 == M2*(Cp1*R*T2/(781*units('J/kg/K')))**.5,  #B.197
-                A2 == (alphap1)*mCore/(rho2*u2),     #B.198
+                A2 == mFan/(rho2*u2),     #B.198
 
                 #HPC area
                 P25 == Pt25*(hold25)**(-3.824857),
@@ -914,10 +913,10 @@ class OffDesign(Model):
                 mhtD >= .9*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
                 mltD <= 1.1*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
                 mltD >= .9*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-                mlcD >= .8*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-                mlcD <= 1.2*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-                mhcD >= .8*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-                mhcD <= 1.2*mCoreD *((319.0/288)**.5)/(130.42/101.325),
+                mlcD >= .9*mCoreD *((258.0/288)**.5)/(67.4/101.325),
+                mlcD <= 1.1*mCoreD *((258.0/288)**.5)/(67.4/101.325),
+                mhcD >= .9*mCoreD *((319.0/288)**.5)/(130.42/101.325),
+                mhcD <= 1.1*mCoreD *((319.0/288)**.5)/(130.42/101.325),
                 mFanBarD >= .9 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
                 mFanBarD <= 1.1 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
             ]
