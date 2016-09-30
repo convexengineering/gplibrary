@@ -4,11 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units
 from gpkit import LinkedConstraintSet, ConstraintSet
+from gpkit import SignomialsEnabled
 from helpers import SummingConstraintSet
 #from gpkit.tools import BoundedConstraintSet
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 PLOT = False
+SIGNOMIALS = True
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "W_{zfw}",
            "P_{shaft-maxMSL}", "S_{fuse}", "W_{cent}", "W_{fuel-tot}", "g",
@@ -506,16 +508,21 @@ class TaperedSpar(Model):
         beam = Beam(N, cb)
 
         constraints = [
-            I <= 2*w*t*(hin/2)**2,
-            dm >= rho_cfrp*w*t*b/2/(N-1) + rho_fg*b/2/(N-1)*2*ts*(w+hin),
+            dm >= rho_cfrp*w*t*b/(N-1) + rho_fg*b/2/(N-1)*2*ts*(w+hin),
             m >= dm.sum(),
             w <= w_lim*S/b*cbar,
             S/b*cbar*tau >= hin + 2*t + 2*ts,
             beam["\\bar{S}"][:-1]*W_cent*N_max/b*(b/2)/4/hin/ts <= sigma_fg,
             beam["\\bar{\\delta}"][-1] <= kappa,
-            beam["\\bar{M}"][:-1]*b*W_cent*N_max/4/w/t/hin**2*(hin+t) <= sigma_cfrp,
+            beam["\\bar{M}"][:-1]*b*W_cent*N_max/4*(hin+t)/I <= sigma_cfrp,
             beam["\\bar{EI}"] <= E*I/N_max/W_cent*b/(b/2)**3
             ]
+
+        if SIGNOMIALS:
+            with SignomialsEnabled():
+                constraints.extend([I <= w*t**3/6 + 2*w*t*(hin/2+t/2)**2])
+        else:
+            constraints.extend([I <= 2*w*t*(hin/2)**2])
 
         lc = LinkedConstraintSet([beam, constraints])
 
@@ -558,12 +565,12 @@ class ConstantSpar(Model):
 
         constraints = [
             I <= 2*w*t*(hin/2)**2,
-            m >= rho_cfrp*w*t*b/2 + rho_fg*b*ts*(w+hin),
+            m >= rho_cfrp*w*t*b + rho_fg*b*ts*(w+hin),
             w <= w_lim,
             S/b*cbar*tau >= hin + 2*t + 2*ts,
             beam["\\bar{S}"][:-1]*W_cent*N_max/b*(b/2)/4/hin/ts <= sigma_fg,
             beam["\\bar{\\delta}"][-1] <= kappa,
-            beam["\\bar{M}"][:-1]*b*W_cent*N_max/4/w/t/hin**2*(hin+t) <= sigma_cfrp,
+            beam["\\bar{M}"][:-1]*b*W_cent*N_max/4*(hin+t)/I <= sigma_cfrp,
             beam["\\bar{EI}"] <= E*I/N_max/W_cent*b/(b/2)**3
             ]
 
@@ -858,5 +865,8 @@ if __name__ == "__main__":
     M = GasMALE(DF70=True)
     M.substitutions.update({"t_{loiter}": 6})
     M.cost = M["MTOW"]
-    sol = M.solve("mosek")
+    if SIGNOMIALS:
+        sol = M.localsolve("mosek")
+    else:
+        sol = M.solve("mosek")
 
