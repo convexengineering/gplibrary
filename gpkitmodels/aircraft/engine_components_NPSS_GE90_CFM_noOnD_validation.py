@@ -6,19 +6,19 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 #Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/property_tables/air/air_Cp_Cv.html
 
 #Fan
-faneta = .9005
+faneta = .9153
 fgamma = 1.4
 
 fexp1 = (fgamma - 1)/(faneta * fgamma)
 
 #LPC
 lpcgamma = 1.398
-LPCeta = .9306
+LPCeta = .9037
 
 lpcexp1 = (lpcgamma - 1)/(LPCeta * lpcgamma)
 
 #HPC
-HPCeta = .9030
+HPCeta = .9247
 hpcgamma = 1.354
 
 hpcexp1 = (hpcgamma - 1)/(HPCeta * hpcgamma)
@@ -32,12 +32,12 @@ ccexp2 = -ccgamma/(1 - ccgamma)
 #Turbines
 #LPT
 lptgamma = 1.354
-LPTeta = .8851
+LPTeta = .9228
 lptexp1 = lptgamma * LPTeta / (lptgamma - 1)
 
 #HPT
 hptgamma = 1.318
-HPTeta = .8731
+HPTeta = .9121
 hptexp1 = hptgamma * HPTeta / (hptgamma - 1)
 
 #Exhaust and Thrust
@@ -198,7 +198,7 @@ class CombustorCooling(Model):
 
         #heat of combustion of jet fuel
         hf = Variable('h_f', 43.003, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
-#43.003
+
         #cooling flow bypass ratio
         ac = Variable('\\alpha_c', '-', 'Total Cooling Flow Bypass Ratio')
 
@@ -451,11 +451,6 @@ class ExhaustAndThrust(Model):
                 h6 == Cptex * T6,
                 ht6 == Cptex * Tt6,
 
-                u6 >= u0,
-                u8 >= u0,
-                F6 >= .01*units('N'),
-                F8 >= .01*units('N'),
-
                 #overall thrust values
                 TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
                 TCS([F6/(Mtakeoff*mCore) + (f+1)*u0 <= (fp1)*u6]),      #B.189
@@ -512,7 +507,7 @@ class LPCMap(Model):
         with SignomialsEnabled():
 
             constraints=[
-                pilc*(26/pilcD) == (1.38 * (N1)**0.566)**10,
+                pilc*(26/pilcD) == (1.35 * (N1)**0.566)**10,
                 pilc*(26/pilcD) <= 1.05*(1.38 * (mtildlc)**0.122)**10,
                 pilc*(26/pilcD) >= .95*(1.38 * (mtildlc)**0.122)**10,
                 
@@ -615,14 +610,15 @@ class FanMap(Model):
                 pif*(1.7/piFanD) == (1.05*Nf**.0614)**10,
 ##                pif*(1.7/piFanD) >= .95*(1.04 * ((mtildf)**0.022))**10,
 ##                pif*(1.7/piFanD) <= 1.05*(1.04 * ((mtildf)**0.022))**10,
-                (pif*(1.7/piFanD))**(.1) <= 1.025*(1.06 * (mtildf)**0.137),
-                (pif*(1.7/piFanD))**(.1) >= .975*(1.06 * (mtildf)**0.137),
+                (pif*(1.7/piFanD))**(.1) <= 1.05*(1.06 * (mtildf)**0.137),
+                (pif*(1.7/piFanD))**(.1) >= .95*(1.06 * (mtildf)**0.137),
                 
                 #define mbar
                 mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
 
                 #define mtild
                 mtildf == mf/mFanBarD,   #B.282
+##                mFanBarD == 253.4*units('kg/s'),
                 ]
               
         Model.__init__(self, 1/pif, constraints, **kwargs)
@@ -812,7 +808,7 @@ class OffDesign(Model):
 
         mCoreD = Variable('m_{coreD}', 'kg/s', 'Estimated on Design Mass Flow')
 
-        F = Variable('F', 'N', 'Total Thrust')
+        mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
 
         with SignomialsEnabled():
             constraints = [
@@ -821,8 +817,6 @@ class OffDesign(Model):
                 
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
-                N1 <= 1.1,
-                N2 <= 1.2,
 
                 #note residuals 2 and 3 differ from TASOPT, by replacing mhc with mlc
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality
@@ -870,7 +864,7 @@ class OffDesign(Model):
                 alpha == mFan / mCore,
                 SignomialEquality(alphap1, alpha + 1),
 
-##                alpha <=10,
+##                alpha <=6.5,
                
                 mtot >= mFan + mCore,
 
@@ -899,25 +893,14 @@ class OffDesign(Model):
                 pilc >= 1,
                 pihc >= 1,
 
-##                mhtD <= 1.15*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
-##                mhtD >= .85*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
-##                mltD <= 1.15*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-##                mltD >= .85*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-##                mlcD >= .85*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-##                mlcD <= 1.15*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-##                mhcD >= .85*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-##                mhcD <= 1.15*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-##                mFanBarD >= .8 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
-##                mFanBarD <= 1.2 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
-
-                mhtD <= 1.1*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
-                mhtD >= .9*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
-                mltD <= 1.1*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-                mltD >= .9*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-                mlcD >= .8*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-                mlcD <= 1.2*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-                mhcD >= .8*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-                mhcD <= 1.2*mCoreD *((319.0/288)**.5)/(130.42/101.325),
+                mhtD <= 1.1*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1595.26/101.325),
+                mhtD >= .9*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1595.26/101.325),
+                mltD <= 1.1*fp1*Mtakeoff*mCoreD *((968.1/288)**.5)/(508.84/101.325),
+                mltD >= .9*fp1*Mtakeoff*mCoreD *((968.1/288)**.5)/(508.84/101.325),
+                mlcD >= .85*mCoreD *((254.0/288)**.5)/(63.2/101.325),
+                mlcD <= 1.15*mCoreD *((254.0/288)**.5)/(63.2/101.325),
+                mhcD >= .85*mCoreD *((273.0/288)**.5)/(79.632/101.325),
+                mhcD <= 1.15*mCoreD *((273.0/288)**.5)/(79.632/101.325),
                 mFanBarD >= .9 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
                 mFanBarD <= 1.1 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
             ]
@@ -927,6 +910,7 @@ class OffDesign(Model):
                     #residual 7
                     #option #1, constrain the engine's thrust
                     F == Fspec,
+##                    Tt41 <= 1800*units('K'),  #B.265
                     ])
         
         if res7 == 1:
@@ -944,3 +928,5 @@ class OffDesign(Model):
                     ])
                  
         Model.__init__(self, TSFC * (W_engine * units('1/hr/N'))**.00001, constraints, **kwargs)
+
+
