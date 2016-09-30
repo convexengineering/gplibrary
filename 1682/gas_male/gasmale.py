@@ -469,9 +469,12 @@ class Spar(Model):
     def __init__(self, N=5, **kwargs):
 
         # phyiscal properties
-        rho = Variable("\\rho", 1.76, "g/cm^3", "Density of CF cap")
+        rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
+        rho_fg = Variable("\\rho_{fg}", 0.75, "g/cm^3", "density of fiberglass")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CF")
-        sigma = Variable("\\sigma", 475e6, "Pa", "Cap stress")
+        sigma_cfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
+        sigma_fg = Variable("\\sigma_{fg}", 175e6, "Pa",
+                            "Fiberglass max stress")
 
         # Structural lengths
         cb = c_bar(0.5, N)
@@ -481,6 +484,7 @@ class Spar(Model):
         t = VectorVariable(N-1, "t", "in", "spar cap thickness")
         hin = VectorVariable(N-1, "h_{in}", "in", "inner spar height")
         w = VectorVariable(N-1, "w", "in", "spar width")
+        ts = VectorVariable(N-1, "t_s", "in", "shear casing thickness")
         I = VectorVariable(N-1, "I", "m^4", "spar x moment of inertia")
         dm = VectorVariable(N-1, "dm", "kg", "segment spar mass")
         m = Variable("m", "kg", "spar mass")
@@ -499,13 +503,14 @@ class Spar(Model):
 
         constraints = [
             I <= 2*w*t*(hin/2)**2,
-            dm >= rho*w*t*b/2/(N-1),
+            dm >= rho_cfrp*w*t*b/2/(N-1) + rho_fg*b/2/(N-1)*2*ts*(w+hin),
             m >= dm.sum(),
             w <= w_lim*S/b*cbar,
             # w < w_lim,
-            S/b*cbar*tau >= hin + 2*t,
+            S/b*cbar*tau >= hin + 2*t + 2*ts,
+            beam["\\bar{S}"][:-1]*W_cent*N_max/b*(b/2)/4/hin/ts <= sigma_fg,
             beam["\\bar{\\delta}"][-1] <= kappa,
-            beam["\\bar{M}"][:-1]*b*W_cent*N_max/4/w/t/hin**2*(hin+t) <= sigma,
+            beam["\\bar{M}"][:-1]*b*W_cent*N_max/4/w/t/hin**2*(hin+t) <= sigma_cfrp,
             beam["\\bar{EI}"] <= E*I/N_max/W_cent*b/(b/2)**3
             ]
 
