@@ -25,40 +25,34 @@ class Fuselage(Model):
         nrows        = Variable('n_{rows}', '-', 'Number of rows')
         pitch        = Variable('p_s',81, 'cm', 'Seat pitch')
         Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor')
-        Pfloor       = Variable('P_{floor}','N', 'Distributed floor load')
-        #Pcargofloor = Variable ('P_{cargo floor}','N','Distributed cargo floor load')
         dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
-        Sfloor       = Variable('S_{floor}', 'N', 'Maximum shear in floor beams')
-        Mfloor       = Variable('M_{floor}', 'N*m', 'Max bending moment in floor beams')
         
-        # Cross sectional parameters (free)
+        # Cross sectional parameters
         Adb     = Variable('A_{db}', 'm^2', 'Web cross sectional area')
         Afloor  = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
         Afuse   = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
         Ahold   = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
-        Askin  = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
-        hdb    = Variable('h_{db}','m', 'Web half-height')
-        hfloor = Variable('h_{floor}', 'm', 'Floor beam height')
-        Rfuse  = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there: no under-fuselage extension deltaR
-        tdb    = Variable('t_{db}', 'm', 'Web thickness')
-        tshell = Variable('t_{shell}', 'm', 'Shell thickness')
-        tskin  = Variable('t_{skin}', 'm', 'Skin thickness')
-        waisle = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
+        Askin   = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
+        hdb     = Variable('h_{db}','m', 'Web half-height')
+        hfloor  = Variable('h_{floor}', 'm', 'Floor beam height')
+        Rfuse   = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there: no under-fuselage extension deltaR
+        tdb     = Variable('t_{db}', 'm', 'Web thickness')
+        thetadb = Variable('\\theta_{db}','-','DB fuselage joining angle')
+        tshell  = Variable('t_{shell}', 'm', 'Shell thickness')
+        tskin   = Variable('t_{skin}', 'm', 'Skin thickness')
+        waisle  = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
         wdb     = Variable('w_{db}','m','DB added half-width')
-        wfuse   = Variable('w_{fuse}', 'm', 'Fuselage width')
         wfloor  = Variable('w_{floor}', 'm', 'Floor width')
+        wfuse   = Variable('w_{fuse}', 'm', 'Fuselage width')
         wseat   = Variable('w_{seat}',0.5,'m', 'Seat width')
 
         # Tail cone variables
-        Lvmax   = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
         bvt     = Variable('b_{vt}', 'm', 'Vertical tail span')
+        lamcone = Variable('\\lambda_{cone}', '-','Tailcone radius taper ratio (xshell2->xtail)')
+        lcone   = Variable('l_{cone}', 'm', 'Cone length')
+        Lvmax   = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
         plamv   = Variable('p_{\\lambda_v}', '-', '1 + 2*Tail taper ratio')
         Qv      = Variable('Q_{v}', 'N*m', 'Torsion moment imparted by tail')
-        taucone = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
-        rhocone = Variable('\\rho_{cone}', 'kg/m^3','Cone material density')
-        lamcone = Variable('\\lambda_{cone}', '-','Tailcone radius taper ratio (xshell2->xtail)')
-        Vcone   = Variable('V_{cone}', 'm^3', 'Cone skin volume')
-        lcone   = Variable('l_{cone}', 'm', 'Cone length')
         tcone   = Variable('t_{cone}', 'm', 'Cone thickness')
 
         # Lengths (free)
@@ -74,60 +68,63 @@ class Fuselage(Model):
         # Volumes (free)        
         Vbulk  = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
         Vcabin = Variable('V_{cabin}', 'm^3', 'Cabin volume')
+        Vcone  = Variable('V_{cone}', 'm^3', 'Cone skin volume')
         Vcyl   = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')   
         Vdb    = Variable('V_{db}', 'm^3', 'Web volume')
-        Vfloor   = Variable('V_{floor}', 'm^3', 'Floor volume')
+        Vfloor = Variable('V_{floor}', 'm^3', 'Floor volume')
         Vnose  = Variable('V_{nose}', 'm^3', 'Nose skin volume')
 
-        # Weights (free)
+        # Weights
         #Wbuoy    = Variable('W_{buoy}', 'N', 'Buoyancy weight')
+        Wavgpass = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
+        Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
+        Wcarryon = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
+        Wchecked = Variable('W_{checked}', 40, 'lbf', 'Ave. checked bag weight')
         Wcone    = Variable('W_{cone}', 'N', 'Cone weight')
+        Wfix     = Variable('W_{fix}', 3000, 'lbf', 'Fixed weights (pilots, cockpit seats, navcom)')
         Wfloor   = Variable('W_{floor}', 'N', 'Floor weight')
         Wfuse    = Variable('W_{fuse}', 'N', 'Fuselage weight')
         Winsul   = Variable('W_{insul}', 'N', 'Insulation material weight')
-        Wshell = Variable('W_{shell}','N','Shell weight')
-        Wskin    = Variable('W_{skin}', 'N', 'Skin weight')
         Wpay     = Variable('W_{pay}', 'N', 'Payload weight')
         Wseat    = Variable('W_{seat}', 'N', 'Seating weight')
+        Wshell   = Variable('W_{shell}','N','Shell weight')
+        Wskin    = Variable('W_{skin}', 'N', 'Skin weight')
         Wwindow  = Variable('W_{window}', 'N', 'Window weight')
-
-        # Weights (fixed)
-        #Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
-        #Wavgpass = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
-        #Wcarryon = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
-        #Wchecked = Variable('W_{checked}', 40, 'lbf', 'Ave. checked bag weight')
-        Wfix     = Variable('W_{fix}', 3000, 'lbf',
-                           'Fixed weights (pilots, cockpit seats, navcom)')
 
         # Weight fractions (fixed, with respect to the aircraft skin weight, set from PRSEUS metrics)
 
         #ffadd     = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
-        fstring   = Variable('f_{string}',0.235,'-','Fractional stringer weight')
-        fframe    = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
         ffairing  = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
+        fframe    = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
+        fstring   = Variable('f_{string}',0.235,'-','Fractional stringer weight')
         fwebcargo = Variable('f_{web}',1.030, '-','Fractional web and cargo floor weight')
 
         # Misc free variables
-        thetadb = Variable('\\theta_{db}','-','DB fuselage joining angle')
 
         # Material properties
-        sigfloor = Variable('\\sigma_{floor}',30000/0.000145, 'N/m^2', 'Max allowable floor stress') #TASOPT value used
-        rhofloor = Variable('\\rho_{floor}',2700, 'kg/m^3', 'Floor material density') #TASOPT value used
-        taufloor = Variable('\\tau_{floor}',30000/0.000145, 'N/m^2', 'Max allowable shear web stress') #TASOPT value used
-        Wppfloor = Variable('W\'\'_{floor}', 60,'N/m^2', 'Floor weight/area density') #TAS
-        Wppinsul = Variable('W\'\'_{insul}',22,'N/m^2',
-                            'Weight/area density of insulation material')
-        Wpseat   = Variable('W\'_{seat}', 'N', 'Weight per seat')
-        Wpwindow = Variable('W\'_{window}', 145.*3,'N/m',
-                            'Weight/length density of windows')
-        rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
-        sigskin  = Variable('\\sigma_{skin}', 46000,'psi',
-                            'Max allowable skin stress') # again notional 
         rE       = Variable('r_E', 1,'-', 'Ratio of stringer/skin moduli')
         rhobend  = Variable('\\rho_{bend}',2700, 'kg/m^3', 'Stringer density')
-        sigth    = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
-        sigx     = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
+        rhocone  = Variable('\\rho_{cone}', 'kg/m^3','Cone material density')
+        rhofloor = Variable('\\rho_{floor}',2700, 'kg/m^3', 'Floor material density') #TASOPT value used
+        rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
+        
+        Wppfloor = Variable('W\'\'_{floor}', 60,'N/m^2', 'Floor weight/area density') #TAS
+        Wppinsul = Variable('W\'\'_{insul}',22,'N/m^2', 'Weight/area density of insulation material')
+        Wpseat   = Variable('W\'_{seat}', 'N', 'Weight per seat')
+        Wpwindow = Variable('W\'_{window}', 145.*3,'N/m', 'Weight/length density of windows')
 
+        # Loads
+        #Pcargofloor = Variable ('P_{cargo floor}','N','Distributed cargo floor load')
+        Mfloor   = Variable('M_{floor}', 'N*m', 'Max bending moment in floor beams')
+        Pfloor   = Variable('P_{floor}','N', 'Distributed floor load')
+        Sfloor   = Variable('S_{floor}', 'N', 'Maximum shear in floor beams')
+        sigfloor = Variable('\\sigma_{floor}',30000/0.000145, 'N/m^2', 'Max allowable floor stress') #TASOPT value used
+        sigskin  = Variable('\\sigma_{skin}', 46000,'psi', 'Max allowable skin stress') # again notional 
+        sigth    = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
+        sigx = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
+        taucone  = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
+        taufloor = Variable('\\tau_{floor}',30000/0.000145, 'N/m^2', 'Max allowable shear web stress') #TASOPT value used
+        
         # Bending inertias (ported from TASOPT)
         Ivshell = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
         Ihshell = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
@@ -198,7 +195,7 @@ class Fuselage(Model):
             Pfloor >= Nland*(Wpay + Wseat),
             Mfloor >= 9./256.*Pfloor*wfloor,
             Afloor >= 2.*Mfloor/(sigfloor*hfloor) + 1.5*Sfloor/taufloor,
-            Vfloor == 2*lfloor*Afloor, # QUESTIONS??? DID DRELA MISTYPE? 2*wfloor*Afloor
+            Vfloor == 2*wfloor*Afloor, # QUESTIONS??? DID DRELA MISTYPE? 2*wfloor*Afloor
             Wfloor >= rhofloor*g*Vfloor + 2*wfloor*lfloor*Wppfloor,
             Sfloor >= (5./16.)*Pfloor,
             # Added synthetic constraint on hfloor to keep it from growing too large
