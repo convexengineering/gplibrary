@@ -56,10 +56,10 @@ class Fuselage(Model):
         tcone   = Variable('t_{cone}', 'm', 'Cone thickness')
 
         # Lengths (free)
-        lfuse    = Variable('l_{fuse}', 'm', 'Fuselage length')
-        lnose    = Variable('l_{nose}', 'm', 'Nose length')
+        lfuse  = Variable('l_{fuse}', 'm', 'Fuselage length')
+        lnose  = Variable('l_{nose}', 'm', 'Nose length')
         lshell = Variable('l_{shell}', 'm', 'Shell length')
-        lfloor = Variable('l_{floor}', 'm', 'FLoor length')
+        lfloor = Variable('l_{floor}', 'm', 'Floor length')
       
         # Surface areas (free)
         Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
@@ -104,13 +104,13 @@ class Fuselage(Model):
         # Material properties
         rE       = Variable('r_E', 1,'-', 'Ratio of stringer/skin moduli')
         rhobend  = Variable('\\rho_{bend}',2700, 'kg/m^3', 'Stringer density')
-        rhocone  = Variable('\\rho_{cone}', 'kg/m^3','Cone material density')
+        rhocone  = Variable('\\rho_{cone}',2700,'kg/m^3','Cone material density')
         rhofloor = Variable('\\rho_{floor}',2700, 'kg/m^3', 'Floor material density') #TASOPT value used
         rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
         
         Wppfloor = Variable('W\'\'_{floor}', 60,'N/m^2', 'Floor weight/area density') #TAS
         Wppinsul = Variable('W\'\'_{insul}',22,'N/m^2', 'Weight/area density of insulation material')
-        Wpseat   = Variable('W\'_{seat}', 'N', 'Weight per seat')
+        Wpseat   = Variable('W\'_{seat}',150,'N', 'Weight per seat')
         Wpwindow = Variable('W\'_{window}', 145.*3,'N/m', 'Weight/length density of windows')
 
         # Loads
@@ -136,7 +136,6 @@ class Fuselage(Model):
             #Temporarily
             Wpay == 150000*units('N'),
             Wseat == 50000*units('N'),
-
             nrows == nseats/SPR,
             lshell == nrows*pitch,
 
@@ -156,12 +155,10 @@ class Fuselage(Model):
             Sbulk >= (2*pi + 4*thetadb)*Rfuse**2,
 
             # Fuselage length relations
-            lshell == nrows*pitch,
-            #lfuse >= lnose+lshell, # forget about tailcone for now
+            lfuse >= lnose+lshell+lcone, # forget about tailcone for now
             # Temporarily
             lnose == 0.3*lshell,
-            lfuse == 1.3*lshell,
-            lcone == 0.3*lshell,
+            lcone == Rfuse/lamcone,
 
             # Fuselage width relations
             wfuse >= SPR*wseat + 2*waisle + tdb + 2*tskin,
@@ -209,7 +206,6 @@ class Fuselage(Model):
             Lvmax == 35000*units('N'), # based on 737
             bvt == 7*units('m'),
             plamv >= 1.6,
-            rhocone == 2700*units('kg/m^3'),
             taucone == sigskin,
             3*Qv*(plamv-1) >= Lvmax*bvt*(plamv),
             lamcone == 0.4, # TODO remove
@@ -221,7 +217,7 @@ class Fuselage(Model):
 
             ]
 
-        objective = Wfuse + Vcabin*units('N/m^3') 
+        objective = Wfuse + Vcabin*units('N/m^3') + lfuse*units('N/m') + tshell*units('N/m')
         Model.__init__(self, objective, constraints, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
@@ -310,6 +306,7 @@ if __name__ == "__main__":
     varVals = sol['variables']
     print 'Cabin volume: ' + str(varVals['V_{cabin}_Fuselage']) +'.'
     print 'Fuselage width: ' + str(varVals['w_{fuse}_Fuselage']) + '.'
+    print 'Fuselage length: ' + str(varVals['l_{fuse}'])
     print 'Floor area: ' + str(varVals['A_{floor}_Fuselage']) + '.'
     print 'Floor height: ' + str(varVals['h_{floor}_Fuselage']) + '.'
     print 'Floor length: ' + str(varVals['l_{floor}_Fuselage']) + '.'
@@ -323,6 +320,7 @@ if __name__ == "__main__":
     print 'Skin hoop stress: ' + str(varVals['\\sigma_{\\theta}_Fuselage']) + '.'
     print 'Skin axial stress: ' + str(varVals['\\sigma_x_Fuselage']) + '.'
     print 'Cone weight: ' + str(varVals['W_{cone}_Fuselage'])
+    print 'Cone length: ' + str(varVals['l_{cone}_Fuselage'])
     print 'Cone volume: ' + str(varVals['V_{cone}_Fuselage'])
     print 'Tail torsion moment: ' + str(varVals['Q_{v}_Fuselage'])
     print 'Cone taper ratio: ' + str(varVals['\\lambda_{cone}'])
