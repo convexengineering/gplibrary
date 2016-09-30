@@ -273,7 +273,7 @@ class EnginePerformance(Model):
                               "Brake specific fuel consumption")
         rpm = VectorVariable(N, "RPM", "rpm", "Engine operating RPM")
         P_avn = Variable("P_{avn}", 40, "watts", "Avionics power")
-        P_pay = Variable("P_{pay}", 10, "watts", "Payload power")
+        P_pay = Variable("P_{pay}", 100, "watts", "Payload power")
         P_shafttot = VectorVariable(N, "P_{shaft-tot}", "hp",
                                     "Total power, avionics included")
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
@@ -864,7 +864,7 @@ class GasMALE(Model):
 
 if __name__ == "__main__":
     M = GasMALE(DF70=True)
-    M.substitutions.update({"t_{loiter}": 6})
+    M.substitutions.update({"t_{loiter}": 5.8})
     M.cost = M["MTOW"]
     if SIGNOMIALS:
         sol = M.localsolve("mosek")
