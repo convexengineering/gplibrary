@@ -10,7 +10,7 @@ from helpers import SummingConstraintSet
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 PLOT = False
-SIGNOMIALS = True
+SIGNOMIALS = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "W_{zfw}",
            "P_{shaft-maxMSL}", "S_{fuse}", "W_{cent}", "W_{fuel-tot}", "g",
@@ -514,7 +514,8 @@ class TaperedSpar(Model):
             S/b*cbar*tau >= hin + 2*t + 2*ts,
             beam["\\bar{S}"][:-1]*W_cent*N_max/b*(b/2)/4/hin/ts <= sigma_fg,
             beam["\\bar{\\delta}"][-1] <= kappa,
-            beam["\\bar{M}"][:-1]*b*W_cent*N_max/4*(hin+t)/I <= sigma_cfrp,
+            sigma_cfrp >= ((beam["\\bar{M}"][:-1] + beam["\\bar{M}"][1:])/
+                           2*b*W_cent*N_max/4*(hin+t)/I),
             beam["\\bar{EI}"] <= E*I/N_max/W_cent*b/(b/2)**3
             ]
 
