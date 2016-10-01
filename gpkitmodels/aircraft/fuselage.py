@@ -51,6 +51,7 @@ class Fuselage(CostedConstraintSet):
         Wavgpass = Variable('W_{avg. pass}', 'lbf', 'Average passenger weight')
         Wbuoy    = Variable('W_{buoy}', 'N', 'Buoyancy weight')
         Wcargo   = Variable('W_{cargo}', 'N', 'Cargo weight')
+        Wcarryon = Variable('W_{carry on}', 'lbf', 'Ave. carry-on weight')
         Wchecked = Variable('W_{checked}', 'lbf', 'Ave. checked bag weight')
         Wcone    = Variable('W_{cone}', 'N', 'Cone weight')
         Wfix     = Variable('W_{fix}', 'lbf',
@@ -96,7 +97,8 @@ class Fuselage(CostedConstraintSet):
                             'Seat weight as fraction of payload weight')
         fstring  = Variable('f_{string}', '-','Fractional weight of stringers')
         g        = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
-        hfloor   = Variable('h_{floor}', 'm', 'Floor beam height')
+        hpassfl  = Variable('h_{pass_{floor}', 'm', 'Floor beam height')
+        hcargofl = Variable('h_{cargo_{floor}}', 'm', 'Floor beam height')
         hhold    = Variable('h_{hold}', 'm', 'Height of the cargo hold')
         lamcone  = Variable('\\lambda_{cone}', '-',
                             'Tailcone radius taper ratio (xshell2->xtail)')
@@ -174,7 +176,6 @@ class Fuselage(CostedConstraintSet):
 
                             # Cross section relations
                             wfuse == 2*Rfuse,
-                            wfuse >= SPR*wseat + waisle + 2*wsys,
                             Askin >= 2*np.pi*Rfuse*tskin, # simplified
                             Afuse >= np.pi*Rfuse**2, # simplified
                             tshell >= tskin*(1 + rE*fstring*rhoskin/rhobend),
@@ -212,21 +213,21 @@ class Fuselage(CostedConstraintSet):
                             Wpadd == Wpay*fpadd,
 
                             # Floor
-                            Ppassfl >= Nland*(Wpass + Wseat),
+                            Ppassfl >= Nland*(Wpass + Wseat + Wcarryon), # might want to remove Wcarryon
                             Pcargofl >= Nland*(Wlugg + Wcargo),
                             Spassfl == 0.5*Ppassfl, # without support
                             Scargofl == 0.5*Pcargofl, # without support
                             Mpassfl == Ppassfl/2*wfloor/2, # TODO: The cargo floor is not as wide as the pass
                             Mcargofl == Pcargofl/2*wfloor/2, # TODO: The cargo floor is not as wide as the pass
-                            lnose >= 5.2*units.m, # TODO less arbitrary
-                            Apassfl >= 2*Mpassfl/(sigfloor*hfloor)
+                            
+                            Apassfl >= 2*Mpassfl/(sigfloor*hpassfl)
                                       + 1.5*Spassfl/taufloor,
-                            Acargofl >= 2*Mcargofl/(sigfloor*hfloor)
+                            Acargofl >= 2*Mcargofl/(sigfloor*hcargofl)
                                       + 1.5*Scargofl/taufloor,
                             Vfloor >= wfloor*(Apassfl + Acargofl), # TODO: The cargo floor is not as wide as the pass
                             lfloor >= lshell + 2*Rfuse,
                             lshell >= nrows*pitch,
-                            (wfloor/2)**2 + dh**2 >= Rfuse**2, # [SP]
+                            (wfloor/2)**2 + dh**2 >= Rfuse**2, # [SP] # floor located below widest part of fuselage
                             Wfloor >= rhofloor*g*Vfloor
                                       + wfloor*lfloor*Wppfloor,
 
@@ -252,7 +253,7 @@ class Fuselage(CostedConstraintSet):
                             Vhold == Ahold*lshell,
                             TCS([Ahold <= (2./3)*wfloor*hhold + hhold**3/(2*wfloor)], reltol=1E-5),
                             # [SP] Harris stocker 1998 (wolfram)
-                            TCS([dh + hhold + 2*hfloor <= Rfuse]), #There are two florrs, one for pass and one for cargo
+                            TCS([dh + hhold + hpassfl + hcargofl <= Rfuse]), #There are two florrs, one for pass and one for cargo
                             Wpay >= Wpass + Wlugg + Wcargo, 
 
                             # Total fuselage weight
@@ -282,8 +283,8 @@ class Fuselage(CostedConstraintSet):
 
             constraints = [constraints,
 
-
-
+                            lnose >= 5.2*units.m, # TODO less arbitrary
+                            wfuse >= SPR*wseat + waisle + 2*wsys,
 
                             ]
 
@@ -291,8 +292,8 @@ class Fuselage(CostedConstraintSet):
 
             constraints = [constraints,
 
-
-
+                            lnose >= 5.2*units.m, # TODO UPDATE - less arbitrary
+                            wfuse >= SPR*wseat + 2*waisle + 2*wsys,
 
                             ]
 
@@ -328,24 +329,20 @@ class Fuselage(CostedConstraintSet):
         CostedConstraintSet.__init__(self, objective, constraints)
 
 
-    def default737subs(self):
+    def defaultsubs(self, fuselage_type = 'narrowbody'):
 
         substitutions = {
                          'LF': 0.898, # Might want to look into other values
-                         'L_{v_{max}}': 35000,
                          'N_{land}': 6.0, # [TAS]
-                         'SPR': 6,
                          'T_{cabin}': 300,
-                         'V_{\\infty}': 234,
                          'W\'\'_{floor}': 60, # [TAS]
                          'W\'\'_{insul}': 22, # [TAS]
                          'W\'_{seat}': 150, # Boeing
                          'W\'_{window}': 145.*3, # [TAS]
                          'W_{avg. pass}': 180,
-                         'W_{cargo}': 10000,
+                         'W_{carry on}': 15,
                          'W_{checked}': 40,
-                         'W_{fix}': 3000,
-                         '\\Delta h': 1,
+                         'W_{fix}': 3000, # might differe depending on aircraft
                          '\\Delta p': 52000,
                          '\\mu': 1.4E-5,
                          '\\rho_{\\infty}': 0.38,
@@ -358,8 +355,6 @@ class Fuselage(CostedConstraintSet):
                          '\\sigma_{floor}': 30000/0.000145, # [TAS]
                          '\\sigma_{skin}': 15000/0.000145, # [TAS]
                          '\\tau_{floor}': 30000/0.000145, # [TAS]
-                         'b_{vt}': 7,
-                         'c_{vt}': 4,
                          'f_{apu}': 0.035, # [TAS]
                          'f_{fadd}': 0.20, # [TAS]
                          'f_{frame}': 0.25,
@@ -367,7 +362,6 @@ class Fuselage(CostedConstraintSet):
                          'f_{lugg,2}': 0.1,
                          'f_{padd}': 0.4, # [TAS]
                          'f_{string}': 0.35, # [TAS]
-                         'n_{seat}': 186,
                          'p_s': 31,
                          'p_{cabin}': 75000,
                          'r_E': 1.0, # [TAS]
@@ -376,88 +370,56 @@ class Fuselage(CostedConstraintSet):
                          'w_{sys}': 0.10,
                         }
 
-        return substitutions
+        if fuselage_type == 'narrowbody':
 
-
-
-
-
-
-
-
-
-    def default777subs(self):
-
-        substitutions = {
-                         'LF': 0.898, # Might want to look into other values
+            subs737 = {
                          'L_{v_{max}}': 35000,
-                         'N_{land}': 6.0, # [TAS]
-                         'SPR': 9,
-                         'T_{cabin}': 300,
-                         'V_{\\infty}': 248,
-                         'W\'\'_{floor}': 60, # [TAS]
-                         'W\'\'_{insul}': 22, # [TAS]
-                         'W\'_{seat}': 150, # Boeing
-                         'W\'_{window}': 145.*3, # [TAS]
-                         'W_{avg. pass}': 180,
-                         'W_{cargo}': 100000, # up for debate, 10x of 737
-                         'W_{checked}': 40,
-                         'W_{fix}': 3000, #should be comparable to 737 weight
+                         'SPR': 6,
+                         'V_{\\infty}': 234,
+                         'W_{cargo}': 10000,
+                         'b_{vt}': 7,
+                         'c_{vt}': 4,
                          '\\Delta h': 1,
-                         '\\Delta p': 52000, #should be comparable to 737 weight
-                         '\\mu': 1.4E-5,
-                         '\\rho_{\\infty}': 0.38,
-                         '\\rho_{bend}': 2700, # [TAS]
-                         '\\rho_{cargo}': 150, # b757 freight doc
-                         '\\rho_{cone}': 2700, # [TAS]
-                         '\\rho_{floor}': 2700, # [TAS]
-                         '\\rho_{lugg}': 100,
-                         '\\rho_{skin}': 2700, # [TAS]
-                         '\\sigma_{floor}': 30000/0.000145, # [TAS]
-                         '\\sigma_{skin}': 15000/0.000145, # [TAS]
-                         '\\tau_{floor}': 30000/0.000145, # [TAS]
+                         'n_{seat}': 186,
+
+                        }
+            substitutions.update(subs737)
+
+        elif fuselage_type == 'widebody':
+
+            subs777 = {
+                         'L_{v_{max}}': 35000, #UPDATE vertical tail loading
+                         'SPR': 9,
+                         'V_{\\infty}': 248,
+                         'W_{cargo}': 100000, # up for debate, 10x of 737
                          'b_{vt}': 9.24,
                          'c_{vt}': 5.78,
-                         'f_{apu}': 0.035, # [TAS]
-                         'f_{fadd}': 0.20, # [TAS]
-                         'f_{frame}': 0.25,
-                         'f_{lugg,1}': 0.4,
-                         'f_{lugg,2}': 0.1,
-                         'f_{padd}': 0.4, # [TAS]
-                         'f_{string}': 0.35, # [TAS]
-                         'n_{seat}': 540,
-                         'p_s': 31,
-                         'p_{cabin}': 75000,
-                         'r_E': 1.0, # [TAS]
-                         'w_{aisle}': 0.51, # Boeing
-                         'w_{seat}': 0.5,
-                         'w_{sys}': 0.10, #update?
+                         '\\Delta h': 1.76,
+                         'n_{seat}': 540,                                                  
+
                         }
+            substitutions.update(subs777)
+
+        elif fuselage_type == 'D8':
+            raise NotImplementedError
+
+        else:
+            raise NameError
+
+
 
         return substitutions
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 
     @classmethod
-    def standalone737(cls):
+    def standalonefuselage(cls, fuselage_type = 'narrowbody'):
         """Create standalone instance of fuselage model"""
 
-        ccs = cls()
+        ccs = cls(fuselage_type)
 
-        substitutions = ccs.default737subs()
+        substitutions = ccs.defaultsubs(fuselage_type)
 
         m = Model(ccs.cost, ccs, substitutions)
         return m
@@ -470,7 +432,7 @@ class Fuselage(CostedConstraintSet):
 
         constraints = ccs + ccs.CG_constraints
  
-        dsubs = ccs.default737subs()
+        dsubs = ccs.defaultsubs()
         linkedsubs = ['L_{v_{max}}', 'V_{\\infty}', 'b_{vt}', 'c_{vt}']
         substitutions = {key: value for key, value in dsubs.items()
                                     if key not in linkedsubs}
@@ -479,12 +441,13 @@ class Fuselage(CostedConstraintSet):
         return m
 
     @classmethod
-    def test(cls):
+    def test(cls, fuselage_type = 'narrowbody'):
     	
-        fu = cls.standalone737()
+        fu = cls.standalonefuselage(fuselage_type)
 
         return fu.localsolve(verbosity=4)
 
 
 if __name__ == "__main__":
-    sol = Fuselage.test()
+    sol = Fuselage.test(fuselage_type = 'widebody')
+    print(sol.table())
