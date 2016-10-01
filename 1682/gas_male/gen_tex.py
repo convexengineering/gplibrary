@@ -30,8 +30,12 @@ def gen_model_tex(model, modelname, texname=None):
         f.write("\\end{longtable}\n")
 
     with open('tex/%s.cnstrs.generated.tex' % filename, 'w') as f:
-        lines = model.latex(excluded=["models"]). \
-                replace("[ll]", "{ll}").split("\n")
+        l1 = model.latex(excluded=["models"]).replace("[ll]", "{ll}")
+        models, modelnames = find_submodels([model], [])
+        for m in modelnames:
+            if m in l1:
+                l1 = l1.replace("_{%s}" % m, "")
+        lines = l1.split("\n")
         modeltex = "\n".join(lines[:1] + lines[3:])
         f.write("$$ %s $$" % modeltex)
 
@@ -56,14 +60,14 @@ def find_submodels(models, modelnames):
 def gen_tex_fig(fig, filename, caption=None):
     fig.savefig("figs/%s.pdf" % filename)
     with open("tex/%s.fig.generated.tex" % filename, "w") as f:
-        f.write("\\begin{figure}[H]")
-        f.write("\\label{f:%s}" % filename)
-        f.write("\\begin{center}")
-        f.write("\\includegraphics[scale=0.5]{figs/%s}" % filename)
+        f.write("\\begin{figure}[H]\n")
+        f.write("\\label{f:%s}\n" % filename)
+        f.write("\\begin{center}\n")
+        f.write("\\includegraphics[scale=0.5]{figs/%s}\n" % filename)
         if caption:
-            f.write("\\caption{%s}" % caption)
-        f.write("\\end{center}")
-        f.write("\\end{figure}")
+            f.write("\\caption{%s}\n" % caption)
+        f.write("\\end{center}\n")
+        f.write("\\end{figure}\n")
 
 def gen_fixvars_tex(model, solution, fixvars, filename=None):
     if filename:

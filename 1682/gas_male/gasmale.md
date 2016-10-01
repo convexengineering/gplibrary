@@ -10,13 +10,17 @@ This paper presents the designs achieved in the 82 project. This also presents a
 \input{tex/Atmosphere.vars.generated.tex}
 \input{tex/Atmosphere.cnstrs.generated.tex}
 
+# Avionics Model
+\input{tex/Avionics.vars.generated.tex}
+\input{tex/Avionics.cnstrs.generated.tex}
+
+# Beam Model
+\input{tex/Beam.vars.generated.tex}
+\input{tex/Beam.cnstrs.generated.tex}
+
 ## Breguet Endurance Model
 \input{tex/BreguetEndurance.vars.generated.tex}
 \input{tex/BreguetEndurance.cnstrs.generated.tex}
-
-## Breguet Range Model
-\input{tex/BreguetRange.vars.generated.tex}
-\input{tex/BreguetRange.cnstrs.generated.tex}
 
 ## Climb Model
 \input{tex/Climb.vars.generated.tex}
@@ -26,9 +30,13 @@ This paper presents the designs achieved in the 82 project. This also presents a
 \input{tex/Cruise.vars.generated.tex}
 \input{tex/Cruise.cnstrs.generated.tex}
 
-## Engine Model
-\input{tex/Engine.vars.generated.tex}
-\input{tex/Engine.cnstrs.generated.tex}
+## Engine Performance Model
+\input{tex/EnginePerformance.vars.generated.tex}
+\input{tex/EnginePerformance.cnstrs.generated.tex}
+
+## Engine Weight Model
+\input{tex/EngineWeight.vars.generated.tex}
+\input{tex/EngineWeight.cnstrs.generated.tex}
 
 ## Fuel Model
 \input{tex/Fuel.vars.generated.tex}
@@ -50,13 +58,29 @@ This paper presents the designs achieved in the 82 project. This also presents a
 \input{tex/SteadyLevelFlight.vars.generated.tex}
 \input{tex/SteadyLevelFlight.cnstrs.generated.tex}
 
-## Structural Model
-\input{tex/Structures.vars.generated.tex}
-\input{tex/Structures.cnstrs.generated.tex}
+## Take Off
+\input{tex/TakeOff.vars.generated.tex}
+\input{tex/TakeOff.cnstrs.generated.tex}
+
+## Wing Model
+\input{tex/Wing.vars.generated.tex}
+\input{tex/Wing.cnstrs.generated.tex}
+
+## Spar Model
+\input{tex/Spar.vars.generated.tex}
+\input{tex/Spar.cnstrs.generated.tex}
 
 ## Weight Model
 \input{tex/Weight.vars.generated.tex}
 \input{tex/Weight.cnstrs.generated.tex}
+
+# Tail Model
+\input{tex/Tail.vars.generated.tex}
+\input{tex/Tail.cnstrs.generated.tex}
+
+# Tail Boom Model
+\input{tex/TailBoom.vars.generated.tex}
+\input{tex/TailBoom.cnstrs.generated.tex}
 
 ## Wind Model
 \input{tex/Wind.vars.generated.tex}
@@ -87,10 +111,10 @@ This model was created and then a sweep was done to determine the MTOW required 
 from plotting import plot_sweep, fix_vars, plot_altitude_sweeps
 import numpy as np
 
-M = GasMALE()
-M.substitutions.update({"MTOW": 150})
-fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15), ["t_{loiter}"])
-gen_tex_fig(fig, "tstation_vs_MTOW_rubber")
+# M = GasMALE()
+# M.substitutions.update({"MTOW": 150})
+# fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15), ["t_{loiter}"])
+# gen_tex_fig(fig, "tstation_vs_MTOW_rubber")
 ```
 
 ### CDR Aircraft Sizing
@@ -111,14 +135,18 @@ with open("tex/sol.generated.tex", "w") as f:
 ### DF70 Engine Model
 The engine model of the DF70 is shown below. 
 
-\input{tex/DF70.vars.generated.tex}
-\input{tex/DF70.cnstrs.generated.tex}
+\input{tex/DF70Performance.vars.generated.tex}
+\input{tex/DF70Performance.cnstrs.generated.tex}
+\input{tex/DF70Weight.vars.generated.tex}
+\input{tex/DF70Weight.cnstrs.generated.tex}
 
 ```python
 #inPDF: skip
 models, modelnames = find_submodels([M], [])
-DF70Engine = models[modelnames.index("Engine") + 1]
-gen_model_tex(DF70Engine, "Engine", texname="DF70")
+DF70EngineP = models[modelnames.index("EnginePerformance") + 1]
+DF70EngineW = models[modelnames.index("EngineWeight") + 1]
+gen_model_tex(DF70EngineP, "EnginePerformance", texname="DF70Performance")
+gen_model_tex(DF70EngineW, "EngineWeight", texname="DF70Weight")
 ```
 
 By fixing the following variables to their respective values we were also able to generate performance curves. 
@@ -126,8 +154,7 @@ By fixing the following variables to their respective values we were also able t
 ```python
 #inPDF: replace with tex/fixvars.table.generated.tex
 
-
-vars_to_fix = {"S":0.0, "b":0.0, "Vol_{fuse}":0.00001}
+vars_to_fix = {"S":0.0, "b": 0.0, "Vol_{fuse}":0.0, "W_Wing, GasMALE":0.0}
 gen_fixvars_tex(M, sol, vars_to_fix)
 
 fix_vars(M, sol, vars_to_fix)
@@ -143,18 +170,17 @@ del M.substitutions["t_{loiter}"]
 M.cost = 1/M["t_{loiter}"]
 
 # payload power vs time on station
-fig, ax = plot_sweep(M, "P_{pay}", np.linspace(10, 200, 15),
-                     "t_{loiter}")
+fig, ax = plot_sweep(M, "P_{pay}", np.linspace(10, 200, 15), ["t_{loiter}"])
 gen_tex_fig(fig, "t_vs_Ppay")
 
 # payload weight vs time on station
-fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 40, 15), "t_{loiter}")
+fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 40, 15), ["t_{loiter}"])
 gen_tex_fig(fig, "t_vs_Wpay")
 
 # wind speed vs time on station
 M = GasMALE(wind=True, DF70=True)
 fix_vars(M, sol, vars_to_fix)
-fig, ax = plot_sweep(M, "V_{wind}_Wind, Loiter, Mission, GasMALE", np.linspace(5, 40, 15), "t_{loiter}")
+fig, ax = plot_sweep(M, "V_{wind}_Wind, Loiter, Mission, GasMALE", np.linspace(5, 40, 15), ["t_{loiter}"])
 gen_tex_fig(fig, "t_vs_Vwind")
 
 # altitude vs time on loiter
@@ -178,13 +204,16 @@ By further discretizing the climb, cruise, and loiter mission segments the follo
 #inPDF: skip
 from plotting import plot_mission_var
 
-Mprof = GasMALE(DF70=True, discrete=True)
+Mprof = GasMALE(DF70=True)
 Mprof.substitutions.update({"t_{loiter}": 6})
 Mprof.cost = Mprof["MTOW"]
 sol = Mprof.solve("mosek")
 
 # plot mission profiles
 fig, ax = plot_mission_var(Mprof, sol, "V", [0, 40])
+gen_tex_fig(fig, "profilevs_velocity")
+
+fig, ax = plot_mission_var(Mprof, sol, "h", [0, 20000])
 gen_tex_fig(fig, "profilevs_velocity")
 
 fig, ax = plot_mission_var(Mprof, sol, "\\eta_{prop}", [0, 1])

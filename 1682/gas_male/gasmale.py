@@ -381,7 +381,7 @@ class Aerodynamics(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
-        m_fac = Variable("m_{fac}", 1.0, "-", "c_{dp} margin factor")
+        m_fac = Variable("m_{fac}", 1.0, "-", "cdp margin factor")
 
         constraints = [
             CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR),
@@ -512,6 +512,7 @@ class Spar(Model):
         w_lim = Variable("w_{lim}", 0.14, "-", "spar width to chord ratio")
 
         beam = Beam(N, cb, untapered)
+        self.submodels = [beam]
 
         constraints = [
             dm >= rho_cfrp*w*t*b/n + rho_fg*b/2/n*2*ts*(w+hin),
@@ -560,6 +561,7 @@ class Wing(Model):
         m_fac = Variable("m_{fac}", 1.0, "-", "Wing weight margin factor")
 
         self.spar = Spar(5)
+        self.submodels = [self.spar]
 
         constraints = [m_skin >= rho_skin*S*2,
                        wingloading == mtow/S,
@@ -719,6 +721,7 @@ class Tail(Model):
         Vstall = Variable("V_{stall}", "m/s", "stall speed")
 
         tb = TailBoom()
+        self.submodels = [tb]
 
         constraints = [
             W/m_fac >= W_vtail + tb["W"],
