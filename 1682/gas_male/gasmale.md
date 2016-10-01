@@ -111,10 +111,10 @@ This model was created and then a sweep was done to determine the MTOW required 
 from plotting import plot_sweep, fix_vars, plot_altitude_sweeps
 import numpy as np
 
-# M = GasMALE()
-# M.substitutions.update({"MTOW": 150})
-# fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15), ["t_{loiter}"])
-# gen_tex_fig(fig, "tstation_vs_MTOW_rubber")
+M = GasMALE()
+M.substitutions.update({"MTOW": 150})
+fig, ax = plot_sweep(M, "MTOW", np.linspace(70, 500, 15), ["t_{loiter}"])
+gen_tex_fig(fig, "tstation_vs_MTOW_rubber")
 ```
 
 ### CDR Aircraft Sizing
@@ -211,33 +211,33 @@ sol = Mprof.solve("mosek")
 
 # plot mission profiles
 fig, ax = plot_mission_var(Mprof, sol, "V", [0, 40])
-gen_tex_fig(fig, "profilevs_velocity")
+gen_tex_fig(fig, "profile_velocity")
 
 fig, ax = plot_mission_var(Mprof, sol, "h", [0, 20000])
-gen_tex_fig(fig, "profilevs_velocity")
+gen_tex_fig(fig, "profile_altitude")
 
 fig, ax = plot_mission_var(Mprof, sol, "\\eta_{prop}", [0, 1])
-gen_tex_fig(fig, "profilevs_etaprop")
+gen_tex_fig(fig, "profile_etaprop")
 
 fig, ax = plot_mission_var(Mprof, sol, "BSFC", [0, 2])
-gen_tex_fig(fig, "profilevs_BSFC")
+gen_tex_fig(fig, "profile_BSFC")
 
 fig, ax = plot_mission_var(Mprof, sol, "P_{shaft-max}", [0, 5])
-gen_tex_fig(fig, "profilevs_Pshaftmax")
+gen_tex_fig(fig, "profile_Pshaftmax")
 
 fig, ax = plot_mission_var(Mprof, sol, "P_{shaft-tot}", [0, 5])
-gen_tex_fig(fig, "profilevs_Pshafttot")
+gen_tex_fig(fig, "profile_Pshafttot")
 
 fig, ax = plot_mission_var(Mprof, sol, "RPM", [0, 9000])
-gen_tex_fig(fig, "profilevs_RPM")
+gen_tex_fig(fig, "profile_RPM")
 
 fig, ax = plot_mission_var(Mprof, sol, "W_{N+1}", [0, 150], "aircraft weight [lbf]")
-gen_tex_fig(fig, "profilevs_weight")
+gen_tex_fig(fig, "profile_weight")
 ```
-\input{tex/profilevs_velocity.fig.generated.tex}
-\input{tex/profilevs_etaprop.fig.generated.tex}
-\input{tex/profilevs_BSFC.fig.generated.tex}
-\input{tex/profilevs_Pshaftmax.fig.generated.tex}
-\input{tex/profilevs_Pshafttot.fig.generated.tex}
-\input{tex/profilevs_RPM.fig.generated.tex}
-\input{tex/profilevs_weight.fig.generated.tex}
+\input{tex/profile_velocity.fig.generated.tex}
+\input{tex/profile_etaprop.fig.generated.tex}
+\input{tex/profile_BSFC.fig.generated.tex}
+\input{tex/profile_Pshaftmax.fig.generated.tex}
+\input{tex/profile_Pshafttot.fig.generated.tex}
+\input{tex/profile_RPM.fig.generated.tex}
+\input{tex/profile_weight.fig.generated.tex}

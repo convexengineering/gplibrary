@@ -828,11 +828,3 @@ if __name__ == "__main__":
         sol = M.localsolve("mosek")
     else:
         sol = M.solve("mosek")
-
-    # M.substitutions.update({"t_{loiter}": 5.8})
-    # M.substitutions.update({"P_{pay}": 100})
-    # if SIGNOMIALS:
-    #     sol = M.localsolve("mosek")
-    # else:
-    #     sol = M.solve("mosek")
-

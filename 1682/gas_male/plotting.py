@@ -160,7 +160,7 @@ def plot_mission_var(model, sol, yvarname, ylim=False, yaxis_name=None):
                 y.append(value.magnitude)
 
     y = np.hstack(np.array(y))
-    shape[1:] = [x-1 for x in shape[1:]]
+    shape[2:] = [x-1 for x in shape[2:]]
 
     # define tick step on plot
     N = range(len(y))
