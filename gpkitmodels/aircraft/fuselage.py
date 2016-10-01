@@ -251,7 +251,8 @@ class Fuselage(CostedConstraintSet):
                             Wcargo == Vcargo*g*rhocargo,
                             Vhold >= Vcargo + Vlugg,
                             Vhold == Ahold*lshell,
-                            TCS([Ahold <= (2./3)*wfloor*hhold + hhold**3/(2*wfloor)], reltol=1E-5),
+                            Ahold <= (2./3)*wfloor*hhold + hhold**3/(2*wfloor),
+                            #TCS([Ahold <= (2./3)*wfloor*hhold + hhold**3/(2*wfloor)], reltol=1E-5),
                             # [SP] Harris stocker 1998 (wolfram)
                             TCS([dh + hhold + hpassfl + hcargofl <= Rfuse]), #There are two florrs, one for pass and one for cargo
                             Wpay >= Wpass + Wlugg + Wcargo, 
