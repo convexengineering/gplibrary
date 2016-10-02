@@ -140,7 +140,8 @@ class Fuselage(CostedConstraintSet):
         tshell   = Variable('t_{shell}', 'm', 'Shell thickness')
         tskin    = Variable('t_{skin}', 'm', 'Skin thickness')
         waisle   = Variable('w_{aisle}', 'm', 'Aisle width')
-        wfloor   = Variable('w_{floor}', 'm', 'Floor width')
+        wpassfl  = Variable('w_{pass_{floor}}', 'm', 'Passenger floor width')
+        wcargofl = Variable('w_{cargo_{floor}}', 'm', 'Cargo floor width')
         wfuse    = Variable('w_{fuse}', 'm', 'Fuselage width')
         wseat    = Variable('w_{seat}', 'm', 'Seat width')
         wsys     = Variable('w_{sys}', 'm',
@@ -217,19 +218,20 @@ class Fuselage(CostedConstraintSet):
                             Pcargofl >= Nland*(Wlugg + Wcargo),
                             Spassfl == 0.5*Ppassfl, # without support
                             Scargofl == 0.5*Pcargofl, # without support
-                            Mpassfl == Ppassfl/2*wfloor/2, # TODO: The cargo floor is not as wide as the pass
-                            Mcargofl == Pcargofl/2*wfloor/2, # TODO: The cargo floor is not as wide as the pass
+                            Mpassfl == Ppassfl/2*wpassfl/2, # TODO: The cargo floor is not as wide as the pass
+                            Mcargofl == Pcargofl/2*wcargofl/2, # TODO: The cargo floor is not as wide as the pass
                             
                             Apassfl >= 2*Mpassfl/(sigfloor*hpassfl)
                                       + 1.5*Spassfl/taufloor,
                             Acargofl >= 2*Mcargofl/(sigfloor*hcargofl)
                                       + 1.5*Scargofl/taufloor,
-                            Vfloor >= wfloor*(Apassfl + Acargofl), # TODO: The cargo floor is not as wide as the pass
+                            Vfloor >= wpassfl*Apassfl + wcargofl*Acargofl,
                             lfloor >= lshell + 2*Rfuse,
                             lshell >= nrows*pitch,
-                            (wfloor/2)**2 + dh**2 >= Rfuse**2, # [SP] # floor located below widest part of fuselage
+                            (wpassfl/2)**2 + dh**2 >= Rfuse**2, # [SP] # passenger floor located below widest part of fuselage
+                            (wcargofl/2)**2 + (dh + hhold + hpassfl)**2 >= Rfuse**2, # [SP]
                             Wfloor >= rhofloor*g*Vfloor
-                                      + wfloor*lfloor*Wppfloor,
+                                      + (wpassfl + wcargofl)*lfloor*Wppfloor,
 
                             # Tail cone
                             Rfuse*taucone*(1+plamv)*Vcone*(1+lamcone)/(4*lcone)
@@ -251,7 +253,7 @@ class Fuselage(CostedConstraintSet):
                             Wcargo == Vcargo*g*rhocargo,
                             Vhold >= Vcargo + Vlugg,
                             Vhold == Ahold*lshell,
-                            Ahold <= (2./3)*wfloor*hhold + hhold**3/(2*wfloor),
+                            Ahold <= (2./3)*wcargofl*hhold + hhold**3/(2*wcargofl),
                             #TCS([Ahold <= (2./3)*wfloor*hhold + hhold**3/(2*wfloor)], reltol=1E-5),
                             # [SP] Harris stocker 1998 (wolfram)
                             TCS([dh + hhold + hpassfl + hcargofl <= Rfuse]), #There are two florrs, one for pass and one for cargo
@@ -395,7 +397,7 @@ class Fuselage(CostedConstraintSet):
                          'W_{cargo}': 100000, # up for debate, 10x of 737
                          'b_{vt}': 9.24,
                          'c_{vt}': 5.78,
-                         '\\Delta h': 1.76,
+                         '\\Delta h': 1,
                          'n_{seat}': 540,                                                  
 
                         }
