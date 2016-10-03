@@ -667,11 +667,8 @@ class TailBoom(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class Tail(Model):
-    def __init__(self, case, **kwargs):
-        W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
-        m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
-        W = Variable("W", "lbf", "Tail weight")
+class HorizontalTail(Model):
+    def __init__(self, **kwargs):
         Sh = Variable("S_h", "ft**2", "horizontal tail area")
         ARh = Variable("AR_h", 5, "-", "horizontal tail aspect ratio")
         Abar = Variable("\\bar{A}_{NACA0008}", 0.0548, "-",
@@ -682,31 +679,45 @@ class Tail(Model):
                            "horizontal tail skin density")
         bh = Variable("b_h", "ft", "horizontal tail span")
         Wh = Variable("W_h", "lbf", "horizontal tail weight")
-        CLh = Variable("C_{L_h}", 1.0, "-", "maximum lift of horizontal tail")
         CLw = Variable("C_{L_w}", 1.5, "-", "maximum lift of win")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
         S = Variable("S", "ft^2", "wing area")
         b = Variable("b", "ft", "Span")
         Cmw = Variable("C_{m_w}", 0.121, "-", "negative wing moment coefficent")
         xcg = Variable("x_{cg}-x_{ac}", 4, "in", "distance from AC to CG")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        L = Variable("L", "ft", "tail boom length")
+        CLh = Variable("C_{L_h}", 1.0, "-", "maximum lift of horizontal tail")
+
+        constraints = [
+            Vh <= Sh*L/S**2*b,
+            bh**2 == ARh*S,
+            Wh >= rhofoam*Sh**2/bh*Abar + 1.1*g*rhoskin*Sh,
+            Cmw + xcg*b/S*CLw <= Vh*CLh,
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Empennage(Model):
+    def __init__(self, **kwargs):
+        W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
+        W = Variable("W", "lbf", "Tail weight")
         rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
                          "air density at sea level")
         Vstall = Variable("V_{stall}", "m/s", "stall speed")
-        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         tb = TailBoom()
-        self.submodels = [tb]
+        ht = HorizontalTail()
+        self.submodels = [tb, ht]
 
         constraints = [
-            W/m_fac >= W_vtail + tb["W"] + Wh,
-            tb["F"] >= 0.5*rhosl*Vstall**2*Sh*CLh,
-            Cmw + xcg*b/S*CLw <= Vh*CLh,
-            Vh <= Sh*tb["L"]/S**2*b,
-            bh**2 == ARh*S,
-            Wh >= rhofoam*Sh**2/bh*Abar + 1.1*g*rhoskin*Sh
+            W/m_fac >= W_vtail + tb["W"] + ht["W_h"],
+            tb["F"] >= 0.5*rhosl*Vstall**2*ht["S_h"]*ht["C_{L_h}"],
             ]
 
-        lc = LinkedConstraintSet([tb, constraints], exclude=["W"])
+        lc = LinkedConstraintSet([self.submodels, constraints],
+                                 include_only=["L"])
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -773,11 +784,11 @@ class GasMALE(Model):
         mission = Mission(h_station, wind, DF70, Nclimb, Nloiter)
         engineweight = EngineWeight(DF70)
         wing = Wing()
-        tail = Tail(mission.submodels[0])
+        empennage = Empennage()
         avionics = Avionics()
         fuselage = Fuselage()
         center_loads = [fuselage, avionics, engineweight]
-        zf_loads = center_loads + [tail, wing]
+        zf_loads = center_loads + [empennage, wing]
         weight = Weight(center_loads, zf_loads)
 
         self.submodels = zf_loads + [weight, mission]
