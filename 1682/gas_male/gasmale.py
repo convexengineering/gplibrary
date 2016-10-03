@@ -14,20 +14,20 @@ SIGNOMIALS = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "W_{zfw}",
            "P_{shaft-maxMSL}", "S_{fuse}", "W_{cent}", "W_{fuel-tot}", "g",
-           "V_{stall}"]
+           "V_{stall}", "S_{ref}", "l_{ref}"]
 
 class Mission(Model):
-    def __init__(self, h_station, wind, DF70, Nclimb, Nloiter, **kwargs):
+    def __init__(self, h_station, wind, DF70, Nclimb, Nloiter, dragcomps, **kwargs):
 
         self.submodels = [
-            TakeOff(1, [0.684], [0.1], False, wind, DF70),
+            TakeOff(1, [0.684], [0.1], False, wind, DF70, dragcomps),
             Climb(Nclimb, [0.502]*Nclimb, np.linspace(0, h_station,
                                                       Nclimb+1)[1:],
-                  False, wind, DF70, dh=h_station),
-            Cruise(1, [0.684], [h_station], False, wind, DF70, R=180),
+                  False, wind, DF70, dragcomps, dh=h_station),
+            Cruise(1, [0.684], [h_station], False, wind, DF70, dragcomps, R=180),
             Loiter(Nloiter, [0.647]*Nloiter, [h_station]*Nloiter, True, wind,
-                   DF70),
-            Cruise(1, [0.684], [h_station], False, wind, DF70, R=200)
+                   DF70, dragcomps),
+            Cruise(1, [0.684], [h_station], False, wind, DF70, dragcomps, R=200)
             ]
 
         mtow = Variable("MTOW", "lbf", "Max take off weight")
@@ -53,9 +53,9 @@ class Mission(Model):
         Model.__init__(self, None, lc, **kwargs)
 
 class FlightSegment(Model):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, **kwargs):
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, **kwargs):
 
-        self.aero = Aerodynamics(N)
+        self.aero = Aerodynamics(N, dragcomps)
         self.fuel = Fuel(N)
         self.slf = SteadyLevelFlight(N, eta_p)
         self.engine = EnginePerformance(N, alt, onStation, DF70)
@@ -71,8 +71,8 @@ class FlightSegment(Model):
                           self.atm, self.wind]
 
 class TakeOff(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -95,8 +95,8 @@ class TakeOff(FlightSegment):
         Model.__init__(self, None, lc, **kwargs)
 
 class Cruise(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, R=200, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, R=200, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -112,8 +112,8 @@ class Cruise(FlightSegment):
         Model.__init__(self, None, lc, **kwargs)
 
 class Loiter(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -129,9 +129,9 @@ class Loiter(FlightSegment):
         Model.__init__(self, None, lc, **kwargs)
 
 class Climb(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dh=15000,
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, dh=15000,
                  **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -347,11 +347,30 @@ class BreguetEndurance(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class ComponentDrag(Model):
+    def __init__(self, N, comp, **kwargs):
+
+        CDA = VectorVariable(N, "CDA", "-",
+                             "component area drag normalize by win area")
+        Cf = VectorVariable(N, "C_f", "-", "skin friction coefficient")
+        Refuse = VectorVariable(N, "Re_{fuse}", "-", "reynolds number")
+        S = Variable("S", "ft^2", "wing area")
+        rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
+        mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
+        V = VectorVariable(N, "V", "m/s", "vehicle speed")
+
+        constraints = [CDA >= Cf*comp["S_{ref}"]/S,
+                       Refuse == V*rho*comp["l_{ref}"]/mu_atm,
+                       Cf >= 0.455/Refuse**0.3
+                      ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class Aerodynamics(Model):
     """
     Aero model assuming jh01 airfoil, designed by Mark Drela
     """
-    def __init__(self, N, **kwargs):
+    def __init__(self, N, dragcomps, **kwargs):
 
         CLmax = Variable("C_{L-max}", 1.5, "-", "Maximum lift coefficient")
         e = Variable("e", 0.9, "-", "Spanwise efficiency")
@@ -359,15 +378,6 @@ class Aerodynamics(Model):
         b = Variable("b", "ft", "Span")
         Re = VectorVariable(N, "Re", "-", "Reynolds number")
 
-        # fuselage drag
-        Kfuse = Variable("K_{fuse}", 1.1, "-", "Fuselage form factor")
-        S_fuse = Variable("S_{fuse}", "ft^2", "Fuselage surface area")
-        Cffuse = VectorVariable(N, "C_{f-fuse}", "-",
-                                "Fuselage skin friction coefficient")
-        CDfuse = VectorVariable(N, "C_{D-fuse}", "-", "fueslage drag")
-        l_fuse = Variable("l_{fuse}", "ft", "Fuselage length")
-        Refuse = VectorVariable(N, "Re_{fuse}", "-",
-                                "Fuselage Reynolds number")
         Re_ref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
         cdp = VectorVariable(N, "c_{dp}", "-", "wing profile drag coeff")
 
@@ -378,9 +388,12 @@ class Aerodynamics(Model):
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
         m_fac = Variable("m_{fac}", 1.0, "-", "cdp margin factor")
+        CDA0 = VectorVariable(N, "CDA_0", "-", "sum of component drag")
+
+        dragbuild = [ComponentDrag(N, c) for c in dragcomps]
 
         constraints = [
-            CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR),
+            CD >= CDA0*2 + cdp*1.3 + CL**2/(pi*e*AR),
             #jh01
             cdp/m_fac >= ((0.0075 + 0.002*CL**2 +
                            0.00033*CL**10)*(Re/Re_ref)**-0.4),
@@ -389,12 +402,13 @@ class Aerodynamics(Model):
             b**2 == S*AR,
             CL <= CLmax,
             Re == rho*V/mu_atm*(S/AR)**0.5,
-            CDfuse >= Kfuse*S_fuse*Cffuse/S,
-            Refuse == rho*V/mu_atm*l_fuse,
-            Cffuse >= 0.455/Refuse**0.3,
+            CDA0 >= sum(db["CDA"] for db in dragbuild),
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        lc = LinkedConstraintSet([constraints, dragbuild],
+                                 include_only=["\\rho", "\\mu", "S", "V"])
+
+        Model.__init__(self, None, lc, **kwargs)
 
 class Beam(Model):
     def __init__(self, N, q, untapered, **kwargs):
@@ -571,10 +585,14 @@ class Fuselage(Model):
         W = Variable("W", "lbf", "Fuselage weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         m_fac = Variable("m_{fac}", 1.0, "-", "Fuselage weight margin factor")
+        S_ref = Variable("S_{ref}", "ft**2", "fuselage reference area")
+        l_ref = Variable("l_{ref}", "ft", "fuselage reference length")
 
         constraints = [m_fuse >= S_fuse*rho_skin,
                        l_cent == fr*w_cent,
                        l_fuse >= l_cent*1.1,
+                       l_ref == l_fuse,
+                       S_ref == S_fuse,
                        (l_fuse/k1fuse)**3 == Vol_fuse,
                        (S_fuse/k2fuse)**3 == Vol_fuse**2,
                        Vol_fuse >= l_cent*w_cent**2,
@@ -781,12 +799,13 @@ class GasMALE(Model):
     def __init__(self, h_station=15000, wind=False, DF70=False, Nclimb=10,
                  Nloiter=5, margin=False, **kwargs):
 
-        mission = Mission(h_station, wind, DF70, Nclimb, Nloiter)
         engineweight = EngineWeight(DF70)
         wing = Wing()
         empennage = Empennage()
         avionics = Avionics()
         fuselage = Fuselage()
+        dragcomps = [fuselage]
+        mission = Mission(h_station, wind, DF70, Nclimb, Nloiter, dragcomps)
         center_loads = [fuselage, avionics, engineweight]
         zf_loads = center_loads + [empennage, wing]
         weight = Weight(center_loads, zf_loads)
