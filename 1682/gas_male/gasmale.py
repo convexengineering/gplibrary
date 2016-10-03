@@ -21,12 +21,13 @@ class Mission(Model):
 
         self.submodels = [
             TakeOff(1, [0.684], [0.1], False, wind, DF70),
-            Climb(Nclimb, [0.502]*Nclimb, np.linspace(0, 15000, Nclimb+1)[1:],
-                  False, wind, DF70, dh=15000),
-            Cruise(1, [0.684], [15000], False, wind, DF70, R=180),
+            Climb(Nclimb, [0.502]*Nclimb, np.linspace(0, h_station,
+                                                      Nclimb+1)[1:],
+                  False, wind, DF70, dh=h_station),
+            Cruise(1, [0.684], [h_station], False, wind, DF70, R=180),
             Loiter(Nloiter, [0.647]*Nloiter, [h_station]*Nloiter, True, wind,
                    DF70),
-            Cruise(1, [0.684], [15000], False, wind, DF70, R=200)
+            Cruise(1, [0.684], [h_station], False, wind, DF70, R=200)
             ]
 
         mtow = Variable("MTOW", "lbf", "Max take off weight")
@@ -64,12 +65,6 @@ class FlightSegment(Model):
         self.N = N
         self.exclude = ["m_{fac}"]
 
-        # self.Vstall = VectorVariable(N, "V_{stall}", "m/s", "stall speed")
-
-        # self.constraints = [
-        #     self.Vstall == ((self.fuel["W_{N}"]*2/self.slf["\\rho"]/
-        #                      self.aero["S"]/1.5)**0.5)
-        #     ]
         self.constraints = []
 
         self.submodels = [self.aero, self.fuel, self.slf, self.engine,
@@ -88,10 +83,11 @@ class TakeOff(FlightSegment):
         rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
                          "air density at sea level")
 
-        self.constraints = [breguetendurance["t"] >= t_to,
-                            self.slf["V"] >= 1.3*Vstall,
-                            Vstall >= (self.fuel["W_{N}"][0]*2/rhosl/self.aero["S"]/1.5)**0.5
-                           ]
+        self.constraints = [
+            breguetendurance["t"] >= t_to,
+            self.slf["V"] >= 1.3*Vstall,
+            Vstall >= (self.fuel["W_{N}"][0]*2/rhosl/self.aero["S"]/1.5)**0.5
+            ]
 
         lc = LinkedConstraintSet([self.submodels, self.constraints],
                                  exclude=self.exclude)
@@ -133,7 +129,7 @@ class Loiter(FlightSegment):
         Model.__init__(self, None, lc, **kwargs)
 
 class Climb(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dh=5000,
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dh=15000,
                  **kwargs):
         FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70)
 
@@ -400,36 +396,6 @@ class Aerodynamics(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class LandingGear(Model):
-    """
-    Landing gear, with fixed dimensions.  Used for preliminary study
-    """
-    def __init__(self, NSeg, **kwargs):
-
-        A_rearland = Variable("A_{rear-land}", 12, "in^2",
-                              "rear landing gear frontal area")
-        A_frontland = Variable("A_{front-land}", 18, "in^2",
-                               "front landing gear frontal area")
-        CDland = Variable("C_{D-land}", 0.2, "-",
-                          "drag coefficient landing gear")
-        CDAland = Variable("CDA_{land}", "-",
-                           "normalized drag coefficient landing gear")
-
-        CD = VectorVariable(NSeg, "C_D", "-", "Drag coefficient")
-        CL = VectorVariable(NSeg, "C_L", "-", "Lift coefficient")
-        CDfuse = VectorVariable(NSeg, "C_{D-fuse}", "-", "fueslage drag")
-        S = Variable("S", "ft^2", "wing area")
-        e = Variable("e", 0.95, "-", "Spanwise efficiency")
-        AR = Variable("AR", "-", "Aspect ratio")
-        cdp = VectorVariable(NSeg, "c_{dp}", "-", "wing profile drag coeff")
-
-        constraints = [
-            CD >= CDfuse*2 + cdp*1.3 + CL**2/(pi*e*AR) + CDAland,
-            CDAland >= (2*CDland*A_rearland + CDland*A_frontland)/S
-            ]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
 class Beam(Model):
     def __init__(self, N, q, untapered, **kwargs):
 
@@ -548,11 +514,9 @@ class Wing(Model):
 
         # wing parameters
         S = Variable("S", "ft^2", "wing area")
-        #find better number
         wingloading = Variable("W/S", "lbf/ft^2", "Wing loading")
 
         # Structural evaluation parameters
-
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
         mtow = Variable("MTOW", "lbf", "Max take off weight")
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
@@ -680,11 +644,11 @@ class TailBoom(Model):
     def __init__(self, **kwargs):
 
         F = Variable("F", "N", "point force from tail")
-        L = Variable("L", 5, "ft", "tail boom length")
+        L = Variable("L", "ft", "tail boom length")
         E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
         kfac = Variable("(1-k/2)", 0.6, "-", "(1-k/2) tail boom inertia value")
         I0 = Variable("I_0", "m^4", "tail boom moment of inertia")
-        d0 = Variable("d_0", "m", "tail boom diameter")
+        d0 = Variable("d_0", "mm", "tail boom diameter")
         t0 = Variable("t_0", "mm", "tail boom thickness")
         tmin = Variable("t_{min}", 0.25, "mm", "minimum tail boom thickness")
         rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
@@ -709,6 +673,15 @@ class Tail(Model):
         m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "Tail weight")
         Sh = Variable("S_h", "ft**2", "horizontal tail area")
+        ARh = Variable("AR_h", 5, "-", "horizontal tail aspect ratio")
+        Abar = Variable("\\bar{A}_{NACA0008}", 0.0548, "-",
+                        "non dimensional cross sectional area of NACA 0008")
+        rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
+                           "Density of formular 250")
+        rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
+                           "horizontal tail skin density")
+        bh = Variable("b_h", "ft", "horizontal tail span")
+        Wh = Variable("W_h", "lbf", "horizontal tail weight")
         CLh = Variable("C_{L_h}", 1.0, "-", "maximum lift of horizontal tail")
         CLw = Variable("C_{L_w}", 1.5, "-", "maximum lift of win")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
@@ -719,15 +692,18 @@ class Tail(Model):
         rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
                          "air density at sea level")
         Vstall = Variable("V_{stall}", "m/s", "stall speed")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         tb = TailBoom()
         self.submodels = [tb]
 
         constraints = [
-            W/m_fac >= W_vtail + tb["W"],
+            W/m_fac >= W_vtail + tb["W"] + Wh,
             tb["F"] >= 0.5*rhosl*Vstall**2*Sh*CLh,
             Cmw + xcg*b/S*CLw <= Vh*CLh,
-            Vh <= Sh*tb["L"]/S**2*b
+            Vh <= Sh*tb["L"]/S**2*b,
+            bh**2 == ARh*S,
+            Wh >= rhofoam*Sh**2/bh*Abar + 1.1*g*rhoskin*Sh
             ]
 
         lc = LinkedConstraintSet([tb, constraints], exclude=["W"])
