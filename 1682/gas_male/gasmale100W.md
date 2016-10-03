@@ -64,20 +64,20 @@ del M.substitutions["t_{loiter}"]
 M.cost = 1/M["t_{loiter}"]
 
 # payload weight vs time on station
-fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 40, 15), ["t_{loiter}"])
+fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 20, 15), ["t_{loiter}"], ylim=[0, 10])
 gen_tex_fig(fig, "t_vs_Wpay100W")
 
 # wind speed vs time on station
 M = GasMALE(wind=True, DF70=True)
 fix_vars(M, sol, vars_to_fix)
-fig, ax = plot_sweep(M, "V_{wind}_Wind, Loiter, Mission, GasMALE", np.linspace(5, 40, 15), ["t_{loiter}"])
+fig, ax = plot_sweep(M, "V_{wind}_Wind, Loiter, Mission, GasMALE", np.linspace(5, 40, 15), ["t_{loiter}"], ylim=[0,10])
 gen_tex_fig(fig, "t_vs_Vwind100W")
 
 # altitude vs time on loiter
 altitude_vars = {"t_{loiter}"}
 figs, axs = plot_altitude_sweeps(np.linspace(14000, 20000, 10), altitude_vars,
                      vars_to_fix)
-
+axs[0].set_ylim([0,10])
 for var, fig in zip(altitude_vars, figs):
     gen_tex_fig(fig, "%s_vs_altitude100W" % var.replace("{", "").replace("}", "").replace("_", ""))
 ```

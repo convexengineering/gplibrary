@@ -169,27 +169,30 @@ sol = M.solve("mosek") # check for solving errors
 del M.substitutions["t_{loiter}"]
 M.cost = 1/M["t_{loiter}"]
 
+M.substitutions.update({"P_{pay}": 100})
 # payload power vs time on station
-fig, ax = plot_sweep(M, "P_{pay}", np.linspace(10, 200, 15), ["t_{loiter}"])
+fig, ax = plot_sweep(M, "P_{pay}", np.linspace(10, 200, 15), ["t_{loiter}"], ylim=[0,10])
 gen_tex_fig(fig, "t_vs_Ppay")
 
 # payload weight vs time on station
-fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 40, 15), ["t_{loiter}"])
+fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 20, 15), ["t_{loiter}"], ylim=[0,10])
 gen_tex_fig(fig, "t_vs_Wpay")
 
 # wind speed vs time on station
 M = GasMALE(wind=True, DF70=True)
 fix_vars(M, sol, vars_to_fix)
-fig, ax = plot_sweep(M, "V_{wind}_Wind, Loiter, Mission, GasMALE", np.linspace(5, 40, 15), ["t_{loiter}"])
+M.substitutions.update({"P_{pay}": 100})
+fig, ax = plot_sweep(M, "V_{wind}_Wind, Loiter, Mission, GasMALE", np.linspace(5, 40, 15), ["t_{loiter}"], ylim=[0,10])
 gen_tex_fig(fig, "t_vs_Vwind")
 
 # altitude vs time on loiter
-altitude_vars = {"t_{loiter}"}
-figs, axs = plot_altitude_sweeps(np.linspace(14000, 20000, 10), altitude_vars,
-                     vars_to_fix)
-
-for var, fig in zip(altitude_vars, figs):
-    gen_tex_fig(fig, "%s_vs_altitude" % var.replace("{", "").replace("}", "").replace("_", ""))
+# altitude_vars = {"t_{loiter}"}
+# figs, axs = plot_altitude_sweeps(np.linspace(14000, 20000, 10), altitude_vars,
+#                      vars_to_fix)
+# axs[0].set_ylim([0,10])
+# 
+# for var, fig in zip(altitude_vars, figs):
+#     gen_tex_fig(fig, "%s_vs_altitude" % var.replace("{", "").replace("}", "").replace("_", ""))
 ```
 \input{tex/t_vs_Ppay.fig.generated.tex}
 \input{tex/t_vs_Wpay.fig.generated.tex}
@@ -207,6 +210,12 @@ from plotting import plot_mission_var
 Mprof = GasMALE(DF70=True)
 Mprof.substitutions.update({"t_{loiter}": 6})
 Mprof.cost = Mprof["MTOW"]
+sol = Mprof.solve("mosek")
+vars_to_fix = {"S":0.0, "b": 0.0, "Vol_{fuse}":0.0, "W_Wing, GasMALE":0.0}
+fix_vars(Mprof, sol, vars_to_fix)
+Mprof.substitutions.update({"P_{pay}": 100})
+del Mprof.substitutions["t_{loiter}"]
+Mprof.cost = 1/Mprof["t_{loiter}"]
 sol = Mprof.solve("mosek")
 
 # plot mission profiles
