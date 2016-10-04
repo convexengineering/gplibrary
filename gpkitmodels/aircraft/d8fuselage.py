@@ -131,17 +131,19 @@ class Fuselage(Model):
         taucone  = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
         taufloor = Variable('\\tau_{floor}',30000/0.000145, 'N/m^2', 'Max allowable shear web stress') #TASOPT value used
         
-        Mhmax = Variable('M_{h-max}', 'N*m','Maximum horizontal axis bending moment')
-        Mvmax = Variable('M_{v-max}', 'N*m','Maximum vertical axis bending moment')
-        Mhaero = Variable('M{h-aero}','N*m')
+        Mhmax = Variable('M_{h_max}', 'N*m','Maximum horizontal axis bending moment')
+        Mvmax = Variable('M_{v_max}', 'N*m','Maximum vertical axis bending moment')
+        Mhaero = Variable('M_{h_aero}','N*m','Maximum horizontal tail aero bending load')
+        Mvaero = Variable('M_{v_aero}','N*m','Maximum vertical tail aero bending load')
 
         # Bending inertias (ported from TASOPT)
         Ivshell = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
         Ihshell = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
-        rM      = Variable('r_{M}',.5,'-','Inertial relief factor') # Temporarily .5
-
+        rMh      = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') # Temporarily .5
+        rMv     = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor')
         # x-location variables
         xtail = Variable('x_{tail}','m', 'x-location of tail')
+        xwing = Variable('x_{wing}','m', 'x-location of wing')
 
 
         with SignomialsEnabled():
@@ -229,7 +231,9 @@ class Fuselage(Model):
             #rhobend >= rE*(Mh(x)*hfuse)... will be integrated later, since we don't know the forces yet
             xtail >= lnose + lshell + .5*lcone, #Temporarily
             Lhmax == 0.5*rho0*VNE**2*Shtail*CLhmax,
-            #Mhaero >= rM*
+            xwing <= lnose + 0.6*lshell, #Temporarily constrain wing location forward of 60% of shell length
+            Mhaero >= rMh*Lhmax*(xtail-xwing),
+            Mvaero >= rMv*Lvmax*(xtail-xwing)
 
             ]
 
@@ -320,24 +324,26 @@ if __name__ == "__main__":
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
-    print 'Cabin volume        : ' + str(varVals['V_{cabin}_Fuselage']) +'.'
+    #print 'Cabin volume        : ' + str(varVals['V_{cabin}_Fuselage']) +'.'
     print 'Fuselage width      : ' + str(varVals['w_{fuse}_Fuselage']) + '.'
     print 'Fuselage length     : ' + str(varVals['l_{fuse}'])
     print 'Floor area          : ' + str(varVals['A_{floor}_Fuselage']) + '.'
     print 'Floor height        : ' + str(varVals['h_{floor}_Fuselage']) + '.'
     print 'Floor length        : ' + str(varVals['l_{floor}_Fuselage']) + '.'
-    print 'Fuselage angle      : ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
-    print 'Fuselage radius     : ' + str(varVals['R_{fuse}_Fuselage']) + '.'
-    print 'Floor total loading : ' + str(varVals['P_{floor}_Fuselage']) + '.'
-    print 'Floor weight        : ' + str(varVals['W_{floor}_Fuselage']) + '.'
-    print 'Floor volume        : ' + str(varVals['V_{floor}_Fuselage']) + '.'
-    print 'Floor bending moment: ' + str(varVals['M_{floor}_Fuselage']) + '.'
-    print 'Shell thickness     : ' + str(varVals['t_{shell}_Fuselage']) + '.'
-    print 'Skin hoop stress    : ' + str(varVals['\\sigma_{\\theta}_Fuselage']) + '.'
-    print 'Skin axial stress   : ' + str(varVals['\\sigma_x_Fuselage']) + '.'
+    #print 'Fuselage angle      : ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
+    #print 'Fuselage radius     : ' + str(varVals['R_{fuse}_Fuselage']) + '.'
+    #print 'Floor total loading : ' + str(varVals['P_{floor}_Fuselage']) + '.'
+    #print 'Floor weight        : ' + str(varVals['W_{floor}_Fuselage']) + '.'
+    #print 'Floor volume        : ' + str(varVals['V_{floor}_Fuselage']) + '.'
+    #print 'Floor bending moment: ' + str(varVals['M_{floor}_Fuselage']) + '.'
+    #print 'Shell thickness     : ' + str(varVals['t_{shell}_Fuselage']) + '.'
+    #print 'Skin hoop stress    : ' + str(varVals['\\sigma_{\\theta}_Fuselage']) + '.'
+    #print 'Skin axial stress   : ' + str(varVals['\\sigma_x_Fuselage']) + '.'
     print 'Cone weight         : ' + str(varVals['W_{cone}_Fuselage'])
     print 'Cone length         : ' + str(varVals['l_{cone}_Fuselage'])
     print 'Cone volume         : ' + str(varVals['V_{cone}_Fuselage'])
     print 'Tail torsion moment : ' + str(varVals['Q_{v}_Fuselage'])
     print 'Cone taper ratio    : ' + str(varVals['\\lambda_{cone}_Fuselage'])
     print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
+    print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
+    print 'Max vertical tail aero loading: ' +  str(varVals['M_{v_aero}_Fuselage'])
