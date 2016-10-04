@@ -1,9 +1,8 @@
 """ gas_male_rubber.py """
 from numpy import pi
 import numpy as np
-import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units
-from gpkit import LinkedConstraintSet, ConstraintSet
+from gpkit import LinkedConstraintSet, ConstraintSet, VarKey
 from gpkit import SignomialsEnabled
 from helpers import SummingConstraintSet
 #from gpkit.tools import BoundedConstraintSet
@@ -14,7 +13,7 @@ SIGNOMIALS = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "W_{zfw}",
            "P_{shaft-maxMSL}", "S_{fuse}", "W_{cent}", "W_{fuel-tot}", "g",
-           "V_{stall}", "l_{ref}", "S_{ref}"]
+           "V_{stall}"]
 
 class Mission(Model):
     def __init__(self, h_station, wind, DF70, Nclimb, Nloiter, dragcomps,
@@ -48,9 +47,24 @@ class Mission(Model):
                 self.submodels[i]["W_{end}"] == fs["W_{start}"]
                 ])
 
-        lc = LinkedConstraintSet(
-            [fs for fs in self.submodels, constraints],
-            include_only=INCLUDE)
+        cs = ConstraintSet([fs for fs in self.submodels, constraints])
+
+        linked = {}
+
+        for name in ["l_{ref}", "S_{ref}"]:
+            vks = cs.varkeys[name]
+            vk = list(vks)[0]
+            descr = dict(vk.descr)
+            descr.pop("value", None)
+            descr.pop("models", None)
+            descr.pop("modelnums", None)
+            newvk = VarKey(**descr)
+            linked.update(dict(zip(vks, len(vks)*[newvk])))
+            print linked
+        cs.subinplace(linked)
+
+        lc = LinkedConstraintSet(cs, include_only=INCLUDE)
+
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -834,7 +848,7 @@ class GasMALE(Model):
             self.submodels.append(sq)
 
         lc = LinkedConstraintSet([self.submodels, constraints],
-                                 include_only=INCLUDE)
+                                 include_only=INCLUDE + ["l_{ref}", "S_{ref}"])
 
 
         objective = 1/mission["t_{loiter}"]
