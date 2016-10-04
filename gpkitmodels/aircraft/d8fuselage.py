@@ -248,14 +248,12 @@ class Fuselage(Model):
             Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
             Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
             Wtail    >= Wvtail + Whtail + Wcone,
-            # Mhmax    >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)*(xshell2 - xwing)**2/(2*lshell) \
-            #                                      + (Nland*Wtail + rMh*Lhmax)*(xtail-xwing),
-            #rhobend  >=  rE*(Mhmax*hfuse/(Ihshell + rE*Ihbend) + dPover/2*Rfuse/tshell),
             hfuse    == Rfuse, # may want to consider adding deltaRfuse later...
             A2 >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
             A1 >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),
             A0 <= (Ihshell/(rE*hfuse**2)),
-            #Ahbendmax >= A2*(xshell2)
+            xwing >= lnose + 0.5*lshell,
+            Ahbendmax >= A2*(xshell2-xwing)**2 + A1*(xtail-xwing)-A0, #[SP]
             sigMh <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
             sigbend == sigskin,
 
@@ -264,7 +262,10 @@ class Fuselage(Model):
             xshell2 >= lnose + lshell
             ]
 
-        objective = Wfuse + Vcabin*units('N/m^3') + lfuse*units('N/m') + tshell*units('N/m')
+            # Bending area discretization
+
+
+        objective = Wfuse + Vcabin*units('N/m^3') + lfuse*units('N/m') + tshell*units('N/m') + Ahbendmax*units('N/m^2')
         Model.__init__(self, objective, constraints, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
@@ -374,3 +375,5 @@ if __name__ == "__main__":
     print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
     print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
     print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
+    print 'Wing location: ' + str(varVals['x_{wing}_Fuselage'])
+    print 'Horizontal bending material: ' + str(varVals['A_{hbend_max}_Fuselage'])
