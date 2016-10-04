@@ -15,6 +15,7 @@ class Fuselage(Model):
     def __init__(self, **kwargs):
         constraints = []
         g = 9.81*units('m*s**-2')
+        ndisc = 10
 
         # Will try to stick to Philippe's naming methods as closely as possible
         # for cross-compatibility (to be able to switch models quickly)
@@ -37,6 +38,7 @@ class Fuselage(Model):
         Askin   = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
         hdb     = Variable('h_{db}','m', 'Web half-height')
         hfloor  = Variable('h_{floor}', 'm', 'Floor beam height')
+        hfuse   = Variable('h_{fuse}','m','Fuselage height')
         Rfuse   = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there: no under-fuselage extension deltaR
         tdb     = Variable('t_{db}', 'm', 'Web thickness')
         thetadb = Variable('\\theta_{db}','-','DB fuselage joining angle')
@@ -139,17 +141,24 @@ class Fuselage(Model):
         Mvaero   = Variable('M_{v_aero}','N*m','Maximum vertical tail aero bending load')
         
         # Bending inertias (ported from TASOPT)
-        Ivshell = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
-        Ihshell = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
-        rMh      = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') # Temporarily .5
-        rMv     = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor')
-        
+        Ivshell   = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
+        Ihshell   = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
+        rMh       = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') # Temporarily .5
+        rMv       = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor')
+        Ahbendmax = Variable('A_{hbend_max}','m^2','Added horizontal bending material area')
+        Avbendmax = Variable('A_{vbend_max}','m^2','Added vertical bending material area')
+        A2        = Variable('A2','-','Horizontal bending area constant A2') #(fuselage impact)
+        A1        = Variable('A1','m','Horizontal bending area constant A1') #(tail impact + aero loading)
+        A0        = Variable('A0','m^2','Horizontal bending area constant A0') #(shell inertia contribution)
+        sigMh     = Variable('\\sigma_{M_h}','N/m^2','Horizontal bending material stress')
+        sigMv     = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
+        sigbend   = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
         # x-location variables
-        xshell1  = Variable('x_{shell1}', 'm', 'Start of cylinder section')
-        xshell2  = Variable('x_{shell2}', 'm', 'End of cylinder section')
-        xtail = Variable('x_{tail}','m', 'x-location of tail')
-        xwing = Variable('x_{wing}','m', 'x-location of wing')
-
+        xshell1   = Variable('x_{shell1}', 'm', 'Start of cylinder section')
+        xshell2   = Variable('x_{shell2}', 'm', 'End of cylinder section')
+        xtail     = Variable('x_{tail}','m', 'x-location of tail')
+        xwing     = Variable('x_{wing}','m', 'x-location of wing')
+        xhbend    = VectorVariable(ndisc,'x_{hbend}','m','Bending material location')
 
         with SignomialsEnabled():
             constraints = [
@@ -218,10 +227,6 @@ class Fuselage(Model):
             # Added synthetic constraint on hfloor to keep it from growing too large
             hfloor <= .1*Rfuse,
 
-            # Fuselage bending model
-            Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell, # [SP]
-            Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #approx needs to be improved [SP]
-            
             # Tail cone loading model
             Lvmax                            == 35000*units('N'), # based on 737
             bvt                              == 7*units('m'),
@@ -232,16 +237,27 @@ class Fuselage(Model):
             Vcone*(1+lamcone)*(pi+4*thetadb) >= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
             Wcone                            >= rhocone*g*Vcone*(1+fstring+fframe),
 
-            # Maximum axial stress model (sum of bending and pressurization strain)
-            #rhobend >= rE*(Mh(x)*hfuse)... will be integrated later, since we don't know the forces yet
+            # Maximum axial stress model - BENDING (sum of bending and pressurization strain)
+            Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell, # [SP]
+            Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #approx needs to be improved [SP]
+            
+
             xtail    >= lnose + lshell + .5*lcone, #Temporarily
             Lhmax    == 0.5*rho0*VNE**2*Shtail*CLhmax,
             xwing    <= lnose + 0.6*lshell, #Temporarily constrain wing location forward of 60% of shell length
-            Mhaero   >= rMh*Lhmax*(xtail-xwing),
-            Mvaero   >= rMv*Lvmax*(xtail-xwing),
+            Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
+            Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
             Wtail    >= Wvtail + Whtail + Wcone,
-            Mhmax    >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)*(xshell2 - xwing)**2/(2*lshell) \
-                                                 + (Nland*Wtail + rMh*Lhmax)*(xtail-xwing),
+            # Mhmax    >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)*(xshell2 - xwing)**2/(2*lshell) \
+            #                                      + (Nland*Wtail + rMh*Lhmax)*(xtail-xwing),
+            #rhobend  >=  rE*(Mhmax*hfuse/(Ihshell + rE*Ihbend) + dPover/2*Rfuse/tshell),
+            hfuse    == Rfuse, # may want to consider adding deltaRfuse later...
+            A2 >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
+            A1 >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),
+            A0 <= (Ihshell/(rE*hfuse**2)),
+            #Ahbendmax >= A2*(xshell2)
+            sigMh <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
+            sigbend == sigskin,
 
             # x-location constraints
             xshell1 == lnose,
@@ -358,5 +374,3 @@ if __name__ == "__main__":
     print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
     print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
     print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
-    print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
-    print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
