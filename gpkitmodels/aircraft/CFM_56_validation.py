@@ -2,11 +2,11 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units, ConstraintSet
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from CFM_56_validation_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OffDesign, FanMap, LPCMap, HPCMap
+from CFM_56_validation_components import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, Sizing, FanMap, LPCMap, HPCMap
 from collections import defaultdict
 from gpkit.small_scripts import mag
 
-class OffDesignTOC(Model):
+class OperatingPoint1(Model):
 
     def __init__(self):
         mixing = True
@@ -29,7 +29,7 @@ class OffDesignTOC(Model):
         M4a = .1025
         Mexit = 1
         
-        offD = OffDesign(res7, mixing)
+        offD = Sizing(res7, mixing)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
@@ -106,7 +106,7 @@ class OffDesignTOC(Model):
             return out, solhold
 
         
-class OffDesignOnDRerun(Model):
+class OperatingPoint2(Model):
 
     def __init__(self):
         mixing = True
@@ -129,7 +129,7 @@ class OffDesignOnDRerun(Model):
         M4a = .1025
         Mexit = 1
         
-        offD = OffDesign(res7, mixing)
+        offD = Sizing(res7, mixing)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
@@ -163,7 +163,7 @@ class OffDesignOnDRerun(Model):
                 })
         Model.__init__(self, offD.cost, lc, substitutions)
 
-class OffDesignTO(Model):
+class SizingTO(Model):
 
     def __init__(self):
         mixing = True
@@ -184,7 +184,7 @@ class OffDesignTO(Model):
         M4a = .1025
         Mexit = 1
         
-        offD = OffDesign(res7, mixing)
+        offD = Sizing(res7, mixing)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
@@ -217,7 +217,7 @@ class OffDesignTO(Model):
             
         Model.__init__(self, offD.cost, lc, substitutions)
 
-class OffDesignSLS(Model):
+class SizingSLS(Model):
 
     def __init__(self):
         mixing = True
@@ -238,7 +238,7 @@ class OffDesignSLS(Model):
         M4a = .1025
         Mexit = 1
         
-        offD = OffDesign(res7, mixing)
+        offD = Sizing(res7, mixing)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
@@ -277,9 +277,9 @@ class FullEngineRun(Model):
     def __init__(self):
         W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
     
-        engine1 = OffDesignTOC()
-        engine2 = OffDesignOnDRerun()
-        engine3 = OffDesignTO()
+        engine1 = OperatingPoint1()
+        engine2 = OperatingPoint2()
+        engine3 = SizingTO()
     ##    sol1 = engine1.localsolve(verbosity = 4, solver="mosek")
     ##    bounds, sol = engine1.determine_unbounded_variables(engine1, solver="mosek",verbosity=4, iteration_limit=50)
 
@@ -316,13 +316,13 @@ class FullEngineRun(Model):
         '\pi_{hc_D}': hpc,
         '\pi_{lc_D}': lpc,
 
-        'alpha_OffDesignOnDRerun': 5.105,
+        '\\alpha_OperatingPoint2': 5.105,
 
         'M_{4a}': M4a,
         'hold_{4a}': 1+.5*(1.313-1)*M4a**2,#sol('hold_{4a}'),
         'r_{uc}': .01,
         '\\alpha_c': .19036,
-        'T_{t_f}': 288,
+        'T_{t_f}': 435,
 
         'M_{takeoff}': .9442,
 
@@ -353,13 +353,15 @@ class FullEngineRun(Model):
 
 ##        print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
 
+        #SUB IN FOR C1??
+
         Model.__init__(self, (engine2.cost+engine1.cost), constraints, valsubs)
 
         sol = self.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
         
 ##        bounds, sol = engine1.determine_unbounded_variables(self, solver="mosek",verbosity=4, iteration_limit=200)
         print sol.table()
-        print bounds
+##        print bounds
 
 
 if __name__ == "__main__":

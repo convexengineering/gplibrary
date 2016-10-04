@@ -76,9 +76,9 @@ class FanAndLPC(Model):
         ht0 = Variable('h_{t_0}', 'J/kg', 'Free Stream Stagnation Enthalpy')
 
         #new vars for the diffuser exit
-        Pt18 = Variable('P_{t_1.8}', 'kPa', 'Stagnation Pressure at the Diffuser Exit (1.8)')
-        Tt18 = Variable('T_{t_1.8}', 'K', 'Stagnation Temperature at the Diffuser Exit (1.8)')
-        ht18 = Variable('h_{t_1.8}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
+        Pt18 = Variable('P_{t_{1.8}}', 'kPa', 'Stagnation Pressure at the Diffuser Exit (1.8)')
+        Tt18 = Variable('T_{t_{1.8}}', 'K', 'Stagnation Temperature at the Diffuser Exit (1.8)')
+        ht18 = Variable('h_{t_{1.8}}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
         
         #new vars for the fan inlet
         Pt2 = Variable('P_{t_2}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2)')
@@ -91,9 +91,9 @@ class FanAndLPC(Model):
         ht21 = Variable('h_{t_2.1}', 'J/kg', 'Stagnation Enthalpy at the Fan Exit (2.1)')
 
         #new vars for the LPC exit (station 2.5)
-        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
-        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
-        ht25 = Variable('h_{t_2.5}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
+        Pt25 = Variable('P_{t_{2.5}}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
+        Tt25 = Variable('T_{t_{2.5}}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
+        ht25 = Variable('h_{t_{2.5}}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
 
         #HPC exit state variables (station 3)
         Pt3 = Variable('P_{t_3}', 'kPa', 'Stagnation Pressure at the HPC Exit (3)')
@@ -183,9 +183,9 @@ class CombustorCooling(Model):
         Tt4 = Variable('T_{t_4}', 'K', 'Combustor Exit (Station 4) Stagnation Temperature')
 
         #Turbine inlet state variables (station 4.1)
-        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
-        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
-        ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
+        Pt41 = Variable('P_{t_{4.1}}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
+        Tt41 = Variable('T_{t_{4.1}}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+        ht41 = Variable('h_{t_{4.1}}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
         Ttf = Variable('T_{t_f}', 'K', 'Incoming Fuel Total Temperature')
         u41 = Variable('u_{4.1}', 'm/s', 'Flow Velocity at Station 4.1')
         T41 = Variable('T_{4.1}', 'K', 'Static Temperature at the Turbine Inlet (4.1)')
@@ -282,26 +282,26 @@ class Turbine(Model):
         Cpt2 =Variable('Cp_t2', 1099, 'J/kg/K', "Cp Value for Combustion Products in LP Turbine") #800K gamma = 1.354
         
         #new variables
-        ht45 = Variable('h_{t_4.5}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (4.5)')
-        Pt45 = Variable('P_{t_4.5}', 'kPa', 'Stagnation Pressure at the HPT Exit (4.5)')
-        Tt45 = Variable('T_{t_4.5}', 'K', 'Stagnation Temperature at the HPT Exit (4.5)')
+        ht45 = Variable('h_{t_{4.5}}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (4.5)')
+        Pt45 = Variable('P_{t_{4.5}}', 'kPa', 'Stagnation Pressure at the HPT Exit (4.5)')
+        Tt45 = Variable('T_{t_{4.5}}', 'K', 'Stagnation Temperature at the HPT Exit (4.5)')
 
         #enthalpies used in shaft power balances
-        ht18 = Variable('h_{t_1.8}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
+        ht18 = Variable('h_{t_{1.8}}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
         ht2 = Variable('h_{t_2}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2)')
         ht21 = Variable('h_{t_2.1}', 'J/kg', 'Stagnation Enthalpy at the Fan Inlet (2.1)')
-        ht25 = Variable('h_{t_2.5}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
+        ht25 = Variable('h_{t_{2.5}}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
         ht3 = Variable('h_{t_3}', 'J/kg', 'Stagnation Enthalpy at the HPC Exit (3)')
 
         #Turbine inlet state variables (station 4.1)
-        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
-        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
-        ht41 = Variable('h_{t_4.1}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
+        Pt41 = Variable('P_{t_{4.1}}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
+        Tt41 = Variable('T_{t_{4.1}}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+        ht41 = Variable('h_{t_{4.1}}', 'J/kg', 'Stagnation Enthalpy at the Turbine Inlet (4.1)')
 
         #HPT exit states
-        Pt49 = Variable('P_{t_4.9}', 'kPa', 'Stagnation Pressure at the HPTExit (49)')
-        Tt49 = Variable('T_{t_4.9}', 'K', 'Stagnation Temperature at the HPT Exit (49)')
-        ht49 = Variable('h_{t_4.9}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (49)')
+        Pt49 = Variable('P_{t_{4.9}}', 'kPa', 'Stagnation Pressure at the HPTExit (49)')
+        Tt49 = Variable('T_{t_{4.9}}', 'K', 'Stagnation Temperature at the HPT Exit (49)')
+        ht49 = Variable('h_{t_{4.9}}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (49)')
         
         #turbine nozzle exit states
         Pt5 = Variable('P_{t_5}', 'kPa', 'Stagnation Pressure at the Turbine Nozzle Exit (5)')
@@ -316,7 +316,7 @@ class Turbine(Model):
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
         #BPR
-        alpha = Variable('alpha', '-', 'By Pass Ratio')
+        alpha = Variable('\\alpha', '-', 'By Pass Ratio')
 
         alphap1 = Variable('alphap1', '-', '1 plus BPR')
 
@@ -415,7 +415,7 @@ class ExhaustAndThrust(Model):
         u8 = Variable('u_8', 'm/s', 'Fan Exhaust Velocity')
 
         #BPR
-        alpha = Variable('alpha', '-', 'By Pass Ratio')
+        alpha = Variable('\\alpha', '-', 'By Pass Ratio')
         alphap1 = Variable('alphap1', '-', '1 plus BPR')
 
         #core mass flow
@@ -458,10 +458,13 @@ class ExhaustAndThrust(Model):
 
                 #overall thrust values
                 TCS([F8/(alpha * mCore) + u0 <= u8]),  #B.188
-                TCS([F6/(Mtakeoff*mCore) + (f+1)*u0 <= (fp1)*u6]),      #B.189
+##                SignomialEquality(F8/(alpha * mCore) + u0, u8),
+                TCS([F6/(Mtakeoff*mCore) + (f+1)*u0 <= (fp1)*u6]),
+##                SignomialEquality(F6/(Mtakeoff*mCore) + (f+1)*u0, (fp1)*u6),#B.189
 
                 #SIGNOMIAL
                 TCS([F <= F6 + F8]),
+##                SignomialEquality(F, F6 + F8),
 
                 Fsp == F/((alphap1)*mCore*a0),   #B.191
 
@@ -533,7 +536,7 @@ class HPCMap(Model):
     """
     def __init__(self, SPmaps, **kwargs):
         #Temperature Variables
-        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
+        Tt25 = Variable('T_{t_{2.5}}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
         Tref = Variable('T_{ref}', 'K', 'Reference Stagnation Temperature')
 
         #Mass Flow Variables
@@ -543,7 +546,7 @@ class HPCMap(Model):
         mhcD = Variable('m_{hc_D}', 'kg/s', 'On Design HPC Corrected Mass Flow')
 
         #Pressure Variables
-        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
+        Pt25 = Variable('P_{t_{2.5}}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
         Pref = Variable('P_{ref}', 'kPa', 'Reference Stagnation Pressure')
 
         #pressure ratio variables
@@ -589,7 +592,7 @@ class FanMap(Model):
         mFan = Variable('m_{fan}', 'kg/s', 'Fan Mass Flow')
         mtildf = Variable('m_{tild_f}', '-', 'Fan Normalized Mass Flow')
         mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
-        mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
+        mFanBarD = Variable('\\bar{m}_{fan_{D}}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
 
 
         #Pressure Variables
@@ -630,7 +633,7 @@ class FanMap(Model):
               
         Model.__init__(self, 1/pif, constraints, **kwargs)
 
-class OffDesign(Model):
+class Sizing(Model):
     """
     Class to implement off design performance of a turbofan. Simply equates the residuals
     from section B.6 of TASOPT. The constraints inside this model should be linked with the
@@ -673,21 +676,21 @@ class OffDesign(Model):
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
         #diffuser exit states
-        Pt18 = Variable('P_{t_1.8}', 'kPa', 'Stagnation Pressure at the Diffuser Exit (1.8)')
-        Tt18 = Variable('T_{t_1.8}', 'K', 'Stagnation Temperature at the Diffuser Exit (1.8)')
-        ht18 = Variable('h_{t_1.8}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
+        Pt18 = Variable('P_{t_{1.8}}', 'kPa', 'Stagnation Pressure at the Diffuser Exit (1.8)')
+        Tt18 = Variable('T_{t_{1.8}}', 'K', 'Stagnation Temperature at the Diffuser Exit (1.8)')
+        ht18 = Variable('h_{t_{1.8}}', 'J/kg', 'Stagnation Enthalpy at the Diffuser Exit (1.8)')
 
         #fan inlet states
         Pt2 = Variable('P_{t_2}', 'kPa', 'Stagnation Pressure at the Fan Inlet (2)')
         Tt2 = Variable('T_{t_2}', 'K', 'Stagnation Temperature at the Fan Inlet (2)')
 
         #turbine inlet states
-        Pt41 = Variable('P_{t_4.1}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
-        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+        Pt41 = Variable('P_{t_{4.1}}', 'kPa', 'Stagnation Pressure at the Turbine Inlet (4.1)')
+        Tt41 = Variable('T_{t_{4.1}}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
 
         #LPC exit states
-        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
-        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
+        Pt25 = Variable('P_{t_{2.5}}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
+        Tt25 = Variable('T_{t_{2.5}}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
 
         #Corrected mass flows
         mf = Variable('m_{f}', 'kg/s', 'Fan Corrected Mass Flow')
@@ -697,8 +700,8 @@ class OffDesign(Model):
         mltD = Variable('m_{ltD}', 'kg/s', 'Design LPT Corrected Mass Flow (see B.226)')
 
         #HPT exit states
-        Pt45 = Variable('P_{t_4.5}', 'kPa', 'Stagnation Pressure at the HPT Exit (4.5)')
-        Tt45 = Variable('T_{t_4.5}', 'K', 'Stagnation Temperature at the HPT Exit (4.5)')
+        Pt45 = Variable('P_{t_{4.5}}', 'kPa', 'Stagnation Pressure at the HPT Exit (4.5)')
+        Tt45 = Variable('T_{t_{4.5}}', 'K', 'Stagnation Temperature at the HPT Exit (4.5)')
 
         #fan exhuast states
         P7 = Variable('P_{7}', 'kPa', 'Fan Exhaust Static Pressure (7)')
@@ -731,8 +734,8 @@ class OffDesign(Model):
         pitn = Variable('\pi_{tn}', '-', 'Turbine Nozzle Pressure Ratio')
         
         #HPT exit states
-        Pt49 = Variable('P_{t_4.9}', 'kPa', 'Stagnation Pressure at the HPTExit (4.9)')
-        Tt49 = Variable('T_{t_4.9}', 'K', 'Stagnation Temperature at the HPT Exit (4.9)')
+        Pt49 = Variable('P_{t_{4.9}}', 'kPa', 'Stagnation Pressure at the HPTExit (4.9)')
+        Tt49 = Variable('T_{t_{4.9}}', 'K', 'Stagnation Temperature at the HPT Exit (4.9)')
 
         #reference states
         Tref = Variable('T_{ref}', 'K', 'Reference Temperature for Normalization')
@@ -760,10 +763,10 @@ class OffDesign(Model):
 
         Mtakeoff = Variable('M_{takeoff}', '-', '1 Minus Percent mass flow loss for de-ice, pressurization, etc.')
 
-        Tt41 = Variable('T_{t_4.1}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
+        Tt41 = Variable('T_{t_{4.1}}', 'K', 'Stagnation Temperature at the Turbine Inlet (4.1)')
 
         #BPR
-        alpha = Variable('alpha', '-', 'By Pass Ratio')
+        alpha = Variable('\\alpha', '-', 'By Pass Ratio')
         alphap1 = Variable('alphap1', '-', '1 plus BPR')
 
         W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
@@ -792,11 +795,11 @@ class OffDesign(Model):
         rho25 = Variable('\rho_2.5', 'kg/m^3', 'Static Air Density at HPC Face')
         T25 = Variable('T_{2.5}', 'K', 'Static Air Temperature at HPC Face')
         P25 = Variable('P_{2.5}', 'kPa', 'Static Air Pressure at HPC Face')
-        Pt25 = Variable('P_{t_2.5}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
+        Pt25 = Variable('P_{t_{2.5}}', 'kPa', 'Stagnation Pressure at the LPC Exit (2.5)')
         u25 = Variable('u_{2.5}', 'm/s', 'Air Speed at HPC Face')
         A25 = Variable('A_{2.5}', 'm^2', 'HPC Area')
-        Tt25 = Variable('T_{t_2.5}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
-        ht25 = Variable('h_{t_2.5}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
+        Tt25 = Variable('T_{t_{2.5}}', 'K', 'Stagnation Temperature at the LPC Exit (2.5)')
+        ht25 = Variable('h_{t_{2.5}}', 'J/kg', 'Stagnation Enthalpy at the LPC Exit (2.5)')
         h25 = Variable('h_{2.5}', 'J/kg', 'Static Enthalpy at the LPC Exit (2.5)')
 
         Cp1 = Variable('Cp_{1}', 1008, 'J/kg/K', "Cp Value for Air at 350K")#gamma = 1.398
@@ -807,13 +810,16 @@ class OffDesign(Model):
 
         TSFC = Variable('TSFC', '1/hr', 'Thrust Specific Fuel Consumption')
 
-        mFanBarD = Variable('m_{fan_bar_D}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
+        mFanBarD = Variable('\\bar{m}_{fan_{D}}', 'kg/s', 'Fan On-Design Corrected Mass Flow')
 
         mlcD = Variable('m_{lc_D}', 'kg/s', 'On Design LPC Corrected Mass Flow')
         mhcD = Variable('m_{hc_D}', 'kg/s', 'On Design HPC Corrected Mass Flow')
         mtot = Variable('m_{total}', 'kg/s', 'Total Engine Mass Flux')
 
         mCoreD = Variable('m_{coreD}', 'kg/s', 'Estimated on Design Mass Flow')
+        mFanD = Variable('m_{fan_D}', 'kg/s', 'Fan On-Design Mass Flow')
+
+        alpha_OD = Variable('\\alpha_{OD}', '-', 'By Pass Ratio')
 
         F = Variable('F', 'N', 'Total Thrust')
 
@@ -825,7 +831,7 @@ class OffDesign(Model):
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
                 N1 <= 1.1,
-                N2 <= 1.2,
+                N2 <= 1.1,
 
                 #note residuals 2 and 3 differ from TASOPT, by replacing mhc with mlc
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality
@@ -869,7 +875,7 @@ class OffDesign(Model):
                 alpha == mFan / mCore,
                 SignomialEquality(alphap1, alpha + 1),
 
-##                alpha <=6.5,
+                alpha <= 5.105,
                
                 mtot >= mFan + mCore,
 
@@ -898,27 +904,28 @@ class OffDesign(Model):
                 pilc >= 1,
                 pihc >= 1,
 
-##                mhtD <= 1.15*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
-##                mhtD >= .85*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
-##                mltD <= 1.15*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-##                mltD >= .85*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-##                mlcD >= .85*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-##                mlcD <= 1.15*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-##                mhcD >= .85*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-##                mhcD <= 1.15*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-##                mFanBarD >= .8 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
-##                mFanBarD <= 1.2 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
-
                 mhtD <= 1.1*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
                 mhtD >= .9*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
                 mltD <= 1.1*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
                 mltD >= .9*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-                mlcD >= .9*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-                mlcD <= 1.1*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-                mhcD >= .9*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-                mhcD <= 1.1*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-                mFanBarD >= .9 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
-                mFanBarD <= 1.1 * mCoreD * alpha*((230.0/288)**.5)/(34/101.325),
+                mlcD >= .8*mCoreD *((258.0/288)**.5)/(67.4/101.325),
+                mlcD <= 1.2*mCoreD *((258.0/288)**.5)/(67.4/101.325),
+                mhcD >= .8*mCoreD *((319.0/288)**.5)/(130.42/101.325),
+                mhcD <= 1.2*mCoreD *((319.0/288)**.5)/(130.42/101.325),
+                mFanBarD >= .8 * mCoreD * alpha_OD *((230.0/288)**.5)/(34/101.325),
+                mFanBarD <= 1.2 * mCoreD * alpha_OD *((230.0/288)**.5)/(34/101.325),
+
+##                mhtD <= 1.2*fp1*Mtakeoff*mCoreD *((1200.0/288)**.5)/(1423/101.325),
+##                mhtD >= .8*fp1*Mtakeoff*mCoreD *((1200.0/288)**.5)/(1423/101.325),
+##                mltD <= 1.2*fp1*Mtakeoff*mCoreD *((840.8/288)**.5)/(457/101.325),
+##                mltD >= .8*fp1*Mtakeoff*mCoreD *((840.8/288)**.5)/(457/101.325),
+##                mlcD >= .8*mCoreD *((292.57/288)**.5)/(78.5/101.325),
+##                mlcD <= 1.2*mCoreD *((292.57/288)**.5)/(78.5/101.325),
+##                mhcD >= .8*mCoreD *((360.47/288)**.5)/(151.9/101.325),
+##                mhcD <= 1.2*mCoreD *((360.47/288)**.5)/(151.9/101.325),
+##                mFanBarD >= .8 * alpha_OD * mCoreD *((260.0/288)**.5)/(60/101.325),
+##                mFanBarD <= 1.2 * alpha_OD * mCoreD * ((260.6/288)**.5)/(60/101.325),
+       
             ]
             
         if res7 == 0:
