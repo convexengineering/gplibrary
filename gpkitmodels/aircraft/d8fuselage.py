@@ -47,7 +47,7 @@ class Fuselage(Model):
         wfloor  = Variable('w_{floor}', 'm', 'Floor width')
         wfuse   = Variable('w_{fuse}', 'm', 'Fuselage width')
         wseat   = Variable('w_{seat}',0.5,'m', 'Seat width')
-        wsys     = Variable('w_{sys}', 0.1,'m', 'Width between cabin and skin for systems')
+        wsys    = Variable('w_{sys}', 0.1,'m', 'Width between cabin and skin for systems')
         
         # Tail cone variables
         bvt     = Variable('b_{vt}', 'm', 'Vertical tail span')
@@ -72,16 +72,16 @@ class Fuselage(Model):
         Snose    = Variable('S_{nose}', 'm^2', 'Nose surface area')
         
         # Volumes (free)        
-        Vbulk  = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
-        Vcabin = Variable('V_{cabin}', 'm^3', 'Cabin volume')
-        Vcone  = Variable('V_{cone}', 'm^3', 'Cone skin volume')
-        Vcyl   = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')   
-        Vdb    = Variable('V_{db}', 'm^3', 'Web volume')
-        Vfloor = Variable('V_{floor}', 'm^3', 'Floor volume')
-        Vnose  = Variable('V_{nose}', 'm^3', 'Nose skin volume')
+        Vbulk    = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
+        Vcabin   = Variable('V_{cabin}', 'm^3', 'Cabin volume')
+        Vcone    = Variable('V_{cone}', 'm^3', 'Cone skin volume')
+        Vcyl     = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')   
+        Vdb      = Variable('V_{db}', 'm^3', 'Web volume')
+        Vfloor   = Variable('V_{floor}', 'm^3', 'Floor volume')
+        Vnose    = Variable('V_{nose}', 'm^3', 'Nose skin volume')
         
         # Weights
-        #Wbuoy    = Variable('W_{buoy}', 'N', 'Buoyancy weight')
+        #Wbuoy   = Variable('W_{buoy}', 'N', 'Buoyancy weight')
         Wavgpass = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
         Wcargo   = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
         Wcarryon = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
@@ -89,14 +89,16 @@ class Fuselage(Model):
         Wcone    = Variable('W_{cone}', 'N', 'Cone weight')
         Wfix     = Variable('W_{fix}', 3000, 'lbf', 'Fixed weights (pilots, cockpit seats, navcom)')
         Wfloor   = Variable('W_{floor}', 'N', 'Floor weight')
-        Wfuse    = Variable('W_{fuse}', 'N', 'Fuselage weight')
-        Winsul   = Variable('W_{insul}', 'N', 'Insulation material weight')
-        Wpay     = Variable('W_{pay}', 'N', 'Payload weight')
-        Wseat    = Variable('W_{seat}', 'N', 'Seating weight')
-        Wshell   = Variable('W_{shell}','N','Shell weight')
-        Wskin    = Variable('W_{skin}', 'N', 'Skin weight')
-        Wwindow  = Variable('W_{window}', 'N', 'Window weight')
-        
+        Wfuse   = Variable('W_{fuse}', 'N', 'Fuselage weight')
+        Winsul  = Variable('W_{insul}', 'N', 'Insulation material weight')
+        Wpay    = Variable('W_{pay}', 'N', 'Payload weight')
+        Wseat   = Variable('W_{seat}', 'N', 'Seating weight')
+        Wshell  = Variable('W_{shell}','N','Shell weight')
+        Wskin   = Variable('W_{skin}', 'N', 'Skin weight')
+        Wwindow = Variable('W_{window}', 'N', 'Window weight')
+        Wvtail  = Variable('W_{vtail}',10000, 'N', 'Vertical tail weight') #Temporarily
+        Whtail  = Variable('W_{htail}',10000, 'N', 'Horizontal tail weight') #Temporarily
+        Wtail   = Variable('W_{tail}','N','Total tail weight')
         # Weight fractions (fixed, with respect to the aircraft skin weight, set from PRSEUS metrics)
         
         #ffadd     = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
@@ -131,17 +133,20 @@ class Fuselage(Model):
         taucone  = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
         taufloor = Variable('\\tau_{floor}',30000/0.000145, 'N/m^2', 'Max allowable shear web stress') #TASOPT value used
         
-        Mhmax = Variable('M_{h_max}', 'N*m','Maximum horizontal axis bending moment')
-        Mvmax = Variable('M_{v_max}', 'N*m','Maximum vertical axis bending moment')
-        Mhaero = Variable('M_{h_aero}','N*m','Maximum horizontal tail aero bending load')
-        Mvaero = Variable('M_{v_aero}','N*m','Maximum vertical tail aero bending load')
-
+        Mhmax    = Variable('M_{h_max}', 'N*m','Maximum horizontal axis bending moment')
+        Mvmax    = Variable('M_{v_max}', 'N*m','Maximum vertical axis bending moment')
+        Mhaero   = Variable('M_{h_aero}','N*m','Maximum horizontal tail aero bending load')
+        Mvaero   = Variable('M_{v_aero}','N*m','Maximum vertical tail aero bending load')
+        
         # Bending inertias (ported from TASOPT)
         Ivshell = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
         Ihshell = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
         rMh      = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') # Temporarily .5
         rMv     = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor')
+        
         # x-location variables
+        xshell1  = Variable('x_{shell1}', 'm', 'Start of cylinder section')
+        xshell2  = Variable('x_{shell2}', 'm', 'End of cylinder section')
         xtail = Variable('x_{tail}','m', 'x-location of tail')
         xwing = Variable('x_{wing}','m', 'x-location of wing')
 
@@ -229,12 +234,18 @@ class Fuselage(Model):
 
             # Maximum axial stress model (sum of bending and pressurization strain)
             #rhobend >= rE*(Mh(x)*hfuse)... will be integrated later, since we don't know the forces yet
-            xtail >= lnose + lshell + .5*lcone, #Temporarily
-            Lhmax == 0.5*rho0*VNE**2*Shtail*CLhmax,
-            xwing <= lnose + 0.6*lshell, #Temporarily constrain wing location forward of 60% of shell length
-            Mhaero >= rMh*Lhmax*(xtail-xwing),
-            Mvaero >= rMv*Lvmax*(xtail-xwing)
+            xtail    >= lnose + lshell + .5*lcone, #Temporarily
+            Lhmax    == 0.5*rho0*VNE**2*Shtail*CLhmax,
+            xwing    <= lnose + 0.6*lshell, #Temporarily constrain wing location forward of 60% of shell length
+            Mhaero   >= rMh*Lhmax*(xtail-xwing),
+            Mvaero   >= rMv*Lvmax*(xtail-xwing),
+            Wtail    >= Wvtail + Whtail + Wcone,
+            Mhmax    >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)*(xshell2 - xwing)**2/(2*lshell) \
+                                                 + (Nland*Wtail + rMh*Lhmax)*(xtail-xwing),
 
+            # x-location constraints
+            xshell1 == lnose,
+            xshell2 >= lnose + lshell
             ]
 
         objective = Wfuse + Vcabin*units('N/m^3') + lfuse*units('N/m') + tshell*units('N/m')
@@ -346,4 +357,6 @@ if __name__ == "__main__":
     print 'Cone taper ratio    : ' + str(varVals['\\lambda_{cone}_Fuselage'])
     print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
     print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
-    print 'Max vertical tail aero loading: ' +  str(varVals['M_{v_aero}_Fuselage'])
+    print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
+    print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
+    print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
