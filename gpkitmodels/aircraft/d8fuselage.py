@@ -145,7 +145,7 @@ class Fuselage(Model):
         Ihshell   = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
         rMh       = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') # Temporarily .5
         rMv       = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor')
-        Ahbendmax = Variable('A_{hbend_max}','m^2','Added horizontal bending material area')
+        Ahbend    = VectorVariable(ndisc, 'A_{hbend}','m^2','Added horizontal bending material area')
         Avbendmax = Variable('A_{vbend_max}','m^2','Added vertical bending material area')
         A2        = Variable('A2','-','Horizontal bending area constant A2') #(fuselage impact)
         A1        = Variable('A1','m','Horizontal bending area constant A1') #(tail impact + aero loading)
@@ -153,6 +153,7 @@ class Fuselage(Model):
         sigMh     = Variable('\\sigma_{M_h}','N/m^2','Horizontal bending material stress')
         sigMv     = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
         sigbend   = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
+        Whbend    = Variable('W_{hbend}','N','Horizontal bending material weight')
         # x-location variables
         xshell1   = Variable('x_{shell1}', 'm', 'Start of cylinder section')
         xshell2   = Variable('x_{shell2}', 'm', 'End of cylinder section')
@@ -206,7 +207,7 @@ class Fuselage(Model):
             Wwindow >= Wpwindow*lshell,
             Wskin   >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell  >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
-            Wfuse   >= Wfix + Winsul + Wshell + Wfloor + Wcone + Wwindow,
+            Wfuse   >= Wfix + Winsul + Wshell + Wfloor + Wcone + Wwindow + Whbend,
             
             ## Stress relations
             #Pressure shell loading
@@ -252,8 +253,8 @@ class Fuselage(Model):
             A2 >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
             A1 >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),
             A0 <= (Ihshell/(rE*hfuse**2)),
-            xwing >= lnose + 0.5*lshell,
-            Ahbendmax >= A2*(xshell2-xwing)**2 + A1*(xtail-xwing)-A0, #[SP]
+            Ahbend >= A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)-A0, #[SP]
+            Whbend >= g*rhobend*sum(Ahbend*lshell/ndisc),
             sigMh <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
             sigbend == sigskin,
 
@@ -264,8 +265,14 @@ class Fuselage(Model):
 
             # Bending area discretization
 
+            for i in range(0,ndisc):
+                mult = i*1.0
+                constraints.extend([xhbend[i] >= lnose + lshell*((mult)/ndisc),
+                                    xhbend[i] <= lnose + lshell*((mult)/ndisc) #[SP]
+                                    ])
 
-        objective = Wfuse + Vcabin*units('N/m^3') + lfuse*units('N/m') + tshell*units('N/m') + Ahbendmax*units('N/m^2')
+
+        objective = Wfuse + Vcabin*units('N/m^3') + lfuse*units('N/m') + tshell*units('N/m')
         Model.__init__(self, objective, constraints, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
@@ -376,4 +383,11 @@ if __name__ == "__main__":
     print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
     print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
     print 'Wing location: ' + str(varVals['x_{wing}_Fuselage'])
-    print 'Horizontal bending material: ' + str(varVals['A_{hbend_max}_Fuselage'])
+    #print 'Horizontal bending material location: ' + str(varVals['\vec{x_{hbend}_Fuselage}'])
+    #print 'Horizontal bending material area: ' + str(varVals['\vec{A_{hbend}_Fuselage}'])
+    print 'Horizontal bending material weight: '+ str(varVals['W_{hbend}_Fuselage'])
+    print 'A2: ' + str(varVals['A2_Fuselage'])
+    print 'A1: ' + str(varVals['A1_Fuselage'])
+    print 'A0 ' + str(varVals['A0_Fuselage'])
+    print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
+    print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
