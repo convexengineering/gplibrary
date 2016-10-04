@@ -197,7 +197,7 @@ class CombustorCooling(Model):
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
         #heat of combustion of jet fuel
-        hf = Variable('h_f', 43.003, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
+        hf = Variable('h_f', 40.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
 #43.003
         #cooling flow bypass ratio
         ac = Variable('\\alpha_c', '-', 'Total Cooling Flow Bypass Ratio')
@@ -516,8 +516,8 @@ class LPCMap(Model):
 
             constraints=[
                 pilc*(26/pilcD) == (1.38 * (N1)**0.566)**10,
-                pilc*(26/pilcD) <= 1.05*(1.38 * (mtildlc)**0.122)**10,
-                pilc*(26/pilcD) >= .95*(1.38 * (mtildlc)**0.122)**10,
+                pilc*(26/pilcD) <= 1.1*(1.38 * (mtildlc)**0.122)**10,
+                pilc*(26/pilcD) >= .9*(1.38 * (mtildlc)**0.122)**10,
                 
                 #define mbar..technially not needed b/c constrained in res 2 and/or 3
                 mlc == mCore*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
@@ -566,8 +566,8 @@ class HPCMap(Model):
 
             constraints=[
                 pihc*(26/pihcD) == (1.35 * (N2)**0.566)**10,
-                pihc*(26/pihcD) >= .95*(1.38 * (mtildhc)**0.122)**10,
-                pihc*(26/pihcD) <= 1.05*(1.38 * (mtildhc)**0.122)**10,
+                pihc*(26/pihcD) >= .9*(1.38 * (mtildhc)**0.122)**10,
+                pihc*(26/pihcD) <= 1.1*(1.38 * (mtildhc)**0.122)**10,
 
                 mhc == mCore*((Tt25/Tref)**.5)/(Pt25/Pref),    #B.280
                 #define mtild
@@ -621,8 +621,8 @@ class FanMap(Model):
                 
 ##                pif*(1.7/piFanD) >= .95*(1.04 * ((mtildf)**0.022))**10,
 ##                pif*(1.7/piFanD) <= 1.05*(1.04 * ((mtildf)**0.022))**10,
-                (pif*(1.7/piFanD))**(.1) <= 1.025*(1.06 * (mtildf)**0.137),
-                (pif*(1.7/piFanD))**(.1) >= .975*(1.06 * (mtildf)**0.137),
+                (pif*(1.7/piFanD))**(.1) <= 1.1*(1.06 * (mtildf)**0.137),
+                (pif*(1.7/piFanD))**(.1) >= .9*(1.06 * (mtildf)**0.137),
                 
                 #define mbar
                 mf == mFan*((Tt2/Tref)**.5)/(Pt2/Pref),    #B.280
