@@ -14,17 +14,19 @@ SIGNOMIALS = False
 
 INCLUDE = ["l_{fuse}", "MTOW", "t_{loiter}", "S", "b", "AR", "W_{zfw}",
            "P_{shaft-maxMSL}", "S_{fuse}", "W_{cent}", "W_{fuel-tot}", "g",
-           "V_{stall}", "S_{ref}", "l_{ref}"]
+           "V_{stall}", "l_{ref}", "S_{ref}"]
 
 class Mission(Model):
-    def __init__(self, h_station, wind, DF70, Nclimb, Nloiter, dragcomps, **kwargs):
+    def __init__(self, h_station, wind, DF70, Nclimb, Nloiter, dragcomps,
+                 **kwargs):
 
         self.submodels = [
             TakeOff(1, [0.684], [0.1], False, wind, DF70, dragcomps),
             Climb(Nclimb, [0.502]*Nclimb, np.linspace(0, h_station,
                                                       Nclimb+1)[1:],
                   False, wind, DF70, dragcomps, dh=h_station),
-            Cruise(1, [0.684], [h_station], False, wind, DF70, dragcomps, R=180),
+            Cruise(1, [0.684], [h_station], False, wind, DF70, dragcomps,
+                   R=180),
             Loiter(Nloiter, [0.647]*Nloiter, [h_station]*Nloiter, True, wind,
                    DF70, dragcomps),
             Cruise(1, [0.684], [h_station], False, wind, DF70, dragcomps, R=200)
@@ -48,12 +50,13 @@ class Mission(Model):
 
         lc = LinkedConstraintSet(
             [fs for fs in self.submodels, constraints],
-            include_only=INCLUDE + ["W"])
+            include_only=INCLUDE)
 
         Model.__init__(self, None, lc, **kwargs)
 
 class FlightSegment(Model):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, **kwargs):
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps,
+                 **kwargs):
 
         self.aero = Aerodynamics(N, dragcomps)
         self.fuel = Fuel(N)
@@ -63,7 +66,9 @@ class FlightSegment(Model):
         self.wind = Wind(N, alt, wind)
 
         self.N = N
-        self.exclude = ["m_{fac}"]
+        self.include = ["V", "\\rho", "\\mu", "BSFC", "W_{N}", "W_{N+1}",
+                        "P_{shaft}", "P_{shaft-tot}", "C_D", "C_L", "S",
+                        "W_{fuel}"]
 
         self.constraints = []
 
@@ -71,8 +76,10 @@ class FlightSegment(Model):
                           self.atm, self.wind]
 
 class TakeOff(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps)
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps,
+                 **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70,
+                               dragcomps)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -90,13 +97,15 @@ class TakeOff(FlightSegment):
             ]
 
         lc = LinkedConstraintSet([self.submodels, self.constraints],
-                                 exclude=self.exclude)
+                                 include_only=self.include)
 
         Model.__init__(self, None, lc, **kwargs)
 
 class Cruise(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, R=200, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps)
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, R=200,
+                 **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70,
+                               dragcomps)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -107,13 +116,15 @@ class Cruise(FlightSegment):
         self.constraints.extend([R/N <= self.slf["V"]*breguetendurance["t"]])
 
         lc = LinkedConstraintSet([self.submodels, self.constraints],
-                                 exclude=self.exclude)
+                                 include_only=self.include)
 
         Model.__init__(self, None, lc, **kwargs)
 
 class Loiter(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps)
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps,
+                 **kwargs):
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70,
+                               dragcomps)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -124,14 +135,16 @@ class Loiter(FlightSegment):
         self.submodels.extend([breguetendurance])
 
         lc = LinkedConstraintSet([self.submodels, self.constraints],
-                                 exclude=self.exclude)
+                                 include_only=self.include)
 
         Model.__init__(self, None, lc, **kwargs)
 
 class Climb(FlightSegment):
-    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps, dh=15000,
+    def __init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps,
+                 dh=15000,
                  **kwargs):
-        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70, dragcomps)
+        FlightSegment.__init__(self, N, eta_p, alt, onStation, wind, DF70,
+                               dragcomps)
 
         breguetendurance = BreguetEndurance(N)
 
@@ -150,7 +163,7 @@ class Climb(FlightSegment):
         self.submodels.extend([breguetendurance])
 
         lc = LinkedConstraintSet([self.submodels, self.constraints],
-                                 exclude=self.exclude)
+                                 include_only=self.include)
 
         Model.__init__(self, None, lc, **kwargs)
 
@@ -353,15 +366,15 @@ class ComponentDrag(Model):
         CDA = VectorVariable(N, "CDA", "-",
                              "component area drag normalize by win area")
         Cf = VectorVariable(N, "C_f", "-", "skin friction coefficient")
-        Refuse = VectorVariable(N, "Re_{fuse}", "-", "reynolds number")
+        Re = VectorVariable(N, "Re", "-", "reynolds number")
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
         V = VectorVariable(N, "V", "m/s", "vehicle speed")
 
         constraints = [CDA >= Cf*comp["S_{ref}"]/S,
-                       Refuse == V*rho*comp["l_{ref}"]/mu_atm,
-                       Cf >= 0.455/Refuse**0.3
+                       Re == V*rho*comp["l_{ref}"]/mu_atm,
+                       Cf >= 0.455/Re**0.3
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -675,6 +688,8 @@ class TailBoom(Model):
         th = Variable("\\theta", "-", "tail boom deflection angle")
         thmax = Variable("\\theta_{max}", 0.5, "-",
                          "max tail boom deflection angle")
+        l_ref = Variable("l_{ref}", "ft", "tail boom reference length")
+        S_ref = Variable("S_{ref}", "ft**2", "tail boom reference area")
 
         constraints = [I0 <= pi*t0*d0**3/8.0,
                        W >= pi*g*rho_cfrp*d0*L*t0*kfac,
