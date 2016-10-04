@@ -26,7 +26,9 @@ class Fuselage(Model):
         pitch        = Variable('p_s',81, 'cm', 'Seat pitch')
         Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor')
         dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
-        
+        rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)')
+        VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed')
+
         # Cross sectional parameters
         Adb     = Variable('A_{db}', 'm^2', 'Web cross sectional area')
         Afloor  = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
@@ -52,6 +54,9 @@ class Fuselage(Model):
         lamcone = Variable('\\lambda_{cone}', '-','Tailcone radius taper ratio (xshell2->xtail)')
         lcone   = Variable('l_{cone}', 'm', 'Cone length')
         Lvmax   = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
+        Lhmax   = Variable('L_{h_max}','N', 'Max horizontal tail load')
+        Shtail  = Variable('S_{htail}',32*0.8,'m^2','Horizontal tail area') #Temporarily
+        CLhmax  = Variable('C_{L_{hmax}}', 2.5, '-', 'Max lift coefficient') #Temporarily
         plamv   = Variable('p_{\\lambda_v}', '-', '1 + 2*Tail taper ratio')
         Qv      = Variable('Q_{v}', 'N*m', 'Torsion moment imparted by tail')
         tcone   = Variable('t_{cone}', 'm', 'Cone thickness')
@@ -126,9 +131,17 @@ class Fuselage(Model):
         taucone  = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
         taufloor = Variable('\\tau_{floor}',30000/0.000145, 'N/m^2', 'Max allowable shear web stress') #TASOPT value used
         
+        Mhmax = Variable('M_{h-max}', 'N*m','Maximum horizontal axis bending moment')
+        Mvmax = Variable('M_{v-max}', 'N*m','Maximum vertical axis bending moment')
+        Mhaero = Variable('M{h-aero}','N*m')
+
         # Bending inertias (ported from TASOPT)
         Ivshell = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
         Ihshell = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
+        rM      = Variable('r_{M}',.5,'-','Inertial relief factor') # Temporarily .5
+
+        # x-location variables
+        xtail = Variable('x_{tail}','m', 'x-location of tail')
 
 
         with SignomialsEnabled():
@@ -210,10 +223,13 @@ class Fuselage(Model):
             3*Qv*(plamv-1)                   >= Lvmax*bvt*(plamv),
             lamcone                          == 0.4, # TODO remove
             Vcone*(1+lamcone)*(pi+4*thetadb) >= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
-            Wcone                            >= rhocone*g*Vcone*(1+fstring+fframe)
+            Wcone                            >= rhocone*g*Vcone*(1+fstring+fframe),
 
             # Maximum axial stress model (sum of bending and pressurization strain)
             #rhobend >= rE*(Mh(x)*hfuse)... will be integrated later, since we don't know the forces yet
+            xtail >= lnose + lshell + .5*lcone, #Temporarily
+            Lhmax == 0.5*rho0*VNE**2*Shtail*CLhmax,
+            #Mhaero >= rM*
 
             ]
 
@@ -300,7 +316,7 @@ class Fuselage(Model):
 if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
-    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=4, iteration_limit=100)
+    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
@@ -323,4 +339,5 @@ if __name__ == "__main__":
     print 'Cone length         : ' + str(varVals['l_{cone}_Fuselage'])
     print 'Cone volume         : ' + str(varVals['V_{cone}_Fuselage'])
     print 'Tail torsion moment : ' + str(varVals['Q_{v}_Fuselage'])
-    print 'Cone taper ratio    : ' + str(varVals['\\lambda_{cone}'])
+    print 'Cone taper ratio    : ' + str(varVals['\\lambda_{cone}_Fuselage'])
+    print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
