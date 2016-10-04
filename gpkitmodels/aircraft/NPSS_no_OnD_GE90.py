@@ -2,11 +2,11 @@ import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, units, ConstraintSet
 from gpkit.constraints.linked import LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
-from engine_components_NPSS_GE90_CFM_noOnD_validation import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, OffDesign, FanMap, LPCMap, HPCMap
+from engine_components_NPSS_GE90_CFM_noOnD_validation import FanAndLPC, CombustorCooling, Turbine, ExhaustAndThrust, Sizing, FanMap, LPCMap, HPCMap
 from collections import defaultdict
 from gpkit.small_scripts import mag
 
-class OffDesignTOC(Model):
+class SizingTOC(Model):
 
     def __init__(self):
         mixing = True
@@ -29,7 +29,7 @@ class OffDesignTOC(Model):
         M4a = .1025
         Mexit = 1
         
-        offD = OffDesign(res7, mixing)
+        offD = Sizing(res7, mixing)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
@@ -51,42 +51,8 @@ class OffDesignTOC(Model):
                 'M_{2.5}':M25,
                 'hold_{2}': 1+.5*(1.398-1)*M2**2,
                 'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
-                
-##                '\pi_{tn}': .98,
-##                '\pi_{b}': .94,
-##                '\pi_{d}': .98,
-##                '\pi_{fn}': .98,
-
-##                'A_5': .2727,
-##                'A_7': 1.1,
-##                'T_{ref}': 288.15,
-##                'P_{ref}': 101.325,
-##                'm_{htD}': 4.127,
-##                'm_{ltD}': 9.376,
-                
-##                'G_f': 1,
-##                'alpha': 5,
-##                'alphap1': 6,
-                
-##                '\eta_{HPshaft}': .99,
-##                '\eta_{LPshaft}': .98,
-##                'M_{takeoff}': .95,
-                
-##                'm_{hc_D}': 18.29,
-##                'm_{lc_D}': 46.69,
-##                'm_{fan_bar_D}': 253.4,
-##
-##                'eta_{B}': .9827,
             }
             
-##            if mixing == True:
-##                substitutions.update({
-##                    'M_{4a}': M4a,
-##                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
-##                    'r_{uc}': .01,
-##                    '\\alpha_c': .1,
-##                    'T_{t_f}': 600,
-##                })
             if res7 == 1:
                substitutions.update({
                     'T_{t_{4spec}}': 1450,
@@ -140,7 +106,7 @@ class OffDesignTOC(Model):
             return out, solhold
 
         
-class OffDesignOnDRerun(Model):
+class SizingOnDRerun(Model):
 
     def __init__(self):
         mixing = True
@@ -163,7 +129,7 @@ class OffDesignOnDRerun(Model):
         M4a = .1025
         Mexit = 1
         
-        offD = OffDesign(res7, mixing)
+        offD = Sizing(res7, mixing)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
@@ -185,42 +151,8 @@ class OffDesignOnDRerun(Model):
                 'M_{2.5}':M25,
                 'hold_{2}': 1+.5*(1.398-1)*M2**2,
                 'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
-                
-##                '\pi_{tn}': .98,
-##                '\pi_{b}': .94,
-##                '\pi_{d}': .98,
-##                '\pi_{fn}': .98,
-
-##                'A_5': .2727,
-##                'A_7': 1.1,
-##                'T_{ref}': 288.15,
-##                'P_{ref}': 101.325,
-##                'm_{htD}': 4.127,
-##                'm_{ltD}': 9.376,
-                
-##                'G_f': 1,
-##                'alpha': 5,
-##                'alphap1': 6,
-                
-##                '\eta_{HPshaft}': .99,
-##                '\eta_{LPshaft}': .98,
-##                'M_{takeoff}': .95,
-                
-##                'm_{hc_D}': 18.29,
-##                'm_{lc_D}': 46.69,
-##                'm_{fan_bar_D}': 253.4,
-
-##                'eta_{B}': .9827,
             }
             
-##            if mixing == True:
-##                substitutions.update({
-##                    'M_{4a}': M4a,
-##                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
-##                    'r_{uc}': .01,
-##                    '\\alpha_c': .1,
-##                    'T_{t_f}': 600,
-##                })
             if res7 == 1:
                substitutions.update({
                     'T_{t_{4spec}}': 1450,
@@ -232,7 +164,7 @@ class OffDesignOnDRerun(Model):
                 })
         Model.__init__(self, offD.cost, lc, substitutions)
 
-class OffDesignTO(Model):
+class SizingTO(Model):
 
     def __init__(self):
         mixing = True
@@ -253,7 +185,7 @@ class OffDesignTO(Model):
         M4a = .1025
         Mexit = 1
         
-        offD = OffDesign(res7, mixing)
+        offD = Sizing(res7, mixing)
 
         #only add the HPCmap if residual 7 specifies a thrust
         if res7 ==0:
@@ -273,42 +205,9 @@ class OffDesignTO(Model):
                 'M_0': .25,
                 'M_2': M2,
                 'M_{2.5}':M25,
-                
-##                '\pi_{tn}': .98,
-##                '\pi_{b}': .94,
-##                '\pi_{d}': .98,
-##                '\pi_{fn}': .98,
 
-##                'A_5': .2727,
-##                'A_7': 1.1,
-##                'T_{ref}': 288.15,
-##                'P_{ref}': 101.325,
-##                'm_{htD}': 4.127,
-##                'm_{ltD}': 9.376,
-                
-##                'G_f': 1,
-##                'alpha': 5,
-##                'alphap1': 6,
-                
-##                '\eta_{HPshaft}': .99,
-##                '\eta_{LPshaft}': .98,
-##                'M_{takeoff}': .95,
-                
-##                'm_{hc_D}': 18.29,
-##                'm_{lc_D}': 46.69,
-##                'm_{fan_bar_D}': 253.4,
-
-##                'eta_{B}': .9827,
             }
             
-##            if mixing == True:
-##                substitutions.update({
-##                    'M_{4a}': M4a,
-##                    'hold_{4a}': 1+.5*(1.313-1)*.6**2,#sol('hold_{4a}'),
-##                    'r_{uc}': .01,
-##                    '\\alpha_c': .1,
-##                    'T_{t_f}': 600,
-##                })
             if res7 == 1:
                substitutions.update({
                     'T_{t_{4spec}}': 1400,
@@ -323,9 +222,9 @@ class OffDesignTO(Model):
 if __name__ == "__main__":
     W_engine = Variable('W_{engine}', 'N', 'Weight of a Single Turbofan Engine')
     
-    engine1 = OffDesignTOC()
-    engine2 = OffDesignOnDRerun()
-    engine3 = OffDesignTO()
+    engine1 = SizingTOC()
+    engine2 = SizingOnDRerun()
+    engine3 = SizingTO()
  
 ##    sol1 = engine1.localsolve(verbosity = 4, solver="mosek")
 ##    bounds, sol = engine1.determine_unbounded_variables(engine1, solver="mosek",verbosity=4, iteration_limit=50)
@@ -365,22 +264,20 @@ if __name__ == "__main__":
     '\pi_{hc_D}': 20.033,
     '\pi_{lc_D}': 1.26,
 
-
-
-    'alpha_OffDesignOnDRerun': 8.7877,
+    '\\alpha_SizingOnDRerun': 8.7877,
 
     'M_{4a}': M4a,
     'hold_{4a}': 1+.5*(1.313-1)*M4a**2,#sol('hold_{4a}'),
-    'r_{uc}': .5,
-    '\\alpha_c': .19036,
+    'r_{uc}': .01,
+    '\\alpha_c': .14,
     'T_{t_f}': 435,
 
-    'M_{takeoff}': .9442,
+    'M_{takeoff}': .955,
 
     'G_f': 1,
     }
 
-    m = Model((engine2.cost+engine1.cost), constraints, valsubs)
+    m = Model((2*engine2.cost+engine1.cost), constraints, valsubs)
     
     Pt0 = 40
     Tt0 = 220
@@ -392,7 +289,7 @@ if __name__ == "__main__":
     Tt25 = Tt21 * (lpc)**(.4/(1.4*.9306))
     Tt3 = Tt25 * (hpc)**(.4/(1.4*.9030))
 
-    Tt41 = 1400
+    Tt41 = 1300
 
     Tt45 = Tt41 - (Tt3 - Tt25)
 
