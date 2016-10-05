@@ -414,22 +414,23 @@ class Aerodynamics(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
-        m_fac = Variable("m_{fac}", 1.0, "-", "cdp margin factor")
+        m_fac = Variable("m_{fac}", 2.0, "-", "CDA0 margin factor")
         CDA0 = VectorVariable(N, "CDA_0", "-", "sum of component drag")
 
         dragbuild = [ComponentDrag(N, c) for c in dragcomps]
 
         constraints = [
-            CD >= CDA0*2 + cdp*1.3 + CL**2/(pi*e*AR),
+            CD >= CDA0 + cdp + CL**2/(pi*e*AR),
             #jh01
-            cdp/m_fac >= ((0.0075 + 0.002*CL**2 +
-                           0.00033*CL**10)*(Re/Re_ref)**-0.4),
+            cdp >= ((0.0075 + 0.002*CL**2 +
+                     0.00033*CL**10)*(Re/Re_ref)**-0.4),
             #sd7032
-            # cdp >= ((0.006 + 0.005*CL**2 + 0.00012*CL**10)*(Re/Re_ref)**-0.3),
+            # cdp >= ((0.006 + 0.005*CL**2 +
+            #         0.00012*CL**10)*(Re/Re_ref)**-0.3),
             b**2 == S*AR,
             CL <= CLmax,
             Re == rho*V/mu_atm*(S/AR)**0.5,
-            CDA0 >= sum(db["CDA"] for db in dragbuild),
+            CDA0/m_fac >= sum(db["CDA"] for db in dragbuild),
             ]
 
         for c, db in zip(dragcomps, dragbuild):
@@ -720,7 +721,9 @@ class TailBoom(Model):
                        W >= pi*g*rho_cfrp*d0*L*t0*kfac,
                        t0 >= tmin,
                        th <= thmax,
-                       th >= F*L**2/E/I0*kfac
+                       th >= F*L**2/E/I0*kfac,
+                       l_ref == L,
+                       S_ref == L*pi*d0
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -746,12 +749,16 @@ class HorizontalTail(Model):
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         L = Variable("L", "ft", "tail boom length")
         CLh = Variable("C_{L_h}", 1.0, "-", "maximum lift of horizontal tail")
+        l_ref = Variable("l_{ref}", "ft", "horizontal tail reference length")
+        S_ref = Variable("S_{ref}", "ft**2", "horizontal tail reference area")
 
         constraints = [
             Vh <= Sh*L/S**2*b,
             bh**2 == ARh*S,
             Wh >= rhofoam*Sh**2/bh*Abar + 1.1*g*rhoskin*Sh,
             Cmw + xcg*b/S*CLw <= Vh*CLh,
+            l_ref == Sh/bh,
+            S_ref == Sh
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -844,7 +851,7 @@ class GasMALE(Model):
         empennage = Empennage()
         avionics = Avionics()
         fuselage = Fuselage()
-        dragcomps = [fuselage]
+        dragcomps = [fuselage] + empennage.submodels
         mission = Mission(h_station, wind, DF70, Nclimb, Nloiter, dragcomps)
         center_loads = [fuselage, avionics, engineweight]
         zf_loads = center_loads + [empennage, wing]
