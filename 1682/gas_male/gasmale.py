@@ -384,7 +384,7 @@ class ComponentDrag(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
-        V = VectorVariable(N, "V", "m/s", "vehicle speed")
+        V = VectorVariable(N, "V", "m/s", "Cruise speed")
 
         constraints = [CDA >= Cf*comp["S_{ref}"]/S,
                        Re == V*rho*comp["l_{ref}"]/mu_atm,
@@ -486,10 +486,53 @@ def c_bar(lam, N):
     c = 2/(1+lam)*(1+(lam-1)*eta)
     return c
 
-class Spar(Model):
+class TubeSpar(Model):
     def __init__(self, N=5, **kwargs):
-        # NOTE: untapered does not solve with current values.  Relax w_lim
-        # and t_loiter to solve.
+
+        # phyiscal properties
+        rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
+        E = Variable("E", 2e7, "psi", "Youngs modulus of CF")
+        sigma_cfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
+
+        # Structural lengths
+        cb = c_bar(0.5, N)
+        cbavg = (cb[:-1] + cb[1:])/2
+        cbar = VectorVariable(N-1, "\\bar{c}", cbavg, "-",
+                              "normalized chord at mid element")
+        d = VectorVariable(N-1, "d", "in", "spar diameter")
+        I = VectorVariable(N-1, "I", "m^4", "spar x moment of inertia")
+        A = VectorVariable(N-1, "A", "in**2", "spar cross sectional area")
+        dm = VectorVariable(N-1, "dm", "kg", "segment spar mass")
+        m = Variable("m", "kg", "spar mass")
+
+        S = Variable("S", "ft^2", "wing area")
+        tau = Variable("\\tau", 0.115, "-", "Airfoil thickness ratio")
+        b = Variable("b", "ft", "Span")
+
+        N_max = Variable("N_{max}", 5, "-", "Load factor")
+        W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
+        kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
+
+        beam = Beam(N, cb)
+        self.submodels = [beam]
+
+        constraints = [
+            dm >= rho_cfrp*A*b/(N-1),
+            m >= dm.sum(),
+            S/b*cbar*tau >= d,
+            4*I**2/A**2/(d/2)**2 + A/pi <= (d/2)**2,
+            beam["\\bar{\\delta}"][-1] <= kappa,
+            sigma_cfrp >= ((beam["\\bar{M}"][:-1] + beam["\\bar{M}"][1:])/
+                           2*b*W_cent*N_max/4*(d/2)/I),
+            beam["\\bar{EI}"] <= E*I/N_max/W_cent*b/(b/2)**3
+            ]
+
+        lc = LinkedConstraintSet([beam, constraints])
+
+        Model.__init__(self, None, lc, **kwargs)
+
+class CapSpar(Model):
+    def __init__(self, N=5, **kwargs):
 
         # phyiscal properties
         rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
@@ -582,7 +625,8 @@ class Wing(Model):
         tsmin = Variable("t_{s-min}", 0.0625, "cm",
                          "minimum wing skin thickness")
 
-        self.spar = Spar(5)
+        self.spar = CapSpar(5)
+        # self.spar = TubeSpar(5)
         self.submodels = [self.spar]
 
         constraints = [
