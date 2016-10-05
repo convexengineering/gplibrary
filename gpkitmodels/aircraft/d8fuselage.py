@@ -146,20 +146,24 @@ class Fuselage(Model):
         rMh       = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') # Temporarily .5
         rMv       = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor')
         Ahbend    = VectorVariable(ndisc, 'A_{hbend}','m^2','Added horizontal bending material area')
-        Avbendmax = Variable('A_{vbend_max}','m^2','Added vertical bending material area')
+        Avbend    = VectorVariable(ndisc,'A_{vbend}','m^2','Added vertical bending material area')
         A2        = Variable('A2','-','Horizontal bending area constant A2') #(fuselage impact)
         A1        = Variable('A1','m','Horizontal bending area constant A1') #(tail impact + aero loading)
         A0        = Variable('A0','m^2','Horizontal bending area constant A0') #(shell inertia contribution)
+        B1        = Variable('B1','m','Vertical bending area constant B1') #(vertical tail bending load)
+        B0        = Variable('B0','m^2','Vertical bending area constant B0') #(shell inertia contribution)
         sigMh     = Variable('\\sigma_{M_h}','N/m^2','Horizontal bending material stress')
         sigMv     = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
         sigbend   = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
         Whbend    = Variable('W_{hbend}','N','Horizontal bending material weight')
+        Wvbend    = Variable('W_{vbend}','N','Vertical bending material weight')
+
         # x-location variables
         xshell1   = Variable('x_{shell1}', 'm', 'Start of cylinder section')
         xshell2   = Variable('x_{shell2}', 'm', 'End of cylinder section')
         xtail     = Variable('x_{tail}','m', 'x-location of tail')
         xwing     = Variable('x_{wing}','m', 'x-location of wing')
-        xhbend    = VectorVariable(ndisc,'x_{hbend}','m','Bending material location')
+        xbend    = VectorVariable(ndisc,'x_{hbend}','m','Bending material location')
 
         with SignomialsEnabled():
             constraints = [
@@ -207,7 +211,7 @@ class Fuselage(Model):
             Wwindow >= Wpwindow*lshell,
             Wskin   >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell  >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
-            Wfuse   >= Wfix + Winsul + Wshell + Wfloor + Wcone + Wwindow + Whbend,
+            Wfuse   >= Wfix + Winsul + Wshell + Wfloor + Wwindow + Whbend + Wvbend + Wtail,
             
             ## Stress relations
             #Pressure shell loading
@@ -252,9 +256,13 @@ class Fuselage(Model):
             hfuse    == Rfuse, # may want to consider adding deltaRfuse later...
             A2 >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
             A1 >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),
-            A0 <= (Ihshell/(rE*hfuse**2)),
-            Ahbend >= A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)-A0, #[SP]
+            A0 == (Ihshell/(rE*hfuse**2)),
+            B1 == rMv*Lvmax/(wfloor*sigMv),
+            B0 == Ivshell/(rE*wfloor**2),
+            Ahbend >= A2*(xshell2-xbend)**2 + A1*(xtail-xbend)-A0, #[SP]
+            Avbend >= B1*(xtail-xbend) - B0, #[SP]
             Whbend >= g*rhobend*sum(Ahbend*lshell/ndisc),
+            Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
             sigMh <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
             sigbend == sigskin,
 
@@ -267,8 +275,8 @@ class Fuselage(Model):
 
             for i in range(0,ndisc):
                 mult = i*1.0
-                constraints.extend([xhbend[i] >= lnose + lshell*((mult)/ndisc),
-                                    xhbend[i] <= lnose + lshell*((mult)/ndisc) #[SP]
+                constraints.extend([xbend[i] >= lnose + lshell*((mult)/ndisc),
+                                    xbend[i] <= lnose + lshell*((mult)/ndisc) #[SP]
                                     ])
 
 
@@ -360,13 +368,14 @@ if __name__ == "__main__":
     #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
     #print 'Cabin volume        : ' + str(varVals['V_{cabin}_Fuselage']) +'.'
-    print 'Fuselage width      : ' + str(varVals['w_{fuse}_Fuselage']) + '.'
-    print 'Fuselage length     : ' + str(varVals['l_{fuse}'])
-    print 'Floor area          : ' + str(varVals['A_{floor}_Fuselage']) + '.'
-    print 'Floor height        : ' + str(varVals['h_{floor}_Fuselage']) + '.'
-    print 'Floor length        : ' + str(varVals['l_{floor}_Fuselage']) + '.'
-    #print 'Fuselage angle      : ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
-    #print 'Fuselage radius     : ' + str(varVals['R_{fuse}_Fuselage']) + '.'
+    print 'Fuselage width  : ' + str(varVals['w_{fuse}_Fuselage']) + '.'
+    print 'Fuselage length : ' + str(varVals['l_{fuse}'])
+    print 'Floor area      : ' + str(varVals['A_{floor}_Fuselage']) + '.'
+    print 'Floor height    : ' + str(varVals['h_{floor}_Fuselage']) + '.'
+    print 'Floor length    : ' + str(varVals['l_{floor}_Fuselage']) + '.'
+    print 'Floor width     : ' + str(varVals['w_{floor}_Fuselage']) + '.'
+    #print 'Fuselage angle : ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
+    #print 'Fuselage radius: ' + str(varVals['R_{fuse}_Fuselage']) + '.'
     #print 'Floor total loading : ' + str(varVals['P_{floor}_Fuselage']) + '.'
     #print 'Floor weight        : ' + str(varVals['W_{floor}_Fuselage']) + '.'
     #print 'Floor volume        : ' + str(varVals['V_{floor}_Fuselage']) + '.'
@@ -386,8 +395,13 @@ if __name__ == "__main__":
     #print 'Horizontal bending material location: ' + str(varVals['\vec{x_{hbend}_Fuselage}'])
     #print 'Horizontal bending material area: ' + str(varVals['\vec{A_{hbend}_Fuselage}'])
     print 'Horizontal bending material weight: '+ str(varVals['W_{hbend}_Fuselage'])
+    print 'Vertical bending material weight: ' + str(varVals['W_{vbend}_Fuselage'])
     print 'A2: ' + str(varVals['A2_Fuselage'])
     print 'A1: ' + str(varVals['A1_Fuselage'])
-    print 'A0 ' + str(varVals['A0_Fuselage'])
+    print 'A0:  ' + str(varVals['A0_Fuselage'])
+    print 'B1: ' + str(varVals['B1_Fuselage'])
+    print 'B0: ' + str(varVals['B0_Fuselage'])
     print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
     print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
+    print 'Ahbend: ' + str(sol('A_{hbend}')) 
+    print 'Avbend: ' + str(sol('A_{vbend}')) 
