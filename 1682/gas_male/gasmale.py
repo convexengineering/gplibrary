@@ -50,17 +50,16 @@ class Mission(Model):
         cs = ConstraintSet([fs for fs in self.submodels, constraints])
 
         linked = {}
-
-        for name in ["l_{ref}", "S_{ref}"]:
-            vks = cs.varkeys[name]
-            vk = list(vks)[0]
-            descr = dict(vk.descr)
-            descr.pop("value", None)
-            descr.pop("models", None)
-            descr.pop("modelnums", None)
-            newvk = VarKey(**descr)
-            linked.update(dict(zip(vks, len(vks)*[newvk])))
-            print linked
+        for c in dragcomps:
+            for name in ["l_{ref}", "S_{ref}"]:
+                vks = cs.varkeys[name]
+                vk = list(vks)[0]
+                descr = dict(vk.descr)
+                descr.pop("value", None)
+                descr["models"] = [c.name]
+                descr["modelnums"] = [c.num]
+                newvk = VarKey(**descr)
+                linked.update(dict(zip(vks, len(vks)*[newvk])))
         cs.subinplace(linked)
 
         lc = LinkedConstraintSet(cs, include_only=INCLUDE)
@@ -847,8 +846,24 @@ class GasMALE(Model):
             sq = SystemRequirements()
             self.submodels.append(sq)
 
-        lc = LinkedConstraintSet([self.submodels, constraints],
-                                 include_only=INCLUDE + ["l_{ref}", "S_{ref}"])
+        cs = ConstraintSet([self.submodels, constraints])
+
+        linked = {}
+        for c in dragcomps:
+            for name in ["l_{ref}", "S_{ref}"]:
+                vks = cs.varkeys[name]
+                for vk in vks:
+                    descr = dict(vk.descr)
+                    if c.name in descr["models"]:
+                        descr.pop("value", None)
+                        descr["models"] = [c.name]
+                        descr["modelnums"] = [c.num]
+                        newvk = VarKey(**descr)
+                        linked.update({vk: newvk})
+        cs.subinplace(linked)
+
+        lc = LinkedConstraintSet([cs, constraints],
+                                 include_only=INCLUDE)
 
 
         objective = 1/mission["t_{loiter}"]
