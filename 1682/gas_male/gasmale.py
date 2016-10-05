@@ -562,8 +562,8 @@ class Wing(Model):
     def __init__(self, **kwargs):
 
         # Structural parameters
-        rho_skin = Variable("\\rho_{skin}", 0.1, "g/cm^2",
-                            "Wing skin density")
+        rho_skin = Variable("\\rho_{skin}", 0.1, "g/cm^2", "Wing skin density")
+        rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
 
         # wing parameters
         S = Variable("S", "ft^2", "wing area")
@@ -576,14 +576,29 @@ class Wing(Model):
         W = Variable("W", "lbf", "Total wing structural weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         m_fac = Variable("m_{fac}", 1.0, "-", "Wing weight margin factor")
+        taucfrp = Variable("\\tau_{CFRP}", 570, "MPa", "torsional stress limit")
+        ts = Variable("t_s", "mm", "wing skin thickness")
+        Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
+        Cmw = Variable("C_{m_w}", 0.121, "-", "negative wing moment coefficent")
+        Jtbar = Variable("\\bar{J/t}", 0.01114, "1/mm",
+                         "torsional moment of inertia")
+        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
+                         "air density at sea level")
+        b = Variable("b", "ft", "Span")
+        tsmin = Variable("t_{s-min}", 0.0625, "cm",
+                         "minimum wing skin thickness")
 
         self.spar = Spar(5)
         self.submodels = [self.spar]
 
-        constraints = [m_skin >= rho_skin*S*2,
-                       wingloading == mtow/S,
-                       W/m_fac >= m_skin*g + 2*self.spar["m"]*g,
-                      ]
+        constraints = [
+            m_skin >= rho_cfrp*S*2*ts,
+            ts >= tsmin,
+            wingloading == mtow/S,
+            W/m_fac >= m_skin*g + 2*self.spar["m"]*g,
+            taucfrp >= (1/Jtbar/(S/b*self.spar["\\bar{c}"][0])**2/
+                        ts*Cmw*S*rhosl*Vne**2)
+            ]
 
         lc = LinkedConstraintSet([self.spar, constraints])
 
@@ -703,7 +718,8 @@ class TailBoom(Model):
         F = Variable("F", "N", "point force from tail")
         L = Variable("L", "ft", "tail boom length")
         E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
-        kfac = Variable("(1-k/2)", 0.6, "-", "(1-k/2) tail boom inertia value")
+        k = Variable("k", 0.8, "-", "tail boom inertia value")
+        kfac = Variable("(1-k/2)", 1-k.value/2, "-", "(1-k/2)")
         I0 = Variable("I_0", "m^4", "tail boom moment of inertia")
         d0 = Variable("d_0", "mm", "tail boom diameter")
         t0 = Variable("t_0", "mm", "tail boom thickness")
@@ -721,7 +737,7 @@ class TailBoom(Model):
                        W >= pi*g*rho_cfrp*d0*L*t0*kfac,
                        t0 >= tmin,
                        th <= thmax,
-                       th >= F*L**2/E/I0*kfac,
+                       th >= F*L**2/E/I0*(1+k)/2,
                        l_ref == L,
                        S_ref == L*pi*d0
                       ]
@@ -733,29 +749,29 @@ class HorizontalTail(Model):
         Sh = Variable("S_h", "ft**2", "horizontal tail area")
         ARh = Variable("AR_h", 5, "-", "horizontal tail aspect ratio")
         Abar = Variable("\\bar{A}_{NACA0008}", 0.0548, "-",
-                        "non dimensional cross sectional area of NACA 0008")
+                        "cross sectional area of NACA 0008")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
                            "Density of formular 250")
         rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
                            "horizontal tail skin density")
         bh = Variable("b_h", "ft", "horizontal tail span")
         Wh = Variable("W_h", "lbf", "horizontal tail weight")
-        CLw = Variable("C_{L_w}", 1.5, "-", "maximum lift of win")
+        CLw = Variable("C_{L_w}", 1.3, "-", "maximum lift of win")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
         S = Variable("S", "ft^2", "wing area")
         b = Variable("b", "ft", "Span")
         Cmw = Variable("C_{m_w}", 0.121, "-", "negative wing moment coefficent")
-        xcg = Variable("x_{cg}-x_{ac}", 4, "in", "distance from AC to CG")
+        xcg = Variable("x_{ac}-x_{cg}", 10, "in", "distance from AC to CG")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         L = Variable("L", "ft", "tail boom length")
-        CLh = Variable("C_{L_h}", 1.0, "-", "maximum lift of horizontal tail")
+        CLh = Variable("C_{L_h}", 1.3, "-", "maximum lift of horizontal tail")
         l_ref = Variable("l_{ref}", "ft", "horizontal tail reference length")
         S_ref = Variable("S_{ref}", "ft**2", "horizontal tail reference area")
 
         constraints = [
-            Vh <= Sh*L/S**2*b,
-            bh**2 == ARh*S,
-            Wh >= rhofoam*Sh**2/bh*Abar + 1.1*g*rhoskin*Sh,
+            Vh <= 2*Sh*L/S**2*b,
+            bh**2 == ARh*Sh,
+            Wh >= rhofoam*Sh**2/bh*Abar + g*rhoskin*Sh,
             Cmw + xcg*b/S*CLw <= Vh*CLh,
             l_ref == Sh/bh,
             S_ref == Sh
@@ -771,14 +787,17 @@ class Empennage(Model):
         rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
                          "air density at sea level")
         Vstall = Variable("V_{stall}", "m/s", "stall speed")
+        Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
+        rhone = Variable("\\rho_{NE}", 0.77, "kg/m**3",
+                         "density at never exceed q")
 
         tb = TailBoom()
         ht = HorizontalTail()
         self.submodels = [tb, ht]
 
         constraints = [
-            W/m_fac >= W_vtail + tb["W"] + ht["W_h"],
-            tb["F"] >= 0.5*rhosl*Vstall**2*ht["S_h"]*ht["C_{L_h}"],
+            W/m_fac >= W_vtail + 2*tb["W"] + 2*ht["W_h"],
+            tb["F"] >= 0.5*rhosl*Vne**2*ht["S_h"]*ht["C_{L_h}"],
             ]
 
         lc = LinkedConstraintSet([self.submodels, constraints],
