@@ -450,7 +450,7 @@ class Aerodynamics(Model):
         Model.__init__(self, None, lc, **kwargs)
 
 class Beam(Model):
-    def __init__(self, N, q, untapered, **kwargs):
+    def __init__(self, N, q, **kwargs):
 
         qbar = VectorVariable(N, "\\bar{q}", q, "-", "normalized loading")
         Sbar = VectorVariable(N, "\\bar{S}", "-", "normalized shear")
@@ -464,12 +464,8 @@ class Beam(Model):
         dbar_root = Variable("\\bar{\\delta}_{root}", 1e-10, "-",
                              "Base deflection")
         dx = Variable("dx", "-", "normalized length of element")
-        if untapered:
-            EIbar = Variable("\\bar{EI}", "-",
-                             "normalized YM and moment of inertia")
-        else:
-            EIbar = VectorVariable(N-1, "\\bar{EI}", "-",
-                                   "normalized YM and moment of inertia")
+        EIbar = VectorVariable(N-1, "\\bar{EI}", "-",
+                               "normalized YM and moment of inertia")
 
         constraints = [
             Sbar[:-1] >= Sbar[1:] + 0.5*dx*(qbar[:-1] + qbar[1:]),
@@ -491,7 +487,7 @@ def c_bar(lam, N):
     return c
 
 class Spar(Model):
-    def __init__(self, N=5, untapered=False, **kwargs):
+    def __init__(self, N=5, **kwargs):
         # NOTE: untapered does not solve with current values.  Relax w_lim
         # and t_loiter to solve.
 
@@ -508,16 +504,13 @@ class Spar(Model):
         cbavg = (cb[:-1] + cb[1:])/2
         cbar = VectorVariable(N-1, "\\bar{c}", cbavg, "-",
                               "normalized chord at mid element")
-        if untapered:
-            n = 1
-        else:
-            n = N-1
-        t = VectorVariable(n, "t", "in", "spar cap thickness")
-        hin = VectorVariable(n, "h_{in}", "in", "inner spar height")
-        w = VectorVariable(n, "w", "in", "spar width")
-        tshear = VectorVariable(n, "t_{shear}", "in", "shear casing thickness")
-        I = VectorVariable(n, "I", "m^4", "spar x moment of inertia")
-        dm = VectorVariable(n, "dm", "kg", "segment spar mass")
+        t = Variable("t", "in", "spar cap thickness")
+        hin = VectorVariable(N-1, "h_{in}", "in", "inner spar height")
+        w = VectorVariable(N-1, "w", "in", "spar width")
+        tshear = VectorVariable(N-1, "t_{shear}", "in",
+                                "shear casing thickness")
+        I = VectorVariable(N-1, "I", "m^4", "spar x moment of inertia")
+        dm = VectorVariable(N-1, "dm", "kg", "segment spar mass")
         m = Variable("m", "kg", "spar mass")
 
         S = Variable("S", "ft^2", "wing area")
@@ -530,11 +523,11 @@ class Spar(Model):
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
         w_lim = Variable("w_{lim}", 0.14, "-", "spar width to chord ratio")
 
-        beam = Beam(N, cb, untapered)
+        beam = Beam(N, cb)
         self.submodels = [beam]
 
         constraints = [
-            dm >= rho_cfrp*w*t*b/n + rho_fg*b/2/n*2*tshear*(w+hin),
+            dm >= rho_cfrp*w*t*b/(N-1) + rho_fg*b/2/(N-1)*2*tshear*(w+hin),
             m >= dm.sum(),
             w <= w_lim*S/b*cbar,
             S/b*cbar*tau >= hin + 2*t + 2*tshear,
