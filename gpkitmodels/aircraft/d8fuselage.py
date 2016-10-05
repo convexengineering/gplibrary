@@ -157,13 +157,23 @@ class Fuselage(Model):
         sigbend   = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
         Whbend    = Variable('W_{hbend}','N','Horizontal bending material weight')
         Wvbend    = Variable('W_{vbend}','N','Vertical bending material weight')
+        Vhbend    = Variable('V_{hbend}','m^3','Horizontal bending material volume')
+        Vhbendf   = Variable('V_{hbendf}','m^3','Horizontal bending material volume f') #front fuselage
+        Vhbendb   = Variable('V_{hbendb}','m^3','Horizontal bending material volume b') #back fuselage
+        Vhbendc   = Variable('V_{hbendc}','m^3','Horizontal bending material volume c') #center fuselage
+        xhbend    = Variable('x_{hbend}','m','Horizontal zero bending location')
+        Vvbend    = Variable('V_{vbend}','m^3','Vertical bending material volume')
+
+
 
         # x-location variables
         xshell1   = Variable('x_{shell1}', 'm', 'Start of cylinder section')
         xshell2   = Variable('x_{shell2}', 'm', 'End of cylinder section')
         xtail     = Variable('x_{tail}','m', 'x-location of tail')
         xwing     = Variable('x_{wing}','m', 'x-location of wing')
-        xbend    = VectorVariable(ndisc,'x_{hbend}','m','Bending material location')
+        dxwing    = Variable('dx_{wing}','m','wing box offset')
+        xf        = Variable('x_f','m','')
+        #xbend    = VectorVariable(ndisc,'x_{hbend}','m','Bending material location')
 
         with SignomialsEnabled():
             constraints = [
@@ -259,10 +269,19 @@ class Fuselage(Model):
             A0 == (Ihshell/(rE*hfuse**2)),
             B1 == rMv*Lvmax/(wfloor*sigMv),
             B0 == Ivshell/(rE*wfloor**2),
-            Ahbend >= A2*(xshell2-xbend)**2 + A1*(xtail-xbend)-A0, #[SP]
-            Avbend >= B1*(xtail-xbend) - B0, #[SP]
-            Whbend >= g*rhobend*sum(Ahbend*lshell/ndisc),
-            Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
+            A0 >= 0.98*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP]
+            A0 <= 1.02*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), 
+
+            #Ahbend >= A2*(xshell2-xbend)**2 + A1*(xtail-xbend)-A0, #[SP]
+            #Avbend >= B1*(xtail-xbend) - B0, #[SP]
+            #Whbend >= g*rhobend*sum(Ahbend*lshell/ndisc),
+            #Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
+            #Vhbendb >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend))
+            #Vhbendf >= 
+            #Vhbendc >= 
+            #Vhbend >= Vhbendc + Vhbendf + Vhbendb,
+            #Whbend >= g*rhobend*Vhbend,
+            #Wvbend >= g*rhobend*Vvbend,
             sigMh <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
             sigbend == sigskin,
 
@@ -273,11 +292,11 @@ class Fuselage(Model):
 
             # Bending area discretization
 
-            for i in range(0,ndisc):
-                mult = i*1.0
-                constraints.extend([xbend[i] >= lnose + lshell*((mult)/ndisc),
-                                    xbend[i] <= lnose + lshell*((mult)/ndisc) #[SP]
-                                    ])
+            # for i in range(0,ndisc):
+            #     mult = i*1.0
+            #     constraints.extend([xbend[i] >= lnose + lshell*((mult)/ndisc),
+            #                         xbend[i] <= lnose + lshell*((mult)/ndisc) #[SP]
+            #                         ])
 
 
         objective = Wfuse + Vcabin*units('N/m^3') + lfuse*units('N/m') + tshell*units('N/m')
@@ -403,5 +422,6 @@ if __name__ == "__main__":
     print 'B0: ' + str(varVals['B0_Fuselage'])
     print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
     print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
-    print 'Ahbend: ' + str(sol('A_{hbend}')) 
-    print 'Avbend: ' + str(sol('A_{vbend}')) 
+    # print 'Ahbend: ' + str(sol('A_{hbend}')) 
+    # print 'Avbend: ' + str(sol('A_{vbend}')) 
+    print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
