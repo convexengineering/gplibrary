@@ -515,7 +515,7 @@ class Spar(Model):
         t = VectorVariable(n, "t", "in", "spar cap thickness")
         hin = VectorVariable(n, "h_{in}", "in", "inner spar height")
         w = VectorVariable(n, "w", "in", "spar width")
-        ts = VectorVariable(n, "t_s", "in", "shear casing thickness")
+        tshear = VectorVariable(n, "t_{shear}", "in", "shear casing thickness")
         I = VectorVariable(n, "I", "m^4", "spar x moment of inertia")
         dm = VectorVariable(n, "dm", "kg", "segment spar mass")
         m = Variable("m", "kg", "spar mass")
@@ -534,11 +534,12 @@ class Spar(Model):
         self.submodels = [beam]
 
         constraints = [
-            dm >= rho_cfrp*w*t*b/n + rho_fg*b/2/n*2*ts*(w+hin),
+            dm >= rho_cfrp*w*t*b/n + rho_fg*b/2/n*2*tshear*(w+hin),
             m >= dm.sum(),
             w <= w_lim*S/b*cbar,
-            S/b*cbar*tau >= hin + 2*t + 2*ts,
-            beam["\\bar{S}"][:-1]*W_cent*N_max/b*(b/2)/4/hin/ts <= sigma_fg,
+            S/b*cbar*tau >= hin + 2*t + 2*tshear,
+            sigma_fg >= (beam["\\bar{S}"][:-1]*W_cent*N_max/2/tshear/
+                         (S/b*cbar*tau)),
             beam["\\bar{\\delta}"][-1] <= kappa,
             sigma_cfrp >= ((beam["\\bar{M}"][:-1] + beam["\\bar{M}"][1:])/
                            2*b*W_cent*N_max/4*(hin+t)/I),
@@ -600,7 +601,7 @@ class Wing(Model):
                         ts*Cmw*S*rhosl*Vne**2)
             ]
 
-        lc = LinkedConstraintSet([self.spar, constraints])
+        lc = LinkedConstraintSet([self.spar, constraints], include_only=INCLUDE)
 
         Model.__init__(self, None, lc, **kwargs)
 
