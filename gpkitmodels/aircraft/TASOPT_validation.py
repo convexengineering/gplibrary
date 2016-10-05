@@ -24,8 +24,8 @@ class OperatingPoint1(Model):
 
         #need to give a Tt4 to run with res7 = 0
 
-        M2 = .8
-        M25 = .65
+        M2 = .8025
+        M25 = .6
         M4a = .1
         Mexit = 1
         M0 = .8
@@ -50,13 +50,13 @@ class OperatingPoint1(Model):
                 'M_0': M0,
                 'M_2': M2,
                 'M_{2.5}':M25,
-                'hold_{2}': 1+.5*(1.398-1)*M2**2,
+                'hold_{2}': 1+.5*(1.401-1)*M2**2,
                 'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
                 'c1': 1+.5*(.401)*M0**2,
-                'M_{takeoff}': 1-.0396,
+                'M_{takeoff}': .9556,
 
                 'M_{4a}': M4a,
-                'hold_{4a}': 1+.5*(1.318-1)*M4a**2,#sol('hold_{4a}'),
+                'hold_{4a}': 1+.5*(1.313-1)*M4a**2,#sol('hold_{4a}'),
             }
             
 
@@ -66,7 +66,7 @@ class OperatingPoint1(Model):
                 })
             else:
                 substitutions.update({
-                    'F_{spec}': 7479.5*4.4,
+                    'F_{spec}': 7563*4.4,
                 })
             
             
@@ -131,7 +131,7 @@ class OperatingPoint2(Model):
         #need to give a Tt4 to run with res7 = 0
 
         M2 = .8
-        M25 = .65
+        M25 = .6
         M4a = .1
         Mexit = 1
         M0 = .8
@@ -156,9 +156,9 @@ class OperatingPoint2(Model):
                 'M_0': M0,
                 'M_2': M2,
                 'M_{2.5}':M25,
-                'hold_{2}': 1+.5*(1.398-1)*M2**2,
+                'hold_{2}': 1+.5*(1.4008-1)*M2**2,
                 'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
-                'c1': 1+.5*(.401)*M0**2,
+                'c1': 1+.5*(.4008)*M0**2,
                 'M_{takeoff}': .9556,
 
                 'M_{4a}': M4a,
@@ -171,7 +171,7 @@ class OperatingPoint2(Model):
                 })
             else:
                 substitutions.update({
-                    'F_{spec}': 5624.1 * 4.4,
+                    'F_{spec}': 5651.2* 4.4,
                 })
         Model.__init__(self, offD.cost, lc, substitutions)
 
@@ -310,6 +310,7 @@ class FullEngineRun(Model):
 
         #create the big linked engine model
         submodels = [engine1, engine2, engine3, engine4]
+##        submodels = [engine1, engine2]
         constraints = ConstraintSet([submodels])
 
         lc = LinkedConstraintSet(constraints, include_only = {'A_5', 'A_7', 'A_2', 'A_{2.5}', '\pi_{tn}', '\pi_{b}', '\pi_{d}', '\pi_{fn}',
@@ -327,7 +328,7 @@ class FullEngineRun(Model):
         hpc = 11
 
         valsubs = {
-        'A_2': 1.78,
+##        'A_2': 1.78,
 ##        'A_5': .278,
 ##        'A_7': .862,
         '\pi_{tn}': .989,
@@ -380,8 +381,11 @@ class FullEngineRun(Model):
 
         print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
 
-        Model.__init__(self, (20*engine2.cost + engine1.cost + engine3.cost +
+        Model.__init__(self, (10*engine2.cost + engine1.cost +  engine3.cost +
                               engine4.cost), constraints, valsubs)
+
+##        Model.__init__(self, (engine2.cost + engine1.cost 
+##                              ), constraints, valsubs)
 
         sol = self.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
         
@@ -397,7 +401,7 @@ class FullEngineRun(Model):
         print 100*(mag(sol('A_7').to('feet^2'))-9.285)/9.285
         print 100*(mag(sol('A_5').to('feet^2'))-2.928)/2.928
         
-        print toerror, climberror, tocerror, cruiseerror
+        print tocerror, cruiseerror, toerror, climberror
 ##        print bounds
 
 

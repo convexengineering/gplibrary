@@ -893,7 +893,7 @@ class Sizing(Model):
                 h2 == Cp1 * T2,
                 rho2 == P2/(R * T2),  #B.196
                 u2 == M2*(Cp1*R*T2/(781*units('J/kg/K')))**.5,  #B.197
-                A2 == mFan/(rho2*u2),     #B.198
+                A2 == mCore*alphap1/(rho2*u2),     #B.198
 
                 #HPC area
                 P25 == Pt25*(hold25)**(-3.824857),
