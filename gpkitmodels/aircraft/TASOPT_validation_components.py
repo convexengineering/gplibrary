@@ -61,7 +61,7 @@ class FanAndLPC(Model):
         Cpair = Variable('Cp_{air}', 1003, 'J/kg/K', "Cp Value for Air at 250K")
         Cp1 = Variable('Cp_{1}', 1008, 'J/kg/K', "Cp Value for Air at 350K")#gamma = 1.398
         Cp2 = Variable('Cp_{2}', 1099, 'J/kg/K', "Cp Value for Air at 800K") #gamma = 1.354
-        c1 = Variable('c1', 1.128, '-', 'Constant in Stagnation Eqn')
+        c1 = Variable('c1', '-', 'Constant in Stagnation Eqn')
 
         #free stream
         T0 = Variable('T_0', 'K', 'Free Stream Stagnation Temperature')
@@ -144,8 +144,8 @@ class FanAndLPC(Model):
             ht7 == ht21,    #B.127
 
             #LPC exit (station 2.5)
-            Pt25 == pilc * pif * Pt2,
-            Tt25 == Tt2 * (pif*pilc) ** (lpcexp1),
+            Pt25 == pilc * Pt2,
+            Tt25 == Tt2 * (pilc) ** (lpcexp1),
             ht25 == Tt25 * Cp1,
 
             #HPC Exit
@@ -168,7 +168,7 @@ class CombustorCooling(Model):
     def __init__(self, mixing, **kwargs):
         #new vars
         #gas propeRies
-        Cpc = Variable('Cp_c', 1204, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K, gamma equals 1.312
+        Cpc = Variable('Cp_c', 1216, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K, gamma equals 1.312
         R = Variable('R', 287, 'J/kg/K', 'R')
         Cpfuel = Variable('Cp_{fuel}', 2010, 'J/kg/K', 'Specific Heat Capacity of Kerosene (~Jet Fuel)')
         
@@ -197,7 +197,7 @@ class CombustorCooling(Model):
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
         #heat of combustion of jet fuel
-        hf = Variable('h_f', 43.003, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
+        hf = Variable('h_f', 42.6, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
 #43.003
         #cooling flow bypass ratio
         ac = Variable('\\alpha_c', '-', 'Total Cooling Flow Bypass Ratio')
@@ -278,8 +278,11 @@ class Turbine(Model):
     """
     def __init__(self, **kwargs):
         #gas propeRies
-        Cpt1 =Variable('Cp_t1', 1190, 'J/kg/K', "Cp Value for Combustion Products in HP Turbine") #1300K gamma = 1.318
-        Cpt2 =Variable('Cp_t2', 1099, 'J/kg/K', "Cp Value for Combustion Products in LP Turbine") #800K gamma = 1.354
+##        Cpt1 =Variable('Cp_t1', 1190, 'J/kg/K', "Cp Value for Combustion Products in HP Turbine") #1300K gamma = 1.318
+##        Cpt2 =Variable('Cp_t2', 1099, 'J/kg/K', "Cp Value for Combustion Products in LP Turbine") #800K gamma = 1.354
+
+        Cpt1 =Variable('Cp_t1', 1280, 'J/kg/K', "Cp Value for Combustion Products in HP Turbine") #1300K gamma = 1.318
+        Cpt2 =Variable('Cp_t2', 1184, 'J/kg/K', "Cp Value for Combustion Products in LP Turbine") #800K gamma = 1.354
         
         #new variables
         ht45 = Variable('h_{t_{4.5}}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (4.5)')
@@ -337,7 +340,7 @@ class Turbine(Model):
 
                 #LPT shaft power balance
                 #SIGNOMIAL  
-                SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht18)+alphap1*(ht21 - ht2))),    #B.165
+                SignomialEquality(Mtakeoff*etaLPshaft*(1+f)*(ht49 - ht45),-((ht25-ht2)+alphap1*(ht21 - ht2))),    #B.165
 
                 #HPT Exit states (station 4.5)
                 Pt45 == pihpt * Pt41,
@@ -370,7 +373,7 @@ class ExhaustAndThrust(Model):
         P0 = Variable('P_0', 'kPa', 'Free Stream Stagnation Pressure')
         
         #gas propeRies
-        Cptex =Variable('Cp_tex', 1029, 'J/kg/K', "Cp Value for Combustion Products at Core Exhaust") #500K, gamma = 1.387
+        Cptex =Variable('Cp_tex', 1071.9, 'J/kg/K', "Cp Value for Combustion Products at Core Exhaust") #500K, gamma = 1.387
         Cpfanex = Variable('Cp_fex', 1005, 'J/kg/K', "Cp Value for Air at 300K") #gamma =1.4
         
         #gravity
@@ -831,7 +834,7 @@ class Sizing(Model):
                 #residual 1 Fan/LPC speed
                 Nf*Gf == N1,
                 N1 <= 1.1,
-                N2 <= 1.1,
+                N2 <= 1.2,
 
                 #note residuals 2 and 3 differ from TASOPT, by replacing mhc with mlc
                 #in residual 4 I was able to remove the LPC/HPC mass flow equality
@@ -843,7 +846,7 @@ class Sizing(Model):
                 (fp1)*mlc*Mtakeoff*(Pt18/Pt45)*(Tt45/Tt18)**.5 == mltD,
                 
                 #residual 4
-                P7 >= P0,
+##                P7 >= P0,
                 (P7/Pt7) == (T7/Tt7)**(3.5),
                 (T7/Tt7)**-1 >= 1 + .2 * M7**2,
                 M7 <= 1,
@@ -853,7 +856,7 @@ class Sizing(Model):
                 rho7 == P7/(R*T7),
                 
                 #residual 5 core nozzle mass flow
-                P5 >= P0,
+##                P5 >= P0,
                 (P5/Pt5) == (T5/Tt5)**(3.583979),
                 (T5/Tt5)**-1 >= 1 + .2 * M5**2,
                 M5 <= 1,
@@ -875,11 +878,11 @@ class Sizing(Model):
                 alpha == mFan / mCore,
                 SignomialEquality(alphap1, alpha + 1),
 
-                alpha <= 6.6282,
+                alpha <= 5.158,
                
                 mtot >= mFan + mCore,
 
-                W_engine >= ((mtot/(alphap1*mCore)*mCore)*.0984)*(1684.5+17.7*(pif*pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s'),
+                W_engine >= 4.4*(((mtot/(alphap1*mCore))*mCore)*.0984)*(1684.5+17.7*(pif*pilc*pihc)/30+1662.2*(alpha/5)**1.2)*units('m/s'),
 
                 A5 + A7 <= A2,
 
@@ -912,19 +915,21 @@ class Sizing(Model):
 ##                mlcD <= 1.2*mCoreD *((258.0/288)**.5)/(67.4/101.325),
 ##                mhcD >= .8*mCoreD *((319.0/288)**.5)/(130.42/101.325),
 ##                mhcD <= 1.2*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-##                mFanBarD >= .8 * mCoreD * alpha_OD *((230.0/288)**.5)/(34/101.325),
-##                mFanBarD <= 1.2 * mCoreD * alpha_OD *((230.0/288)**.5)/(34/101.325),
+##                mFanBarD >= .8 * mCoreD * alpha *((230.0/288)**.5)/(34/101.325),
+##                mFanBarD <= 1.2 * mCoreD * alpha *((230.0/288)**.5)/(34/101.325),
 
-                mhtD <= 1.1*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1423/101.325),
-                mhtD >= .9*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1423/101.325),
-                mltD <= 1.1*fp1*Mtakeoff*mCoreD *((1040.8/288)**.5)/(552/101.325),
-                mltD >= .9*fp1*Mtakeoff*mCoreD *((1040.8/288)**.5)/(552/101.325),
-                mlcD >= .8*mCoreD *((292.57/288)**.5)/(78.5/101.325),
-                mlcD <= 1.2*mCoreD *((292.57/288)**.5)/(78.5/101.325),
-                mhcD >= .8*mCoreD *((360.47/288)**.5)/(151.9/101.325),
-                mhcD <= 1.2*mCoreD *((360.47/288)**.5)/(151.9/101.325),
-                mFanBarD >= .8 * alpha_OD * mCoreD *((248.6/288)**.5)/(46.6/101.325),
-                mFanBarD <= 1.2 * alpha_OD * mCoreD * ((248.6/288)**.5)/(46.6/101.325),
+                mhtD <= 1.1*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1500/101.325),
+                mhtD >= .9*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1500/101.325),
+                mltD <= 1.1*fp1*Mtakeoff*mCoreD *((956.0/288)**.5)/(444.4/101.325),
+                mltD >= .9*fp1*Mtakeoff*mCoreD *((956.0/288)**.5)/(444.4/101.325),
+                mlcD >= .8*mCoreD *((250.0/288)**.5)/(50.0/101.325),
+                mlcD <= 1.2*mCoreD *((250.0/288)**.5)/(50.0/101.325),
+                mhcD >= .8*mCoreD *((404.0/288)**.5)/(136.4/101.325),
+                mhcD <= 1.2*mCoreD *((404.0/288)**.5)/(136.4/101.325),
+                mFanBarD >= .8 * alpha * mCoreD * ((250.0/288)**.5)/(50.0/101.325),
+                mFanBarD <= 1.2 * alpha * mCoreD * ((250.0/288)**.5)/(50.0/101.325),
+
+                
        
             ]
             
