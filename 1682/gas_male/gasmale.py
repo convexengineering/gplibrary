@@ -53,13 +53,14 @@ class Mission(Model):
         for c in dragcomps:
             for name in ["l_{ref}", "S_{ref}"]:
                 vks = cs.varkeys[name]
-                vk = list(vks)[0]
-                descr = dict(vk.descr)
-                descr.pop("value", None)
-                descr["models"] = [c.name]
-                descr["modelnums"] = [c.num]
-                newvk = VarKey(**descr)
-                linked.update(dict(zip(vks, len(vks)*[newvk])))
+                for vk in vks:
+                    descr = dict(vk.descr)
+                    if c.name in descr["models"]:
+                        descr.pop("value", None)
+                        descr["models"] = [c.name]
+                        descr["modelnums"] = [c.num]
+                        newvk = VarKey(**descr)
+                        linked.update({vk: newvk})
         cs.subinplace(linked)
 
         lc = LinkedConstraintSet(cs, include_only=INCLUDE)
@@ -430,6 +431,17 @@ class Aerodynamics(Model):
             Re == rho*V/mu_atm*(S/AR)**0.5,
             CDA0 >= sum(db["CDA"] for db in dragbuild),
             ]
+
+        for c, db in zip(dragcomps, dragbuild):
+            linked = {}
+            for vk in db.varkeys:
+                descr = dict(vk.descr)
+                if "ComponentDrag" == descr["models"][0]:
+                    descr["models"][0] = c.name
+                    descr["modelnums"][0] = c.num
+                    newvk = VarKey(**descr)
+                    linked.update({vk: newvk})
+            db.subinplace(linked)
 
         lc = LinkedConstraintSet([constraints, dragbuild],
                                  include_only=["\\rho", "\\mu", "S", "V"])
