@@ -399,7 +399,7 @@ class Aerodynamics(Model):
     """
     def __init__(self, N, dragcomps, **kwargs):
 
-        CLmax = Variable("C_{L-max}", 1.5, "-", "Maximum lift coefficient")
+        CLmax = Variable("C_{L-max}", 1.39, "-", "Maximum lift coefficient")
         e = Variable("e", 0.9, "-", "Spanwise efficiency")
         AR = Variable("AR", "-", "Aspect ratio")
         b = Variable("b", "ft", "Span")
@@ -770,12 +770,20 @@ class TailBoom(Model):
                          "max tail boom deflection angle")
         l_ref = Variable("l_{ref}", "ft", "tail boom reference length")
         S_ref = Variable("S_{ref}", "ft**2", "tail boom reference area")
+        Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
+        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
+                         "air density at sea level")
+        Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
+        mh = Variable("m_h", "-", "horizontal tail span effectiveness")
+        Sh = Variable("S_h", "ft**2", "horizontal tail area")
 
         constraints = [I0 <= pi*t0*d0**3/8.0,
                        W >= pi*g*rho_cfrp*d0*L*t0*kfac,
                        t0 >= tmin,
                        th <= thmax,
                        th >= F*L**2/E/I0*(1+k)/2,
+                       Fne >= 1 + mh*0.5*Vne**2*rhosl*Sh*L**2/E/I0*kfac,
+                       F >= 0.5*rhosl*Vne**2*Sh*1.1,
                        l_ref == L,
                        S_ref == L*pi*d0
                       ]
@@ -794,23 +802,39 @@ class HorizontalTail(Model):
                            "horizontal tail skin density")
         bh = Variable("b_h", "ft", "horizontal tail span")
         Wh = Variable("W_h", "lbf", "horizontal tail weight")
-        CLw = Variable("C_{L_w}", 1.3, "-", "maximum lift of win")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
         S = Variable("S", "ft^2", "wing area")
         b = Variable("b", "ft", "Span")
-        Cmw = Variable("C_{m_w}", 0.121, "-", "negative wing moment coefficent")
-        xcg = Variable("x_{ac}-x_{cg}", 10, "in", "distance from AC to CG")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         L = Variable("L", "ft", "tail boom length")
-        CLh = Variable("C_{L_h}", 1.3, "-", "maximum lift of horizontal tail")
+        CLhmin = Variable("(C_{L_h})_{min}", 0.75, "-",
+                          "max downlift coefficient")
+        CLmax = Variable("C_{L-max}", 1.39, "-", "Maximum lift coefficient")
+        CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
         l_ref = Variable("l_{ref}", "ft", "horizontal tail reference length")
         S_ref = Variable("S_{ref}", "ft**2", "horizontal tail reference area")
+
+        SMcorr = Variable("SM_{corr}", 0.1, "-", "corrected static margin")
+        Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
+        deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
+        mw = Variable("m_w", 2*pi/(1+2/23), "-",
+                      "assumed span wise effectiveness")
+        mh = Variable("m_h", "-", "horizontal tail span effectiveness")
+
+        # signomial helper variables
+        sph1 = Variable("sph1", "-", "first term involving V_h")
+        sph2 = Variable("sph2", "-", "second term involving V_h")
 
         constraints = [
             Vh <= 2*Sh*L/S**2*b,
             bh**2 == ARh*Sh,
+            sph1*(mw*Fne/mh/Vh) + deda <= 1,
+            sph2 <= Vh*CLhmin/CLmax,
+            (sph1 + sph2).mono_lower_bound(
+                {"sph1": .44, "sph2": .56}) >= SMcorr + CM/CLmax,
+            deda >= mw*S/b/4/pi/L,
+            mh*(1+2/ARh) <= 2*pi,
             Wh >= rhofoam*Sh**2/bh*Abar + g*rhoskin*Sh,
-            Cmw + xcg*b/S*CLw <= Vh*CLh,
             l_ref == Sh/bh,
             S_ref == Sh
             ]
@@ -822,12 +846,6 @@ class Empennage(Model):
         W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
         m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "Tail weight")
-        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
-                         "air density at sea level")
-        Vstall = Variable("V_{stall}", "m/s", "stall speed")
-        Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
-        rhone = Variable("\\rho_{NE}", 0.77, "kg/m**3",
-                         "density at never exceed q")
 
         tb = TailBoom()
         ht = HorizontalTail()
@@ -835,11 +853,10 @@ class Empennage(Model):
 
         constraints = [
             W/m_fac >= W_vtail + 2*tb["W"] + 2*ht["W_h"],
-            tb["F"] >= 0.5*rhosl*Vne**2*ht["S_h"]*ht["C_{L_h}"],
             ]
 
         lc = LinkedConstraintSet([self.submodels, constraints],
-                                 include_only=["L"])
+                                 include_only=["L", "F_{NE}", "m_h", "S_h"])
 
         Model.__init__(self, None, lc, **kwargs)
 
