@@ -367,7 +367,7 @@ class BreguetEndurance(Model):
         W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         constraints = [
-            z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
+            TCS([z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5]),
             # TCS([z_bre >= P_shafttot*t*bsfc*g/W_nplus1]),
             f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
             ]
@@ -378,15 +378,20 @@ class ComponentDrag(Model):
     def __init__(self, N, comp, **kwargs):
 
         CDA = VectorVariable(N, "CDA", "-",
-                             "component area drag normalized by wing area")
-        Cf = VectorVariable(N, "C_f", "-", "skin friction coefficient")
-        Re = VectorVariable(N, "Re", "-", "reynolds number")
+                             "%s area drag normalized by wing area" % comp.name)
+        Cf = VectorVariable(N, "C_f", "-",
+                            "%s skin friction coefficient" % comp.name)
+        Re = VectorVariable(N, "Re", "-", "%s reynolds number" % comp.name)
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
         V = VectorVariable(N, "V", "m/s", "Cruise speed")
+        if comp.name in ["HorizontalTail", "VerticalTail", "TailBoom"]:
+            n = 2
+        else:
+            n = 1
 
-        constraints = [CDA >= Cf*comp["S_{ref}"]/S,
+        constraints = [CDA >= n*Cf*comp["S_{ref}"]/S,
                        Re == V*rho*comp["l_{ref}"]/mu_atm,
                        Cf >= 0.455/Re**0.3
                       ]
@@ -537,12 +542,9 @@ class CapSpar(Model):
     def __init__(self, N=5, **kwargs):
 
         # phyiscal properties
-        rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
-        rho_fg = Variable("\\rho_{fg}", 0.75, "g/cm^3", "density of fiberglass")
-        E = Variable("E", 2e7, "psi", "Youngs modulus of CF")
+        rho_cfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
+        E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
         sigma_cfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
-        sigma_fg = Variable("\\sigma_{fg}", 175e6, "Pa",
-                            "Fiberglass max stress")
 
         # Structural lengths
         cb = c_bar(0.5, N)
@@ -566,18 +568,19 @@ class CapSpar(Model):
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
 
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
-        w_lim = Variable("w_{lim}", 0.14, "-", "spar width to chord ratio")
+        w_lim = Variable("w_{lim}", "-", "spar width to chord ratio")
 
         beam = Beam(N, cb)
         self.submodels = [beam]
 
         constraints = [
-            dm >= rho_cfrp*w*t*b/(N-1) + rho_fg*b/2/(N-1)*2*tshear*(w+hin),
+            dm >= rho_cfrp*w*t*b/(N-1) + rho_cfrp*b/2/(N-1)*2*tshear*(w+hin),
             m >= dm.sum(),
+            w_lim <= 2*units("in")/(S/b*1.3),
             w <= w_lim*S/b*cbar,
             S/b*cbar*tau >= hin + 2*t + 2*tshear,
-            sigma_fg >= (beam["\\bar{S}"][:-1]*W_cent*N_max/2/tshear/
-                         (S/b*cbar*tau)),
+            sigma_cfrp >= (beam["\\bar{S}"][:-1]*W_cent*N_max/2/tshear/
+                           (S/b*cbar*tau)),
             beam["\\bar{\\delta}"][-1] <= kappa,
             sigma_cfrp >= ((beam["\\bar{M}"][:-1] + beam["\\bar{M}"][1:])/
                            2*b*W_cent*N_max/4*(hin+t)/I),
@@ -600,10 +603,10 @@ class Wing(Model):
     """
     def __init__(self, **kwargs):
 
-        # Structural parameters
-        rho_skin = Variable("\\rho_{skin}", 0.1, "g/cm^2", "Wing skin density")
-        rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
+        N = 5
 
+        rho_cfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
+        rho_foam = Variable("\\rho_{foam}", 0.036, "g/cm^3", "foam density")
         # wing parameters
         S = Variable("S", "ft^2", "wing area")
         wingloading = Variable("W/S", "lbf/ft^2", "Wing loading")
@@ -614,7 +617,7 @@ class Wing(Model):
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
         W = Variable("W", "lbf", "Total wing structural weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        m_fac = Variable("m_{fac}", 1.0, "-", "Wing weight margin factor")
+        m_fac = Variable("m_{fac}", 1.1, "-", "Wing weight margin factor")
         taucfrp = Variable("\\tau_{CFRP}", 570, "MPa", "torsional stress limit")
         ts = Variable("t_s", "mm", "wing skin thickness")
         Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
@@ -624,18 +627,22 @@ class Wing(Model):
         rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
                          "air density at sea level")
         b = Variable("b", "ft", "Span")
-        tsmin = Variable("t_{s-min}", 0.0625, "cm",
+        tsmin = Variable("t_{s-min}", 0.012, "in",
                          "minimum wing skin thickness")
+        Abar = Variable("\\bar{A}_{jh01}", 0.0753449, "-",
+                        "jh01 non dimensional area")
+        mfoam = VectorVariable(N-1, "m_{foam}", "kg", "interior mass of wing")
 
-        self.spar = CapSpar(5)
+        self.spar = CapSpar(N)
         # self.spar = TubeSpar(5)
         self.submodels = [self.spar]
 
         constraints = [
             m_skin >= rho_cfrp*S*2*ts,
+            mfoam >= rho_foam*Abar*(S/b*self.spar["\\bar{c}"])**2*(b/2/4),
             ts >= tsmin,
             wingloading == mtow/S,
-            W/m_fac >= m_skin*g + 2*self.spar["m"]*g,
+            W/m_fac >= m_skin*g + 2*self.spar["m"]*g + 2*mfoam.sum()*g,
             taucfrp >= (1/Jtbar/(S/b*self.spar["\\bar{c}"][0])**2/
                         ts*Cmw*S*rhosl*Vne**2)
             ]
@@ -755,21 +762,24 @@ class EngineWeight(Model):
 class TailBoom(Model):
     def __init__(self, **kwargs):
 
-        F = Variable("F", "N", "point force from tail")
+        F = VectorVariable(2, "F", "N", "horizontal and vertical tail force")
+        T = Variable("T", "N*m", "vertical tail moment")
         L = Variable("L", "ft", "tail boom length")
         E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
         k = Variable("k", 0.8, "-", "tail boom inertia value")
         kfac = Variable("(1-k/2)", 1-k.value/2, "-", "(1-k/2)")
         I0 = Variable("I_0", "m^4", "tail boom moment of inertia")
+        J = Variable("J", "m^4", "tail boom polar moment of inertia")
         d0 = Variable("d_0", "mm", "tail boom diameter")
         t0 = Variable("t_0", "mm", "tail boom thickness")
         tmin = Variable("t_{min}", 0.25, "mm", "minimum tail boom thickness")
         rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         W = Variable("W", "lbf", "tail boom weight")
-        th = Variable("\\theta", "-", "tail boom deflection angle")
-        thmax = Variable("\\theta_{max}", 0.5, "-",
+        th = VectorVariable(2, "\\theta", "-", "tail boom deflection angle")
+        thmax = Variable("\\theta_{max}", 0.4, "-",
                          "max tail boom deflection angle")
+        taucfrp = Variable("\\tau_{CFRP}", 210, "MPa", "torsional stress limit")
         l_ref = Variable("l_{ref}", "ft", "tail boom reference length")
         S_ref = Variable("S_{ref}", "ft**2", "tail boom reference area")
         Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
@@ -778,16 +788,25 @@ class TailBoom(Model):
         Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
         mh = Variable("m_h", "-", "horizontal tail span effectiveness")
         Sh = Variable("S_h", "ft**2", "horizontal tail area")
+        Sv = Variable("S_v", "ft**2", "vertical tail surface area")
+        bv = Variable("b_v", "ft", "vertical tail span")
+        # Lmax = Variable("L_{max}", 5.5, "ft", "maximum tail boom length")
 
         constraints = [I0 <= pi*t0*d0**3/8.0,
                        W >= pi*g*rho_cfrp*d0*L*t0*kfac,
                        t0 >= tmin,
                        th <= thmax,
+                       # L <= Lmax,
                        th >= F*L**2/E/I0*(1+k)/2,
                        Fne >= 1 + mh*0.5*Vne**2*rhosl*Sh*L**2/E/I0*kfac,
-                       F >= 0.5*rhosl*Vne**2*Sh*1.1,
+                       F[0] >= 0.5*rhosl*Vne**2*Sh*1.1,
+                       F[1] >= 0.5*rhosl*Vne**2*Sv*1.1,
+                       T >= 0.5*rhosl*Vne**2*Sv*1.1*bv/2,
+                       taucfrp >= T*d0/2/J,
+                       J <= pi/8*d0**3*t0,
                        l_ref == L,
-                       S_ref == L*pi*d0
+                       S_ref == L*pi*d0,
+
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -803,7 +822,7 @@ class HorizontalTail(Model):
         rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
                            "horizontal tail skin density")
         bh = Variable("b_h", "ft", "horizontal tail span")
-        Wh = Variable("W_h", "lbf", "horizontal tail weight")
+        W = Variable("W", "lbf", "horizontal tail weight")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
         S = Variable("S", "ft^2", "wing area")
         b = Variable("b", "ft", "Span")
@@ -819,7 +838,7 @@ class HorizontalTail(Model):
         SMcorr = Variable("SM_{corr}", 0.1, "-", "corrected static margin")
         Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
         deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
-        mw = Variable("m_w", 2*pi/(1+2/23), "-",
+        mw = Variable("m_w", 2*pi/(1+2./23), "-",
                       "assumed span wise effectiveness")
         mh = Variable("m_h", "-", "horizontal tail span effectiveness")
 
@@ -833,32 +852,64 @@ class HorizontalTail(Model):
             sph1*(mw*Fne/mh/Vh) + deda <= 1,
             sph2 <= Vh*CLhmin/CLmax,
             (sph1 + sph2).mono_lower_bound(
-                {"sph1": .44, "sph2": .56}) >= SMcorr + CM/CLmax,
+                {"sph1": .48, "sph2": .52}) >= SMcorr + CM/CLmax,
             deda >= mw*S/b/4/pi/L,
             mh*(1+2/ARh) <= 2*pi,
-            Wh >= rhofoam*Sh**2/bh*Abar + g*rhoskin*Sh,
+            W >= rhofoam*Sh**2/bh*Abar + g*rhoskin*Sh,
             l_ref == Sh/bh,
             S_ref == Sh
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class VerticalTail(Model):
+    def __init__(self, **kwargs):
+        W = Variable("W", "lbf", "vertical tail weight")
+        Sv = Variable("S_v", "ft**2", "vertical tail surface area")
+        Vv = Variable("V_v", 0.03, "-", "vertical tail volume coefficient")
+        ARv = Variable("AR_v", 5, "-", "vertical tail aspect ratio")
+        bv = Variable("b_v", "ft", "vertical tail span")
+        rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
+                           "Density of formular 250")
+        rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
+                           "vertical tail skin density")
+        Abar = Variable("\\bar{A}_{NACA0008}", 0.0548, "-",
+                        "cross sectional area of NACA 0008")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        S = Variable("S", "ft^2", "wing area")
+        b = Variable("b", "ft", "Span")
+        L = Variable("L", "ft", "tail boom length")
+        l_ref = Variable("l_{ref}", "ft", "vertical tail reference length")
+        S_ref = Variable("S_{ref}", "ft**2", "vertical tail reference area")
+
+        constraints = [Vv <= 2*Sv*L/S/b,
+                       bv**2 == ARv*Sv,
+                       W >= rhofoam*Sv**2/bv*Abar + g*rhoskin*Sv,
+                       S_ref == Sv,
+                       l_ref == bv,
+                      ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class Empennage(Model):
     def __init__(self, **kwargs):
-        W_vtail = Variable("W_{v-tail}", 3.4999, "lbf", "V-Tail weight")
         m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
-        W = Variable("W", "lbf", "Tail weight")
+        W = Variable("W", "lbf", "empennage weight")
 
         tb = TailBoom()
         ht = HorizontalTail()
-        self.submodels = [tb, ht]
+        vt = VerticalTail()
+        self.submodels = [tb, ht, vt]
 
         constraints = [
-            W/m_fac >= W_vtail + 2*tb["W"] + 2*ht["W_h"],
+            W/m_fac >= 2*tb["W"] + 2*ht["W"] + 2*vt["W"],
             ]
 
-        lc = LinkedConstraintSet([self.submodels, constraints],
-                                 include_only=["L", "F_{NE}", "m_h", "S_h"])
+        lc = LinkedConstraintSet(
+            [self.submodels, constraints],
+            include_only=["L", "F_{NE}", "m_h", "S_h", "S", "b", "b_v", "b_h",
+                          "S_v"]
+            )
 
         Model.__init__(self, None, lc, **kwargs)
 
