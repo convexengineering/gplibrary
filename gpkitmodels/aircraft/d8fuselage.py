@@ -175,7 +175,13 @@ class Fuselage(Model):
         xtail     = Variable('x_{tail}','m', 'x-location of tail')
         xwing     = Variable('x_{wing}','m', 'x-location of wing')
         dxwing    = Variable('dx_{wing}','m','wing box offset')
-        xf        = Variable('x_f','m','')
+
+        # Wing and wingbox variables
+        xf        = Variable('x_f','m','x-location of front of wingbox')
+        xb        = Variable('x_b','m','x-location of back of wingbox')
+        c0        = Variable('c_0','m','Root chord of the wing')
+        wbar      = Variable('\\bar_w',0.5,'-','Wingbox to chord ratio')
+
         #xbend    = VectorVariable(ndisc,'x_{hbend}','m','Bending material location')
 
         with SignomialsEnabled():
@@ -189,7 +195,7 @@ class Fuselage(Model):
 
             # Fuselage joint angle relations
             thetadb == wdb/Rfuse, # first order Taylor works...
-            thetadb >= 0.05, thetadb <= 0.25,
+            thetadb >= 0.05, thetadb <= 0.25, #Temporarily
             hdb     >= Rfuse*(1.0-.5*thetadb**2), #[SP]
 
             # Fuselage cross-sectional relations
@@ -204,7 +210,7 @@ class Fuselage(Model):
 
             # Fuselage length relations
             lfuse >= lnose+lshell+lcone, 
-            lnose == 0.3*lshell, # Temp. 
+            lnose == 0.3*lshell, # Temporarily
             lcone == Rfuse/lamcone,
 
             # Fuselage width relations
@@ -262,22 +268,28 @@ class Fuselage(Model):
 
             xtail    >= lnose + lshell + .5*lcone, #Temporarily
             Lhmax    == 0.5*rho0*VNE**2*Shtail*CLhmax,
-            xwing    <= lnose + 0.6*lshell, #Temporarily constrain wing location forward of 60% of shell length
+            xwing    <= lnose + 0.6*lshell, #[SP] #Temporarily
+            xwing    >= lnose + 0.5*lshell, #Temporarily
+
             Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
             Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
             Wtail    >= Wvtail + Whtail + Wcone,
             hfuse    == Rfuse, # may want to consider adding deltaRfuse later...
-            A2 >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
-            A1 >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),
-            A0 == (Ihshell/(rE*hfuse**2)),
-            B1 == rMv*Lvmax/(wfloor*sigMv),
-            B0 == Ivshell/(rE*wfloor**2),
-            A0 >= 0.98*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP]
-            A0 <= 1.02*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), 
-            Ahbendxf >= (A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0,
-            Ahbendxb >= (A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0,
+            A2       >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
+            A1       >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),
+            A0       == (Ihshell/(rE*hfuse**2)),
+            B1       == rMv*Lvmax/(wfloor*sigMv),
+            B0       == Ivshell/(rE*wfloor**2),
+            #A0       >= 0.98*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP]
+            A0       <= 1.02*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), 
+            Ahbendxf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0,
+            Ahbendxb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0,
 
-            xf <= xwing - dxwing + .5*co*
+            
+            c0       == 0.1*lshell, #Temporarily
+            dxwing   == 0.01*lshell, #Temporarily
+            xf       <= xwing + dxwing + .5*c0*wbar, #[SP]
+            xb       >= xwing - dxwing + .5*c0*wbar, 
 
             #Ahbend >= A2*(xshell2-xbend)**2 + A1*(xtail-xbend)-A0, #[SP]
             #Avbend >= B1*(xtail-xbend) - B0, #[SP]
@@ -285,31 +297,22 @@ class Fuselage(Model):
             #Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
             Vhbendf >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend)**3) \
                             + A1/2*((xtail-xf)**2 - (xtail - xhbend)**2) \
-                            + A0*(xhbend-xf),
+                            + A0*(xhbend-xf), #[SP]
 
             Vhbendb >= A2/3*((xshell2-xb)**3 - (xshell2-xhbend)**3) \
                             + A1/2*((xtail-xb)**2 - (xtail - xhbend)**2) \
-                            + A0*(xhbend-xb),
-            Vhbendc >= 1/2*()
-            Vhbend >= Vhbendc + Vhbendf + Vhbendb,
-            Whbend >= g*rhobend*Vhbend,
+                            + A0*(xhbend-xb), #[SP]
+            Vhbendc >= .5*(Ahbendxf + Ahbendxb)*c0*wbar,
+            Vhbend  >= Vhbendc + Vhbendf + Vhbendb,
+            Whbend  >= g*rhobend*Vhbend,
             #Wvbend >= g*rhobend*Vvbend,
-            sigMh <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
-            sigbend == sigskin,
+            sigMh   <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
+            sigbend == sigskin, #Temporarily
 
             # x-location constraints
             xshell1 == lnose,
             xshell2 >= lnose + lshell
             ]
-
-            # Bending area discretization
-
-            # for i in range(0,ndisc):
-            #     mult = i*1.0
-            #     constraints.extend([xbend[i] >= lnose + lshell*((mult)/ndisc),
-            #                         xbend[i] <= lnose + lshell*((mult)/ndisc) #[SP]
-            #                         ])
-
 
         objective = Wfuse + Vcabin*units('N/m^3') + lfuse*units('N/m') + tshell*units('N/m')
         Model.__init__(self, objective, constraints, **kwargs)
@@ -423,6 +426,7 @@ if __name__ == "__main__":
     print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
     print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
     print 'Wing location: ' + str(varVals['x_{wing}_Fuselage'])
+    print 'Tail location: ' + str(varVals['x_{tail}_Fuselage'])
     #print 'Horizontal bending material location: ' + str(varVals['\vec{x_{hbend}_Fuselage}'])
     #print 'Horizontal bending material area: ' + str(varVals['\vec{A_{hbend}_Fuselage}'])
     print 'Horizontal bending material weight: '+ str(varVals['W_{hbend}_Fuselage'])
@@ -434,6 +438,4 @@ if __name__ == "__main__":
     print 'B0: ' + str(varVals['B0_Fuselage'])
     print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
     print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
-    # print 'Ahbend: ' + str(sol('A_{hbend}')) 
-    # print 'Avbend: ' + str(sol('A_{vbend}')) 
     print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
