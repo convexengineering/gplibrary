@@ -5,38 +5,45 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 
 #Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/property_tables/air/air_Cp_Cv.html
 
+goption = 1
+
+if goption == 1:
+    fgamma = 1.401
+    lpcgamma = 1.398
+    hpcgamma = 1.354
+    ccgamma = 1.313    #gamma value of air @ 1400 K
+    lptgamma = 1.354
+    hptgamma = 1.318
+if goption == 0:
+    fgamma = 1.401
+    lpcgamma = 1.398
+    hpcgamma = 1.354
+    ccgamma = 1.313    #gamma value of air @ 1400 K
+    lptgamma = 1.3060
+    hptgamma = 1.2987
+
 #Fan
 faneta = .9005
-fgamma = 1.401
-
 fexp1 = (fgamma - 1)/(faneta * fgamma)
 
 #LPC
-lpcgamma = 1.398
 LPCeta = .9306
-
 lpcexp1 = (lpcgamma - 1)/(LPCeta * lpcgamma)
 
 #HPC
 HPCeta = .9030
-hpcgamma = 1.354
-
 hpcexp1 = (hpcgamma - 1)/(HPCeta * hpcgamma)
 
 #combustor cooling exponents
-ccgamma = 1.313    #gamma value of air @ 1400 K
-
 ccexp1 = ccgamma/(1 - ccgamma)
 ccexp2 = -ccgamma/(1 - ccgamma)
 
 #Turbines
 #LPT
-lptgamma = 1.354
 LPTeta = .8851
 lptexp1 = lptgamma * LPTeta / (lptgamma - 1)
 
 #HPT
-hptgamma = 1.318
 HPTeta = .8731
 hptexp1 = hptgamma * HPTeta / (hptgamma - 1)
 
@@ -61,7 +68,7 @@ class FanAndLPC(Model):
         Cpair = Variable('Cp_{air}', 1003, 'J/kg/K', "Cp Value for Air at 250K")
         Cp1 = Variable('Cp_{1}', 1008, 'J/kg/K', "Cp Value for Air at 350K")#gamma = 1.398
         Cp2 = Variable('Cp_{2}', 1099, 'J/kg/K', "Cp Value for Air at 800K") #gamma = 1.354
-        c1 = Variable('c1', 1.128, '-', 'Constant in Stagnation Eqn')
+        c1 = Variable('c1', '-', 'Constant in Stagnation Eqn')
 
         #free stream
         T0 = Variable('T_0', 'K', 'Free Stream Stagnation Temperature')
@@ -197,8 +204,9 @@ class CombustorCooling(Model):
         f = Variable('f', '-', 'Fuel Air Mass Flow Fraction')
 
         #heat of combustion of jet fuel
-        hf = Variable('h_f', 40.8, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
-#43.003
+        hf = Variable('h_f', 43.003, 'MJ/kg', 'Heat of Combustion of Jet Fuel')     #http://hypeRbook.com/facts/2003/EvelynGofman.shtml...prob need a better source
+##43.003
+##40.8
         #cooling flow bypass ratio
         ac = Variable('\\alpha_c', '-', 'Total Cooling Flow Bypass Ratio')
 

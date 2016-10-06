@@ -28,6 +28,7 @@ class OperatingPoint1(Model):
         M25 = .6
         M4a = .1025
         Mexit = 1
+        M0 = .8
         
         offD = Sizing(res7, mixing)
 
@@ -46,11 +47,12 @@ class OperatingPoint1(Model):
             substitutions = {
                 'T_0': 218,   #36K feet
                 'P_0': 23.84,    #36K feet
-                'M_0': .8,
+                'M_0': M0,
                 'M_2': M2,
                 'M_{2.5}':M25,
                 'hold_{2}': 1+.5*(1.398-1)*M2**2,
                 'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
+                'c1': 1+.5*(.401)*M0**2,
             }
             
 
@@ -128,6 +130,7 @@ class OperatingPoint2(Model):
         M25 = .6
         M4a = .1025
         Mexit = 1
+        M0 = .8
         
         offD = Sizing(res7, mixing)
 
@@ -146,11 +149,12 @@ class OperatingPoint2(Model):
             substitutions = {
                 'T_0': 218,   #36K feet
                 'P_0': 23.84,    #36K feet
-                'M_0': .8,
+                'M_0': M0,
                 'M_2': M2,
                 'M_{2.5}':M25,
                 'hold_{2}': 1+.5*(1.398-1)*M2**2,
                 'hold_{2.5}': 1+.5*(1.354-1)*M25**2,
+                'c1': 1+.5*(.401)*M0**2,
             }
             
             if res7 == 1:
@@ -293,7 +297,8 @@ class FullEngineRun(Model):
                                                               'T_{ref}', 'P_{ref}', '\eta_{HPshaft}', '\eta_{LPshaft}', 'eta_{B}',
                                                               'W_{engine}', 'm_{fan_bar_D}', 'm_{lc_D}', 'm_{hc_D}', '\pi_{f_D}',
                                                               '\pi_{hc_D}', '\pi_{lc_D}', 'm_{htD}', 'm_{ltD}', 'm_{coreD}', 'M_{4a}',
-                                                              'hold_{4a}', 'r_{uc}', '\\alpha_c', 'T_{t_f}', 'M_{takeoff}', 'G_f'})
+                                                              'hold_{4a}', 'r_{uc}', '\\alpha_c', 'T_{t_f}', 'M_{takeoff}', 'G_f',
+                                                              'h_f', 'Cp_t1', 'Cp_t2', 'Cp_c'})
 
         M4a = .1025
 
@@ -327,6 +332,18 @@ class FullEngineRun(Model):
         'M_{takeoff}': .9556,
 
         'G_f': 1,
+
+        'h_f': 40.8,
+
+        'Cp_t1': 1280,
+        'Cp_t2': 1184,
+        'Cp_c': 1216,
+
+##        'h_f': 43.003,
+
+##        'Cp_t1': 1190,
+##        'Cp_t2': 1099,
+##        'Cp_c': 1204,
         }
 
         Pt0 = 50
@@ -351,17 +368,25 @@ class FullEngineRun(Model):
 
         Pt45 = piHPT * Pt3
 
-        print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
+##        print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
 
         #SUB IN FOR C1??
 
         Model.__init__(self, (engine2.cost+engine1.cost), constraints, valsubs)
 
         sol = self.localsolve(verbosity = 4, solver="mosek", iteration_limit=100)
-        
+
+                
 ##        bounds, sol = engine1.determine_unbounded_variables(self, solver="mosek",verbosity=4, iteration_limit=200)
         print sol.table()
 ##        print bounds
+
+        tocerror = 100*(mag(sol('TSFC_OperatingPoint1, FullEngineRun')) - .6941)/.6941
+        cruiseerror = 100*(mag(sol('TSFC_OperatingPoint2, FullEngineRun')) - .6793)/.6793
+
+        print tocerror, cruiseerror
+
+
 
 
 if __name__ == "__main__":

@@ -57,6 +57,7 @@ class OperatingPoint1(Model):
 
                 'M_{4a}': M4a,
                 'hold_{4a}': 1+.5*(1.313-1)*M4a**2,#sol('hold_{4a}'),
+
             }
             
 
@@ -318,7 +319,7 @@ class FullEngineRun(Model):
                                                               'W_{engine}', '\\bar{m}_{fan_{D}}', 'm_{lc_D}', 'm_{hc_D}', '\pi_{f_D}',
                                                               '\pi_{hc_D}', '\pi_{lc_D}', 'm_{htD}', 'm_{ltD}', 'm_{coreD}', 
                                                                'r_{uc}', '\\alpha_c', 'T_{t_f}', 'G_f',
-                                                              '\\alpha_{OD}'})
+                                                              '\\alpha_{OD}', 'h_f', 'Cp_t1', 'Cp_t2', 'Cp_c'})
 ##        'M_{takeoff}''M_{4a}','hold_{4a}',
 
         M4a = .4
@@ -355,6 +356,17 @@ class FullEngineRun(Model):
 ##        'M_{takeoff}': .983,
 
         'G_f': 1,
+
+        
+        'h_f': 42.6,
+
+        'Cp_t1': 1280,
+        'Cp_t2': 1184,
+        'Cp_c': 1216
+
+##        'Cp_t1': 1190,
+##        'Cp_t2': 1099,
+##        'Cp_c': 1204,
         }
 
         Pt0 = 50

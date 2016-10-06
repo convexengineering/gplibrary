@@ -4,39 +4,45 @@ from gpkit import Model, Variable, SignomialsEnabled, units,SignomialEquality
 from gpkit.constraints.tight import TightConstraintSet as TCS
 
 #Cp and gamma values estimated from https://www.ohio.edu/mechanical/thermo/property_tables/air/air_Cp_Cv.html
+goption = 1
+
+if goption == 1:
+    fgamma = 1.401
+    lpcgamma = 1.398
+    hpcgamma = 1.354
+    ccgamma = 1.313    #gamma value of air @ 1400 K
+    lptgamma = 1.354
+    hptgamma = 1.318
+if goption == 0:
+    fgamma = 1.401
+    lpcgamma = 1.398
+    hpcgamma = 1.354
+    ccgamma = 1.313    #gamma value of air @ 1400 K
+    lptgamma = 1.3060
+    hptgamma = 1.2987
 
 #Fan
 faneta = .9005
-fgamma = 1.401
-
 fexp1 = (fgamma - 1)/(faneta * fgamma)
 
 #LPC
-lpcgamma = 1.398
 LPCeta = .9306
-
 lpcexp1 = (lpcgamma - 1)/(LPCeta * lpcgamma)
 
 #HPC
 HPCeta = .9030
-hpcgamma = 1.354
-
 hpcexp1 = (hpcgamma - 1)/(HPCeta * hpcgamma)
 
 #combustor cooling exponents
-ccgamma = 1.313    #gamma value of air @ 1400 K
-
 ccexp1 = ccgamma/(1 - ccgamma)
 ccexp2 = -ccgamma/(1 - ccgamma)
 
 #Turbines
 #LPT
-lptgamma = 1.354
 LPTeta = .8851
 lptexp1 = lptgamma * LPTeta / (lptgamma - 1)
 
 #HPT
-hptgamma = 1.318
 HPTeta = .8731
 hptexp1 = hptgamma * HPTeta / (hptgamma - 1)
 
