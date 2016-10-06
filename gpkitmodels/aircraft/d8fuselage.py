@@ -288,8 +288,9 @@ class Fuselage(Model):
             
             c0       == 0.1*lshell, #Temporarily
             dxwing   == 0.01*lshell, #Temporarily
-            xf       <= xwing + dxwing + .5*c0*wbar, #[SP]
-            xb       >= xwing - dxwing + .5*c0*wbar, 
+            xf       >= xwing - dxwing + .5*c0*wbar, #[SP]
+            xb       <= xwing + dxwing + .5*c0*wbar, 
+            xf       <= xb,
 
             #Ahbend >= A2*(xshell2-xbend)**2 + A1*(xtail-xbend)-A0, #[SP]
             #Avbend >= B1*(xtail-xbend) - B0, #[SP]
@@ -439,3 +440,5 @@ if __name__ == "__main__":
     print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
     print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
     print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
+    print 'Wing box start location: ' + str(varVals['x_f_Fuselage'])
+    print 'Wing box end location: ' + str(varVals['x_b_Fuselage'])
