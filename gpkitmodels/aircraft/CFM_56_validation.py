@@ -25,7 +25,7 @@ class OperatingPoint1(Model):
         #need to give a Tt4 to run with res7 = 0
 
         M2 = .8
-        M25 = .65
+        M25 = .6
         M4a = .1025
         Mexit = 1
         
@@ -125,7 +125,7 @@ class OperatingPoint2(Model):
         #need to give a Tt4 to run with res7 = 0
 
         M2 = .8
-        M25 = .65
+        M25 = .6
         M4a = .1025
         Mexit = 1
         
@@ -324,13 +324,13 @@ class FullEngineRun(Model):
         '\\alpha_c': .19036,
         'T_{t_f}': 435,
 
-        'M_{takeoff}': .9442,
+        'M_{takeoff}': .9556,
 
         'G_f': 1,
         }
 
-        Pt0 = 40
-        Tt0 = 220
+        Pt0 = 50
+        Tt0 = 250
         Pt3 = Pt0*lpc*fan*hpc
         Pt21 = fan * Pt0
         Pt25 = Pt0 * fan * lpc
@@ -351,7 +351,7 @@ class FullEngineRun(Model):
 
         Pt45 = piHPT * Pt3
 
-##        print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
+        print Tt21, Tt25, Pt21, Pt25, Tt41, Tt45, Pt3, Pt45
 
         #SUB IN FOR C1??
 

@@ -168,7 +168,7 @@ class CombustorCooling(Model):
     def __init__(self, mixing, **kwargs):
         #new vars
         #gas propeRies
-        Cpc = Variable('Cp_c', 1204, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K, gamma equals 1.312
+        Cpc = Variable('Cp_c', 1216, 'J/kg/K', "Cp Value for Fuel/Air Mix in Combustor") #1400K, gamma equals 1.312
         R = Variable('R', 287, 'J/kg/K', 'R')
         Cpfuel = Variable('Cp_{fuel}', 2010, 'J/kg/K', 'Specific Heat Capacity of Kerosene (~Jet Fuel)')
         
@@ -278,8 +278,12 @@ class Turbine(Model):
     """
     def __init__(self, **kwargs):
         #gas propeRies
-        Cpt1 =Variable('Cp_t1', 1190, 'J/kg/K', "Cp Value for Combustion Products in HP Turbine") #1300K gamma = 1.318
-        Cpt2 =Variable('Cp_t2', 1099, 'J/kg/K', "Cp Value for Combustion Products in LP Turbine") #800K gamma = 1.354
+##        Cpt1 =Variable('Cp_t1', 1190, 'J/kg/K', "Cp Value for Combustion Products in HP Turbine") #1300K gamma = 1.318
+##        Cpt2 =Variable('Cp_t2', 1099, 'J/kg/K', "Cp Value for Combustion Products in LP Turbine") #800K gamma = 1.354
+
+        Cpt1 =Variable('Cp_t1', 1280, 'J/kg/K', "Cp Value for Combustion Products in HP Turbine") #1300K gamma = 1.318
+        Cpt2 =Variable('Cp_t2', 1184, 'J/kg/K', "Cp Value for Combustion Products in LP Turbine") #800K gamma = 1.354
+
         
         #new variables
         ht45 = Variable('h_{t_{4.5}}', 'J/kg', 'Stagnation Enthalpy at the HPT Exit (4.5)')
@@ -904,27 +908,27 @@ class Sizing(Model):
                 pilc >= 1,
                 pihc >= 1,
 
-                mhtD <= 1.1*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
-                mhtD >= .9*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
-                mltD <= 1.1*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-                mltD >= .9*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
-                mlcD >= .8*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-                mlcD <= 1.2*mCoreD *((258.0/288)**.5)/(67.4/101.325),
-                mhcD >= .8*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-                mhcD <= 1.2*mCoreD *((319.0/288)**.5)/(130.42/101.325),
-                mFanBarD >= .8 * mCoreD * alpha_OD *((230.0/288)**.5)/(34/101.325),
-                mFanBarD <= 1.2 * mCoreD * alpha_OD *((230.0/288)**.5)/(34/101.325),
+##                mhtD <= 1.1*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
+##                mhtD >= .9*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1221/101.325),
+##                mltD <= 1.1*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
+##                mltD >= .9*fp1*Mtakeoff*mCoreD *((1082.0/288)**.5)/(537/101.325),
+##                mlcD >= .8*mCoreD *((258.0/288)**.5)/(67.4/101.325),
+##                mlcD <= 1.2*mCoreD *((258.0/288)**.5)/(67.4/101.325),
+##                mhcD >= .8*mCoreD *((319.0/288)**.5)/(130.42/101.325),
+##                mhcD <= 1.2*mCoreD *((319.0/288)**.5)/(130.42/101.325),
+##                mFanBarD >= .8 * mCoreD * alpha_OD *((230.0/288)**.5)/(34/101.325),
+##                mFanBarD <= 1.2 * mCoreD * alpha_OD *((230.0/288)**.5)/(34/101.325),
 
-##                mhtD <= 1.2*fp1*Mtakeoff*mCoreD *((1200.0/288)**.5)/(1423/101.325),
-##                mhtD >= .8*fp1*Mtakeoff*mCoreD *((1200.0/288)**.5)/(1423/101.325),
-##                mltD <= 1.2*fp1*Mtakeoff*mCoreD *((840.8/288)**.5)/(457/101.325),
-##                mltD >= .8*fp1*Mtakeoff*mCoreD *((840.8/288)**.5)/(457/101.325),
-##                mlcD >= .8*mCoreD *((292.57/288)**.5)/(78.5/101.325),
-##                mlcD <= 1.2*mCoreD *((292.57/288)**.5)/(78.5/101.325),
-##                mhcD >= .8*mCoreD *((360.47/288)**.5)/(151.9/101.325),
-##                mhcD <= 1.2*mCoreD *((360.47/288)**.5)/(151.9/101.325),
-##                mFanBarD >= .8 * alpha_OD * mCoreD *((260.0/288)**.5)/(60/101.325),
-##                mFanBarD <= 1.2 * alpha_OD * mCoreD * ((260.6/288)**.5)/(60/101.325),
+                mhtD <= 1.2*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1527/101.325),
+                mhtD >= .8*fp1*Mtakeoff*mCoreD *((1400.0/288)**.5)/(1527/101.325),
+                mltD <= 1.2*fp1*Mtakeoff*mCoreD *((1038.8/288)**.5)/(589.2/101.325),
+                mltD >= .8*fp1*Mtakeoff*mCoreD *((1038.8/288)**.5)/(589.2/101.325),
+                mlcD >= .8*mCoreD *((292.57/288)**.5)/(84.25/101.325),
+                mlcD <= 1.2*mCoreD *((292.57/288)**.5)/(84.25/101.325),
+                mhcD >= .8*mCoreD *((362.47/288)**.5)/(163.02/101.325),
+                mhcD <= 1.2*mCoreD *((362.47/288)**.5)/(163.02/101.325),
+                mFanBarD >= .8 * alpha_OD * mCoreD *((250.0/288)**.5)/(50/101.325),
+                mFanBarD <= 1.2 * alpha_OD * mCoreD * ((250.6/288)**.5)/(50/101.325),
        
             ]
             
