@@ -378,7 +378,7 @@ class ComponentDrag(Model):
     def __init__(self, N, comp, **kwargs):
 
         CDA = VectorVariable(N, "CDA", "-",
-                             "component area drag normalize by win area")
+                             "component area drag normalized by wing area")
         Cf = VectorVariable(N, "C_f", "-", "skin friction coefficient")
         Re = VectorVariable(N, "Re", "-", "reynolds number")
         S = Variable("S", "ft^2", "wing area")
@@ -433,19 +433,21 @@ class Aerodynamics(Model):
             CDA0/m_fac >= sum(db["CDA"] for db in dragbuild),
             ]
 
+        includes = ["\\rho", "\\mu", "S", "V"]
         for c, db in zip(dragcomps, dragbuild):
             linked = {}
             for vk in db.varkeys:
                 descr = dict(vk.descr)
                 if "ComponentDrag" == descr["models"][0]:
-                    descr["models"][0] = c.name
-                    descr["modelnums"][0] = c.num
-                    newvk = VarKey(**descr)
-                    linked.update({vk: newvk})
+                    if descr["name"] not in includes:
+                        descr["models"][0] = c.name
+                        descr["modelnums"][0] = c.num
+                        newvk = VarKey(**descr)
+                        linked.update({vk: newvk})
             db.subinplace(linked)
 
         lc = LinkedConstraintSet([constraints, dragbuild],
-                                 include_only=["\\rho", "\\mu", "S", "V"])
+                                 include_only=includes)
 
         Model.__init__(self, None, lc, **kwargs)
 
