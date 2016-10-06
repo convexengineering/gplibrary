@@ -161,6 +161,9 @@ class Fuselage(Model):
         Vhbendf   = Variable('V_{hbendf}','m^3','Horizontal bending material volume f') #front fuselage
         Vhbendb   = Variable('V_{hbendb}','m^3','Horizontal bending material volume b') #back fuselage
         Vhbendc   = Variable('V_{hbendc}','m^3','Horizontal bending material volume c') #center fuselage
+        Ahbendxb  = Variable('A_{hbend_xb}','m^2','Horizontal bending area at rear wingbox')
+        Ahbendxf  = Variable('A_{hbend_xf}','m^2','Horizontal bending area at front wingbox')
+
         xhbend    = Variable('x_{hbend}','m','Horizontal zero bending location')
         Vvbend    = Variable('V_{vbend}','m^3','Vertical bending material volume')
 
@@ -271,16 +274,25 @@ class Fuselage(Model):
             B0 == Ivshell/(rE*wfloor**2),
             A0 >= 0.98*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP]
             A0 <= 1.02*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), 
+            Ahbendxf >= (A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0,
+            Ahbendxb >= (A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0,
+
+            xf <= xwing - dxwing + .5*co*
 
             #Ahbend >= A2*(xshell2-xbend)**2 + A1*(xtail-xbend)-A0, #[SP]
             #Avbend >= B1*(xtail-xbend) - B0, #[SP]
             #Whbend >= g*rhobend*sum(Ahbend*lshell/ndisc),
             #Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
-            #Vhbendb >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend))
-            #Vhbendf >= 
-            #Vhbendc >= 
-            #Vhbend >= Vhbendc + Vhbendf + Vhbendb,
-            #Whbend >= g*rhobend*Vhbend,
+            Vhbendf >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend)**3) \
+                            + A1/2*((xtail-xf)**2 - (xtail - xhbend)**2) \
+                            + A0*(xhbend-xf),
+
+            Vhbendb >= A2/3*((xshell2-xb)**3 - (xshell2-xhbend)**3) \
+                            + A1/2*((xtail-xb)**2 - (xtail - xhbend)**2) \
+                            + A0*(xhbend-xb),
+            Vhbendc >= 1/2*()
+            Vhbend >= Vhbendc + Vhbendf + Vhbendb,
+            Whbend >= g*rhobend*Vhbend,
             #Wvbend >= g*rhobend*Vvbend,
             sigMh <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
             sigbend == sigskin,
