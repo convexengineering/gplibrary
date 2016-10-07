@@ -83,7 +83,7 @@ class FlightSegment(Model):
         self.N = N
         self.include = ["V", "\\rho", "\\mu", "BSFC", "W_{N}", "W_{N+1}",
                         "P_{shaft}", "P_{shaft-tot}", "C_D", "C_L", "S",
-                        "W_{fuel}"]
+                        "W_{fuel}", "h"]
 
         self.constraints = []
 
@@ -368,7 +368,7 @@ class BreguetEndurance(Model):
         W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         constraints = [
-            TCS([z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5]),
+            z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
             # TCS([z_bre >= P_shafttot*t*bsfc*g/W_nplus1]),
             f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
             ]
@@ -492,39 +492,39 @@ class Beam(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-    def process_solution(self, sol):
-        load = sol("W_{cent}")/sol("b")*self.q
-        dx = sol("b")/2/(self.N-1)
-        S = [0]*self.N
-        for i in range(1, self.N):
-            S[self.N-i-1] = S[self.N-i] + 0.5*dx*(load[self.N-i] +
-                                                  load[self.N-i-1])
-        M = [0]*self.N
-        for i in range(1, self.N):
-            M[self.N-i-1] = M[self.N-i] + 0.5*dx*(S[self.N-i] + S[self.N-i-1])
-        th = [0]*self.N
-        for i in range(self.N-1):
-            th[i+1] = (th[i] + 0.5*dx*(M[i] + M[i+1])/
-                       sol("E_CapSpar, Wing, GasMALE")/sol("I")[i])
-        d = [0]*self.N
-        for i in range(self.N-1):
-            d[i+1] = d[i] + 0.5*dx*(th[i] + th[i+1])
-        load = load.to("N/m").magnitude
-        for i in range(self.N-1):
-            S[i] = S[i].to("N").magnitude
-            M[i] = M[i].to("N*m").magnitude
-            th[i+1] = th[i+1].to("dimensionless").magnitude
-            d[i+1] = d[i+1].to("ft").magnitude
+    # def process_solution(self, sol):
+    #     load = sol("W_{cent}")/sol("b")*self.q
+    #     dx = sol("b")/2/(self.N-1)
+    #     S = [0]*self.N
+    #     for i in range(1, self.N):
+    #         S[self.N-i-1] = S[self.N-i] + 0.5*dx*(load[self.N-i] +
+    #                                               load[self.N-i-1])
+    #     M = [0]*self.N
+    #     for i in range(1, self.N):
+    #         M[self.N-i-1] = M[self.N-i] + 0.5*dx*(S[self.N-i] + S[self.N-i-1])
+    #     th = [0]*self.N
+    #     for i in range(self.N-1):
+    #         th[i+1] = (th[i] + 0.5*dx*(M[i] + M[i+1])/
+    #                    sol("E_CapSpar, Wing, GasMALE")/sol("I")[i])
+    #     d = [0]*self.N
+    #     for i in range(self.N-1):
+    #         d[i+1] = d[i] + 0.5*dx*(th[i] + th[i+1])
+    #     load = load.to("N/m").magnitude
+    #     for i in range(self.N-1):
+    #         S[i] = S[i].to("N").magnitude
+    #         M[i] = M[i].to("N*m").magnitude
+    #         th[i+1] = th[i+1].to("dimensionless").magnitude
+    #         d[i+1] = d[i+1].to("ft").magnitude
 
-        fig, axis = plt.subplots(5)
-        loading = [load, S, M, th, d]
-        lunits = ["N/m", "N", "N*m", "-", "ft"]
-        label = ["Loading", "Shear", "Moment", "Angle", "Deflection"]
-        for ax, y, u, l in zip(axis, loading, lunits, label):
-            ax.plot(dx.magnitude*np.linspace(0, 4, 5), y)
-            ax.set_xlabel("y [%s]" % u)
-            ax.set_ylabel("%s [%s]" % (l, u))
-        fig.savefig("1gloading.pdf")
+    #     fig, axis = plt.subplots(5)
+    #     loading = [load, S, M, th, d]
+    #     lunits = ["N/m", "N", "N*m", "-", "ft"]
+    #     label = ["Loading", "Shear", "Moment", "Angle", "Deflection"]
+    #     for ax, y, u, l in zip(axis, loading, lunits, label):
+    #         ax.plot(dx.magnitude*np.linspace(0, 4, 5), y)
+    #         ax.set_xlabel("y [%s]" % u)
+    #         ax.set_ylabel("%s [%s]" % (l, u))
+    #     fig.savefig("1gloading.pdf")
 
 
 def c_bar(lam, N):
@@ -869,8 +869,8 @@ class HorizontalTail(Model):
         mh = Variable("m_h", "-", "horizontal tail span effectiveness")
 
         # signomial helper variables
-        sph1 = Variable("sph1", "-", "first term involving V_h")
-        sph2 = Variable("sph2", "-", "second term involving V_h")
+        sph1 = Variable("sph1", "-", "first term involving $V_h$")
+        sph2 = Variable("sph2", "-", "second term involving $V_h$")
 
         constraints = [
             Vh <= 2*Sh*L/S**2*b,

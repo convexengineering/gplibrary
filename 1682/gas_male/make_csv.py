@@ -193,18 +193,22 @@ if __name__ == "__main__":
     Sol = M.solve("mosek")
     PATH = "/Users/mjburton11/Dropbox (MIT)/16.82GasMALE/Management/GpkitReports/"
 
-    # Mission_vars = ["RPM", "BSFC", "V", "P_{shaft}",
-    #                 "P_{shaft-tot}", "h_{dot}", "h", "T_{atm}", "\\mu",
-    #                 "\\rho", "W_{fuel}", "W_{N}", "W_{N+1}", "C_D", "C_L",
-    #                 "\\eta_{prop}", "T", "h_{loss}", "P_{shaft-max}", "t",
-    #                 "Re", "C_{f-fuse}", "C_{D-fuse}", "c_{dp}", "V_{wind}"]
-    # Margins = ["BSFC", "c_{dp}"]
-    # Sens_boundaries = {"bad": 0.8, "good": 0.2}
-    # DF = mission_vars(M, Sol, Mission_vars, Margins)
-    # DF.to_csv("test.csv")
-    # write_to_excel(PATH, "Mission_params.xlsx", DF, Sens_boundaries)
-    # DF = bd_vars(M, Sol, "W", ["MTOW", "W_{fuel-tot}", "W_{zfw}"])
-    # write_to_excel(PATH, "W_breakdown.xlsx", DF, Sens_boundaries)
+    Mission_vars = ["RPM", "BSFC", "V", "P_{shaft}",
+                    "P_{shaft-tot}", "h_{dot}", "h", "T_{atm}", "\\mu",
+                    "\\rho", "W_{fuel}", "W_{N}", "W_{N+1}", "C_D", "C_L",
+                    "\\eta_{prop}", "T", "h_{loss}", "P_{shaft-max}", "t",
+                    "C_{f-fuse}", "C_{D-fuse}", "c_{dp}", "V_{wind}"]
+    Margins = ["BSFC", "c_{dp}"]
+    Sens_boundaries = {"bad": 0.8, "good": 0.2}
+    DF = mission_vars(M, Sol, Mission_vars, Margins)
+    DF.to_csv("test.csv")
+    write_to_excel(PATH, "Mission_params.xlsx", DF, Sens_boundaries)
+    DF = bd_vars(M, Sol, "W", ["MTOW", "W_{fuel-tot}", "W_{zfw}"])
+    write_to_excel(PATH, "W_breakdown.xlsx", DF, Sens_boundaries)
 
-    df = sketch_params(M, Sol, ["S", "b", "l_{fuel}", "d", "L", "S_h", "S_v", "b_h", "b_v"], othervars={"lambda":[0.5, "-", "taper ratio"], "eta":[3, "-", "tail boom separation/fuselage diameter"]})
+    df = sketch_params(
+        M, Sol, ["S", "b", "l_{fuel}", "d", "L", "S_h", "S_v", "b_h", "b_v"],
+        othervars={"lambda":[0.5, "-", "taper ratio"],
+                   "eta":[3, "-", "tail boom separation/fuselage diameter"]}
+        )
     df.to_csv("sketch_params.csv")
