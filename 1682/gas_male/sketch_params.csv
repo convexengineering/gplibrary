@@ -1,0 +1,12 @@
+,Value,Units,Label
+L,6.08947224935,ft,tail boom length
+S,19.6050809317,ft**2,wing area
+S_h,0.27322443754,ft**2,horizontal tail area
+S_v,1.02074010092,ft**2,vertical tail surface area
+b,21.1365905264,ft,Span
+b_h,1.16881229789,ft,horizontal tail span
+b_v,2.25913711505,ft,vertical tail span
+d,0.984745021975,ft,fuselage diameter
+eta,3,-,tail boom separation/fuselage diameter
+l_{fuel},2.62840827767,ft,fuel tank length
+lambda,0.5,-,taper ratio
