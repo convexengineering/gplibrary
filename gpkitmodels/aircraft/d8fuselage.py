@@ -284,18 +284,18 @@ class Fuselage(Model):
             A0       == (Ihshell/(rE*hfuse**2)),
             B1       == rMv*Lvmax/(wfloor*sigMv),
             B0       == Ivshell/(rE*wfloor**2),
-            A0       >= 0.98*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP]
-            A0       <= 1.02*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), 
+            #A0       >= 0.98*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP]
+            #A0       <= 1.02*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)),
+            SignomialEquality(A0,A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP] #[SPEquality]
+
             Ahbendxf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0, #[SP]
             Ahbendxb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0, #[SP]
-
             
             c0       == 0.1*lshell, #Temporarily
             dxwing   == 0.01*lshell, #Temporarily
 
             SignomialEquality(xf, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
             SignomialEquality(xb, xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
-            xf       <= xb,
 
             #Ahbend >= A2*(xshell2-xbend)**2 + A1*(xtail-xbend)-A0, #[SP]
             #Avbend >= B1*(xtail-xbend) - B0, #[SP]
