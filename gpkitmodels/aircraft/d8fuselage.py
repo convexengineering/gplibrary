@@ -146,8 +146,6 @@ class Fuselage(Model):
         Ihshell   = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
         rMh       = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') # Temporarily .5
         rMv       = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor')
-        Ahbend    = VectorVariable(ndisc, 'A_{hbend}','m^2','Added horizontal bending material area')
-        Avbend    = VectorVariable(ndisc,'A_{vbend}','m^2','Added vertical bending material area')
         A2        = Variable('A2','-','Horizontal bending area constant A2') #(fuselage impact)
         A1        = Variable('A1','m','Horizontal bending area constant A1') #(tail impact + aero loading)
         A0        = Variable('A0','m^2','Horizontal bending area constant A0') #(shell inertia contribution)
@@ -284,8 +282,7 @@ class Fuselage(Model):
             A0       == (Ihshell/(rE*hfuse**2)),
             B1       == rMv*Lvmax/(wfloor*sigMv),
             B0       == Ivshell/(rE*wfloor**2),
-            #A0       >= 0.98*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP]
-            #A0       <= 1.02*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)),
+            xhbend   >= xwing,
             SignomialEquality(A0,A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP] #[SPEquality]
 
             Ahbendxf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0, #[SP]
@@ -297,9 +294,6 @@ class Fuselage(Model):
             SignomialEquality(xf, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
             SignomialEquality(xb, xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
 
-            #Ahbend >= A2*(xshell2-xbend)**2 + A1*(xtail-xbend)-A0, #[SP]
-            #Avbend >= B1*(xtail-xbend) - B0, #[SP]
-            #Whbend >= g*rhobend*sum(Ahbend*lshell/ndisc),
             #Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
             Vhbendf >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend)**3) \
                             + A1/2*((xtail-xf)**2 - (xtail - xhbend)**2) \
@@ -423,14 +417,14 @@ if __name__ == "__main__":
     #print 'Shell thickness     : ' + str(varVals['t_{shell}_Fuselage']) + '.'
     #print 'Skin hoop stress    : ' + str(varVals['\\sigma_{\\theta}_Fuselage']) + '.'
     #print 'Skin axial stress   : ' + str(varVals['\\sigma_x_Fuselage']) + '.'
-    print 'Cone weight         : ' + str(varVals['W_{cone}_Fuselage'])
-    print 'Cone length         : ' + str(varVals['l_{cone}_Fuselage'])
-    print 'Cone volume         : ' + str(varVals['V_{cone}_Fuselage'])
-    print 'Tail torsion moment : ' + str(varVals['Q_{v}_Fuselage'])
-    print 'Cone taper ratio    : ' + str(varVals['\\lambda_{cone}_Fuselage'])
-    print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
-    print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
-    print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
+    #print 'Cone weight         : ' + str(varVals['W_{cone}_Fuselage'])
+    #print 'Cone length         : ' + str(varVals['l_{cone}_Fuselage'])
+    #print 'Cone volume         : ' + str(varVals['V_{cone}_Fuselage'])
+    #print 'Tail torsion moment : ' + str(varVals['Q_{v}_Fuselage'])
+    #print 'Cone taper ratio    : ' + str(varVals['\\lambda_{cone}_Fuselage'])
+    #print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
+    #print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
+    #print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
     print 'Wing location: ' + str(varVals['x_{wing}_Fuselage'])
     print 'Tail location: ' + str(varVals['x_{tail}_Fuselage'])
     #print 'Horizontal bending material location: ' + str(varVals['\vec{x_{hbend}_Fuselage}'])
@@ -446,4 +440,6 @@ if __name__ == "__main__":
     print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
     print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
     print 'Wing box start location: ' + str(varVals['x_f_Fuselage'])
+    print 'Wbox front horizontal reinf. area: ' + str(varVals['A_{hbend_xf}_Fuselage'])
     print 'Wing box end location: ' + str(varVals['x_b_Fuselage'])
+    print 'Wbox end horizontal reinf. area: ' + str(varVals['A_{hbend_xb}_Fuselage'])
