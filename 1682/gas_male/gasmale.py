@@ -975,6 +975,37 @@ class Weight(ConstraintSet):
 
         ConstraintSet.__init__(self, constraints, **kwargs)
 
+    def process_solution(self, sol):
+        xwing = 0.5*(sol("l_{fuel}")+sol("d"))
+        xnp = xwing + (0.25 + sol("m_h")/sol("m_w")*(1-4.0/(sol("AR")+2))*
+                       sol("V_h"))*sol("S")/sol("b")
+        xcg = (sol("W_Fuselage, GasMALE")*0.5*(sol("l_{fuel}")+sol("d")) +\
+              sol("W_{pay}")*0.5*sol("d") +\
+              sol("W_EngineWeight, GasMALE")*(sol("l_{fuel}")+0.5*sol("d")) +\
+              sol("W_{fuel-tot}")*0.5*(sol("l_{fuel}")+sol("d")) +\
+              sol("W_Wing, GasMALE")*xwing +\
+              sol("W_TailBoom, Empennage, GasMALE")*(xwing+0.5*sol("L")) +\
+              (sol("W_HorizontalTail, Empennage, GasMALE") +\
+               sol("W_VerticalTail, Empennage, GasMALE"))*\
+               (xwing+0.5*sol("L")))/\
+              (sol("W_Fuselage, GasMALE")+sol("W_{pay}")+
+               sol("W_EngineWeight, GasMALE") + sol("W_{fuel-tot}") +
+               sol("W_Wing, GasMALE") + sol("W_TailBoom, Empennage, GasMALE") +
+               sol("W_HorizontalTail, Empennage, GasMALE") +
+               sol("W_VerticalTail, Empennage, GasMALE") +
+               sol("W_Fuselage, GasMALE"))
+
+        SM = (xnp - xcg)/(sol("S")/sol("b"))
+
+        print "The neutral point x_np: %0.3f [%s]" % (xnp.magnitude, xnp.units)
+        print "The center of gravity x_cg: %0.3f [%s]" % (xcg.magnitude,
+                                                          xcg.units)
+        print "The static margin SM: %0.3f" % SM.magnitude
+
+
+
+
+
 class SystemRequirements(Model):
     def __init__(self, **kwargs):
 
