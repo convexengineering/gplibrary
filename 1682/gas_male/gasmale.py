@@ -419,7 +419,7 @@ class Aerodynamics(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
-        m_fac = Variable("m_{fac}", 2.0, "-", "CDA0 margin factor")
+        m_fac = Variable("m_{fac}", 1.5, "-", "CDA0 margin factor")
         CDA0 = VectorVariable(N, "CDA_0", "-", "sum of component drag")
 
         dragbuild = [ComponentDrag(N, c) for c in dragcomps]
@@ -660,46 +660,32 @@ class Fuselage(Model):
         # Constants
         rho_fuel = Variable("\\rho_{fuel}", 6.01, "lbf/gallon",
                             "density of 100LL")
+        d = Variable("d", "ft", "fuselage diameter")
+        l_fuel = Variable("l_{fuel}", "ft", "fuel tank length")
 
-        # Non-dimensional variables
-        k1fuse = Variable('k_{1-fuse}', 4.3246, '-', 'fuselage form factor 1')
-        k2fuse = Variable('k-{2-fuse}', 7.124, '-', 'fuselage form factor 2')
-        w_cent = Variable('w_{cent}', 'ft', 'center fuselage width')
-        fr = Variable('fr', 6.5, '-', 'fineness ratio fuselage')
-
-        # Volumes
-        Vol_fuel = Variable("Vol_{fuel}", "m**3", "Fuel Volume")
-        Vol_fuse = Variable("Vol_{fuse}", "m**3", "Fuselage volume")
-
-        m_fuse = Variable("m_{fuse}", "kg", "Fuselage mass")
+        m_skin = Variable("m_{skin}", "kg", "fuselage skin mass")
         rho_skin = Variable("\\rho_{skin}", 0.1, "g/cm^2",
                             "Wing skin density")
         S_fuse = Variable("S_{fuse}", "ft^2", "Fuselage surface area")
-        l_fuse = Variable("l_{fuse}", "ft", "Fuselage length")
         W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
-        l_cent = Variable("l_{cent}", "ft", "Center fuselage length")
-        Vol_avionics = Variable("Vol_{avionics}", 0.125, "ft^3",
+        Vol_avionics = Variable("\\mathcal{V}_{avn}", 0.125, "ft^3",
                                 "Avionics volume")
-        Vol_pay = Variable("Vol_{pay}", 1, "ft^3", "Payload volume")
-        m_rib = Variable("m_{rib}", 1.36, "kg", "Rib mass")
-        m_fuse = Variable("m_{fuse}", "kg", "Fuselage mass")
+        Vol_pay = Variable("\\mathcal{V}_{pay}", 1.0, "ft^3", "Payload volume")
         W = Variable("W", "lbf", "Fuselage weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        m_fac = Variable("m_{fac}", 1.0, "-", "Fuselage weight margin factor")
+        m_fac = Variable("m_{fac}", 2.0, "-", "Fuselage weight margin factor")
+        m_facfuel = Variable("m_{fac-fuel}", 1.1, "-",
+                             "fuel volume margin factor")
         S_ref = Variable("S_{ref}", "ft**2", "fuselage reference area")
         l_ref = Variable("l_{ref}", "ft", "fuselage reference length")
 
-        constraints = [m_fuse >= S_fuse*rho_skin,
-                       l_cent == fr*w_cent,
-                       l_fuse >= l_cent*1.1,
-                       l_ref == l_fuse,
-                       S_ref == S_fuse,
-                       (l_fuse/k1fuse)**3 == Vol_fuse,
-                       (S_fuse/k2fuse)**3 == Vol_fuse**2,
-                       Vol_fuse >= l_cent*w_cent**2,
-                       Vol_fuel >= W_fueltot/rho_fuel,
-                       l_cent*w_cent**2 >= Vol_fuel+Vol_avionics+Vol_pay,
-                       W/m_fac >= m_fuse*g + m_rib*g
+        constraints = [m_skin >= S_fuse*rho_skin,
+                       pi*(d/2)**2*l_fuel/m_facfuel >= W_fueltot/rho_fuel,
+                       S_fuse >= pi*d*l_fuel + pi*d**2,
+                       W/m_fac >= m_skin*g,
+                       1.0/3*pi*d**3 >= Vol_pay,
+                       l_ref == l_fuel,
+                       S_ref == S_fuse
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -838,7 +824,7 @@ class HorizontalTail(Model):
         SMcorr = Variable("SM_{corr}", 0.1, "-", "corrected static margin")
         Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
         deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
-        mw = Variable("m_w", 2*pi/(1+2./23), "-",
+        mw = Variable("m_w", 2*pi/(1+2.0/23), "-",
                       "assumed span wise effectiveness")
         mh = Variable("m_h", "-", "horizontal tail span effectiveness")
 
