@@ -1,13 +1,14 @@
 """ gas_male_rubber.py """
 from numpy import pi
 import numpy as np
+import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units
 from gpkit import LinkedConstraintSet, ConstraintSet, VarKey
 from gpkit import SignomialsEnabled
-from helpers import SummingConstraintSet
-#from gpkit.tools import BoundedConstraintSet
 from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
+from helpers import SummingConstraintSet
+#from gpkit.tools import BoundedConstraintSet
 PLOT = False
 SIGNOMIALS = False
 
@@ -459,7 +460,10 @@ class Aerodynamics(Model):
 class Beam(Model):
     def __init__(self, N, q, **kwargs):
 
-        qbar = VectorVariable(N, "\\bar{q}", q, "-", "normalized loading")
+        self.q = q
+        self.N = N
+
+        qbar = VectorVariable(N, "\\bar{q}", self.q, "-", "normalized loading")
         Sbar = VectorVariable(N, "\\bar{S}", "-", "normalized shear")
         Sbar_tip = Variable("\\bar{S}_{tip}", 1e-10, "-", "Tip loading")
         Mbar = VectorVariable(N, "\\bar{M}", "-", "normalized moment")
@@ -487,6 +491,41 @@ class Beam(Model):
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
+
+    def process_solution(self, sol):
+        load = sol("W_{cent}")/sol("b")*self.q
+        dx = sol("b")/2/(self.N-1)
+        S = [0]*self.N
+        for i in range(1, self.N):
+            S[self.N-i-1] = S[self.N-i] + 0.5*dx*(load[self.N-i] +
+                                                  load[self.N-i-1])
+        M = [0]*self.N
+        for i in range(1, self.N):
+            M[self.N-i-1] = M[self.N-i] + 0.5*dx*(S[self.N-i] + S[self.N-i-1])
+        th = [0]*self.N
+        for i in range(self.N-1):
+            th[i+1] = (th[i] + 0.5*dx*(M[i] + M[i+1])/
+                       sol("E_CapSpar, Wing, GasMALE")/sol("I")[i])
+        d = [0]*self.N
+        for i in range(self.N-1):
+            d[i+1] = d[i] + 0.5*dx*(th[i] + th[i+1])
+        load = load.to("N/m").magnitude
+        for i in range(self.N-1):
+            S[i] = S[i].to("N").magnitude
+            M[i] = M[i].to("N*m").magnitude
+            th[i+1] = th[i+1].to("dimensionless").magnitude
+            d[i+1] = d[i+1].to("ft").magnitude
+
+        fig, axis = plt.subplots(5)
+        loading = [load, S, M, th, d]
+        lunits = ["N/m", "N", "N*m", "-", "ft"]
+        label = ["Loading", "Shear", "Moment", "Angle", "Deflection"]
+        for ax, y, u, l in zip(axis, loading, lunits, label):
+            ax.plot(dx.magnitude*np.linspace(0, 4, 5), y)
+            ax.set_xlabel("y [%s]" % u)
+            ax.set_ylabel("%s [%s]" % (l, u))
+        fig.savefig("1gloading.pdf")
+
 
 def c_bar(lam, N):
     eta = np.linspace(0, 1, N)
@@ -636,6 +675,7 @@ class Wing(Model):
         self.spar = CapSpar(N)
         # self.spar = TubeSpar(5)
         self.submodels = [self.spar]
+        # loads normalized by N*W_cent/b
 
         constraints = [
             m_skin >= rho_cfrp*S*2*ts,
