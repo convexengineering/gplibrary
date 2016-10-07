@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units, SignomialsEnabled
 from gpkit import LinkedConstraintSet as LSC
 from gpkit.constraints.bounded import BoundedConstraintSet as BCS
+from gpkit import SignomialEquality
 from gpkit.tools import te_exp_minus1
 from collections import defaultdict
 from gpkit.small_scripts import mag
@@ -288,8 +289,9 @@ class Fuselage(Model):
             
             c0       == 0.1*lshell, #Temporarily
             dxwing   == 0.01*lshell, #Temporarily
-            xf       >= xwing - dxwing + .5*c0*wbar, #[SP]
-            xb       <= xwing + dxwing + .5*c0*wbar, 
+
+            SignomialEquality(xf, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
+            SignomialEquality(xb, xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
             xf       <= xb,
 
             #Ahbend >= A2*(xshell2-xbend)**2 + A1*(xtail-xbend)-A0, #[SP]
