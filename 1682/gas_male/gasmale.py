@@ -403,7 +403,7 @@ class Aerodynamics(Model):
     """
     Aero model assuming jh01 airfoil, designed by Mark Drela
     """
-    def __init__(self, N, dragcomps, **kwargs):
+    def __init__(self, N, dragcomps=None, **kwargs):
 
         CLmax = Variable("C_{L-max}", 1.39, "-", "Maximum lift coefficient")
         e = Variable("e", 0.9, "-", "Spanwise efficiency")
@@ -423,8 +423,6 @@ class Aerodynamics(Model):
         m_fac = Variable("m_{fac}", 1.5, "-", "CDA0 margin factor")
         CDA0 = VectorVariable(N, "CDA_0", "-", "sum of component drag")
 
-        dragbuild = [ComponentDrag(N, c) for c in dragcomps]
-
         constraints = [
             CD >= CDA0 + cdp + CL**2/(pi*e*AR),
             #jh01
@@ -436,26 +434,34 @@ class Aerodynamics(Model):
             b**2 == S*AR,
             CL <= CLmax,
             Re == rho*V/mu_atm*(S/AR)**0.5,
-            CDA0/m_fac >= sum(db["CDA"] for db in dragbuild),
             ]
 
-        includes = ["\\rho", "\\mu", "S", "V"]
-        for c, db in zip(dragcomps, dragbuild):
-            linked = {}
-            for vk in db.varkeys:
-                descr = dict(vk.descr)
-                if "ComponentDrag" == descr["models"][0]:
-                    if descr["name"] not in includes:
-                        descr["models"][0] = c.name
-                        descr["modelnums"][0] = c.num
-                        newvk = VarKey(**descr)
-                        linked.update({vk: newvk})
-            db.subinplace(linked)
+        if dragcomps:
+            dragbuild = [ComponentDrag(N, c) for c in dragcomps]
+            constraints.extend([
+                CDA0/m_fac >= sum(db["CDA"] for db in dragbuild)])
 
-        lc = LinkedConstraintSet([constraints, dragbuild],
-                                 include_only=includes)
+            includes = ["\\rho", "\\mu", "S", "V"]
+            for c, db in zip(dragcomps, dragbuild):
+                linked = {}
+                for vk in db.varkeys:
+                    descr = dict(vk.descr)
+                    if "ComponentDrag" == descr["models"][0]:
+                        if descr["name"] not in includes:
+                            descr["models"][0] = c.name
+                            descr["modelnums"][0] = c.num
+                            newvk = VarKey(**descr)
+                            linked.update({vk: newvk})
+                db.subinplace(linked)
 
-        Model.__init__(self, None, lc, **kwargs)
+            cs = LinkedConstraintSet([constraints, dragbuild],
+                                     include_only=includes)
+
+        else:
+            constraints.extend([CDA0/m_fac >= 1.5])
+            cs = ConstraintSet([cs])
+
+        Model.__init__(self, None, cs, **kwargs)
 
 class Beam(Model):
     def __init__(self, N, q, **kwargs):
