@@ -217,7 +217,7 @@ class Fuselage(Model):
             # Fuselage width relations
             wfuse  >= SPR*wseat + 2*waisle + tdb + 2*tshell + 2*wsys,
             wfuse  <= 2*(Rfuse + wdb),
-            wfloor >= wdb + Rfuse, # half of the total floor width in fuselage
+            wfloor >= wdb + Rfuse, # half of the total floor width in fuselage, (note it is an approx)
 
             # Fuselage volume relations
             Vcyl   == Askin*lshell,
@@ -240,51 +240,54 @@ class Fuselage(Model):
             sigx  == dPover*Rfuse/(2*tshell),
             sigth == dPover*Rfuse/tskin,
 
-            # Floor loading (don't understand some of these relations,
-            # so might be useful to go through them with someone)
-            lfloor >= lshell + 2*Rfuse,
+            # Floor loading 
+            lfloor >= lshell + 2*Rfuse,            
             Pfloor >= Nland*(Wpay + Wseat),
-            Mfloor >= 9./256.*Pfloor*wfloor,
+            Mfloor == 9./256.*Pfloor*wfloor,
             Afloor >= 2.*Mfloor/(sigfloor*hfloor) + 1.5*Sfloor/taufloor,
-            Vfloor == 2*wfloor*Afloor, # QUESTIONS??? DID DRELA MISTYPE? 2*wfloor*Afloor
+            Vfloor == 2*wfloor*Afloor,
             Wfloor >= rhofloor*g*Vfloor + 2*wfloor*lfloor*Wppfloor,
-            Sfloor >= (5./16.)*Pfloor,
+            Sfloor == (5./16.)*Pfloor,
             # Added synthetic constraint on hfloor to keep it from growing too large
             hfloor <= .1*Rfuse,
 
-            # Tail cone loading model
+            # Tail cone sizing
             Lvmax                            == 35000*units('N'), # based on 737
             bvt                              == 7*units('m'),
             plamv                            >= 1.6,
             taucone                          == sigskin,
-            3*Qv*(plamv-1)                   >= Lvmax*bvt*(plamv),
+            3*Qv*(plamv-1)                   >= Lvmax*bvt*(plamv), #[SP]
             lamcone                          == 0.4, # TODO remove
             Vcone*(1+lamcone)*(pi+4*thetadb) >= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
             Wcone                            >= rhocone*g*Vcone*(1+fstring+fframe),
+            Wtail    >= Wvtail + Whtail + Wcone,
 
-            # Maximum axial stress model - BENDING (sum of bending and pressurization strain)
-            Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell, # [SP]
-            Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #approx needs to be improved [SP]
             
 
+            # Tail aero loads
             xtail    >= lnose + lshell + .5*lcone, #Temporarily
             Lhmax    == 0.5*rho0*VNE**2*Shtail*CLhmax,
-            xwing    <= lnose + 0.6*lshell, #[SP] #Temporarily
-            xwing    >= lnose + 0.5*lshell, #Temporarily
-
+            SignomialEquality(xwing, lnose + 0.6*lshell), #[SP] [SPEquality]
             Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
             Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
-            Wtail    >= Wvtail + Whtail + Wcone,
+
+
             hfuse    == Rfuse, # may want to consider adding deltaRfuse later...
+            
+            # Horizontal bending model
+            # Maximum axial stress is the sum of bending and pressurization stresses
+            Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell, # [SP]
+            Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #[SP]
+            #Ivshell approximation needs to be improved
             A2       >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
             A1       >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),
             A0       == (Ihshell/(rE*hfuse**2)),
             B1       == rMv*Lvmax/(wfloor*sigMv),
             B0       == Ivshell/(rE*wfloor**2),
-            #A0       >= 0.98*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP]
+            A0       >= 0.98*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP]
             A0       <= 1.02*(A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), 
-            Ahbendxf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0,
-            Ahbendxb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0,
+            Ahbendxf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0, #[SP]
+            Ahbendxb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0, #[SP]
 
             
             c0       == 0.1*lshell, #Temporarily
