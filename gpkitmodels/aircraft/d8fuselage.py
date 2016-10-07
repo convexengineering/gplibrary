@@ -27,7 +27,7 @@ class Fuselage(Model):
         nrows        = Variable('n_{rows}', '-', 'Number of rows')
         pitch        = Variable('p_s',81, 'cm', 'Seat pitch')
         Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor')
-        dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
+        dPover       = Variable('\\delta_P_{over-pressure}',0.184,'psi','Cabin overpressure')
         rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)')
         VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed')
 
