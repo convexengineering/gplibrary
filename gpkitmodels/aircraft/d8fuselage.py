@@ -179,9 +179,7 @@ class Fuselage(Model):
         xf        = Variable('x_f','m','x-location of front of wingbox')
         xb        = Variable('x_b','m','x-location of back of wingbox')
         c0        = Variable('c_0','m','Root chord of the wing')
-        wbar      = Variable('\\bar_w',0.5,'-','Wingbox to chord ratio')
-
-        #xbend    = VectorVariable(ndisc,'x_{hbend}','m','Bending material location')
+        wbar      = Variable('\\bar_w',0.5,'-','Wingbox to chord ratio') #Temporarily
 
         with SignomialsEnabled():
             constraints = [
@@ -280,13 +278,17 @@ class Fuselage(Model):
             A2       >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
             A1       >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),
             A0       == (Ihshell/(rE*hfuse**2)),
-            B1       == rMv*Lvmax/(wfloor*sigMv),
-            B0       == Ivshell/(rE*wfloor**2),
-            xhbend   >= xwing,
+            #B1       == rMv*Lvmax/(wfloor*sigMv),
+            #B0       == Ivshell/(rE*wfloor**2),
+            #xhbend   <=  .5*lshell,
             SignomialEquality(A0,A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP] #[SPEquality]
 
             Ahbendxf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0, #[SP]
             Ahbendxb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0, #[SP]
+
+
+            #SignomialEquality(Ahbendxf, A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0), #[SP] [SPEquality]
+            #SignomialEquality(Ahbendxb, A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0), #[SP] [SPEquality]
             
             c0       == 0.1*lshell, #Temporarily
             dxwing   == 0.01*lshell, #Temporarily
@@ -295,6 +297,7 @@ class Fuselage(Model):
             SignomialEquality(xb, xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
 
             #Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
+            xhbend >= xwing,
             Vhbendf >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend)**3) \
                             + A1/2*((xtail-xf)**2 - (xtail - xhbend)**2) \
                             + A0*(xhbend-xf), #[SP]
@@ -314,7 +317,7 @@ class Fuselage(Model):
             xshell2 >= lnose + lshell
             ]
 
-        objective = Wfuse + Vcabin*units('N/m^3') + lfuse*units('N/m') + tshell*units('N/m')
+        objective = Wfuse + Vcabin*units('N/m^3') + tshell*units('N/m') + lfuse*units('N/m')
         Model.__init__(self, objective, constraints, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
@@ -430,12 +433,12 @@ if __name__ == "__main__":
     #print 'Horizontal bending material location: ' + str(varVals['\vec{x_{hbend}_Fuselage}'])
     #print 'Horizontal bending material area: ' + str(varVals['\vec{A_{hbend}_Fuselage}'])
     print 'Horizontal bending material weight: '+ str(varVals['W_{hbend}_Fuselage'])
-    print 'Vertical bending material weight: ' + str(varVals['W_{vbend}_Fuselage'])
+    #print 'Vertical bending material weight: ' + str(varVals['W_{vbend}_Fuselage'])
     print 'A2: ' + str(varVals['A2_Fuselage'])
     print 'A1: ' + str(varVals['A1_Fuselage'])
     print 'A0:  ' + str(varVals['A0_Fuselage'])
-    print 'B1: ' + str(varVals['B1_Fuselage'])
-    print 'B0: ' + str(varVals['B0_Fuselage'])
+    #print 'B1: ' + str(varVals['B1_Fuselage'])
+    #print 'B0: ' + str(varVals['B0_Fuselage'])
     print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
     print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
     print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
