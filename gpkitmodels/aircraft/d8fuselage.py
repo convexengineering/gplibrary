@@ -197,7 +197,7 @@ class Fuselage(Model):
             Adb    == (2*hdb)*tdb,
             Afuse  >= (pi + 2*thetadb + thetadb)*Rfuse**2,
             #tshell >= tskin*(1+rE*fstring*rhoskin/rhobend),
-            tshell == tskin,
+            tshell == tskin, #Temporarily, so I can see changes in horizontal bending material
             
             # Fuselage surface area relations
             Snose >= (2*pi + 4*thetadb)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
@@ -281,17 +281,11 @@ class Fuselage(Model):
             Ahbendxf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0, #[SP]
             Ahbendxb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0, #[SP]
 
-
-            #SignomialEquality(Ahbendxf, A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0), #[SP] [SPEquality]
-            #SignomialEquality(Ahbendxb, A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0), #[SP] [SPEquality]
-            
             c0       == 0.1*lshell, #Temporarily
-            #dxwing   == 0.25*c0, #Temporarily
+            dxwing   == 0.25*c0, #Temporarily
 
-            xf == xwing,
-            xb == xwing,
-            #xf >= xwing + dxwing + .5*c0*wbar,
-            #SignomialEquality(xb, xf - 2*dxwing), #[SP] [SPEquality]
+            SignomialEquality(xf,xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
+            SignomialEquality(xb, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
             #xf <= xb + (2.-0.1)*dxwing, #[SP] #Relaxed SignomialEquality
 
             #Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
@@ -398,7 +392,7 @@ class Fuselage(Model):
 if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
-    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=1, iteration_limit=100)
+    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
