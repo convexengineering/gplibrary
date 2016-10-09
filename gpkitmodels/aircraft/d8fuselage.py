@@ -26,7 +26,7 @@ class Fuselage(Model):
         nseats       = Variable('n_{seat}',192,'-','Number of seats')
         nrows        = Variable('n_{rows}', '-', 'Number of rows')
         pitch        = Variable('p_s',81, 'cm', 'Seat pitch')
-        Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor')
+        Nland        = Variable('N_{land}',20,'-', 'Emergency landing load factor')
         dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
         rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)')
         VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed')
@@ -117,7 +117,7 @@ class Fuselage(Model):
         rhobend  = Variable('\\rho_{bend}',2700, 'kg/m^3', 'Stringer density')
         rhocone  = Variable('\\rho_{cone}',2700,'kg/m^3','Cone material density')
         rhofloor = Variable('\\rho_{floor}',2700, 'kg/m^3', 'Floor material density') #TASOPT value used
-        rhoskin  = Variable('\\rho_{skin}',2,'g/cm^3', 'Skin density') # notional,based on CFRP
+        rhoskin  = Variable('\\rho_{skin}',2700,'kg/m^3', 'Skin density') # notional,based on CFRP
         
         Wppfloor = Variable('W\'\'_{floor}', 60,'N/m^2', 'Floor weight/area density') #TAS
         Wppinsul = Variable('W\'\'_{insul}',22,'N/m^2', 'Weight/area density of insulation material')
@@ -266,8 +266,9 @@ class Fuselage(Model):
             
             # Horizontal bending model
             # Maximum axial stress is the sum of bending and pressurization stresses
-            Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell, # [SP]
-            Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #[SP]
+            Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell + 2/3*hdb**3*tdb, # [SP]
+            #Ihshell == ((pi)*Rfuse**2)*Rfuse*tshell,
+            #Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #[SP]
             #Ivshell approximation needs to be improved
             A2       >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
             A1       >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),
@@ -285,7 +286,7 @@ class Fuselage(Model):
             #SignomialEquality(Ahbendxb, A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0), #[SP] [SPEquality]
             
             c0       == 0.1*lshell, #Temporarily
-            dxwing   == 0.25*c0, #Temporarily
+            #dxwing   == 0.25*c0, #Temporarily
 
             xf == xwing,
             xb == xwing,
@@ -397,19 +398,19 @@ class Fuselage(Model):
 if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
-    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
+    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=1, iteration_limit=100)
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
     #print 'Cabin volume        : ' + str(varVals['V_{cabin}_Fuselage']) +'.'
-    print 'Fuselage width  : ' + str(varVals['w_{fuse}_Fuselage']) + '.'
-    print 'Fuselage length : ' + str(varVals['l_{fuse}'])
-    print 'Floor area      : ' + str(varVals['A_{floor}_Fuselage']) + '.'
-    print 'Floor height    : ' + str(varVals['h_{floor}_Fuselage']) + '.'
-    print 'Floor length    : ' + str(varVals['l_{floor}_Fuselage']) + '.'
-    print 'Floor width     : ' + str(varVals['w_{floor}_Fuselage']) + '.'
+    # print 'Fuselage width  : ' + str(varVals['w_{fuse}_Fuselage']) + '.'
+    # print 'Fuselage length : ' + str(varVals['l_{fuse}'])
+    # print 'Floor area      : ' + str(varVals['A_{floor}_Fuselage']) + '.'
+    # print 'Floor height    : ' + str(varVals['h_{floor}_Fuselage']) + '.'
+    # print 'Floor length    : ' + str(varVals['l_{floor}_Fuselage']) + '.'
+    # print 'Floor width     : ' + str(varVals['w_{floor}_Fuselage']) + '.'
     #print 'Fuselage angle : ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
-    #print 'Fuselage radius: ' + str(varVals['R_{fuse}_Fuselage']) + '.'
+    print 'Fuselage radius: ' + str(varVals['R_{fuse}_Fuselage']) + '.'
     #print 'Floor total loading : ' + str(varVals['P_{floor}_Fuselage']) + '.'
     print 'Floor weight        : ' + str(varVals['W_{floor}_Fuselage']) + '.'
     #print 'Floor volume        : ' + str(varVals['V_{floor}_Fuselage']) + '.'
@@ -425,10 +426,8 @@ if __name__ == "__main__":
     #print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
     #print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
     #print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
-    print 'Wing location: ' + str(varVals['x_{wing}_Fuselage'])
-    print 'Tail location: ' + str(varVals['x_{tail}_Fuselage'])
-    #print 'Horizontal bending material location: ' + str(varVals['\vec{x_{hbend}_Fuselage}'])
-    #print 'Horizontal bending material area: ' + str(varVals['\vec{A_{hbend}_Fuselage}'])
+    #print 'Wing location: ' + str(varVals['x_{wing}_Fuselage'])
+    #print 'Tail location: ' + str(varVals['x_{tail}_Fuselage'])
     print 'Horizontal bending material weight: '+ str(varVals['W_{hbend}_Fuselage'])
     #print 'Vertical bending material weight: ' + str(varVals['W_{vbend}_Fuselage'])
     print 'A2: ' + str(varVals['A2_Fuselage'])
@@ -436,11 +435,16 @@ if __name__ == "__main__":
     print 'A0:  ' + str(varVals['A0_Fuselage'])
     #print 'B1: ' + str(varVals['B1_Fuselage'])
     #print 'B0: ' + str(varVals['B0_Fuselage'])
-    print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
-    print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
+    #print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
+    #print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
     print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
     print 'Wing box start location: ' + str(varVals['x_b_Fuselage'])
     print 'Wbox front horizontal reinf. area: ' + str(varVals['A_{hbend_xf}_Fuselage'])
     print 'Wing box end location: ' + str(varVals['x_f_Fuselage'])
     print 'Wbox end horizontal reinf. area: ' + str(varVals['A_{hbend_xb}_Fuselage'])
     print 'Total weight: ' + str(sol['cost'])
+    print 'Web area: ' + str(sol('A_{db}'))
+    print 'Shell thickness: ' + str(sol('t_{shell}'))
+    print 'Shell inertia: ' + str(sol('I_{hshell}'))
+    hfuse = sol('h_{fuse}')
+    A0 = sol('A0')
