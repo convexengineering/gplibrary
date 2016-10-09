@@ -27,7 +27,7 @@ class Fuselage(Model):
         nrows        = Variable('n_{rows}', '-', 'Number of rows')
         pitch        = Variable('p_s',81, 'cm', 'Seat pitch')
         Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor')
-        dPover       = Variable('\\delta_P_{over-pressure}',0.184,'psi','Cabin overpressure')
+        dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
         rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)')
         VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed')
 
@@ -130,7 +130,7 @@ class Fuselage(Model):
         Pfloor   = Variable('P_{floor}','N', 'Distributed floor load')
         Sfloor   = Variable('S_{floor}', 'N', 'Maximum shear in floor beams')
         sigfloor = Variable('\\sigma_{floor}',30000/0.000145, 'N/m^2', 'Max allowable floor stress') #TASOPT value used
-        sigskin  = Variable('\\sigma_{skin}', 46000,'psi', 'Max allowable skin stress') # again notional 
+        sigskin  = Variable('\\sigma_{skin}', 15000/0.000145,'N/m^2', 'Max allowable skin stress') # again notional 
         sigth    = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
         sigx     = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
         taucone  = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
@@ -162,11 +162,8 @@ class Fuselage(Model):
         Vhbendc   = Variable('V_{hbendc}','m^3','Horizontal bending material volume c') #center fuselage
         Ahbendxb  = Variable('A_{hbend_xb}','m^2','Horizontal bending area at rear wingbox')
         Ahbendxf  = Variable('A_{hbend_xf}','m^2','Horizontal bending area at front wingbox')
-
         xhbend    = Variable('x_{hbend}','m','Horizontal zero bending location')
         Vvbend    = Variable('V_{vbend}','m^3','Vertical bending material volume')
-
-
 
         # x-location variables
         xshell1   = Variable('x_{shell1}', 'm', 'Start of cylinder section')
@@ -226,7 +223,7 @@ class Fuselage(Model):
             Winsul  >= Wppinsul*((1.1*pi+2*thetadb)*Rfuse*lshell + 0.55*(Snose+Sbulk)),
             Wwindow >= Wpwindow*lshell,
             Wskin   >= rhoskin*g*(Vcyl + Vnose + Vbulk),
-            Wshell  >= Wskin*(1 + fstring + ffairing + fframe +fwebcargo),
+            Wshell  >= Wskin*(1 + fstring + ffairing + fframe + fwebcargo),
             Wfuse   >= Wfix + Winsul + Wshell + Wfloor + Wwindow + Whbend + Wvbend + Wtail,
             
             ## Stress relations
@@ -249,24 +246,21 @@ class Fuselage(Model):
 
             # Tail cone sizing
             Lvmax                            == 35000*units('N'), # based on 737
-            bvt                              == 7*units('m'),
-            plamv                            >= 1.6,
-            taucone                          == sigskin,
-            3*Qv*(plamv-1)                   >= Lvmax*bvt*(plamv), #[SP]
-            lamcone                          == 0.4, # TODO remove
+            bvt                             == 7*units('m'),
+            plamv                           == 1.6, #Temporarily
+            taucone                         == sigskin,
+            3*Qv*(plamv-1)                  >= Lvmax*bvt*(plamv), #[SP]
+            lamcone                         == 0.4, # TODO remove
             Vcone*(1+lamcone)*(pi+4*thetadb) >= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
-            Wcone                            >= rhocone*g*Vcone*(1+fstring+fframe),
-            Wtail    >= Wvtail + Whtail + Wcone,
-
-            
-
+            Wcone                           >= rhocone*g*Vcone*(1+fstring+fframe),
+            Wtail                           >= Wvtail + Whtail + Wcone,
+         
             # Tail aero loads
             xtail    >= lnose + lshell + .5*lcone, #Temporarily
             Lhmax    == 0.5*rho0*VNE**2*Shtail*CLhmax,
             SignomialEquality(xwing, lnose + 0.6*lshell), #[SP] [SPEquality]
-            Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
-            Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
-
+            #Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
+            #Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
 
             hfuse    == Rfuse, # may want to consider adding deltaRfuse later...
             
@@ -291,10 +285,13 @@ class Fuselage(Model):
             #SignomialEquality(Ahbendxb, A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0), #[SP] [SPEquality]
             
             c0       == 0.1*lshell, #Temporarily
-            dxwing   == 0.01*lshell, #Temporarily
+            dxwing   == 0.25*c0, #Temporarily
 
-            SignomialEquality(xf, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
-            SignomialEquality(xb, xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
+            xf == xwing,
+            xb == xwing,
+            #xf >= xwing + dxwing + .5*c0*wbar,
+            #SignomialEquality(xb, xf - 2*dxwing), #[SP] [SPEquality]
+            #xf <= xb + (2.-0.1)*dxwing, #[SP] #Relaxed SignomialEquality
 
             #Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
             xhbend >= xwing,
@@ -414,12 +411,12 @@ if __name__ == "__main__":
     #print 'Fuselage angle : ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
     #print 'Fuselage radius: ' + str(varVals['R_{fuse}_Fuselage']) + '.'
     #print 'Floor total loading : ' + str(varVals['P_{floor}_Fuselage']) + '.'
-    #print 'Floor weight        : ' + str(varVals['W_{floor}_Fuselage']) + '.'
+    print 'Floor weight        : ' + str(varVals['W_{floor}_Fuselage']) + '.'
     #print 'Floor volume        : ' + str(varVals['V_{floor}_Fuselage']) + '.'
     #print 'Floor bending moment: ' + str(varVals['M_{floor}_Fuselage']) + '.'
     #print 'Shell thickness     : ' + str(varVals['t_{shell}_Fuselage']) + '.'
     #print 'Skin hoop stress    : ' + str(varVals['\\sigma_{\\theta}_Fuselage']) + '.'
-    #print 'Skin axial stress   : ' + str(varVals['\\sigma_x_Fuselage']) + '.'
+    print 'Skin axial stress   : ' + str(varVals['\\sigma_x_Fuselage']) + '.'
     #print 'Cone weight         : ' + str(varVals['W_{cone}_Fuselage'])
     #print 'Cone length         : ' + str(varVals['l_{cone}_Fuselage'])
     #print 'Cone volume         : ' + str(varVals['V_{cone}_Fuselage'])
@@ -442,7 +439,8 @@ if __name__ == "__main__":
     print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
     print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
     print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
-    print 'Wing box start location: ' + str(varVals['x_f_Fuselage'])
+    print 'Wing box start location: ' + str(varVals['x_b_Fuselage'])
     print 'Wbox front horizontal reinf. area: ' + str(varVals['A_{hbend_xf}_Fuselage'])
-    print 'Wing box end location: ' + str(varVals['x_b_Fuselage'])
+    print 'Wing box end location: ' + str(varVals['x_f_Fuselage'])
     print 'Wbox end horizontal reinf. area: ' + str(varVals['A_{hbend_xb}_Fuselage'])
+    print 'Total weight: ' + str(sol['cost'])
