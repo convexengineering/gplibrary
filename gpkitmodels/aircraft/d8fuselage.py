@@ -26,7 +26,7 @@ class Fuselage(Model):
         nseats       = Variable('n_{seat}',192,'-','Number of seats')
         nrows        = Variable('n_{rows}', '-', 'Number of rows')
         pitch        = Variable('p_s',81, 'cm', 'Seat pitch')
-        Nland        = Variable('N_{land}',20,'-', 'Emergency landing load factor')
+        Nland        = Variable('N_{land}',6,'-', 'Emergency landing load factor')
         dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
         rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)')
         VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed')
@@ -196,7 +196,8 @@ class Fuselage(Model):
             Askin  >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
             Adb    == (2*hdb)*tdb,
             Afuse  >= (pi + 2*thetadb + thetadb)*Rfuse**2,
-            tshell >= tskin*(1+rE*fstring*rhoskin/rhobend),
+            #tshell >= tskin*(1+rE*fstring*rhoskin/rhobend),
+            tshell == tskin,
             
             # Fuselage surface area relations
             Snose >= (2*pi + 4*thetadb)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
@@ -206,7 +207,6 @@ class Fuselage(Model):
             lfuse >= lnose+lshell+lcone, 
             lnose == 0.3*lshell, # Temporarily
             lcone == Rfuse/lamcone,
-
             # Fuselage width relations
             wfuse  >= SPR*wseat + 2*waisle + tdb + 2*tshell + 2*wsys,
             wfuse  <= 2*(Rfuse + wdb),
@@ -444,6 +444,7 @@ if __name__ == "__main__":
     print 'Wbox end horizontal reinf. area: ' + str(varVals['A_{hbend_xb}_Fuselage'])
     print 'Total weight: ' + str(sol['cost'])
     print 'Web area: ' + str(sol('A_{db}'))
+    print 'Skin thickness: ' + str(sol('t_{skin}'))
     print 'Shell thickness: ' + str(sol('t_{shell}'))
     print 'Shell inertia: ' + str(sol('I_{hshell}'))
     hfuse = sol('h_{fuse}')
