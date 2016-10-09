@@ -160,8 +160,8 @@ class Fuselage(Model):
         Vhbendf   = Variable('V_{hbendf}','m^3','Horizontal bending material volume f') #front fuselage
         Vhbendb   = Variable('V_{hbendb}','m^3','Horizontal bending material volume b') #back fuselage
         Vhbendc   = Variable('V_{hbendc}','m^3','Horizontal bending material volume c') #center fuselage
-        Ahbendxb  = Variable('A_{hbend_xb}','m^2','Horizontal bending area at rear wingbox')
-        Ahbendxf  = Variable('A_{hbend_xf}','m^2','Horizontal bending area at front wingbox')
+        Ahbendb  = Variable('A_{hbendb}','m^2','Horizontal bending area at rear wingbox')
+        Ahbendf  = Variable('A_{hbendf}','m^2','Horizontal bending area at front wingbox')
         xhbend    = Variable('x_{hbend}','m','Horizontal zero bending location')
         Vvbend    = Variable('V_{vbend}','m^3','Vertical bending material volume')
 
@@ -278,17 +278,15 @@ class Fuselage(Model):
             #xhbend   <=  .5*lshell,
             SignomialEquality(A0,A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP] #[SPEquality]
 
-            Ahbendxf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0, #[SP]
-            Ahbendxb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0, #[SP]
+            Ahbendf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0, #[SP]
+            Ahbendb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0, #[SP]
 
             c0       == 0.1*lshell, #Temporarily
             dxwing   == 0.25*c0, #Temporarily
 
             SignomialEquality(xf,xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
             SignomialEquality(xb, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
-            #xf <= xb + (2.-0.1)*dxwing, #[SP] #Relaxed SignomialEquality
 
-            #Wvbend >= g*rhobend*sum(Avbend*lshell/ndisc),
             xhbend >= xwing,
             Vhbendf >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend)**3) \
                             + A1/2*((xtail-xf)**2 - (xtail - xhbend)**2) \
@@ -297,7 +295,7 @@ class Fuselage(Model):
             Vhbendb >= A2/3*((xshell2-xb)**3 - (xshell2-xhbend)**3) \
                             + A1/2*((xtail-xb)**2 - (xtail - xhbend)**2) \
                             + A0*(xhbend-xb), #[SP]
-            Vhbendc >= .5*(Ahbendxf + Ahbendxb)*c0*wbar,
+            Vhbendc >= .5*(Ahbendf + Ahbendb)*c0*wbar,
             Vhbend  >= Vhbendc + Vhbendf + Vhbendb,
             Whbend  >= g*rhobend*Vhbend,
             #Wvbend >= g*rhobend*Vvbend,
@@ -392,7 +390,7 @@ class Fuselage(Model):
 if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
-    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
+    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=1, iteration_limit=100)
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
@@ -433,13 +431,17 @@ if __name__ == "__main__":
     #print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
     print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
     print 'Wing box start location: ' + str(varVals['x_b_Fuselage'])
-    print 'Wbox front horizontal reinf. area: ' + str(varVals['A_{hbend_xf}_Fuselage'])
     print 'Wing box end location: ' + str(varVals['x_f_Fuselage'])
-    print 'Wbox end horizontal reinf. area: ' + str(varVals['A_{hbend_xb}_Fuselage'])
     print 'Total weight: ' + str(sol['cost'])
     print 'Web area: ' + str(sol('A_{db}'))
     print 'Skin thickness: ' + str(sol('t_{skin}'))
     print 'Shell thickness: ' + str(sol('t_{shell}'))
     print 'Shell inertia: ' + str(sol('I_{hshell}'))
+    print 'Vhbendf: ' + str(sol('V_{hbendf}'))
+    print 'Vhbendb: ' + str(sol('V_{hbendb}'))
+    print 'Vhbendc: ' + str(sol('V_{hbendc}'))
+    print 'Ahbendf: ' + str(sol('A_{hbendf}'))
+    print 'Ahbendb: ' + str(sol('A_{hbendb}'))
+
     hfuse = sol('h_{fuse}')
     A0 = sol('A0')
