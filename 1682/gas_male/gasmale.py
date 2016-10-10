@@ -1,5 +1,6 @@
 """ gas_male_rubber.py """
 from numpy import pi
+from operator import mul
 import numpy as np
 import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units
@@ -368,7 +369,8 @@ class BreguetEndurance(Model):
         W_n = VectorVariable(N, "W_{N}", "lbf", "vector-begin weight")
 
         constraints = [
-            z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
+            # z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5,
+            TCS([z_bre >= P_shafttot*t*bsfc*g/(W_nplus1*W_n)**0.5]),
             # TCS([z_bre >= P_shafttot*t*bsfc*g/W_nplus1]),
             f_fueloil*W_fuel/W_nplus1 >= te_exp_minus1(z_bre, 3)
             ]
@@ -420,7 +422,7 @@ class Aerodynamics(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
-        m_fac = Variable("m_{fac}", 1.5, "-", "CDA0 margin factor")
+        m_fac = Variable("m_{fac}", 1.8, "-", "CDA0 margin factor")
         CDA0 = VectorVariable(N, "CDA_0", "-", "sum of component drag")
 
         constraints = [
@@ -458,8 +460,8 @@ class Aerodynamics(Model):
                                      include_only=includes)
 
         else:
-            constraints.extend([CDA0/m_fac >= 1.5])
-            cs = ConstraintSet([cs])
+            constraints.extend([CDA0/m_fac >= 0.015])
+            cs = ConstraintSet([constraints])
 
         Model.__init__(self, None, cs, **kwargs)
 
@@ -498,39 +500,39 @@ class Beam(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-    # def process_solution(self, sol):
-    #     load = sol("W_{cent}")/sol("b")*self.q
-    #     dx = sol("b")/2/(self.N-1)
-    #     S = [0]*self.N
-    #     for i in range(1, self.N):
-    #         S[self.N-i-1] = S[self.N-i] + 0.5*dx*(load[self.N-i] +
-    #                                               load[self.N-i-1])
-    #     M = [0]*self.N
-    #     for i in range(1, self.N):
-    #         M[self.N-i-1] = M[self.N-i] + 0.5*dx*(S[self.N-i] + S[self.N-i-1])
-    #     th = [0]*self.N
-    #     for i in range(self.N-1):
-    #         th[i+1] = (th[i] + 0.5*dx*(M[i] + M[i+1])/
-    #                    sol("E_CapSpar, Wing, GasMALE")/sol("I")[i])
-    #     d = [0]*self.N
-    #     for i in range(self.N-1):
-    #         d[i+1] = d[i] + 0.5*dx*(th[i] + th[i+1])
-    #     load = load.to("N/m").magnitude
-    #     for i in range(self.N-1):
-    #         S[i] = S[i].to("N").magnitude
-    #         M[i] = M[i].to("N*m").magnitude
-    #         th[i+1] = th[i+1].to("dimensionless").magnitude
-    #         d[i+1] = d[i+1].to("ft").magnitude
+    def process_solution(self, sol):
+        load = sol("W_{cent}")/sol("b")*self.q
+        dx = sol("b")/2/(self.N-1)
+        S = [0]*self.N
+        for i in range(1, self.N):
+            S[self.N-i-1] = S[self.N-i] + 0.5*dx*(load[self.N-i] +
+                                                  load[self.N-i-1])
+        M = [0]*self.N
+        for i in range(1, self.N):
+            M[self.N-i-1] = M[self.N-i] + 0.5*dx*(S[self.N-i] + S[self.N-i-1])
+        th = [0]*self.N
+        for i in range(self.N-1):
+            th[i+1] = (th[i] + 0.5*dx*(M[i] + M[i+1])/
+                       sol("E_CapSpar, Wing, GasMALE")/sol("I")[i])
+        d = [0]*self.N
+        for i in range(self.N-1):
+            d[i+1] = d[i] + 0.5*dx*(th[i] + th[i+1])
+        load = load.to("N/m").magnitude
+        for i in range(self.N-1):
+            S[i] = S[i].to("N").magnitude
+            M[i] = M[i].to("N*m").magnitude
+            th[i+1] = th[i+1].to("dimensionless").magnitude
+            d[i+1] = d[i+1].to("ft").magnitude
 
-    #     fig, axis = plt.subplots(5)
-    #     loading = [load, S, M, th, d]
-    #     lunits = ["N/m", "N", "N*m", "-", "ft"]
-    #     label = ["Loading", "Shear", "Moment", "Angle", "Deflection"]
-    #     for ax, y, u, l in zip(axis, loading, lunits, label):
-    #         ax.plot(dx.magnitude*np.linspace(0, 4, 5), y)
-    #         ax.set_xlabel("y [%s]" % u)
-    #         ax.set_ylabel("%s [%s]" % (l, u))
-    #     fig.savefig("1gloading.pdf")
+        fig, axis = plt.subplots(5)
+        loading = [load, S, M, th, d]
+        lunits = ["N/m", "N", "N*m", "-", "ft"]
+        label = ["Loading", "Shear", "Moment", "Angle", "Deflection"]
+        for ax, y, u, l in zip(axis, loading, lunits, label):
+            ax.plot(dx.magnitude*np.linspace(0, 4, 5), y)
+            ax.set_xlabel("y [%s]" % u)
+            ax.set_ylabel("%s [%s]" % (l, u))
+        fig.savefig("1gloading.pdf")
 
 
 def c_bar(lam, N):
@@ -719,7 +721,7 @@ class Fuselage(Model):
         Vol_pay = Variable("\\mathcal{V}_{pay}", 1.0, "ft^3", "Payload volume")
         W = Variable("W", "lbf", "Fuselage weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        m_fac = Variable("m_{fac}", 2.0, "-", "Fuselage weight margin factor")
+        m_fac = Variable("m_{fac}", 3.0, "-", "Fuselage weight margin factor")
         m_facfuel = Variable("m_{fac-fuel}", 1.1, "-",
                              "fuel volume margin factor")
         S_ref = Variable("S_{ref}", "ft**2", "fuselage reference area")
@@ -981,36 +983,11 @@ class Weight(ConstraintSet):
 
         ConstraintSet.__init__(self, constraints, **kwargs)
 
-    def process_solution(self, sol):
-        xwing = 0.5*(sol("l_{fuel}")+sol("d"))
-        xnp = xwing + (0.25 + sol("m_h")/sol("m_w")*(1-4.0/(sol("AR")+2))*
-                       sol("V_h"))*sol("S")/sol("b")
-        xcg = (sol("W_Fuselage, GasMALE")*0.5*(sol("l_{fuel}")+sol("d")) +\
-              sol("W_{pay}")*0.5*sol("d") +\
-              sol("W_EngineWeight, GasMALE")*(sol("l_{fuel}")+0.5*sol("d")) +\
-              sol("W_{fuel-tot}")*0.5*(sol("l_{fuel}")+sol("d")) +\
-              sol("W_Wing, GasMALE")*xwing +\
-              sol("W_TailBoom, Empennage, GasMALE")*(xwing+0.5*sol("L")) +\
-              (sol("W_HorizontalTail, Empennage, GasMALE") +\
-               sol("W_VerticalTail, Empennage, GasMALE"))*\
-               (xwing+0.5*sol("L")))/\
-              (sol("W_Fuselage, GasMALE")+sol("W_{pay}")+
-               sol("W_EngineWeight, GasMALE") + sol("W_{fuel-tot}") +
-               sol("W_Wing, GasMALE") + sol("W_TailBoom, Empennage, GasMALE") +
-               sol("W_HorizontalTail, Empennage, GasMALE") +
-               sol("W_VerticalTail, Empennage, GasMALE") +
-               sol("W_Fuselage, GasMALE"))
 
-        SM = (xnp - xcg)/(sol("S")/sol("b"))
-
-        print "The neutral point x_np: %0.3f [%s]" % (xnp.magnitude, xnp.units)
-        print "The center of gravity x_cg: %0.3f [%s]" % (xcg.magnitude,
-                                                          xcg.units)
-        print "The static margin SM: %0.3f" % SM.magnitude
-
-
-
-
+def return_cg(weights, xlocs):
+    assert len(weights) == len(xlocs)
+    xcg = sum(list(map(mul, weights, xlocs)))/sum(weights)
+    return xcg
 
 class SystemRequirements(Model):
     def __init__(self, **kwargs):
@@ -1078,6 +1055,61 @@ class GasMALE(Model):
         objective = 1/mission["t_{loiter}"]
 
         Model.__init__(self, objective, lc, **kwargs)
+
+    def process_solution(self, sol):
+        xwing = 0.5*(sol("l_{fuel}")+sol("d"))
+        xnp = xwing + (sol("m_h")/sol("m_w")*(1.0-4.0/(sol("AR")+2.0))*
+                       sol("V_h"))*sol("S")/sol("b")
+        weights = [sol("W_Fuselage, GasMALE"),
+                   sol("W_{pay}"),
+                   sol("W_EngineWeight, GasMALE"),
+                   sol("W_{fuel-tot}"),
+                   sol("W_Wing, GasMALE"),
+                   sol("W_TailBoom, Empennage, GasMALE"),
+                   sol("W_HorizontalTail, Empennage, GasMALE"),
+                   sol("W_VerticalTail, Empennage, GasMALE")
+                  ]
+
+        xlocs = [0.5*(sol("l_{fuel}") + sol("d")),
+                 0.5*sol("d"),
+                 sol("l_{fuel}") + 0.5*sol("d"),
+                 0.5*(sol("l_{fuel}") + sol("d")),
+                 xwing,
+                 xwing + 0.5*sol("L"),
+                 xwing + sol("L"),
+                 xwing + sol("L")
+                ]
+
+        xcg = return_cg(weights, xlocs)
+        SM = (xnp - xcg)/(sol("S")/sol("b"))
+
+        wpay = sol("W_{pay}")*np.linspace(0.5, 2.5, 15)
+        ind = weights.index(sol("W_{pay}"))
+        cgs = []
+        SMs = []
+        xws = []
+        for w in wpay:
+            weights[ind] = w
+            cg = return_cg(weights, xlocs)
+            cgs.extend([cg])
+            SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
+            xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
+
+        fig, ax = plt.subplots(2)
+        ax[0].plot(wpay, SMs)
+        ax[1].plot(wpay, xws)
+        ax[0].set_ylabel("Static Margin")
+        ax[1].set_ylabel("Wing location [ft]")
+        ax[0].set_xlabel("Payload weight [lbf]")
+        ax[1].set_xlabel("Payload weight [lbf]")
+        fig.savefig("smvswpay.pdf")
+
+        self.xnp = xnp
+        self.xcg = xcg
+        self.SM = SM
+
+    def get_cgs(self):
+        return self.xnp, self.xcg, self.SM
 
 if __name__ == "__main__":
     M = GasMALE(DF70=True)

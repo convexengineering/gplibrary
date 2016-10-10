@@ -98,7 +98,7 @@ def bd_vars(M, sol, varname, morevars):
     df.columns = colnames
     return df
 
-def sketch_params(M, sol, varnames, othervars=None):
+def sketch_params(M, sol, varnames, othervars=None, pointmasses=None):
 
     data = {}
     for vname in varnames:
@@ -107,6 +107,16 @@ def sketch_params(M, sol, varnames, othervars=None):
 
     if othervars:
         data.update(othervars)
+
+    if hasattr(M, "get_cgs"):
+        xnp, xcg, SM = M.get_cgs()
+        data["x_{np}"] = [xnp.magnitude, xnp.units, "neutral point"]
+        data["x_{cg}"] = [xcg.magnitude, xcg.units, "center of gravity"]
+        data["SM"] = [SM.magnitude, "-", "static margin"]
+
+    if pointmasses:
+        for pm in pointmasses:
+            data[pm] = []
 
     df = pd.DataFrame(data)
     df = df.transpose()
