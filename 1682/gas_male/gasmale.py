@@ -537,6 +537,7 @@ class Beam(Model):
 
 def c_bar(lam, N):
     eta = np.linspace(0, 1, N)
+    # c = np.array([1.0, 1.0, 0.83, 0.66, 0.5])
     c = 2/(1+lam)*(1+(lam-1)*eta)
     return c
 
