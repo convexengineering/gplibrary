@@ -22,6 +22,10 @@ This paper presents the designs achieved in the 82 project. This also presents a
 \input{tex/BreguetEndurance.vars.generated.tex}
 \input{tex/BreguetEndurance.cnstrs.generated.tex}
 
+## Cap Spar Model
+\input{tex/Spar.vars.generated.tex}
+\input{tex/Spar.cnstrs.generated.tex}
+
 ## Climb Model
 \input{tex/Climb.vars.generated.tex}
 \input{tex/Climb.cnstrs.generated.tex}
@@ -29,6 +33,10 @@ This paper presents the designs achieved in the 82 project. This also presents a
 ## Cruise Model
 \input{tex/Cruise.vars.generated.tex}
 \input{tex/Cruise.cnstrs.generated.tex}
+
+## Empennage Model
+\input{tex/Empennage.vars.generated.tex}
+\input{tex/Empennage.cnstrs.generated.tex}
 
 ## Engine Performance Model
 \input{tex/EnginePerformance.vars.generated.tex}
@@ -45,6 +53,10 @@ This paper presents the designs achieved in the 82 project. This also presents a
 ## Fuselage Model
 \input{tex/Fuselage.vars.generated.tex}
 \input{tex/Fuselage.cnstrs.generated.tex}
+
+## Horizontal Tail Model
+\input{tex/HorizontalTail.vars.generated.tex}
+\input{tex/HorizontalTail.cnstrs.generated.tex}
 
 ## Loiter Model
 \input{tex/Loiter.vars.generated.tex}
@@ -66,25 +78,25 @@ This paper presents the designs achieved in the 82 project. This also presents a
 \input{tex/Wing.vars.generated.tex}
 \input{tex/Wing.cnstrs.generated.tex}
 
-## Spar Model
-\input{tex/Spar.vars.generated.tex}
-\input{tex/Spar.cnstrs.generated.tex}
-
 ## Weight Model
 \input{tex/Weight.vars.generated.tex}
 \input{tex/Weight.cnstrs.generated.tex}
-
-# Tail Model
-\input{tex/Tail.vars.generated.tex}
-\input{tex/Tail.cnstrs.generated.tex}
 
 # Tail Boom Model
 \input{tex/TailBoom.vars.generated.tex}
 \input{tex/TailBoom.cnstrs.generated.tex}
 
+## Vertical Tail Model
+\input{tex/VerticalTail.vars.generated.tex}
+\input{tex/VerticalTail.cnstrs.generated.tex}
+
 ## Wind Model
 \input{tex/Wind.vars.generated.tex}
 \input{tex/Wind.cnstrs.generated.tex}
+
+## Wing Model
+\input{tex/Wing.vars.generated.tex}
+\input{tex/Wing.cnstrs.generated.tex}
 
 ## Overall Model
 \input{tex/GasMALE.vars.generated.tex}
@@ -154,7 +166,7 @@ By fixing the following variables to their respective values we were also able t
 ```python
 #inPDF: replace with tex/fixvars.table.generated.tex
 
-vars_to_fix = {"S":0.0, "b": 0.0, "Vol_{fuse}":0.0, "W_Wing, GasMALE":0.0}
+vars_to_fix = {"S":0.0, "b": 0.0, "d":0.0, "l_{fuel}": 0.0, "W_Wing, GasMALE":0.0}
 gen_fixvars_tex(M, sol, vars_to_fix)
 
 fix_vars(M, sol, vars_to_fix)
@@ -169,32 +181,34 @@ sol = M.solve("mosek") # check for solving errors
 del M.substitutions["t_{loiter}"]
 M.cost = 1/M["t_{loiter}"]
 
+M.substitutions.update({"P_{pay}": 100})
 # payload power vs time on station
-fig, ax = plot_sweep(M, "P_{pay}", np.linspace(10, 200, 15), ["t_{loiter}"])
+fig, ax = plot_sweep(M, "P_{pay}", np.linspace(10, 200, 15), ["t_{loiter}"], ylim=[0,10])
 gen_tex_fig(fig, "t_vs_Ppay")
 
 # payload weight vs time on station
-fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 40, 15), ["t_{loiter}"])
+fig, ax = plot_sweep(M, "W_{pay}", np.linspace(5, 20, 15), ["t_{loiter}"], ylim=[0,10])
 gen_tex_fig(fig, "t_vs_Wpay")
 
 # wind speed vs time on station
 M = GasMALE(wind=True, DF70=True)
 fix_vars(M, sol, vars_to_fix)
-fig, ax = plot_sweep(M, "V_{wind}_Wind, Loiter, Mission, GasMALE", np.linspace(5, 40, 15), ["t_{loiter}"])
+M.substitutions.update({"P_{pay}": 100})
+fig, ax = plot_sweep(M, "V_{wind}_Wind, Loiter, Mission, GasMALE", np.linspace(5, 40, 15), ["t_{loiter}"], ylim=[0,10])
 gen_tex_fig(fig, "t_vs_Vwind")
 
 # altitude vs time on loiter
-altitude_vars = {"t_{loiter}"}
-figs, axs = plot_altitude_sweeps(np.linspace(14000, 20000, 10), altitude_vars,
-                     vars_to_fix)
-
-for var, fig in zip(altitude_vars, figs):
-    gen_tex_fig(fig, "%s_vs_altitude" % var.replace("{", "").replace("}", "").replace("_", ""))
+# altitude_vars = {"t_{loiter}"}
+# figs, axs = plot_altitude_sweeps(np.linspace(14000, 20000, 10), altitude_vars,
+#                      vars_to_fix)
+# axs[0].set_ylim([0,10])
+# 
+# for var, fig in zip(altitude_vars, figs):
+#     gen_tex_fig(fig, "%s_vs_altitude" % var.replace("{", "").replace("}", "").replace("_", ""))
 ```
 \input{tex/t_vs_Ppay.fig.generated.tex}
 \input{tex/t_vs_Wpay.fig.generated.tex}
 \input{tex/t_vs_Vwind.fig.generated.tex}
-\input{tex/tloiter_vs_altitude.fig.generated.tex}
 
 ## Flight Profile
 
@@ -207,6 +221,11 @@ from plotting import plot_mission_var
 Mprof = GasMALE(DF70=True)
 Mprof.substitutions.update({"t_{loiter}": 6})
 Mprof.cost = Mprof["MTOW"]
+sol = Mprof.solve("mosek")
+fix_vars(Mprof, sol, vars_to_fix)
+Mprof.substitutions.update({"P_{pay}": 100})
+del Mprof.substitutions["t_{loiter}"]
+Mprof.cost = 1/Mprof["t_{loiter}"]
 sol = Mprof.solve("mosek")
 
 # plot mission profiles
