@@ -80,7 +80,7 @@ class dartTail(Model):
         # # Vertical tail variables
         #Vvtail = Variable('V_{vtail}','-','Vertical tail volume coefficient') # 0.02 common for sailplanes
         Svtail      = Variable('S_{vtail}','ft^2','Vertical tail area')
-        ARvtail     = Variable('AR_{vtail}',5,'-','Vertical tail aspect ratio')
+        ARvtail     = Variable('AR_{vtail}','-','Vertical tail aspect ratio')
         lamvtail    = Variable('\\lambda_{vtail}',.8,'-','Vertical tail taper ratio')
         hvtail      = Variable('h_{vtail}','ft', 'Vertical tail height')
         crvtail     = Variable('c_r_{vtail}','ft','Vertical tail root chord')
@@ -133,18 +133,19 @@ class dartTail(Model):
         # Vertical tail relations (sized for cross-wind landing)
         TCS([CLmaxvtail*(1+2/ARvtail) <= CLmax*(1+2/27)]), #Substituted the aspect ratio of aircraft so it wouldn't be SP
         hvtail**2/(Svtail)              == ARvtail,
-        Svtail                        == hvtail*crvtail*(1+.8)/2, ##Substituted lambda so it wouldn't be SP
+        Svtail                        >= hvtail*crvtail*(1+lamvtail)/2, ##Substituted lambda so it wouldn't be SP
         # Landing conditions
         TCS([Vrel**2 >= Vland**2 + Vwindcross**2]),
         Vrel <= 16*units('m/s'),
         TCS([Vwindcross**2*23.67*units('ft^2')*CDy == 2*Vrel**2*Svtail*CLmaxvtail]), #substituted S because of errors with BCS... too hacky
         # Assuming solid foam-core wing with a min-gauge Kevlar skin
-        Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
-        Wvtail >= (rhoFoamular*hvtail*areaAF)*((crvtail/crefAF)**2 + (crvtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Svtail),
+        Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*lamhtail/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
+        Wvtail >= (rhoFoamular*hvtail*areaAF)*((crvtail/crefAF)**2 + (crvtail*lamhtail/crefAF)**2)/2+(1.1*g*rhoskin*Svtail),
         Wtail  >= 2*(Wboom + Wvtail) + Whtail,
 
         Vvtail == 2*Svtail*(5*units('ft'))/(S*b),
-        Vhtail == Shtail*(5*units('ft'))/(S*mac)
+        Vhtail == Shtail*(5*units('ft'))/(S*mac),
+        crhtail == lamvtail*crvtail
         ]
 
         Model.__init__(self, None, constraints,**kwargs)
@@ -225,20 +226,24 @@ if __name__ == "__main__":
     print 'Boom length: ' + str(varVals['l_{boom}'])
     print 'Boom diameter: ' + str(varVals['d_0_{boom}'])
     print 'Boom k-value: ' + str((varVals['k_{boom}'].magnitude-0.5)*2)
-    #print 'Horizontal tail volume coeff: ' + str(varVals['V_{htail}'])
+    print 'Htail aspect ratio: ' + str(varVals['AR_{htail}'])
     print 'Htail weight: ' + str(varVals['W_{htail}'])
     print 'Htail surface area: ' + str(varVals['S_{htail}'])
     print 'Htail span: ' + str(varVals['b_{htail}'])
     print 'Htail root chord: ' + str(varVals['c_r_{htail}'])
+    print 'Htail taper ratio: ' + str(varVals['\\lambda_{htail}'])
     print 'CLmaxhtail: ' + str(varVals['CL_{max-htail}'])
-    print 'qNE: ' + str(varVals['q_{NE}'])
+    print 'Vtail aspect ratio: ' + str(varVals['AR_{vtail}'])    
     print 'Vtail weight: ' + str(varVals['W_{vtail}'])
     print 'Vtail surface area: ' + str(varVals['S_{vtail}'])
     print 'Vtail height: ' + str(varVals['h_{vtail}'])
-    print 'Vtail root chord: ' + str(varVals['c_r_{htail}'])
+    print 'Vtail root chord: ' + str(varVals['c_r_{vtail}'])
+    print 'Vtail taper ratio: ' + str(varVals['\\lambda_{vtail}'])
+
     #print 'Vtail root chord: ' + str(varVals['cr_{vtail}']) 
     print 'CLmaxvtail: ' + str(varVals['CL_{max-vtail}'])
-    print 'Relative wind: ' + str(varVals['V_{rel}'])
-    print 'Maximum boom loading: ' + str(varVals['F_{boom-max}'])
+    #print 'Relative wind: ' + str(varVals['V_{rel}'])
+    #print 'Maximum boom loading: ' + str(varVals['F_{boom-max}'])
     print 'Vhtail: ' + str(varVals['V_{htail}'])
     print 'Vvtail: ' + str(varVals['V_{vtail}'])
+    print 'Total tail weight: ' + str(sol['cost'])
