@@ -23,6 +23,7 @@ class dartTail(Model):
         rhoh   = Variable('rho_[h}',.776,'kg/m^3','Density at 15,000 ft')
         qNE    = Variable('q_{NE}','Pa','Never-exceed dynamic pressure')
         VNE    = Variable('V_{NE}',46,'m/s','Never-exceed speed')
+        b      = Variable('b',24.09,'ft','Wing span')
 
         # Airfoil properties (NACA0008)
         areaAF = Variable('A_{ratio-airfoil}',0.0548,'ft^2','Airfoil area/chord ratio') #for NACA0008
@@ -68,7 +69,7 @@ class dartTail(Model):
         Vhtail      = Variable('V_{htail}','-','Horizontal tail volume coefficient') # 0.5 common for sailplane
         Shtail      = Variable('S_{htail}','ft^2','Horizontal tail area')
         ARhtail     = Variable('AR_{htail}',5, '-','Horizontal tail aspect ratio')
-        lamhtail    = Variable('\\lambda_{htail}',.8,'-','Horizontal tail taper ratio')
+        lamhtail    = Variable('\\lambda_{htail}',1.,'-','Horizontal tail taper ratio')
         bhtail      = Variable('b_{htail}','ft', 'Horizontal tail span')
         crhtail     = Variable('c_r_{htail}','ft','Horizontal tail root chord')
         deltatail   = Variable('\\delta_{tail}',.2,'m','Horizontal-vertical tail offset')
@@ -86,10 +87,13 @@ class dartTail(Model):
         CLmaxvtail  = Variable('CL_{max-vtail}','-','Vertical tail maximum lift coefficient')
         Wvtail      = Variable('W_{vtail}','lbf','Vertical tail weight')
 
+        Vhtail     = Variable('V_{htail}','-','Horizontal tail volume coefficient')
+        Vvtail     = Variable('V_{vtail}','-','Vertical tail volume coefficient')
+
 
         # Crosswind landing variables
         Vland      = Variable('V_{land}',12,'m/s','Landing speed')
-        Vwindcross = Variable('V_{wind_cross}',10,'mph','Landing cross-wind speed')
+        Vwindcross = Variable('V_{wind_cross}',15,'mph','Landing cross-wind speed')
         CDy = Variable('C_{Dy}',.5,'-','Crosswind drag coefficient')
         Vrel = Variable('V_{rel}','m/s','Relative wind in crosswind')
 
@@ -97,26 +101,28 @@ class dartTail(Model):
         # Boom sizing
         kboom       >= 0.75, 
         kboom       <= 1, # Constraining boom inertia variable
+        lboom       >= 5.68*units('ft'),
+        d0boom      <= 1.25*units('in'),
         M_CG        <= 2*Ffacboom*Fboom*(lboom),
         TCS([I0boom == pi*t0boom*d0boom**3/8]),
         Eboom       == 150*10**9*units('N/m^2'),
         Wboom       >= pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
-        thetaboom   <= 0.02,
+        thetaboom   <= 0.05,
         thetaboom   >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
-        Fboommax    == .5*(.776*units('kg/m^3'))*(46*units('m/s'))**2*Shtail*CLmaxhtail,
+        Fboommax    >= .25*(.776*units('kg/m^3'))*(46*units('m/s'))**2*Shtail*CLmaxhtail,
         Fboommax    >= .5*(.776*units('kg/m^3'))*(46*units('m/s'))**2*Svtail*CLmaxvtail,
         #sigboom     >= Fboommax*lboom/(Zboom),
         #sigyieldboom >= sigboom,
         #Zboom*(d0boom/2)+0.78*(d0boom/2)**4 <= 0.78*((d0boom/2+t0boom)**4),
         #Fboom       >= .5*rhoTO*Vrel**2*Svtail*CLmaxvtail,
-        Fboom       == .5*rhoTO*Vstall**2*Shtail*CLmaxhtail,
+        Fboom       == .25*rhoTO*Vstall**2*Shtail*CLmaxhtail,
         FNE**-1     >= 1 + mhtail*qNE*Shtail*lboom**2*kboom/(Eboom*I0boom),
         FNE         <= 1,
         TCS([mhtail*(1+2/ARhtail) <= 2*pi]),
             
         # Horizontal tail relations (sized for heavy forward CG (20 lb payload))
         bhtail**2/Shtail              == ARhtail,
-        Shtail                        <= bhtail*crhtail*(1+.8)/2, #Substituted lambda so it wouldn't be SP
+        Shtail                        <= bhtail*crhtail, #Substituted lambda so it wouldn't be SP
         TCS([CLmaxhtail*(1+2/ARhtail) <= CLmax*(1+2/27)]), #Substituted the aspect ratio of aircraft so it wouldn't be SP
         #TCS([Vhtail                   == Shtail*lboom/(S*mac)]),
         
@@ -135,7 +141,10 @@ class dartTail(Model):
         # Assuming solid foam-core wing with a min-gauge Kevlar skin
         Whtail >= (rhoFoamular*bhtail*areaAF)*((crhtail/crefAF)**2 + (crhtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Shtail),
         Wvtail >= (rhoFoamular*hvtail*areaAF)*((crvtail/crefAF)**2 + (crvtail*.8/crefAF)**2)/2+(1.1*g*rhoskin*Svtail),
-        Wtail  >= 2*(Wboom + Whtail + Wvtail),
+        Wtail  >= 2*(Wboom + Wvtail) + Whtail,
+
+        Vvtail == 2*Svtail*(5*units('ft'))/(S*b),
+        Vhtail == Shtail*(5*units('ft'))/(S*mac)
         ]
 
         Model.__init__(self, None, constraints,**kwargs)
@@ -147,7 +156,7 @@ class GasMALE(Model):
         ACloc  = Variable('AC_{location}',0.655,'ft','Aerodynamic center location')
         M_CG   = Variable('M_{CG}',32,'N*m','Torque around AC due to CG')
         S      = Variable('S',23.69,'ft^2','Wing area')
-        b      = Variable('b',25.15,'ft','Wing span')
+        b      = Variable('b',24.09,'ft','Wing span')
         cbar   = Variable('\\bar_c',1.02,'ft','Mean aerodynamic chord')
         AR     = Variable('AR',26.7,'-','Aspect ratio')
         e      = Variable('e',0.95,'-','Oswald efficiency')
@@ -176,6 +185,7 @@ class GasMALE(Model):
         RpullTO    = Variable('R_{pull-up}','m','Pull-up radius at takeoff')
         Fboom      = Variable('F_{boom}','N','Tail downforce')
         CLmaxhtail = Variable('CL_{max-htail}','-','Horizontal tail maximum lift coefficient')
+
 
         tail = dartTail()
         self.submodels = [tail]
@@ -230,3 +240,5 @@ if __name__ == "__main__":
     print 'CLmaxvtail: ' + str(varVals['CL_{max-vtail}'])
     print 'Relative wind: ' + str(varVals['V_{rel}'])
     print 'Maximum boom loading: ' + str(varVals['F_{boom-max}'])
+    print 'Vhtail: ' + str(varVals['V_{htail}'])
+    print 'Vvtail: ' + str(varVals['V_{vtail}'])
