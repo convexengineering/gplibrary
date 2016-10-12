@@ -107,7 +107,7 @@ class Fuselage(Model):
         #ffadd     = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
         ffairing  = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
         fframe    = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
-        fstring   = Variable('f_{string}',0.235,'-','Fractional stringer weight')
+        fstring   = Variable('f_{string}','-','Fractional stringer weight')
         fwebcargo = Variable('f_{web}',1.030, '-','Fractional web and cargo floor weight')
         
         # Misc free variables
@@ -199,8 +199,9 @@ class Fuselage(Model):
             Askin  >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
             Adb    == (2*hdb)*tdb,
             Afuse  >= (pi + 2*thetadb + thetadb)*Rfuse**2,
-            #tshell >= tskin*(1+rE*fstring*rhoskin/rhobend),
-            tshell == tskin, #Temporarily, so I can see changes in horizontal bending material
+            tshell >= tskin*(1+rE*fstring*rhoskin/rhobend),
+            #fstring == 0.1,
+            #tshell == tskin, #Temporarily, so I can see changes in horizontal bending material
             
             # Fuselage surface area relations
             Snose >= (2*pi + 4*thetadb)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
@@ -252,7 +253,7 @@ class Fuselage(Model):
             bvt                             == 7*units('m'),
             plamv                           == 1.6, #Temporarily
             taucone                         == sigskin,
-            3*Qv*(plamv-1)                  >= Lvmax*bvt*(plamv), #[SP]
+            3*Qv*(plamv-1)                  >= Lvmax*bvt*(plamv),
             lamcone                         == 0.4, # TODO remove
             Vcone*(1+lamcone)*(pi+4*thetadb) >= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
             Wcone                           >= rhocone*g*Vcone*(1+fstring+fframe),
@@ -261,7 +262,7 @@ class Fuselage(Model):
             # Tail aero loads
             xtail    >= lnose + lshell + .5*lcone, #Temporarily
             Lhmax    == 0.5*rho0*VNE**2*Shtail*CLhmax,
-            SignomialEquality(xwing, lnose + 0.6*lshell), #[SP] [SPEquality]
+            xwing >= lnose + 0.6*lshell,
             Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
             Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
 
@@ -270,7 +271,6 @@ class Fuselage(Model):
             # Horizontal bending model
             # Maximum axial stress is the sum of bending and pressurization stresses
             Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell + 2/3*hdb**3*tdb, # [SP]
-            #Ihshell == ((pi)*Rfuse**2)*Rfuse*tshell,
             #Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #[SP]
             #Ivshell approximation needs to be improved
             A2       >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh),
@@ -308,7 +308,6 @@ class Fuselage(Model):
             Vvbendb >= .5*B1*((xtail-xb)**2 - (xtail-xvbend)**2) - B0*(xvbend - xb), #[SP]
             Vvbendc >= .5*Avbendb*c0*wbar,
             Vvbend >= Vvbendb + Vvbendc,
-
 
             Whbend  >= g*rhobend*Vhbend,
             Wvbend >= g*rhobend*Vvbend,
@@ -404,7 +403,7 @@ class Fuselage(Model):
 if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
-    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=1, iteration_limit=100)
+    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
     # subs = {'R_{fuse}_Fuselage':4,'w_{fuse}_Fuselage':10}
     #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
@@ -451,13 +450,12 @@ if __name__ == "__main__":
     print 'Skin thickness: ' + str(sol('t_{skin}'))
     print 'Shell thickness: ' + str(sol('t_{shell}'))
     print 'Shell inertia: ' + str(sol('I_{hshell}'))
-    print 'Vhbendf: ' + str(sol('V_{hbendf}'))
-    print 'Vhbendb: ' + str(sol('V_{hbendb}'))
-    print 'Vhbendc: ' + str(sol('V_{hbendc}'))
-    print 'Ahbendf: ' + str(sol('A_{hbendf}'))
-    print 'Ahbendb: ' + str(sol('A_{hbendb}'))
-    print 'Vvbendb: ' + str(sol('V_{vbendb}'))
-    print 'Vvbendc: ' + str(sol('V_{vbendc}'))
-    print 'Avbendb: ' + str(sol('A_{hbendb}'))
-    hfuse = sol('h_{fuse}')
-    A0 = sol('A0')
+    print 'Stringer mass fraction: ' + str(sol('f_{string}'))
+    # print 'Vhbendf: ' + str(sol('V_{hbendf}'))
+    # print 'Vhbendb: ' + str(sol('V_{hbendb}'))
+    # print 'Vhbendc: ' + str(sol('V_{hbendc}'))
+    # print 'Ahbendf: ' + str(sol('A_{hbendf}'))
+    # print 'Ahbendb: ' + str(sol('A_{hbendb}'))
+    # print 'Vvbendb: ' + str(sol('V_{vbendb}'))
+    # print 'Vvbendc: ' + str(sol('V_{vbendc}'))
+    # print 'Avbendb: ' + str(sol('A_{hbendb}'))
