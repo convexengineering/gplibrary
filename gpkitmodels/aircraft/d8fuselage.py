@@ -23,7 +23,10 @@ class Fuselage(Model):
 
         # Fixed variables
         SPR          = Variable('SPR', 8, '-', 'Number of seats per row')
+        npass        = Variable('n_{pass}', '-', 'Number of passengers')
         nseats       = Variable('n_{seat}',192,'-','Number of seats')
+        rhocargo = Variable('\\rho_{cargo}', 'kg/m^3', 'Cargo density')
+
         nrows        = Variable('n_{rows}', '-', 'Number of rows')
         pitch        = Variable('p_s',81, 'cm', 'Seat pitch')
         Nland        = Variable('N_{land}',6,'-', 'Emergency landing load factor')
@@ -87,7 +90,7 @@ class Fuselage(Model):
         #Wbuoy       = Variable('W_{buoy}', 'N', 'Buoyancy weight')
         Wapu     = Variable('W_{apu}', 'N', 'APU weight')
         Wavgpass     = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
-        Wcargo       = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
+        Wcargo       = Variable('W_{cargo}', 'N', 'Cargo weight')
         Wcarryon     = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
         Wchecked     = Variable('W_{checked}', 40, 'lbf', 'Ave. checked bag weight')
         Wcone        = Variable('W_{cone}', 'N', 'Cone weight')
@@ -95,7 +98,9 @@ class Fuselage(Model):
         Wfloor       = Variable('W_{floor}', 'N', 'Floor weight')
         Wfuse        = Variable('W_{fuse}', 'N', 'Fuselage weight')
         Winsul       = Variable('W_{insul}', 'N', 'Insulation material weight')
+        Wlugg    = Variable('W_{lugg}', 'N', 'Passenger luggage weight')
         Wpay         = Variable('W_{pay}', 'N', 'Payload weight')
+        Wpass    = Variable('W_{pass}', 'N', 'Passenger weight')
         Wseat        = Variable('W_{seat}', 'N', 'Seating weight')
         Wshell       = Variable('W_{shell}','N','Shell weight')
         Wskin        = Variable('W_{skin}', 'N', 'Skin weight')
@@ -109,6 +114,8 @@ class Fuselage(Model):
         fapu         = Variable('f_{apu}',0.035,'-','APU weight as fraction of payload weight')
         ffairing     = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
         fframe       = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
+        flugg1       = Variable('f_{lugg,1}',0.4,'-','Proportion of passengers with one suitcase')
+        flugg2       = Variable('f_{lugg,2}',0.1, '-','Proportion of passengers with two suitcases')
         fstring      = Variable('f_{string}','-','Fractional stringer weight')
         fwebcargo    = Variable('f_{web}',1.030, '-','Fractional web and cargo floor weight')
         
@@ -187,8 +194,10 @@ class Fuselage(Model):
             constraints = [
             # Passenger constraints (assuming 737-sixed aircraft)
             #Temporarily
-            Wpay     == 150000*units('N'),
+            Wpay >= Wpass + Wlugg + Wcargo,
             Wseat    == 50000*units('N'),
+            Wcargo   == 15000*units('N'),
+            # Wcargo == rhocargo*g*Vcargo,
             nrows    == nseats/SPR,
             lshell   == nrows*pitch,
             
@@ -230,7 +239,9 @@ class Fuselage(Model):
             
             # Fuselage weight relations
             Wapu     == Wpay*fapu,
+            #Wcargo   == Vcargo*g*rhocargo,
             Winsul   >= Wppinsul*((1.1*pi+2*thetadb)*Rfuse*lshell + 0.55*(Snose+Sbulk)),
+            Wlugg    >= flugg2*npass*2*Wchecked + flugg1*npass*Wchecked + Wcarryon,
             Wwindow  >= Wpwindow*lshell,
             Wskin    >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell   >= Wskin*(1 + fstring + ffairing + fframe + fwebcargo),
