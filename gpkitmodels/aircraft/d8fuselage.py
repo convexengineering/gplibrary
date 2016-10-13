@@ -23,7 +23,14 @@ from gpkit.tools import te_exp_minus1
 from collections import defaultdict
 from gpkit.small_scripts import mag
 
-
+# Note that sweep has to be True for any sweep to take place. 
+sweep         = True
+nsweep        = 5
+sweep_thetadb = False
+sweep_npass   = False
+sweep_Lhmax   = False
+sweep_fstring = True
+fstring_bounds= [0.0,0.3]
 
 class Fuselage(Model):
     def __init__(self, **kwargs):
@@ -466,62 +473,80 @@ class Fuselage(Model):
 if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
-    #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
-    sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
-    varVals = sol['variables']
-    print 'Cabin volume        : ' + str(sol('V_{cabin}'))
-    print 'Fuselage width  : ' + str(sol('w_{fuse}'))
-    print 'Fuselage length : ' + str(sol('l_{fuse}'))
-    # print 'Floor area      : ' + str(sol('A_{floor}')) + 
-    # print 'Floor height    : ' + str(sol('h_{floor}')) + 
-    # print 'Floor length    : ' + str(sol('l_{floor}')) + 
-    print 'Floor width     : ' + str(sol('w_{floor}'))
-    #print 'Fuselage angle : ' + str(sol('\\theta_{db}')) + 
-    print 'Fuselage radius: ' + str(sol('R_{fuse}'))
-    #print 'Floor total loading : ' + str(sol('P_{floor}')) + 
-    print 'Floor weight        : ' + str(sol('W_{floor}')) + 
-    print 'Floor volume        : ' + str(sol('V_{floor}')) + 
-    print 'Floor bending moment: ' + str(sol('M_{floor}')) + 
-    #print 'Shell thickness     : ' + str(sol('t_{shell}')) + 
-    #print 'Skin hoop stress    : ' + str(sol('\\sigma_{\\theta}')) + 
-    print 'Skin axial stress   : ' + str(sol('\\sigma_x')) + 
-    #print 'Cone weight         : ' + str(sol('W_{cone}'))
-    #print 'Cone length         : ' + str(sol('l_{cone}'))
-    #print 'Cone volume         : ' + str(sol('V_{cone}'))
-    #print 'Tail torsion moment : ' + str(sol('Q_{v}'))
-    #print 'Cone taper ratio    : ' + str(sol('\\lambda_{cone}'))
-    #print 'Max horizontal tail loading:' + str(sol('L_{h_max}'))
-    #print 'Max horizontal tail aero bending load: ' +  str(sol('M_{h_aero}'))
-    #print 'Max vertical tail aero bending load: ' +  str(sol('M_{v_aero}'))
-    #print 'Wing location: ' + str(sol('x_{wing}'))
-    #print 'Tail location: ' + str(sol('x_{tail}'))
-    print 'Horizontal bending material weight: '+ str(sol('W_{hbend}'))
-    #print 'Vertical bending material weight: ' + str(sol('W_{vbend}'))
-    # print 'A2: ' + str(sol('A2'))
-    # print 'A1: ' + str(sol('A1'))
-    # print 'A0:  ' + str(sol('A0'))
-    # print 'B1: ' + str(sol('B1'))
-    # print 'B0: ' + str(sol('B0'))
-    #print 'Shell start location: ' + str(sol('x_{shell1}'))
-    #print 'Shell end location: ' + str(sol('x_{shell2}'))
-    print 'Zero hbending location: ' + str(sol('x_{hbend}'))
-    print 'Wing box start location: ' + str(sol('x_b'))
-    print 'Wing box end location: ' + str(sol('x_f'))
-    print 'Total weight: ' + str(sol['cost'])
-    print 'Web area: ' + str(sol('A_{db}'))
-    print 'Skin thickness: ' + str(sol('t_{skin}'))
-    print 'Shell thickness: ' + str(sol('t_{shell}'))
-    print 'Shell horizontal inertia: ' + str(sol('I_{hshell}'))
-    print 'Shell vertical inertia: ' + str(sol('I_{vshell}'))
-    print 'Stringer mass fraction: ' + str(sol('f_{string}'))
-    #print 'Vhbendf: ' + str(sol('V_{hbendf}'))
-    #print 'Vhbendb: ' + str(sol('V_{hbendb}'))
-    # print 'Vhbendc: ' + str(sol('V_{hbendc}'))
-    # print 'Ahbendf: ' + str(sol('A_{hbendf}'))
-    # print 'Ahbendb: ' + str(sol('A_{hbendb}'))
-    # print 'Vvbendb: ' + str(sol('V_{vbendb}'))
-    # print 'Vvbendc: ' + str(sol('V_{vbendc}'))
-    # print 'Avbendb: ' + str(sol('A_{hbendb}'))
-    #print 'Cargo volume: ' + str(sol('V_{cargo}'))
-    #print 'Hold volume: ' + str(sol('V_{hold}'))
-    #print 'Hold area: ' + str(sol('V_{hold}'))
+    if sweep == False:
+        #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
+        sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
+        varVals = sol['variables']
+        print 'Cabin volume        : ' + str(sol('V_{cabin}'))
+        print 'Fuselage width  : ' + str(sol('w_{fuse}'))
+        print 'Fuselage length : ' + str(sol('l_{fuse}'))
+        # print 'Floor area      : ' + str(sol('A_{floor}'))
+        # print 'Floor height    : ' + str(sol('h_{floor}'))
+        # print 'Floor length    : ' + str(sol('l_{floor}'))
+        print 'Floor width     : ' + str(sol('w_{floor}'))
+        #print 'Fuselage angle : ' + str(sol('\\theta_{db}'))
+        print 'Fuselage radius: ' + str(sol('R_{fuse}'))
+        #print 'Floor total loading : ' + str(sol('P_{floor}')) 
+        print 'Floor weight        : ' + str(sol('W_{floor}'))
+        print 'Floor volume        : ' + str(sol('V_{floor}'))
+        print 'Floor bending moment: ' + str(sol('M_{floor}'))
+        #print 'Shell thickness     : ' + str(sol('t_{shell}'))
+        #print 'Skin hoop stress    : ' + str(sol('\\sigma_{\\theta}'))
+        print 'Skin axial stress   : ' + str(sol('\\sigma_x')) 
+        #print 'Cone weight         : ' + str(sol('W_{cone}'))
+        #print 'Cone length         : ' + str(sol('l_{cone}'))
+        #print 'Cone volume         : ' + str(sol('V_{cone}'))
+        #print 'Tail torsion moment : ' + str(sol('Q_{v}'))
+        #print 'Cone taper ratio    : ' + str(sol('\\lambda_{cone}'))
+        #print 'Max horizontal tail loading:' + str(sol('L_{h_max}'))
+        #print 'Max horizontal tail aero bending load: ' +  str(sol('M_{h_aero}'))
+        #print 'Max vertical tail aero bending load: ' +  str(sol('M_{v_aero}'))
+        #print 'Wing location: ' + str(sol('x_{wing}'))
+        #print 'Tail location: ' + str(sol('x_{tail}'))
+        print 'Horizontal bending material weight: '+ str(sol('W_{hbend}'))
+        #print 'Vertical bending material weight: ' + str(sol('W_{vbend}'))
+        # print 'A2: ' + str(sol('A2'))
+        # print 'A1: ' + str(sol('A1'))
+        # print 'A0:  ' + str(sol('A0'))
+        # print 'B1: ' + str(sol('B1'))
+        # print 'B0: ' + str(sol('B0'))
+        #print 'Shell start location: ' + str(sol('x_{shell1}'))
+        #print 'Shell end location: ' + str(sol('x_{shell2}'))
+        print 'Zero hbending location: ' + str(sol('x_{hbend}'))
+        print 'Wing box start location: ' + str(sol('x_b'))
+        print 'Wing box end location: ' + str(sol('x_f'))
+        print 'Total weight: ' + str(sol['cost'])
+        print 'Web area: ' + str(sol('A_{db}'))
+        print 'Skin thickness: ' + str(sol('t_{skin}'))
+        print 'Shell thickness: ' + str(sol('t_{shell}'))
+        print 'Shell horizontal inertia: ' + str(sol('I_{hshell}'))
+        print 'Shell vertical inertia: ' + str(sol('I_{vshell}'))
+        print 'Stringer mass fraction: ' + str(sol('f_{string}'))
+        #print 'Vhbendf: ' + str(sol('V_{hbendf}'))
+        #print 'Vhbendb: ' + str(sol('V_{hbendb}'))
+        # print 'Vhbendc: ' + str(sol('V_{hbendc}'))
+        # print 'Ahbendf: ' + str(sol('A_{hbendf}'))
+        # print 'Ahbendb: ' + str(sol('A_{hbendb}'))
+        # print 'Vvbendb: ' + str(sol('V_{vbendb}'))
+        # print 'Vvbendc: ' + str(sol('V_{vbendc}'))
+        # print 'Avbendb: ' + str(sol('A_{hbendb}'))
+        #print 'Cargo volume: ' + str(sol('V_{cargo}'))
+        #print 'Hold volume: ' + str(sol('V_{hold}'))
+        #print 'Hold area: ' + str(sol('V_{hold}')) 
+    if sweep:
+        if sweep_fstring == True:
+            M.substitutions.update({'f_{string}': \
+                ('sweep',np.linspace(fstring_bounds[0],fstring_bounds[1],nsweep))})
+            sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50,skipsweepfailures=True)
+            f_string = sol('f_{string}')
+            Wfuse    = sol('W_{fuse}')
+            Whbend   = sol('W_{hbend}')
+
+            plt.close()
+            plt.plot(f_string, Wfuse)
+            plt.title('W_{fuse} vs. f_{string}')
+            plt.xlabel('f_{string}')
+            plt.ylabel('W_fuse (N)')
+            plt.grid()
+            #plt.axis([fstring_bounds[0], fstring_bounds[1], 0, 10])
+            plt.savefig('Wfuse_vs_f_string.pdf')
