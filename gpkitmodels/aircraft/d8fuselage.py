@@ -1,4 +1,17 @@
 """ d8fuselage.py """
+""" 
+Sources for substitutions:
+#[b757 freight doc]
+#[Boeing]
+#[Philippe]
+#[stdAtm]
+#[TAS]
+
+Other markers:
+#[SP]
+#[SPEquality]
+
+"""
 from numpy import pi
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,10 +41,11 @@ class Fuselage(Model):
 
         nrows        = Variable('n_{rows}', '-', 'Number of rows')
         pitch        = Variable('p_s',81., 'cm', 'Seat pitch')
-        Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor')
+        Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor') #[TAS]
         dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
-        rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)')
-        VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed')
+        rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)') #[stdAtm]
+        rhoinf       = Variable('\\rho_{\\infty}', 'kg/m^3','Air density (35,000ft)') #[stdAtm]
+        VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed') #[Philippe]
         
         # Cross sectional parameters
         Adb          = Variable('A_{db}', 'm^2', 'Web cross sectional area')
@@ -49,7 +63,7 @@ class Fuselage(Model):
         thetadb      = Variable('\\theta_{db}','-','DB fuselage joining angle')
         tshell       = Variable('t_{shell}', 'm', 'Shell thickness')
         tskin        = Variable('t_{skin}', 'm', 'Skin thickness')
-        waisle       = Variable('w_{aisle}',0.51, 'm', 'Aisle width') # Boeing
+        waisle       = Variable('w_{aisle}',0.51, 'm', 'Aisle width') #[Boeing]
         wdb          = Variable('w_{db}','m','DB added half-width')
         wfloor       = Variable('w_{floor}', 'm', 'Floor half-width')
         #wcargofloor  = Variable('w_{cargo}','m','Cargo floor half-width')
@@ -126,7 +140,7 @@ class Fuselage(Model):
         fpadd        = Variable('f_{padd}',0.4, '-', 'Other misc weight as fraction of payload weight')
         fstring      = Variable('f_{string}','-','Fractional stringer weight')
         rhobend      = Variable('\\rho_{bend}', 2700, 'kg/m^3', 'Stringer density') #[TAS]
-        rhocargo     = Variable('\\rho_{cargo}', 150, 'kg/m^3', 'Cargo density')  # b757 freight doc
+        rhocargo     = Variable('\\rho_{cargo}', 150, 'kg/m^3', 'Cargo density')  #[b757 freight doc]
         rholugg      = Variable('\\rho_{lugg}',100,'kg/m^3', 'Luggage density') #[Philippe]
 
         # Misc free variables
@@ -146,12 +160,12 @@ class Fuselage(Model):
         Mfloor       = Variable('M_{floor}', 'N*m', 'Max bending moment in floor beams')
         Pfloor       = Variable('P_{floor}','N', 'Distributed floor load')
         Sfloor       = Variable('S_{floor}', 'N', 'Maximum shear in floor beams')
-        sigfloor     = Variable('\\sigma_{floor}',30000/0.000145, 'N/m^2', 'Max allowable floor stress') #TASOPT value used
-        sigskin      = Variable('\\sigma_{skin}', 15000/0.000145,'N/m^2', 'Max allowable skin stress') # again notional 
+        sigfloor     = Variable('\\sigma_{floor}',30000/0.000145, 'N/m^2', 'Max allowable floor stress') #[TAS]
+        sigskin      = Variable('\\sigma_{skin}', 15000/0.000145,'N/m^2', 'Max allowable skin stress') #[TAS] 
         sigth        = Variable('\\sigma_{\\theta}', 'N/m^2', 'Skin hoop stress')
         sigx         = Variable('\\sigma_x', 'N/m^2', 'Axial stress in skin')
         taucone      = Variable('\\tau_{cone}', 'N/m^2', 'Shear stress in cone')
-        taufloor     = Variable('\\tau_{floor}',30000/0.000145, 'N/m^2', 'Max allowable shear web stress') #TASOPT value used
+        taufloor     = Variable('\\tau_{floor}',30000/0.000145, 'N/m^2', 'Max allowable shear web stress') #[TAS]
         
         Mhmax        = Variable('M_{h_max}', 'N*m','Maximum horizontal axis bending moment')
         Mvmax        = Variable('M_{v_max}', 'N*m','Maximum vertical axis bending moment')
@@ -169,8 +183,8 @@ class Fuselage(Model):
         B1           = Variable('B1','m','Vertical bending area constant B1') #(vertical tail bending load)
         Ihshell      = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
         Ivshell      = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
-        rMh          = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') # Temporarily .5
-        rMv          = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor')
+        rMh          = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') #[TAS]
+        rMv          = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor') #[TAS]
         sigbend      = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
         sigMh        = Variable('\\sigma_{M_h}','N/m^2','Horizontal bending material stress')
         sigMv        = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
