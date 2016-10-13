@@ -80,15 +80,18 @@ class Fuselage(Model):
         # Volumes (free)        
         Vbulk        = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
         Vcabin       = Variable('V_{cabin}', 'm^3', 'Cabin volume')
+        Vcargo       = Variable('V_{cargo}', 'm^3', 'Cargo volume')
         Vcone        = Variable('V_{cone}', 'm^3', 'Cone skin volume')
         Vcyl         = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')   
         Vdb          = Variable('V_{db}', 'm^3', 'Web volume')
         Vfloor       = Variable('V_{floor}', 'm^3', 'Floor volume')
+        Vhold        = Variable('V_{hold}', 'm^3', 'Hold volume')
+        Vlugg        = Variable('V_{lugg}', 'm^3', 'Luggage volume')
         Vnose        = Variable('V_{nose}', 'm^3', 'Nose skin volume')
         
         # Weights
         #Wbuoy       = Variable('W_{buoy}', 'N', 'Buoyancy weight')
-        Wapu     = Variable('W_{apu}', 'N', 'APU weight')
+        Wapu         = Variable('W_{apu}', 'N', 'APU weight')
         Wavgpass     = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
         Wcargo       = Variable('W_{cargo}', 'N', 'Cargo weight')
         Wcarryon     = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
@@ -118,7 +121,8 @@ class Fuselage(Model):
         flugg2       = Variable('f_{lugg,2}',0.1, '-','Proportion of passengers with two suitcases')
         fstring      = Variable('f_{string}','-','Fractional stringer weight')
         fwebcargo    = Variable('f_{web}',1.030, '-','Fractional web and cargo floor weight')
-        
+        rholugg      = Variable('\\rho_{lugg}',0.1,'kg/m^3', 'Luggage density')
+
         # Misc free variables
         
         # Material properties
@@ -231,17 +235,22 @@ class Fuselage(Model):
             wfloor   >= wdb + Rfuse, # half of the total floor width in fuselage
             
             # Fuselage volume relations
-            Vcyl     == Askin*lshell,
-            Vnose    == Snose*tskin,
-            Vbulk    == Sbulk*tskin,
-            Vdb      == Adb*lshell,
-            Vcabin   >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
+            Vcyl   == Askin*lshell,
+            Vnose  == Snose*tskin,
+            Vbulk  == Sbulk*tskin,
+            Vdb    == Adb*lshell,
+            Vcabin >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
+            Vhold  >= Vcargo + Vlugg,
+            Vhold == Ahold*lshell,
+
+
             
             # Fuselage weight relations
             Wapu     == Wpay*fapu,
             #Wcargo   == Vcargo*g*rhocargo,
             Winsul   >= Wppinsul*((1.1*pi+2*thetadb)*Rfuse*lshell + 0.55*(Snose+Sbulk)),
             Wlugg    >= flugg2*npass*2*Wchecked + flugg1*npass*Wchecked + Wcarryon,
+            Wlugg    == Vlugg*g*rholugg,
             Wwindow  >= Wpwindow*lshell,
             Wskin    >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell   >= Wskin*(1 + fstring + ffairing + fframe + fwebcargo),

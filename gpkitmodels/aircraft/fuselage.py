@@ -110,7 +110,6 @@ class Fuselage(CostedConstraintSet):
         rE       = Variable('r_E', '-', 'Ratio of stringer/skin moduli')
         rhobend  = Variable('\\rho_{bend}', 'kg/m^3', 'Stringer density')
         rhocabin = Variable('\\rho_{cabin}', 'kg/m^3', 'Air density in cabin')
-        rhocargo = Variable('\\rho_{cargo}', 'kg/m^3', 'Cargo density')
         rhocone  = Variable('\\rho_{cone}', 'kg/m^3',
                             'Cone material density')
         rhofloor = Variable('\\rho_{floor}', 'kg/m^3',
