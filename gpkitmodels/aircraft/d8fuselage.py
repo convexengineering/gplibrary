@@ -44,9 +44,11 @@ class Fuselage(Model):
         Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor') #[TAS]
         dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
         rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)') #[stdAtm]
-        rhoinf       = Variable('\\rho_{\\infty}', 'kg/m^3','Air density (35,000ft)') #[stdAtm]
         VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed') #[Philippe]
-        
+        rhoinf       = Variable('\\rho_{\\infty}',0.38,'kg/m^3','Air density (35,000ft)') #[stdAtm]
+        Vinf         = Variable('V_{\\infty}',234, 'm/s','Cruise velocity')
+        muinf        = Variable('\\mu_{\\infty}', 'N*s/m^2', 'Dynamic viscosity (35,000 ft)')
+
         # Cross sectional parameters
         Adb          = Variable('A_{db}', 'm^2', 'Web cross sectional area')
         Afloor       = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
@@ -212,6 +214,13 @@ class Fuselage(Model):
         c0           = Variable('c_0','m','Root chord of the wing')
         wbar         = Variable('\\bar_w',0.5,'-','Wingbox to chord ratio') #Temporarily
 
+        # Drag variables
+        Dfuse    = Variable('D_{fuse}', 'N', 'Total drag in cruise')
+        Dfrict   = Variable('D_{friction}', 'N', 'Friction drag')
+        Dupswp   = Variable('D_{upsweep}', 'N', 'Drag due to fuse upsweep')
+        f        = Variable('f', '-', 'Fineness ratio')
+        FF       = Variable('FF', '-','Fuselage form factor')
+
         with SignomialsEnabled():
             constraints = [
             # Passenger constraints (assuming 737-sixed aircraft)
@@ -225,7 +234,7 @@ class Fuselage(Model):
             
             # Fuselage joint angle relations
             thetadb     == wdb/Rfuse, # first order Taylor works...
-            thetadb     >= 0.05, thetadb <= 0.25, #Temporarily
+            thetadb     >= 0.05, thetadb <= 0.4, #Temporarily
             hdb         >= Rfuse*(1.0-.5*thetadb**2), #[SP]
             
             # Fuselage cross-sectional relations
@@ -365,10 +374,16 @@ class Fuselage(Model):
             #xb <= xwing - dxwing + .5*c0*wbar, #[SP]        
             
             sigMh   <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
-            sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell  
+            sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell,
+
+            # Drag model
+            #f == lfuse/((4/np.pi*Afuse)**0.5), # fineness ratio
+            #FF >= 1 + 60/f**3 + f/400, # form factor
+            #Dfrict >= FF * pi*Rfuse * muinf*Vinf* 0.074*(rhoinf*Vinf*lfuse/muinf)**0.8,
+            #Dfuse >= Dfrict
             ]
 
-        objective = Wfuse + Vcabin*units('N/m^3') + tshell*units('N/m') + lfuse*units('N/m')
+        objective = Wfuse + Vcabin*units('N/m^3') + tshell*units('N/m') + lfuse*units('N/m') + Dfuse
         Model.__init__(self, objective, constraints, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
