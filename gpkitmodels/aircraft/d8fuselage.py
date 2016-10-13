@@ -85,6 +85,7 @@ class Fuselage(Model):
         
         # Weights
         #Wbuoy       = Variable('W_{buoy}', 'N', 'Buoyancy weight')
+        Wapu     = Variable('W_{apu}', 'N', 'APU weight')
         Wavgpass     = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
         Wcargo       = Variable('W_{cargo}', 10000, 'N', 'Cargo weight')
         Wcarryon     = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
@@ -105,6 +106,7 @@ class Fuselage(Model):
         # Weight fractions (fixed, with respect to the aircraft skin weight, set from PRSEUS metrics)
         
         #ffadd       = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
+        fapu         = Variable('f_{apu}',0.035,'-','APU weight as fraction of payload weight')
         ffairing     = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
         fframe       = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
         fstring      = Variable('f_{string}','-','Fractional stringer weight')
@@ -212,7 +214,7 @@ class Fuselage(Model):
             lfuse    >= lnose+lshell+lcone, 
             lnose    == 0.3*lshell, # Temporarily
             xshell1  == lnose,
-            xshell2  >= lnose + lshell
+            xshell2  >= lnose + lshell,
             lcone    == Rfuse/lamcone,
             # Fuselage width relations
             wfuse    >= SPR*wseat + 2*waisle + tdb + 2*tshell + 2*wsys,
@@ -227,11 +229,12 @@ class Fuselage(Model):
             Vcabin   >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
             
             # Fuselage weight relations
+            Wapu     == Wpay*fapu,
             Winsul   >= Wppinsul*((1.1*pi+2*thetadb)*Rfuse*lshell + 0.55*(Snose+Sbulk)),
             Wwindow  >= Wpwindow*lshell,
             Wskin    >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell   >= Wskin*(1 + fstring + ffairing + fframe + fwebcargo),
-            Wfuse    >= Wfix + Winsul + Wshell + Wfloor + Wwindow + Whbend + Wvbend + Wtail,
+            Wfuse    >= Wapu + Wfix + Winsul + Wshell + Wfloor + Wwindow + Whbend + Wvbend + Wtail,
             
             ## Stress relations
             #Pressure shell loading
@@ -275,8 +278,8 @@ class Fuselage(Model):
             # Maximum axial stress is the sum of bending and pressurization stresses
             Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell + 2/3*hdb**3*tdb, # [SP]
             Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #[SP] #Ivshell approximation needs to be improved
-            sigbend == sigskin, #Temporarily
-            
+            sigbend == rE*sigskin,
+        
             # Horizontal bending material model
             # Calculating xbend, the location where additional bending material is required
             xhbend  >= xwing,
@@ -321,7 +324,7 @@ class Fuselage(Model):
             #xb <= xwing - dxwing + .5*c0*wbar,         
             
             sigMh   <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
-            sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell,   
+            sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell  
             ]
 
         objective = Wfuse + Vcabin*units('N/m^3') + tshell*units('N/m') + lfuse*units('N/m')
