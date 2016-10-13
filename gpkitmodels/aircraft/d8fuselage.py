@@ -235,8 +235,7 @@ class Fuselage(Model):
             SignomialEquality(tshell,tskin*(1+rE*fstring*rhoskin/rhobend)),
             #tshell     >= tskin*(1+rE*fstring*rhoskin/rhobend),
             #Rfuse       >= dh + hhold + hfloor,
-            fstring     == 0.1,
-            #tshell     == tskin, #Temporarily, so I can see changes in horizontal bending material
+            fstring     == .1, #Temporarily, so I can see changes in horizontal bending material
             wfuse       >= SPR*wseat + 2*waisle + tdb + 2*tshell + 2*wsys,
             wfuse       <= 2*(Rfuse + wdb),
             wfloor      == .5*wfuse, # half of the total floor width in fuselage
@@ -276,7 +275,7 @@ class Fuselage(Model):
             Wpadd    == Wpay*fpadd,
             Wseat    == Wpseat*nseat,
             Wskin    >= rhoskin*g*(Vcyl + Vnose + Vbulk),
-            Wshell   >= Wskin*(1 + fstring + ffadd + fframe) + Wdb,
+            Wshell   >= Wskin*(1 + fstring + ffadd + fframe) + Wdb + Whbend + Wvbend,
             #Wfuse    >= Wapu + Wcargo + Wlugg + Wfix + Winsul + Wshell + Wfloor + Wwindow + Whbend + Wvbend + Wtail,
             Wfuse    >= Wfix + Wapu + Wpadd + Wseat + Wshell + Wwindow + Winsul + Wcone + Wfloor,
 
@@ -350,11 +349,11 @@ class Fuselage(Model):
             B1      == rMv*Lvmax/(wfloor*sigMv),                                               # Aero loads constant B1
             B0      == Ivshell/(rE*wfloor**2),                                                 # Shell inertia constant B0
             Avbendb >= B1*(xtail-xb) - B0,                                                      # Bending area behind wingbox
-
+            
             Vvbendb >= .5*B1*((xtail-xb)**2 - (xtail-xvbend)**2) - B0*(xvbend - xb), #[SP]
             Vvbendc >= .5*Avbendb*c0*wbar,
-            Vvbend >= Vvbendb + Vvbendc,
-            Wvbend >= g*rhobend*Vvbend,
+            Vvbend  >= Vvbendb + Vvbendc,
+            Wvbend  >= g*rhobend*Vvbend,
 
             # Temporary wing variable substitutions
             c0       == 0.1*lshell, #Temporarily
@@ -455,9 +454,9 @@ if __name__ == "__main__":
     bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
     #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
-    #print 'Cabin volume        : ' + str(varVals['V_{cabin}_Fuselage']) +'.'
+    print 'Cabin volume        : ' + str(varVals['V_{cabin}_Fuselage']) +'.'
     print 'Fuselage width  : ' + str(varVals['w_{fuse}_Fuselage']) + '.'
-    # print 'Fuselage length : ' + str(varVals['l_{fuse}'])
+    print 'Fuselage length : ' + str(varVals['l_{fuse}'])
     # print 'Floor area      : ' + str(varVals['A_{floor}_Fuselage']) + '.'
     # print 'Floor height    : ' + str(varVals['h_{floor}_Fuselage']) + '.'
     # print 'Floor length    : ' + str(varVals['l_{floor}_Fuselage']) + '.'
@@ -490,7 +489,7 @@ if __name__ == "__main__":
     # print 'B0: ' + str(varVals['B0_Fuselage'])
     #print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
     #print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
-    print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
+    print 'Zero hbending location: ' + str(varVals['x_{hbend}_Fuselage'])
     print 'Wing box start location: ' + str(varVals['x_b_Fuselage'])
     print 'Wing box end location: ' + str(varVals['x_f_Fuselage'])
     print 'Total weight: ' + str(sol['cost'])
@@ -511,4 +510,3 @@ if __name__ == "__main__":
     #print 'Cargo volume: ' + str(sol('V_{cargo}'))
     #print 'Hold volume: ' + str(sol('V_{hold}'))
     #print 'Hold area: ' + str(sol('V_{hold}'))
-    print 'Cabin volume: ' + str(sol('V_{cabin}'))
