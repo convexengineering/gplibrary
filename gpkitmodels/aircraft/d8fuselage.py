@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from gpkit import VectorVariable, Variable, Model, units, SignomialsEnabled
 from gpkit import LinkedConstraintSet as LSC
-from gpkit.constraints.bounded import BoundedConstraintSet as BCS
+#from gpkit.constraints.bounded import BoundedConstraintSet as BCS
 from gpkit import SignomialEquality
 from gpkit.tools import te_exp_minus1
 from collections import defaultdict
@@ -23,13 +23,12 @@ class Fuselage(Model):
 
         # Fixed variables
         SPR          = Variable('SPR', 8, '-', 'Number of seats per row')
-        npass        = Variable('n_{pass}', '-', 'Number of passengers')
-        nseats       = Variable('n_{seat}',192,'-','Number of seats')
-        rhocargo = Variable('\\rho_{cargo}', 'kg/m^3', 'Cargo density')
+        npass        = Variable('n_{pass}',192,'-', 'Number of passengers')
+        nseat        = Variable('n_{seat}','-','Number of seats')
 
         nrows        = Variable('n_{rows}', '-', 'Number of rows')
-        pitch        = Variable('p_s',81, 'cm', 'Seat pitch')
-        Nland        = Variable('N_{land}',6,'-', 'Emergency landing load factor')
+        pitch        = Variable('p_s',81., 'cm', 'Seat pitch')
+        Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor')
         dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
         rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)')
         VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed')
@@ -40,20 +39,23 @@ class Fuselage(Model):
         Afuse        = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
         Ahold        = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
         Askin        = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
+        dh           = Variable('\\Delta_h',1, 'm','Distance from floor to widest part of fuselage') #[Philippe]
         hdb          = Variable('h_{db}','m', 'Web half-height')
         hfloor       = Variable('h_{floor}', 'm', 'Floor beam height')
         hfuse        = Variable('h_{fuse}','m','Fuselage height')
+        #hhold        = Variable('h_{hold}', 'm', 'Height of the cargo hold')        
         Rfuse        = Variable('R_{fuse}', 'm', 'Fuselage radius') # will assume for now there: no under-fuselage extension deltaR
         tdb          = Variable('t_{db}', 'm', 'Web thickness')
         thetadb      = Variable('\\theta_{db}','-','DB fuselage joining angle')
         tshell       = Variable('t_{shell}', 'm', 'Shell thickness')
         tskin        = Variable('t_{skin}', 'm', 'Skin thickness')
-        waisle       = Variable('w_{aisle}',0.51, 'm', 'Aisle width')
+        waisle       = Variable('w_{aisle}',0.51, 'm', 'Aisle width') # Boeing
         wdb          = Variable('w_{db}','m','DB added half-width')
-        wfloor       = Variable('w_{floor}', 'm', 'Floor width')
+        wfloor       = Variable('w_{floor}', 'm', 'Floor half-width')
+        #wcargofloor  = Variable('w_{cargo}','m','Cargo floor half-width')
         wfuse        = Variable('w_{fuse}', 'm', 'Fuselage width')
-        wseat        = Variable('w_{seat}',0.5,'m', 'Seat width')
-        wsys         = Variable('w_{sys}', 0.1,'m', 'Width between cabin and skin for systems')
+        wseat        = Variable('w_{seat}',0.5,'m', 'Seat width') #[Philippe]
+        wsys         = Variable('w_{sys}', 0.1,'m', 'Width between cabin and skin for systems') #[Philippe]
         
         # Tail cone variables
         bvt          = Variable('b_{vt}', 'm', 'Vertical tail span')
@@ -85,25 +87,27 @@ class Fuselage(Model):
         Vcyl         = Variable('V_{cyl}', 'm^3', 'Cylinder skin volume')   
         Vdb          = Variable('V_{db}', 'm^3', 'Web volume')
         Vfloor       = Variable('V_{floor}', 'm^3', 'Floor volume')
-        Vhold        = Variable('V_{hold}', 'm^3', 'Hold volume')
+        #Vhold        = Variable('V_{hold}', 'm^3', 'Hold volume')
         Vlugg        = Variable('V_{lugg}', 'm^3', 'Luggage volume')
         Vnose        = Variable('V_{nose}', 'm^3', 'Nose skin volume')
         
         # Weights
         #Wbuoy       = Variable('W_{buoy}', 'N', 'Buoyancy weight')
         Wapu         = Variable('W_{apu}', 'N', 'APU weight')
-        Wavgpass     = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight')
-        Wcargo       = Variable('W_{cargo}', 'N', 'Cargo weight')
-        Wcarryon     = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight')
-        Wchecked     = Variable('W_{checked}', 40, 'lbf', 'Ave. checked bag weight')
+        Wavgpass     = Variable('W_{avg. pass}', 180, 'lbf', 'Average passenger weight') #[Philippe]
+        Wcargo       = Variable('W_{cargo}',10000, 'N', 'Cargo weight') #[Philippe]
+        Wcarryon     = Variable('W_{carry on}', 15, 'lbf', 'Ave. carry-on weight') #[Philippe]
+        Wchecked     = Variable('W_{checked}', 40, 'lbf', 'Ave. checked bag weight') #[Philippe]
         Wcone        = Variable('W_{cone}', 'N', 'Cone weight')
-        Wfix         = Variable('W_{fix}', 3000, 'lbf', 'Fixed weights (pilots, cockpit seats, navcom)')
+        Wdb          = Variable('W_{db}' , 'N', 'Web weight')
+        Wfix         = Variable('W_{fix}', 3000, 'lbf', 'Fixed weights (pilots, cockpit seats, navcom)') #[Philippe]
         Wfloor       = Variable('W_{floor}', 'N', 'Floor weight')
         Wfuse        = Variable('W_{fuse}', 'N', 'Fuselage weight')
         Winsul       = Variable('W_{insul}', 'N', 'Insulation material weight')
-        Wlugg    = Variable('W_{lugg}', 'N', 'Passenger luggage weight')
+        Wlugg        = Variable('W_{lugg}', 'N', 'Passenger luggage weight')
         Wpay         = Variable('W_{pay}', 'N', 'Payload weight')
-        Wpass    = Variable('W_{pass}', 'N', 'Passenger weight')
+        Wpass        = Variable('W_{pass}', 'N', 'Passenger weight')
+        Wpadd        = Variable('W_{padd}', 'N', 'Misc weights (galley, toilets, doors etc.)')
         Wseat        = Variable('W_{seat}', 'N', 'Seating weight')
         Wshell       = Variable('W_{shell}','N','Shell weight')
         Wskin        = Variable('W_{skin}', 'N', 'Skin weight')
@@ -111,31 +115,31 @@ class Fuselage(Model):
         Wvtail       = Variable('W_{vtail}',10000, 'N', 'Vertical tail weight') #Temporarily
         Whtail       = Variable('W_{htail}',10000, 'N', 'Horizontal tail weight') #Temporarily
         Wtail        = Variable('W_{tail}','N','Total tail weight')
-        # Weight fractions (fixed, with respect to the aircraft skin weight, set from PRSEUS metrics)
-        
-        #ffadd       = Variable('f_{fadd}', '-','Fractional added weight of local reinforcements')
-        fapu         = Variable('f_{apu}',0.035,'-','APU weight as fraction of payload weight')
-        ffairing     = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
+
+        # Weight fractions and crago densities
+        ffadd        = Variable('f_{fadd}',0.2, '-','Fractional added weight of local reinforcements') #[TAS]
+        fapu         = Variable('f_{apu}',0.035,'-','APU weight as fraction of payload weight') #[TAS]
+        #ffairing     = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
         fframe       = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
-        flugg1       = Variable('f_{lugg,1}',0.4,'-','Proportion of passengers with one suitcase')
-        flugg2       = Variable('f_{lugg,2}',0.1, '-','Proportion of passengers with two suitcases')
+        flugg1       = Variable('f_{lugg,1}',0.4,'-','Proportion of passengers with one suitcase') #[Philippe]
+        flugg2       = Variable('f_{lugg,2}',0.1, '-','Proportion of passengers with two suitcases') #[Philippe]
+        fpadd        = Variable('f_{padd}',0.4, '-', 'Other misc weight as fraction of payload weight')
         fstring      = Variable('f_{string}','-','Fractional stringer weight')
-        fwebcargo    = Variable('f_{web}',1.030, '-','Fractional web and cargo floor weight')
-        rholugg      = Variable('\\rho_{lugg}',0.1,'kg/m^3', 'Luggage density')
+        rhobend      = Variable('\\rho_{bend}', 2700, 'kg/m^3', 'Stringer density') #[TAS]
+        rhocargo     = Variable('\\rho_{cargo}', 150, 'kg/m^3', 'Cargo density')  # b757 freight doc
+        rholugg      = Variable('\\rho_{lugg}',100,'kg/m^3', 'Luggage density') #[Philippe]
 
         # Misc free variables
         
         # Material properties
-        rE           = Variable('r_E', 1,'-', 'Ratio of stringer/skin moduli')
-        rhobend      = Variable('\\rho_{bend}',2700, 'kg/m^3', 'Stringer density')
-        rhocone      = Variable('\\rho_{cone}',2700,'kg/m^3','Cone material density')
-        rhofloor     = Variable('\\rho_{floor}',2700, 'kg/m^3', 'Floor material density') #TASOPT value used
-        rhoskin      = Variable('\\rho_{skin}',2700,'kg/m^3', 'Skin density') # notional,based on CFRP
-        
-        Wppfloor     = Variable('W\'\'_{floor}', 60,'N/m^2', 'Floor weight/area density') #TAS
-        Wppinsul     = Variable('W\'\'_{insul}',22,'N/m^2', 'Weight/area density of insulation material')
-        Wpseat       = Variable('W\'_{seat}',150,'N', 'Weight per seat')
-        Wpwindow     = Variable('W\'_{window}', 145.*3,'N/m', 'Weight/length density of windows')
+        rE           = Variable('r_E', 1,'-', 'Ratio of stringer/skin moduli') #[TAS]
+        rhocone      = Variable('\\rho_{cone}',2700,'kg/m^3','Cone material density') #[TAS]
+        rhofloor     = Variable('\\rho_{floor}',2700, 'kg/m^3', 'Floor material density') #[TAS]
+        rhoskin      = Variable('\\rho_{skin}',2700,'kg/m^3', 'Skin density') #[TAS]
+        Wppfloor     = Variable('W\'\'_{floor}', 60,'N/m^2', 'Floor weight/area density') #[TAS]
+        Wppinsul     = Variable('W\'\'_{insul}',22,'N/m^2', 'Weight/area density of insulation material') #[TAS]
+        Wpseat       = Variable('W\'_{seat}',150,'N', 'Weight per seat') #[TAS]
+        Wpwindow     = Variable('W\'_{window}', 145.*3,'N/m', 'Weight/length density of windows') #[TAS]
         
         # Loads
         #Pcargofloor = Variable ('P_{cargo floor}','N','Distributed cargo floor load')
@@ -198,27 +202,35 @@ class Fuselage(Model):
             constraints = [
             # Passenger constraints (assuming 737-sixed aircraft)
             #Temporarily
-            Wpay >= Wpass + Wlugg + Wcargo,
-            Wseat    == 50000*units('N'),
-            Wcargo   == 15000*units('N'),
-            # Wcargo == rhocargo*g*Vcargo,
-            nrows    == nseats/SPR,
+            Wpass    == npass*Wavgpass,
+            Wpay     >= Wpass + Wlugg + Wcargo,
+            nseat    == npass,
+            nrows    == nseat/SPR,
             lshell   == nrows*pitch,
-            
+
             
             # Fuselage joint angle relations
-            thetadb  == wdb/Rfuse, # first order Taylor works...
-            thetadb  >= 0.05, thetadb <= 0.25, #Temporarily
-            hdb      >= Rfuse*(1.0-.5*thetadb**2), #[SP]
+            thetadb     == wdb/Rfuse, # first order Taylor works...
+            thetadb     >= 0.05, thetadb <= 0.25, #Temporarily
+            hdb         >= Rfuse*(1.0-.5*thetadb**2), #[SP]
             
             # Fuselage cross-sectional relations
-            Askin    >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
-            Adb      == (2*hdb)*tdb,
-            Afuse    >= (pi + 2*thetadb + thetadb)*Rfuse**2,
-            tshell   >= tskin*(1+rE*fstring*rhoskin/rhobend),
-            #fstring == 0.1,
-            #tshell  == tskin, #Temporarily, so I can see changes in horizontal bending material
-            
+            Askin       >= (2*pi + 4*thetadb)*Rfuse*tskin + Adb, #no delta R for now
+            Adb         == (2*hdb)*tdb,
+            Afuse       >= (pi + 2*thetadb + thetadb)*Rfuse**2,
+            SignomialEquality(tshell,tskin*(1+rE*fstring*rhoskin/rhobend)),
+            #tshell     >= tskin*(1+rE*fstring*rhoskin/rhobend),
+            #Rfuse       >= dh + hhold + hfloor,
+            fstring     == 0.1,
+            #tshell     == tskin, #Temporarily, so I can see changes in horizontal bending material
+            wfuse       >= SPR*wseat + 2*waisle + tdb + 2*tshell + 2*wsys,
+            wfuse       <= 2*(Rfuse + wdb),
+            wfloor      == .5*wfuse, # half of the total floor width in fuselage
+            #wcargofloor == 2*Rfuse*thetadb, #Temporarily #Approx
+            #Ahold       >= (wfloor + wcargofloor)*hhold, #[SP]
+            # Added synthetic constraint on hfloor to keep it from growing too large #Temporarily
+            hfloor      <= .1*Rfuse,
+
             # Fuselage surface area relations
             Snose    >= (2*pi + 4*thetadb)*Rfuse**2 *(1/3 + 2/3*(lnose/Rfuse)**(8/5))**(5/8),
             Sbulk    >= (2*pi + 4*thetadb)*Rfuse**2,
@@ -228,11 +240,7 @@ class Fuselage(Model):
             lnose    == 0.3*lshell, # Temporarily
             xshell1  == lnose,
             xshell2  >= lnose + lshell,
-            lcone    == Rfuse/lamcone,
-            # Fuselage width relations
-            wfuse    >= SPR*wseat + 2*waisle + tdb + 2*tshell + 2*wsys,
-            wfuse    <= 2*(Rfuse + wdb),
-            wfloor   >= wdb + Rfuse, # half of the total floor width in fuselage
+            lcone    == Rfuse/lamcone,            
             
             # Fuselage volume relations
             Vcyl   == Askin*lshell,
@@ -240,22 +248,24 @@ class Fuselage(Model):
             Vbulk  == Sbulk*tskin,
             Vdb    == Adb*lshell,
             Vcabin >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
-            Vhold  >= Vcargo + Vlugg,
-            Vhold == Ahold*lshell,
-
-
+            #Vhold  >= Vcargo + Vlugg,
+            #Vhold == Ahold*lshell,
             
             # Fuselage weight relations
             Wapu     == Wpay*fapu,
-            #Wcargo   == Vcargo*g*rhocargo,
+            Wcargo   == Vcargo*g*rhocargo,
+            Wdb      == rhoskin*g*Vdb,
             Winsul   >= Wppinsul*((1.1*pi+2*thetadb)*Rfuse*lshell + 0.55*(Snose+Sbulk)),
             Wlugg    >= flugg2*npass*2*Wchecked + flugg1*npass*Wchecked + Wcarryon,
             Wlugg    == Vlugg*g*rholugg,
             Wwindow  >= Wpwindow*lshell,
+            Wpadd    == Wpay*fpadd,
+            Wseat    == Wpseat*nseat,
             Wskin    >= rhoskin*g*(Vcyl + Vnose + Vbulk),
-            Wshell   >= Wskin*(1 + fstring + ffairing + fframe + fwebcargo),
-            Wfuse    >= Wapu + Wfix + Winsul + Wshell + Wfloor + Wwindow + Whbend + Wvbend + Wtail,
-            
+            Wshell   >= Wskin*(1 + fstring + ffadd + fframe) + Wdb,
+            #Wfuse    >= Wapu + Wcargo + Wlugg + Wfix + Winsul + Wshell + Wfloor + Wwindow + Whbend + Wvbend + Wtail,
+            Wfuse    >= Wfix + Wapu + Wpadd + Wseat + Wshell + Wwindow + Winsul + Wcone + Wfloor,
+
             ## Stress relations
             #Pressure shell loading
             tskin    == dPover*Rfuse/sigskin,
@@ -271,26 +281,24 @@ class Fuselage(Model):
             Vfloor   == 2*wfloor*Afloor,
             Wfloor   >= rhofloor*g*Vfloor + 2*wfloor*lfloor*Wppfloor,
             Sfloor   == (5./16.)*Pfloor,
-            # Added synthetic constraint on hfloor to keep it from growing too large #Temporarily
-            hfloor   <= .1*Rfuse,
 
             # Tail cone sizing
-            Lvmax                            == 35000*units('N'), # based on 737
+            Lvmax                           == 35000*units('N'), # based on 737
             bvt                             == 7*units('m'),
             plamv                           == 1.6, #Temporarily
             taucone                         == sigskin,
             3*Qv*(plamv-1)                  >= Lvmax*bvt*(plamv),
             lamcone                         == 0.4, # TODO remove
-            Vcone*(1+lamcone)*(pi+4*thetadb) >= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
+            Vcone*(1+lamcone)*(pi+4*thetadb)>= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
             Wcone                           >= rhocone*g*Vcone*(1+fstring+fframe),
             Wtail                           >= Wvtail + Whtail + Wcone,
-         
+            
             # Tail aero loads
             xtail    >= lnose + lshell + .5*lcone, #Temporarily
             Lhmax    == 0.5*rho0*VNE**2*Shtail*CLhmax,
-            xwing >= lnose + 0.6*lshell,
-            Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
-            Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
+            SignomialEquality(xwing, lnose + 0.6*lshell),
+            #Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
+            #Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
 
             hfuse    == Rfuse, # may want to consider adding deltaRfuse later...
             
@@ -341,7 +349,7 @@ class Fuselage(Model):
             SignomialEquality(xf,xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
             #xf >= xwing + dxwing + .5*c0*wbar,
             SignomialEquality(xb, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
-            #xb <= xwing - dxwing + .5*c0*wbar,         
+            #xb <= xwing - dxwing + .5*c0*wbar, #[SP]        
             
             sigMh   <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
             sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell  
@@ -434,18 +442,18 @@ if __name__ == "__main__":
     #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
     #print 'Cabin volume        : ' + str(varVals['V_{cabin}_Fuselage']) +'.'
-    # print 'Fuselage width  : ' + str(varVals['w_{fuse}_Fuselage']) + '.'
+    print 'Fuselage width  : ' + str(varVals['w_{fuse}_Fuselage']) + '.'
     # print 'Fuselage length : ' + str(varVals['l_{fuse}'])
     # print 'Floor area      : ' + str(varVals['A_{floor}_Fuselage']) + '.'
     # print 'Floor height    : ' + str(varVals['h_{floor}_Fuselage']) + '.'
     # print 'Floor length    : ' + str(varVals['l_{floor}_Fuselage']) + '.'
-    # print 'Floor width     : ' + str(varVals['w_{floor}_Fuselage']) + '.'
+    print 'Floor width     : ' + str(varVals['w_{floor}_Fuselage']) + '.'
     #print 'Fuselage angle : ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
     print 'Fuselage radius: ' + str(varVals['R_{fuse}_Fuselage']) + '.'
     #print 'Floor total loading : ' + str(varVals['P_{floor}_Fuselage']) + '.'
     print 'Floor weight        : ' + str(varVals['W_{floor}_Fuselage']) + '.'
-    #print 'Floor volume        : ' + str(varVals['V_{floor}_Fuselage']) + '.'
-    #print 'Floor bending moment: ' + str(varVals['M_{floor}_Fuselage']) + '.'
+    print 'Floor volume        : ' + str(varVals['V_{floor}_Fuselage']) + '.'
+    print 'Floor bending moment: ' + str(varVals['M_{floor}_Fuselage']) + '.'
     #print 'Shell thickness     : ' + str(varVals['t_{shell}_Fuselage']) + '.'
     #print 'Skin hoop stress    : ' + str(varVals['\\sigma_{\\theta}_Fuselage']) + '.'
     print 'Skin axial stress   : ' + str(varVals['\\sigma_x_Fuselage']) + '.'
@@ -454,18 +462,18 @@ if __name__ == "__main__":
     #print 'Cone volume         : ' + str(varVals['V_{cone}_Fuselage'])
     #print 'Tail torsion moment : ' + str(varVals['Q_{v}_Fuselage'])
     #print 'Cone taper ratio    : ' + str(varVals['\\lambda_{cone}_Fuselage'])
-    print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
-    print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
+    #print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
+    #print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
     #print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
     #print 'Wing location: ' + str(varVals['x_{wing}_Fuselage'])
     #print 'Tail location: ' + str(varVals['x_{tail}_Fuselage'])
     print 'Horizontal bending material weight: '+ str(varVals['W_{hbend}_Fuselage'])
     #print 'Vertical bending material weight: ' + str(varVals['W_{vbend}_Fuselage'])
-    print 'A2: ' + str(varVals['A2_Fuselage'])
-    print 'A1: ' + str(varVals['A1_Fuselage'])
-    print 'A0:  ' + str(varVals['A0_Fuselage'])
-    print 'B1: ' + str(varVals['B1_Fuselage'])
-    print 'B0: ' + str(varVals['B0_Fuselage'])
+    # print 'A2: ' + str(varVals['A2_Fuselage'])
+    # print 'A1: ' + str(varVals['A1_Fuselage'])
+    # print 'A0:  ' + str(varVals['A0_Fuselage'])
+    # print 'B1: ' + str(varVals['B1_Fuselage'])
+    # print 'B0: ' + str(varVals['B0_Fuselage'])
     #print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
     #print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
     print 'Zero bending reinforcement location: ' + str(varVals['x_{hbend}_Fuselage'])
@@ -475,13 +483,18 @@ if __name__ == "__main__":
     print 'Web area: ' + str(sol('A_{db}'))
     print 'Skin thickness: ' + str(sol('t_{skin}'))
     print 'Shell thickness: ' + str(sol('t_{shell}'))
-    print 'Shell inertia: ' + str(sol('I_{hshell}'))
+    print 'Shell horizontal inertia: ' + str(sol('I_{hshell}'))
+    print 'Shell vertical inertia: ' + str(sol('I_{vshell}'))
     print 'Stringer mass fraction: ' + str(sol('f_{string}'))
-    print 'Vhbendf: ' + str(sol('V_{hbendf}'))
-    print 'Vhbendb: ' + str(sol('V_{hbendb}'))
-    print 'Vhbendc: ' + str(sol('V_{hbendc}'))
-    print 'Ahbendf: ' + str(sol('A_{hbendf}'))
-    print 'Ahbendb: ' + str(sol('A_{hbendb}'))
-    print 'Vvbendb: ' + str(sol('V_{vbendb}'))
-    print 'Vvbendc: ' + str(sol('V_{vbendc}'))
-    print 'Avbendb: ' + str(sol('A_{hbendb}'))
+    #print 'Vhbendf: ' + str(sol('V_{hbendf}'))
+    #print 'Vhbendb: ' + str(sol('V_{hbendb}'))
+    # print 'Vhbendc: ' + str(sol('V_{hbendc}'))
+    # print 'Ahbendf: ' + str(sol('A_{hbendf}'))
+    # print 'Ahbendb: ' + str(sol('A_{hbendb}'))
+    # print 'Vvbendb: ' + str(sol('V_{vbendb}'))
+    # print 'Vvbendc: ' + str(sol('V_{vbendc}'))
+    # print 'Avbendb: ' + str(sol('A_{hbendb}'))
+    #print 'Cargo volume: ' + str(sol('V_{cargo}'))
+    #print 'Hold volume: ' + str(sol('V_{hold}'))
+    #print 'Hold area: ' + str(sol('V_{hold}'))
+    print 'Cabin volume: ' + str(sol('V_{cabin}'))
