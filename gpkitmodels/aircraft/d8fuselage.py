@@ -215,11 +215,11 @@ class Fuselage(Model):
         wbar         = Variable('\\bar_w',0.5,'-','Wingbox to chord ratio') #Temporarily
 
         # Drag variables
-        Dfuse    = Variable('D_{fuse}', 'N', 'Total drag in cruise')
-        Dfrict   = Variable('D_{friction}', 'N', 'Friction drag')
-        Dupswp   = Variable('D_{upsweep}', 'N', 'Drag due to fuse upsweep')
-        f        = Variable('f', '-', 'Fineness ratio')
-        FF       = Variable('FF', '-','Fuselage form factor')
+        # Dfuse    = Variable('D_{fuse}', 'N', 'Total drag in cruise')
+        # Dfrict   = Variable('D_{friction}', 'N', 'Friction drag')
+        # Dupswp   = Variable('D_{upsweep}', 'N', 'Drag due to fuse upsweep')
+        # f        = Variable('f', '-', 'Fineness ratio')
+        # FF       = Variable('FF', '-','Fuselage form factor')
 
         with SignomialsEnabled():
             constraints = [
@@ -377,13 +377,13 @@ class Fuselage(Model):
             sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell,
 
             # Drag model
-            #f == lfuse/((4/np.pi*Afuse)**0.5), # fineness ratio
-            #FF >= 1 + 60/f**3 + f/400, # form factor
-            #Dfrict >= FF * pi*Rfuse * muinf*Vinf* 0.074*(rhoinf*Vinf*lfuse/muinf)**0.8,
-            #Dfuse >= Dfrict
+            # f == lfuse/((4/np.pi*Afuse)**0.5), # fineness ratio
+            # FF >= 1 + 60/f**3 + f/400, # form factor
+            # Dfrict >= FF * (pi*Rfuse+2*wdb) * muinf*Vinf* 0.074*(rhoinf*Vinf*lfuse/muinf)**0.8,
+            # Dfuse >= Dfrict
             ]
 
-        objective = Wfuse + Vcabin*units('N/m^3') + tshell*units('N/m') + lfuse*units('N/m') + Dfuse
+        objective = Wfuse + Vcabin*units('N/m^3') + tshell*units('N/m') + lfuse*units('N/m') #+ Dfuse
         Model.__init__(self, objective, constraints, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
@@ -466,47 +466,47 @@ class Fuselage(Model):
 if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
-    bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
-    #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
+    #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
+    sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
     varVals = sol['variables']
-    print 'Cabin volume        : ' + str(varVals['V_{cabin}_Fuselage']) +'.'
-    print 'Fuselage width  : ' + str(varVals['w_{fuse}_Fuselage']) + '.'
-    print 'Fuselage length : ' + str(varVals['l_{fuse}'])
-    # print 'Floor area      : ' + str(varVals['A_{floor}_Fuselage']) + '.'
-    # print 'Floor height    : ' + str(varVals['h_{floor}_Fuselage']) + '.'
-    # print 'Floor length    : ' + str(varVals['l_{floor}_Fuselage']) + '.'
-    print 'Floor width     : ' + str(varVals['w_{floor}_Fuselage']) + '.'
-    #print 'Fuselage angle : ' + str(varVals['\\theta_{db}_Fuselage']) + '.'
-    print 'Fuselage radius: ' + str(varVals['R_{fuse}_Fuselage']) + '.'
-    #print 'Floor total loading : ' + str(varVals['P_{floor}_Fuselage']) + '.'
-    print 'Floor weight        : ' + str(varVals['W_{floor}_Fuselage']) + '.'
-    print 'Floor volume        : ' + str(varVals['V_{floor}_Fuselage']) + '.'
-    print 'Floor bending moment: ' + str(varVals['M_{floor}_Fuselage']) + '.'
-    #print 'Shell thickness     : ' + str(varVals['t_{shell}_Fuselage']) + '.'
-    #print 'Skin hoop stress    : ' + str(varVals['\\sigma_{\\theta}_Fuselage']) + '.'
-    print 'Skin axial stress   : ' + str(varVals['\\sigma_x_Fuselage']) + '.'
-    #print 'Cone weight         : ' + str(varVals['W_{cone}_Fuselage'])
-    #print 'Cone length         : ' + str(varVals['l_{cone}_Fuselage'])
-    #print 'Cone volume         : ' + str(varVals['V_{cone}_Fuselage'])
-    #print 'Tail torsion moment : ' + str(varVals['Q_{v}_Fuselage'])
-    #print 'Cone taper ratio    : ' + str(varVals['\\lambda_{cone}_Fuselage'])
-    #print 'Max horizontal tail loading:' + str(varVals['L_{h_max}_Fuselage'])
-    #print 'Max horizontal tail aero bending load: ' +  str(varVals['M_{h_aero}_Fuselage'])
-    #print 'Max vertical tail aero bending load: ' +  str(varVals['M_{v_aero}_Fuselage'])
-    #print 'Wing location: ' + str(varVals['x_{wing}_Fuselage'])
-    #print 'Tail location: ' + str(varVals['x_{tail}_Fuselage'])
-    print 'Horizontal bending material weight: '+ str(varVals['W_{hbend}_Fuselage'])
-    #print 'Vertical bending material weight: ' + str(varVals['W_{vbend}_Fuselage'])
-    # print 'A2: ' + str(varVals['A2_Fuselage'])
-    # print 'A1: ' + str(varVals['A1_Fuselage'])
-    # print 'A0:  ' + str(varVals['A0_Fuselage'])
-    # print 'B1: ' + str(varVals['B1_Fuselage'])
-    # print 'B0: ' + str(varVals['B0_Fuselage'])
-    #print 'Shell start location: ' + str(varVals['x_{shell1}_Fuselage'])
-    #print 'Shell end location: ' + str(varVals['x_{shell2}_Fuselage'])
-    print 'Zero hbending location: ' + str(varVals['x_{hbend}_Fuselage'])
-    print 'Wing box start location: ' + str(varVals['x_b_Fuselage'])
-    print 'Wing box end location: ' + str(varVals['x_f_Fuselage'])
+    print 'Cabin volume        : ' + str(sol('V_{cabin}'))
+    print 'Fuselage width  : ' + str(sol('w_{fuse}'))
+    print 'Fuselage length : ' + str(sol('l_{fuse}'))
+    # print 'Floor area      : ' + str(sol('A_{floor}')) + 
+    # print 'Floor height    : ' + str(sol('h_{floor}')) + 
+    # print 'Floor length    : ' + str(sol('l_{floor}')) + 
+    print 'Floor width     : ' + str(sol('w_{floor}'))
+    #print 'Fuselage angle : ' + str(sol('\\theta_{db}')) + 
+    print 'Fuselage radius: ' + str(sol('R_{fuse}'))
+    #print 'Floor total loading : ' + str(sol('P_{floor}')) + 
+    print 'Floor weight        : ' + str(sol('W_{floor}')) + 
+    print 'Floor volume        : ' + str(sol('V_{floor}')) + 
+    print 'Floor bending moment: ' + str(sol('M_{floor}')) + 
+    #print 'Shell thickness     : ' + str(sol('t_{shell}')) + 
+    #print 'Skin hoop stress    : ' + str(sol('\\sigma_{\\theta}')) + 
+    print 'Skin axial stress   : ' + str(sol('\\sigma_x')) + 
+    #print 'Cone weight         : ' + str(sol('W_{cone}'))
+    #print 'Cone length         : ' + str(sol('l_{cone}'))
+    #print 'Cone volume         : ' + str(sol('V_{cone}'))
+    #print 'Tail torsion moment : ' + str(sol('Q_{v}'))
+    #print 'Cone taper ratio    : ' + str(sol('\\lambda_{cone}'))
+    #print 'Max horizontal tail loading:' + str(sol('L_{h_max}'))
+    #print 'Max horizontal tail aero bending load: ' +  str(sol('M_{h_aero}'))
+    #print 'Max vertical tail aero bending load: ' +  str(sol('M_{v_aero}'))
+    #print 'Wing location: ' + str(sol('x_{wing}'))
+    #print 'Tail location: ' + str(sol('x_{tail}'))
+    print 'Horizontal bending material weight: '+ str(sol('W_{hbend}'))
+    #print 'Vertical bending material weight: ' + str(sol('W_{vbend}'))
+    # print 'A2: ' + str(sol('A2'))
+    # print 'A1: ' + str(sol('A1'))
+    # print 'A0:  ' + str(sol('A0'))
+    # print 'B1: ' + str(sol('B1'))
+    # print 'B0: ' + str(sol('B0'))
+    #print 'Shell start location: ' + str(sol('x_{shell1}'))
+    #print 'Shell end location: ' + str(sol('x_{shell2}'))
+    print 'Zero hbending location: ' + str(sol('x_{hbend}'))
+    print 'Wing box start location: ' + str(sol('x_b'))
+    print 'Wing box end location: ' + str(sol('x_f'))
     print 'Total weight: ' + str(sol['cost'])
     print 'Web area: ' + str(sol('A_{db}'))
     print 'Skin thickness: ' + str(sol('t_{skin}'))
