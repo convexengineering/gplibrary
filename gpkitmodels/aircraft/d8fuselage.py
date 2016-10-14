@@ -24,13 +24,15 @@ from collections import defaultdict
 from gpkit.small_scripts import mag
 
 # Note that sweep has to be True for any sweep to take place. 
-sweep         = False
-nsweep        = 5
-sweep_thetadb = False
+sweep         = True
+nsweep        = 10
+sweep_thetadb = True
 thetadb_bounds=[0.0,0.5]
 sweep_npass   = False
-sweep_Lhmax   = False
-sweep_fstring = True
+npass_bounds  = [160, 232]
+sweep_Shtail   = False
+Shtail_bounds  = [10,50]
+sweep_fstring = False
 fstring_bounds= [0.0,0.3]
 
 class Fuselage(Model):
@@ -242,7 +244,7 @@ class Fuselage(Model):
             
             # Fuselage joint angle relations
             thetadb     == wdb/Rfuse, # first order Taylor works...
-            thetadb     >= 0.05, thetadb <= 0.4, #Temporarily
+            #thetadb     >= 0.05, thetadb <= 0.4, #Temporarily
             hdb         >= Rfuse*(1.0-.5*thetadb**2), #[SP]
             
             # Fuselage cross-sectional relations
@@ -551,4 +553,95 @@ if __name__ == "__main__":
             plt.ylabel('W_fuse (N)')
             plt.grid()
             #plt.axis([fstring_bounds[0], fstring_bounds[1], 0, 10])
-            plt.savefig('Wfuse_vs_f_string.pdf')
+            plt.savefig('Wfuse_vs_fstring.pdf')
+
+            plt.close()
+            plt.plot(f_string,Whbend)
+            plt.title('W_{hbend} vs. f_{string}')
+            plt.xlabel('f_{string}')
+            plt.ylabel('W_{hbend} (N)')
+            plt.grid()
+            plt.savefig('Whbend_vs_fstring.pdf')
+
+        if sweep_npass == True:
+            M.substitutions.update({'n_{pass}': \
+                ('sweep',np.linspace(npass_bounds[0],npass_bounds[1],nsweep))})
+            sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50,skipsweepfailures=True)
+            npass = sol('n_{pass}')
+            Wfuse    = sol('W_{fuse}')
+            Wfloor   = sol('W_{floor}')
+
+            plt.close()
+            plt.plot(npass, Wfuse)
+            plt.title('W_{fuse} vs. n_{pass}')
+            plt.xlabel('n_{pass}')
+            plt.ylabel('W_fuse (N)')
+            plt.grid()
+            #plt.axis([fstring_bounds[0], fstring_bounds[1], 0, 10])
+            plt.savefig('Wfuse_vs_npass.pdf')
+
+            plt.close()
+            plt.plot(npass, Wfloor)
+            plt.title('W_{floor} vs. n_{pass}')
+            plt.xlabel('n_{pass}')
+            plt.ylabel('W_{floor} (N)')
+            plt.grid()
+            plt.savefig('Wfloor_vs_npass.pdf')
+
+        if sweep_Shtail == True:
+            M.substitutions.update({'S_{htail}':\
+                ('sweep',np.linspace(Shtail_bounds[0],Shtail_bounds[1],nsweep))})
+            sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50,skipsweepfailures=True)
+            fstring = sol('f_{string}')
+            Whbend = sol('W_{hbend}')
+            Shtail = sol('S_{htail}')
+            Lhmax  = sol('L_{h_max}')
+
+            plt.close()
+            plt.plot(Lhmax, fstring)
+            plt.title('f_{string} vs. L_{h_max}')
+            plt.xlabel('L_{h_max} (N)')
+            plt.ylabel('f_{string}')
+            plt.grid()
+            plt.savefig('fstring_vs_Lhmax.pdf')
+
+            plt.close()
+            plt.plot(Lhmax, Whbend)
+            plt.title('W_{hbend} vs. L_{h_max}')
+            plt.xlabel('L_{h_max} (N)')
+            plt.ylabel('W_{hbend} (N)')
+            plt.grid()
+            plt.savefig('Whbend_vs_Lhmax.pdf')
+
+        if sweep_thetadb == True:
+            M.substitutions.update({'\\theta_{db}':\
+                ('sweep',np.linspace(thetadb_bounds[0],thetadb_bounds[1],nsweep))})
+            sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50,skipsweepfailures=True)
+            thetadb = sol('\\theta_{db}')
+            Whbend = sol('W_{hbend}')
+            fstring = sol('f_{string}')
+            Wfuse = sol('W_{fuse}')
+
+            plt.close()
+            plt.plot(thetadb, Wfuse)
+            plt.title('W_{fuse} vs. \\theta_{db}')
+            plt.xlabel('\\theta_{db} (radians)')
+            plt.ylabel('W_{fuse} (N)')
+            plt.grid()
+            plt.savefig('Wfuse_vs_thetadb')
+
+            plt.close()
+            plt.plot(thetadb,fstring)
+            plt.title('f_{string} vs. \\theta_{db}')
+            plt.xlabel('\\theta_{db} (radians)')
+            plt.ylabel('f_{string}')
+            plt.grid()
+            plt.savefig('fstring_vs_thetadb')
+
+            plt.close()
+            plt.plot(thetadb,Whbend)
+            plt.title('W_{hbend} vs. \\theta_{db}')
+            plt.xlabel('\\theta_{db} (radians)')
+            plt.ylabel('W_{hbend} (N)')
+            plt.grid()
+            plt.savefig('Whbend_vs_thetadb')
