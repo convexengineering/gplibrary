@@ -10,8 +10,9 @@ class Fuselage(CostedConstraintSet):
     """
     def __init__(self, fuselage_type = 'narrowbody'):
 
-        Apassfl  = Variable('A_{pass_{floor}}', 'm^2', 'Passenger floor beam x-sectional area')
-        Acargofl = Variable('A_{cargo_{floor}}', 'm^2', 'Cargo floor beam x-sectional area')
+        #Apassfl  = Variable('A_{pass_{floor}}', 'm^2', 'Passenger floor beam x-sectional area')
+        #Acargofl = Variable('A_{cargo_{floor}}', 'm^2', 'Cargo floor beam x-sectional area')
+        Afloor   = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
         Afuse    = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
         Ahold    = Variable('A_{hold}', 'm^2', 'Cargo hold x-sectional area')
         Askin    = Variable('A_{skin}', 'm^2', 'Skin cross sectional area')
@@ -21,13 +22,16 @@ class Fuselage(CostedConstraintSet):
         FF       = Variable('FF', '-','Fuselage form factor')
         LF       = Variable('LF', '-', 'Load factor')
         Lvmax    = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
-        Mpassfl  = Variable('M_{pass_{floor}}', 'N*m',
-                            'Max bending moment in passenger floor beams')
-        Mcargofl = Variable('M_{cargo_{floor}}', 'N*m',
-                            'Max bending moment in cargo floor beams')
+        #Mpassfl  = Variable('M_{pass_{floor}}', 'N*m',
+        #                    'Max bending moment in passenger floor beams')
+        #Mcargofl = Variable('M_{cargo_{floor}}', 'N*m',
+        #                    'Max bending moment in cargo floor beams')
+        Mfloor   = Variable('M_{floor}', 'N*m',
+                            'Max bending moment in floor beams')
         Nland    = Variable('N_{land}', '-', 'Emergency landing load factor')
-        Ppassfl  = Variable('P_{pass_{floor}}', 'N', 'Distributed passenger floor load')
-        Pcargofl = Variable('P_{cargo_{floor}}', 'N', 'Distributed cargo floor load')
+        #Ppassfl  = Variable('P_{pass_{floor}}', 'N', 'Distributed passenger floor load')
+        #Pcargofl = Variable('P_{cargo_{floor}}', 'N', 'Distributed cargo floor load')
+        Pfloor   = Variable('P_{floor}', 'N', 'Distributed floor load')
         Qv       = Variable('Q_v', 'N*m', 'Torsion moment imparted by tail')
         R        = Variable('R', 287, 'J/(kg*K)', 'Universal gas constant')
         Rfuse    = Variable('R_{fuse}', 'm', 'Fuselage radius')
@@ -35,9 +39,11 @@ class Fuselage(CostedConstraintSet):
         Sbulk    = Variable('S_{bulk}', 'm^2', 'Bulkhead surface area')
         Spassfl  = Variable('S_{pass_{floor}}', 'N', 'Maximum shear in pasenger floor beams')
         Scargofl = Variable('S_{cargo_{floor}}', 'N', 'Maximum shear in cargo floor beams')
+        Sfloor   = Variable('S_{floor}', 'N', 'Maximum shear in floor beams')
         Snose    = Variable('S_{nose}', 'm^2', 'Nose surface area')
         Tcabin   = Variable('T_{cabin}', 'K', 'Cabin temperature')
         Vbulk    = Variable('V_{bulk}', 'm^3', 'Bulkhead skin volume')
+        Vfuse    = Variable('V_{fuse}', 'm^3', 'Fuse volume')
         Vcabin   = Variable('V_{cabin}', 'm^3', 'Cabin volume')
         Vcargo   = Variable('V_{cargo}', 'm^3', 'Cargo volume')
         Vcone    = Variable('V_{cone}', 'm^3', 'Cone skin volume')
@@ -97,8 +103,9 @@ class Fuselage(CostedConstraintSet):
                             'Seat weight as fraction of payload weight')
         fstring  = Variable('f_{string}', '-','Fractional weight of stringers')
         g        = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
-        hpassfl  = Variable('h_{pass_{floor}', 'm', 'Floor beam height')
-        hcargofl = Variable('h_{cargo_{floor}}', 'm', 'Floor beam height')
+        #hpassfl  = Variable('h_{pass_{floor}', 'm', 'Passenger floor beam height')
+        #hcargofl = Variable('h_{cargo_{floor}}', 'm', 'Cargo floor beam height')
+        hfloor   = Variable('h_{floor}', 'm', 'Floor beam height')
         hhold    = Variable('h_{hold}', 'm', 'Height of the cargo hold')
         lamcone  = Variable('\\lambda_{cone}', '-',
                             'Tailcone radius taper ratio (xshell2->xtail)')
@@ -140,8 +147,9 @@ class Fuselage(CostedConstraintSet):
         tshell   = Variable('t_{shell}', 'm', 'Shell thickness')
         tskin    = Variable('t_{skin}', 'm', 'Skin thickness')
         waisle   = Variable('w_{aisle}', 'm', 'Aisle width')
-        wpassfl  = Variable('w_{pass_{floor}}', 'm', 'Passenger floor width')
-        wcargofl = Variable('w_{cargo_{floor}}', 'm', 'Cargo floor width')
+        #wpassfl  = Variable('w_{pass_{floor}}', 'm', 'Passenger half floor width')
+        #wcargofl = Variable('w_{cargo_{floor}}', 'm', 'Cargo half floor width')
+        wfloor   = Variable('w_{floor}', 'm', 'Half floor width')
         wfuse    = Variable('w_{fuse}', 'm', 'Fuselage width')
         wseat    = Variable('w_{seat}', 'm', 'Seat width')
         wsys     = Variable('w_{sys}', 'm',
@@ -178,7 +186,6 @@ class Fuselage(CostedConstraintSet):
                             # Cross section relations
                             wfuse == 2*Rfuse,
                             Askin >= 2*np.pi*Rfuse*tskin, # simplified
-                            Afuse >= np.pi*Rfuse**2, # simplified
                             tshell >= tskin*(1 + rE*fstring*rhoskin/rhobend),
 
                             # TODO: Bending loads
@@ -198,10 +205,10 @@ class Fuselage(CostedConstraintSet):
                             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
                             Wshell >= Wskin*(1 + fstring + fframe + ffadd),
 
-                            # Cabin volume and buoyancy weight
+                            # Fuselage volume and buoyancy weight
                             rhocabin == (1/(R*Tcabin))*pcabin,
-                            Vcabin >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
-                            TCS([Wbuoy >= (rhocabin - rhoinf)*g*Vcabin], reltol=1E-3), # [SP]
+                            Vfuse >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
+                            TCS([Wbuoy >= (rhocabin - rhoinf)*g*Vfuse], reltol=1E-3), # [SP]
 
                             # Windows and insulation
                             Wwindow == Wpwindow * lshell,
@@ -214,24 +221,35 @@ class Fuselage(CostedConstraintSet):
                             Wpadd == Wpay*fpadd,
 
                             # Floor
-                            Ppassfl >= Nland*(Wpass + Wseat + Wcarryon), # might want to remove Wcarryon
-                            Pcargofl >= Nland*(Wlugg + Wcargo),
-                            Spassfl == 0.5*Ppassfl, # without support
-                            Scargofl == 0.5*Pcargofl, # without support
-                            Mpassfl == Ppassfl/2*wpassfl/2, # TODO: The cargo floor is not as wide as the pass
-                            Mcargofl == Pcargofl/2*wcargofl/2, # TODO: The cargo floor is not as wide as the pass
+                            #Ppassfl >= Nland*(Wpass + Wseat + Wcarryon), # might want to remove Wcarryon
+                            #Pcargofl >= Nland*(Wlugg + Wcargo),
+                            Pfloor >= Nland*(Wpass + Wseat + Wcarryon + Wlugg + Wcargo),
+                            #Spassfl == 0.5*Ppassfl, # without support
+                            #Scargofl == 0.5*Pcargofl, # without support
+                            Sfloor == 0.5*Pfloor, # without support
+                            #Mcargofl == Pcargofl*wcargofl/4.,
                             
-                            Apassfl >= 2*Mpassfl/(sigfloor*hpassfl)
-                                      + 1.5*Spassfl/taufloor,
-                            Acargofl >= 2*Mcargofl/(sigfloor*hcargofl)
-                                      + 1.5*Scargofl/taufloor,
-                            Vfloor >= wpassfl*Apassfl + wcargofl*Acargofl,
+                            #Apassfl >= 2*Mpassfl/(sigfloor*hpassfl)
+                            #          + 1.5*Spassfl/taufloor,
+                            #Acargofl >= 2*Mcargofl/(sigfloor*hcargofl)
+                            #          + 1.5*Scargofl/taufloor,
+                            Afloor >= 2*Mfloor/(sigfloor*hfloor)
+                                      + 1.5*Sfloor/taufloor,
+                            #Apassfl >= hpassfl*lfloor,
+                            #Acargofl >= hcargofl*lfloor,
+
+                            #Vfloor >= 2*wpassfl*Apassfl + 2*wcargofl*Acargofl,
+                            Vfloor >= 2*wfloor*Afloor,
                             lfloor >= lshell + 2*Rfuse,
                             lshell >= nrows*pitch,
-                            (wpassfl/2)**2 + dh**2 >= Rfuse**2, # [SP] # passenger floor located below widest part of fuselage
-                            (wcargofl/2)**2 + (dh + hhold + hpassfl)**2 >= Rfuse**2, # [SP]
+                            #(wpassfl)**2 + dh**2 >= Rfuse**2, # [SP] # passenger floor located below widest part of fuselage
+                            (wfloor)**2 + dh**2 >= Rfuse**2, # [SP]
+                            #(wcargofl)**2 + (dh + hhold + hpassfl)**2 <= Rfuse**2, # [SP]
+                            #Wfloor >= rhofloor*g*Vfloor
+                            #          + (2*wpassfl + 2*wcargofl)*lfloor*Wppfloor,
+                            Rfuse >= dh + hfloor + hhold,
                             Wfloor >= rhofloor*g*Vfloor
-                                      + (wpassfl + wcargofl)*lfloor*Wppfloor,
+                                      + 2*wfloor*lfloor*Wppfloor,
 
                             # Tail cone
                             Rfuse*taucone*(1+plamv)*Vcone*(1+lamcone)/(4*lcone)
@@ -243,6 +261,7 @@ class Fuselage(CostedConstraintSet):
                             Wcone >= rhocone*g*Vcone*(1 + fstring + fframe
                                                       + ffadd),
 
+
                             # Payload weight breakdown
                             npass == nseat*LF,
                             nseat == nrows*SPR,
@@ -252,11 +271,10 @@ class Fuselage(CostedConstraintSet):
                             Wlugg == Vlugg*g*rholugg,
                             Wcargo == Vcargo*g*rhocargo,
                             Vhold >= Vcargo + Vlugg,
-                            Vhold == Ahold*lshell,
-                            Ahold <= (2./3)*wcargofl*hhold + hhold**3/(2*wcargofl),
-                            #TCS([Ahold <= (2./3)*wfloor*hhold + hhold**3/(2*wfloor)], reltol=1E-5),
+                            Vhold <= Ahold*lshell,
+
                             # [SP] Harris stocker 1998 (wolfram)
-                            TCS([dh + hhold + hpassfl + hcargofl <= Rfuse]), #There are two florrs, one for pass and one for cargo
+                            #dh + hhold + hpassfl + hcargofl <= Rfuse, #There are two florrs, one for pass and one for cargo
                             Wpay >= Wpass + Wlugg + Wcargo, 
 
                             # Total fuselage weight
@@ -283,31 +301,90 @@ class Fuselage(CostedConstraintSet):
 
 
         if fuselage_type == 'narrowbody':
+            with SignomialsEnabled():
+                constraints = [constraints,
 
-            constraints = [constraints,
+                                Afuse >= np.pi*Rfuse**2, # simplified
+                                lnose >= 5.2*units.m, # TODO less arbitrary
+                                wfuse >= SPR*wseat + waisle + 2*wsys,
+                                #Mpassfl == Ppassfl*wpassfl/4.,
+                                Mfloor == Pfloor*wfloor/4.,
+                                #Ahold <= 2*wcargofl*hhold,
+                                #(2./3)*2*wcargofl*hhold + hhold**3/(2*2*wcargofl), #We might want a completely different equation here!!
+                                
+                                TCS([Ahold <= (2./3)*2*wfloor*hhold + hhold**3/(2*2*wfloor)], reltol=1E-5),
 
-                            lnose >= 5.2*units.m, # TODO less arbitrary
-                            wfuse >= SPR*wseat + waisle + 2*wsys,
-
-                            ]
+                                ]
 
         elif fuselage_type == 'widebody':
+            with SignomialsEnabled():
+                constraints = [constraints,
 
-            constraints = [constraints,
+                                Afuse >= np.pi*Rfuse**2,
+                                lnose >= 2*5.2*units.m, # TODO UPDATE - less arbitrary
+                                wfuse >= SPR*wseat + 2*waisle + 2*wsys,
+                                #Mpassfl == Ppassfl*wpassfl/4.,
+                                Mfloor == Pfloor*wfloor/4.,
+                                #(2./3)*2*wcargofl*hhold + hhold**3/(2*2*wcargofl), #We might want a completely different equation here!!
+                                TCS([Ahold <= (2./3)*2*wfloor*hhold + hhold**3/(2*2*wfloor)], reltol=1E-5),
 
-                            lnose >= 5.2*units.m, # TODO UPDATE - less arbitrary
-                            wfuse >= SPR*wseat + 2*waisle + 2*wsys,
-
-                            ]
+                                ]
 
         elif fuselage_type == 'D8':
             raise NotImplementedError
+
+            constraints = [constraints,
+
+                            Afuse >= np.pi*Rfuse**2, # UPDATE
+                            lnose >= 5.2*units.m, # TODO UPDATE - less arbitrary
+                            wfuse >= SPR*wseat + 2*waisle + 2*wsys, #UPDATE
+                            #Mpassfl == 9./256*Ppassfl*wpassfl,
+                            Mfloor == 9./256*Pfloor*wfloor,
+                            
+                            # Model the additional  requred structural bending resistance
+                            # due to having the engines at tha rear
+
+                            # theta_db = arcsin(w_db/Rfuse), theta_db is the angle to vertical
+                            # that the intersection between the two bubles make
+
+                            # h_db**2 = Rfuse**2 - w_db**2, h_db vertical distance from
+                            # intersection to central of height of bubble
+                            # w_db is the horizontal distance from bubble center to web
+
+                            # Asking = (2*pi + 4*theta_db)*Rfuse*tskin + 2*DRfuse*tskin
+                            # DRfuse is the additional radius extension for additional cargo area
+
+                            # A_db = (2*h_db + DRfuse)*t_db, A_db is web cross sectional area
+                            # t_db is the webs thickness, from wing to wing.
+
+                            # I_hshell = ((pi + 2*theta_db + sin(2*theta_db))*Rfuse**2 + 4*cos(theta_db)*DRfuse*RFuse + 0.5*(pi + 2*theta_db)*DRfuse**2)*Rfuse*tshell + 2./3*(h_db + DRfuse/2)**3*t_db
+                            # I_hshell is the horziontal bending interia of the shell - equation A.9 from TASOPT
+                            # I_vshell = ((pi + 2*theta_db - sin(2*theta_db))*Rfuse**2 + 8*cos(theta_db)*w_db*Rfuse + (2*pi + 4*theta_db)*w_db**2)*Rfuse*tshell
+                            # I_vshell is the vertical bending interia of the shell - equation A.10 from TASOPT
+
+                            # t_db = 2*dp*w_db/sigskin
+
+                            # V_db = A_db*lshell
+                            # V_db is the volume of the web
+
+                            # xV_db = 0.5*(xshell1 + xshell2)*V_db
+                            # where xV_db is the resulting moment
+
+                            # W_db = rhoskin*g*V_db, W_db is weight of web, might want to change material properties??
+
+
+
+                            ]
+            #Add in 
+            #volume of fuselage
+            #sizing of internal webs
+
 
         else:
             raise NameError
 
 
-        CG_constraints = [
+        CG_constraints = [ #TASOPT and Philip might differ here in definitions of xshell1!!!!!
                           xVcyl >= 0.5*(xshell1+xshell2)*Vcyl,
                           xVnose >= 0.5*(xshell1)*Vnose,
                           xVbulk >= xshell2*Vbulk, # simplified
@@ -391,13 +468,13 @@ class Fuselage(CostedConstraintSet):
         elif fuselage_type == 'widebody':
 
             subs777 = {
-                         'L_{v_{max}}': 35000, #UPDATE vertical tail loading
+                         'L_{v_{max}}': 35000, # UPDATE vertical tail loading
                          'SPR': 9,
                          'V_{\\infty}': 248,
-                         'W_{cargo}': 100000, # up for debate, 10x of 737
+                         'W_{cargo}': 10000*10, # up for debate, 10x of 737
                          'b_{vt}': 9.24,
                          'c_{vt}': 5.78,
-                         '\\Delta h': 1,
+                         '\\Delta h': 0.5, # UPDATE?
                          'n_{seat}': 540,                                                  
 
                         }
@@ -405,6 +482,23 @@ class Fuselage(CostedConstraintSet):
 
         elif fuselage_type == 'D8':
             raise NotImplementedError
+
+            subsD8 = {
+                         'L_{v_{max}}': 35000, # UPDATE vertical tail loading
+                         'SPR': 9, #UPDATE
+                         'V_{\\infty}': 248, # UPDATE
+                         'W_{cargo}': 100000, # up for debate, 10x of 737
+                         'b_{vt}': 9.24, # UPDATE
+                         'c_{vt}': 5.78, # UPDATE
+                         '\\Delta h': 1, # UPDATE
+                         'n_{seat}': 540, # UPDATE                                                  
+
+                        }
+            substitutions.update(subsD8)
+
+            #Add in the subs here - need to review most of the assumptions
+            #Maybe there should be two different D8 models, 
+            #one for 737 size and another for 7777
 
         else:
             raise NameError
