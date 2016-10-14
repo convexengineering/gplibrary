@@ -20,9 +20,9 @@ class dartTail(Model):
         S      = Variable('S',23.69,'ft^2','Wing area')
         AR     = Variable('AR',26.7,'-','Aspect ratio')
         mac    = Variable('mac',1.02,'ft','Wing mean aerodynamic chord')
-        rhoh   = Variable('rho_[h}',.776,'kg/m^3','Density at 15,000 ft')
+        rhoh   = Variable('rho_{h}',.776,'kg/m^3','Density at 15,000 ft')
         qNE    = Variable('q_{NE}','Pa','Never-exceed dynamic pressure')
-        VNE    = Variable('V_{NE}',46,'m/s','Never-exceed speed')
+        VNE    = Variable('V_{NE}',40,'m/s','Never-exceed speed')
         b      = Variable('b',24.09,'ft','Wing span')
 
         # Airfoil properties (NACA0008)
@@ -101,7 +101,7 @@ class dartTail(Model):
         # Boom sizing
         kboom       >= 0.75, 
         kboom       <= 1, # Constraining boom inertia variable
-        lboom       >= 5.68*units('ft'),
+        lboom       == 5.68*units('ft'),
         d0boom      <= 1.25*units('in'),
         M_CG        <= 2*Ffacboom*Fboom*(lboom),
         TCS([I0boom == pi*t0boom*d0boom**3/8]),
@@ -109,8 +109,8 @@ class dartTail(Model):
         Wboom       >= pi*g*rhoCFRP*d0boom*lboom*t0boom*(kboom),
         thetaboom   <= 0.05,
         thetaboom   >= Fboom*lboom**2/(Eboom*I0boom)*(kboom),
-        Fboommax    >= .25*(.776*units('kg/m^3'))*(46*units('m/s'))**2*Shtail*CLmaxhtail,
-        Fboommax    >= .5*(.776*units('kg/m^3'))*(46*units('m/s'))**2*Svtail*CLmaxvtail,
+        Fboommax    >= .25*rhoTO*VNE**2*Shtail*CLmaxhtail,
+        Fboommax    >= .5*rhoTO*VNE**2*Svtail*CLmaxvtail,
         #sigboom     >= Fboommax*lboom/(Zboom),
         #sigyieldboom >= sigboom,
         #Zboom*(d0boom/2)+0.78*(d0boom/2)**4 <= 0.78*((d0boom/2+t0boom)**4),
@@ -162,8 +162,8 @@ class GasMALE(Model):
         AR     = Variable('AR',26.7,'-','Aspect ratio')
         e      = Variable('e',0.95,'-','Oswald efficiency')
         qNE    = Variable('q_{NE}','Pa','Never-exceed dynamic pressure')
-        VNE    = Variable('V_{NE}',46,'m/s','Never-exceed speed')
-        rhoh   = Variable('rho_[h}',.776,'kg/m^3','Density at 15,000 ft')
+        VNE    = Variable('V_{NE}',40,'m/s','Never-exceed speed')
+        rhoh   = Variable('rho_{h}',.776,'kg/m^3','Density at 15,000 ft')
         mu_atm = Variable("\\mu",1.8*10**-5,"N*s/m^2", "Dynamic viscosity")
 
         Wtail = Variable('W_{tail}','N','Total tail weight')
@@ -209,7 +209,7 @@ class GasMALE(Model):
 
         lc = LCS([self.submodels, constraints])
 
-        objective = tail['W_{tail}'] 
+        objective = tail['W_{tail}'] + tail['F_{boom-max}']
         Model.__init__(self, objective, lc, **kwargs)
 
 
@@ -220,7 +220,7 @@ if __name__ == "__main__":
     M       = Model(M.cost, BCS(M))
     sol     = M.solve("mosek")
     varVals = sol['variables']
-    print 'Tail downforce: ' + str(varVals['F_{boom}'])
+    print 'Tail maximum downforce: ' + str(varVals['F_{boom-max}'])
     print 'Boom weight: ' + str(varVals['W_{boom}'])
     print 'Boom thickness: ' + str(varVals['t_0_{boom}'])
     print 'Boom length: ' + str(varVals['l_{boom}'])
@@ -246,4 +246,4 @@ if __name__ == "__main__":
     #print 'Maximum boom loading: ' + str(varVals['F_{boom-max}'])
     print 'Vhtail: ' + str(varVals['V_{htail}'])
     print 'Vvtail: ' + str(varVals['V_{vtail}'])
-    print 'Total tail weight: ' + str(sol['cost'])
+    print 'Total tail weight: ' + str(varVals['W_{tail}'])
