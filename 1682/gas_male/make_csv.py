@@ -217,7 +217,7 @@ if __name__ == "__main__":
     write_to_excel(PATH, "W_breakdown.xlsx", DF, Sens_boundaries)
 
     df = sketch_params(
-        M, Sol, ["S", "b", "l_{fuel}", "d", "L", "S_h", "S_v", "b_h", "b_v"],
+        M, Sol, ["S", "b", "l_{fuel}", "d", "L", "S_h", "S_v", "b_h", "b_v", "d_0"],
         othervars={"lambda":[0.5, "-", "taper ratio"],
                    "eta":[3, "-", "tail boom separation/fuselage diameter"]}
         )
