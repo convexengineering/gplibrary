@@ -24,12 +24,13 @@ from collections import defaultdict
 from gpkit.small_scripts import mag
 
 # Note that sweep has to be True for any sweep to take place. 
-sweep         = True
+sweep         = False
 nsweep        = 5
 sweep_thetadb = False
+thetadb_bounds=[0.0,0.5]
 sweep_npass   = False
 sweep_Lhmax   = False
-sweep_fstring = True
+sweep_fstring = False
 fstring_bounds= [0.0,0.3]
 
 class Fuselage(Model):
@@ -187,11 +188,11 @@ class Fuselage(Model):
         A2           = Variable('A2','-','Horizontal bending area constant A2') #(fuselage impact)
         Ahbendb      = Variable('A_{hbendb}','m^2','Horizontal bending area at rear wingbox')
         Ahbendf      = Variable('A_{hbendf}','m^2','Horizontal bending area at front wingbox')
-        Avbendb      = Variable('A_{vbendb}','m^2','Vertical bending material area at rear wingbox')
+        #Avbendb      = Variable('A_{vbendb}','m^2','Vertical bending material area at rear wingbox')
         B0           = Variable('B0','m^2','Vertical bending area constant B0') #(shell inertia contribution)
         B1           = Variable('B1','m','Vertical bending area constant B1') #(vertical tail bending load)
         Ihshell      = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
-        Ivshell      = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
+        #Ivshell      = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
         rMh          = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') #[TAS]
         rMv          = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor') #[TAS]
         sigbend      = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
@@ -201,13 +202,13 @@ class Fuselage(Model):
         Vhbendb      = Variable('V_{hbendb}','m^3','Horizontal bending material volume b') #back fuselage
         Vhbendc      = Variable('V_{hbendc}','m^3','Horizontal bending material volume c') #center fuselage
         Vhbendf      = Variable('V_{hbendf}','m^3','Horizontal bending material volume f') #front fuselage
-        Vvbend       = Variable('V_{vbend}','m^3','Vertical bending material volume')
-        Vvbendb      = Variable('V_{vbendb}','m^3','Vertical bending material volume b') #back fuselage
-        Vvbendc      = Variable('V_{vbendc}','m^3','Vertical bending material volume c') #center fuselage
+        #Vvbend       = Variable('V_{vbend}','m^3','Vertical bending material volume')
+        #Vvbendb      = Variable('V_{vbendb}','m^3','Vertical bending material volume b') #back fuselage
+        #Vvbendc      = Variable('V_{vbendc}','m^3','Vertical bending material volume c') #center fuselage
         Whbend       = Variable('W_{hbend}','N','Horizontal bending material weight')
-        Wvbend       = Variable('W_{vbend}','N','Vertical bending material weight')
+        #Wvbend       = Variable('W_{vbend}','N','Vertical bending material weight')
         xhbend       = Variable('x_{hbend}','m','Horizontal zero bending location')
-        xvbend       = Variable('x_{vbend}','m','Vertical zero bending location')
+        #xvbend       = Variable('x_{vbend}','m','Vertical zero bending location')
         # x-location variables
         xshell1      = Variable('x_{shell1}', 'm', 'Start of cylinder section')
         xshell2      = Variable('x_{shell2}', 'm', 'End of cylinder section')
@@ -254,7 +255,7 @@ class Fuselage(Model):
             fstring     == .1, #Temporarily, so I can see changes in horizontal bending material
             wfuse       >= SPR*wseat + 2*waisle + tdb + 2*tshell + 2*wsys,
             wfuse       <= 2*(Rfuse + wdb),
-            wfloor      == .5*wfuse, # half of the total floor width in fuselage
+            wfloor      >= .5*wfuse, # half of the total floor width in fuselage
             #wcargofloor == 2*Rfuse*thetadb, #Temporarily #Approx
             #Ahold       >= (wfloor + wcargofloor)*hhold, #[SP]
             # Added synthetic constraint on hfloor to keep it from growing too large #Temporarily
@@ -291,7 +292,7 @@ class Fuselage(Model):
             Wpadd    == Wpay*fpadd,
             Wseat    == Wpseat*nseat,
             Wskin    >= rhoskin*g*(Vcyl + Vnose + Vbulk),
-            Wshell   >= Wskin*(1 + fstring + ffadd + fframe) + Wdb + Whbend + Wvbend,
+            Wshell   >= Wskin*(1 + fstring + ffadd + fframe) + Wdb + Whbend, #+ Wvbend,
             #Wfuse    >= Wapu + Wcargo + Wlugg + Wfix + Winsul + Wshell + Wfloor + Wwindow + Whbend + Wvbend + Wtail,
             Wfuse    >= Wfix + Wapu + Wpadd + Wseat + Wshell + Wwindow + Winsul + Wcone + Wfloor,
 
@@ -334,7 +335,7 @@ class Fuselage(Model):
             # Horizontal bending model
             # Maximum axial stress is the sum of bending and pressurization stresses
             Ihshell <= ((pi+4*thetadb)*Rfuse**2)*Rfuse*tshell + 2/3*hdb**3*tdb, # [SP]
-            Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #[SP] #Ivshell approximation needs to be improved
+            #Ivshell <= (pi*Rfuse**2 + 8*wdb*Rfuse + (2*pi+4*thetadb)*wdb**2)*Rfuse*tshell, #[SP] #Ivshell approximation needs to be improved
             sigbend == rE*sigskin,
         
             # Horizontal bending material model
@@ -347,7 +348,7 @@ class Fuselage(Model):
             Ahbendf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0, #[SP]                           # Bending area forward of wingbox
             Ahbendb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0, #[SP]                           # Bending area behind wingbox
 
-             Vhbendf >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend)**3) \
+            Vhbendf >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend)**3) \
                             + A1/2*((xtail-xf)**2 - (xtail - xhbend)**2) \
                             + A0*(xhbend-xf), #[SP]
 
@@ -360,16 +361,16 @@ class Fuselage(Model):
             
             # Vertical bending material model
             # Calculating xvbend, the location where additional bending material is required
-            xvbend  >= xwing,
-            SignomialEquality(B0,B1*(xtail-xvbend)), #[SP] #[SPEquality]
-            B1      == rMv*Lvmax/(wfloor*sigMv),                                               # Aero loads constant B1
-            B0      == Ivshell/(rE*wfloor**2),                                                 # Shell inertia constant B0
-            Avbendb >= B1*(xtail-xb) - B0,                                                      # Bending area behind wingbox
+            #xvbend  >= xwing,
+            #SignomialEquality(B0,B1*(xtail-xvbend)), #[SP] #[SPEquality]
+            #B1      == rMv*Lvmax/(wfloor*sigMv),                                               # Aero loads constant B1
+            #B0      == Ivshell/(rE*wfloor**2),                                                 # Shell inertia constant B0
+            #Avbendb >= B1*(xtail-xb) - B0,                                                      # Bending area behind wingbox
             
-            Vvbendb >= .5*B1*((xtail-xb)**2 - (xtail-xvbend)**2) - B0*(xvbend - xb), #[SP]
-            Vvbendc >= .5*Avbendb*c0*wbar,
-            Vvbend  >= Vvbendb + Vvbendc,
-            Wvbend  >= g*rhobend*Vvbend,
+            #Vvbendb >= .5*B1*((xtail-xb)**2 - (xtail-xvbend)**2) - B0*(xvbend - xb), #[SP]
+            #Vvbendc >= .5*Avbendb*c0*wbar,
+            #Vvbend  >= Vvbendb + Vvbendc,
+            #Wvbend  >= g*rhobend*Vvbend,
 
             # Temporary wing variable substitutions
             c0       == 0.1*lshell, #Temporarily
@@ -474,8 +475,8 @@ if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
     if sweep == False:
-        #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
-        sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
+        bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
+        #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
         varVals = sol['variables']
         print 'Cabin volume        : ' + str(sol('V_{cabin}'))
         print 'Fuselage width  : ' + str(sol('w_{fuse}'))
@@ -520,7 +521,7 @@ if __name__ == "__main__":
         print 'Skin thickness: ' + str(sol('t_{skin}'))
         print 'Shell thickness: ' + str(sol('t_{shell}'))
         print 'Shell horizontal inertia: ' + str(sol('I_{hshell}'))
-        print 'Shell vertical inertia: ' + str(sol('I_{vshell}'))
+        #print 'Shell vertical inertia: ' + str(sol('I_{vshell}'))
         print 'Stringer mass fraction: ' + str(sol('f_{string}'))
         #print 'Vhbendf: ' + str(sol('V_{hbendf}'))
         #print 'Vhbendb: ' + str(sol('V_{hbendb}'))
