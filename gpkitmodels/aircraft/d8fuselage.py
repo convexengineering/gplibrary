@@ -30,7 +30,7 @@ sweep_thetadb = False
 thetadb_bounds=[0.0,0.5]
 sweep_npass   = False
 sweep_Lhmax   = False
-sweep_fstring = False
+sweep_fstring = True
 fstring_bounds= [0.0,0.3]
 
 class Fuselage(Model):
@@ -197,7 +197,7 @@ class Fuselage(Model):
         rMv          = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor') #[TAS]
         sigbend      = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
         sigMh        = Variable('\\sigma_{M_h}','N/m^2','Horizontal bending material stress')
-        sigMv        = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
+        #sigMv        = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
         Vhbend       = Variable('V_{hbend}','m^3','Horizontal bending material volume')
         Vhbendb      = Variable('V_{hbendb}','m^3','Horizontal bending material volume b') #back fuselage
         Vhbendc      = Variable('V_{hbendc}','m^3','Horizontal bending material volume c') #center fuselage
@@ -252,7 +252,7 @@ class Fuselage(Model):
             SignomialEquality(tshell,tskin*(1+rE*fstring*rhoskin/rhobend)),
             #tshell     >= tskin*(1+rE*fstring*rhoskin/rhobend),
             #Rfuse       >= dh + hhold + hfloor,
-            fstring     == .1, #Temporarily, so I can see changes in horizontal bending material
+            #fstring     == .1, #Temporarily, so I can see changes in horizontal bending material
             wfuse       >= SPR*wseat + 2*waisle + tdb + 2*tshell + 2*wsys,
             wfuse       <= 2*(Rfuse + wdb),
             wfloor      >= .5*wfuse, # half of the total floor width in fuselage
@@ -382,7 +382,7 @@ class Fuselage(Model):
             #xb <= xwing - dxwing + .5*c0*wbar, #[SP]        
             
             sigMh   <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
-            sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell,
+            #sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell,
 
             # Drag model
             # f == lfuse/((4/np.pi*Afuse)**0.5), # fineness ratio
@@ -475,8 +475,9 @@ if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
     if sweep == False:
-        bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
-        #sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
+        M.substitutions.update({'f_{string}':0.1})
+        #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
+        sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
         varVals = sol['variables']
         print 'Cabin volume        : ' + str(sol('V_{cabin}'))
         print 'Fuselage width  : ' + str(sol('w_{fuse}'))
