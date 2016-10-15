@@ -422,7 +422,7 @@ class Aerodynamics(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
-        m_fac = Variable("m_{fac}", 1.9, "-", "CDA0 margin factor")
+        m_fac = Variable("m_{fac}", 1.5, "-", "CDA0 margin factor")
         CDA0 = VectorVariable(N, "CDA_0", "-", "sum of component drag")
 
         constraints = [
@@ -857,6 +857,11 @@ class TailBoom(Model):
         Sv = Variable("S_v", "ft**2", "vertical tail surface area")
         bv = Variable("b_v", "ft", "vertical tail span")
         Lmax = Variable("L_{max}", 5.5, "ft", "maximum tail boom length")
+        CLmax = Variable("C_{L-max}", 1.39, "-", "Maximum lift coefficient")
+        CLhtmax = Variable("C_{L-max_h}", "-",
+                           "max lift coefficient of horizontal tail")
+        mw = Variable("m_w", 2.0*pi/(1+2.0/23), "-",
+                      "assumed span wise effectiveness")
 
         constraints = [I0 <= pi*t0*d0**3/8.0,
                        W >= pi*g*rho_cfrp*d0*L*t0*kfac,
@@ -864,10 +869,11 @@ class TailBoom(Model):
                        th <= thmax,
                        # L <= Lmax,
                        th >= F*L**2/E/I0*(1+k)/2,
+                       CLhtmax/mh >= CLmax/mw,
                        Fne >= 1 + mh*0.5*Vne**2*rhosl*Sh*L**2/E/I0*kfac,
                        F[0] >= 0.5*rhosl*Vne**2*Sh*1.1/2.0,
-                       F[1] >= 0.5*rhosl*Vne**2*(Sv/2.0)*1.1,
-                       T >= 0.5*rhosl*Vne**2*(Sv/2.0)*1.1*bv/2,
+                       F[1] >= 0.5*rhosl*Vne**2*Sv*CLhtmax,
+                       T >= 0.5*rhosl*Vne**2*Sv*1.1*bv/2,
                        taucfrp >= T*d0/2/J,
                        J <= pi/8.0*d0**3*t0,
                        l_ref == L,
@@ -906,6 +912,9 @@ class HorizontalTail(Model):
         mw = Variable("m_w", 2.0*pi/(1+2.0/23), "-",
                       "assumed span wise effectiveness")
         mh = Variable("m_h", "-", "horizontal tail span effectiveness")
+        cth = Variable("c_{t_h}", "ft", "horizontal tail tip chord")
+        lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", 0.8/(0.8+1), "-",
+                           "horizontal tail taper ratio factor")
 
         # signomial helper variables
         sph1 = Variable("sph1", "-", "first term involving $V_h$")
@@ -921,6 +930,7 @@ class HorizontalTail(Model):
             deda >= mw*S/b/4/pi/L,
             mh*(1+2/ARh) <= 2*pi,
             W >= rhofoam*Sh**2/bh*Abar + g*rhoskin*Sh,
+            cth == 2*Sh/bh*lamhfac,
             l_ref == Sh/bh,
             S_ref == Sh
             ]
@@ -946,12 +956,16 @@ class VerticalTail(Model):
         L = Variable("L", "ft", "tail boom length")
         l_ref = Variable("l_{ref}", "ft", "vertical tail reference length")
         S_ref = Variable("S_{ref}", "ft**2", "vertical tail reference area")
+        ctv = Variable("c_{t_v}", "ft", "vertical tail tip chord")
+        lamvfac = Variable("\\lambda_v/(\\lambda_v+1)", 0.8/(0.8+1), "-",
+                           "vertical tail taper ratio factor")
 
-        constraints = [Vv <= Sv*L/S/b,
-                       bv**2 == ARv*(Sv/2),
-                       W >= rhofoam*(Sv/2.0)**2/bv*Abar + g*rhoskin*Sv/2.0,
-                       S_ref == (Sv/2.0),
-                       l_ref == (Sv/2.0)/bv,
+        constraints = [Vv <= 2*Sv*L/S/b,
+                       bv**2 == ARv*Sv,
+                       W >= rhofoam*Sv**2/bv*Abar + g*rhoskin*Sv,
+                       ctv == 2*Sv/bv*lamvfac,
+                       S_ref == Sv,
+                       l_ref == Sv/bv,
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -968,12 +982,13 @@ class Empennage(Model):
 
         constraints = [
             W/m_fac >= 2.0*tb["W"] + ht["W"] + 2.0*vt["W"],
+            ht["c_{t_h}"] == vt["c_{t_v}"]
             ]
 
         lc = LinkedConstraintSet(
             [self.submodels, constraints],
             include_only=["L", "F_{NE}", "m_h", "S_h", "S", "b", "b_v", "b_h",
-                          "S_v"]
+                          "S_v", "m_w"]
             )
 
         Model.__init__(self, None, lc, **kwargs)
