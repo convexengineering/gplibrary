@@ -731,6 +731,34 @@ class Wing(Model):
 
         Model.__init__(self, None, lc, **kwargs)
 
+class FuelTank(Model):
+    """
+    Returns the weight of the fuel tank.  Assumes a cylinder shape with some
+    fineness ratio
+    """
+    def __init__(self, **kwargs):
+
+        d = Variable("d", "ft", "fuel tank diameter")
+        phi = Variable("\\phi", 6, "-", "fuel tank fineness ratio")
+        l = Variable("l", "ft", "fuel tank length")
+        Stank = Variable("S_{tank}", "ft^2", "fuel tank surface area")
+        W = Variable("W", "lbf", "fuel tank weight")
+        W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
+        m_fac = Variable("m_{fac}", 1.1, "-", "fuel volume margin factor")
+        rho_fuel = Variable("\\rho_{fuel}", 6.01, "lbf/gallon",
+                            "density of 100LL")
+        rhotank = Variable("\\rho_{fuel-tank}", 0.089, "g/cm^2",
+                           "density of plastic fuel tank")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        Voltank = Variable("\\mathcal{V}", "ft^3", "fuel tank volume")
+
+        constraints = [W >= Stank*rhotank*g,
+                       Stank/4/phi >= Voltank/l,
+                       Voltank/m_fac >= W_fueltot/rho_fuel,
+                      ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class Fuselage(Model):
     """
     Sizes fuselage based off of volume constraints.  Assumes elliptical shape
@@ -738,37 +766,55 @@ class Fuselage(Model):
     def __init__(self, **kwargs):
 
         # Constants
-        rho_fuel = Variable("\\rho_{fuel}", 6.01, "lbf/gallon",
-                            "density of 100LL")
         d = Variable("d", "ft", "fuselage diameter")
-        l_fuel = Variable("l_{fuel}", "ft", "fuel tank length")
+        l = Variable("l", "ft", "fuselage length")
 
-        m_skin = Variable("m_{skin}", "kg", "fuselage skin mass")
-        rho_skin = Variable("\\rho_{skin}", 0.1, "g/cm^2",
-                            "Wing skin density")
-        S_fuse = Variable("S_{fuse}", "ft^2", "Fuselage surface area")
-        W_fueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
-        Vol_avionics = Variable("\\mathcal{V}_{avn}", 0.125, "ft^3",
-                                "Avionics volume")
+        mskin = Variable("m_{skin}", "kg", "fuselage skin mass")
+        rhokevlar = Variable("\\rho_{kevlar}", 1.3629, "g/cm**3",
+                             "kevlar density")
+        Sfuse = Variable("S_{fuse}", "ft^2", "Fuselage surface area")
+        Volavn = Variable("\\mathcal{V}_{avn}", 0.125, "ft^3",
+                          "Avionics volume")
         Vol_pay = Variable("\\mathcal{V}_{pay}", 1.0, "ft^3", "Payload volume")
         W = Variable("W", "lbf", "Fuselage weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        m_fac = Variable("m_{fac}", 3.0, "-", "Fuselage weight margin factor")
-        m_facfuel = Variable("m_{fac-fuel}", 1.1, "-",
-                             "fuel volume margin factor")
+        m_fac = Variable("m_{fac}", 2.5, "-", "Fuselage weight margin factor")
         S_ref = Variable("S_{ref}", "ft**2", "fuselage reference area")
         l_ref = Variable("l_{ref}", "ft", "fuselage reference length")
+        rhofoam = Variable("\\rho_{foam400}", 29, "kg/m^3",
+                           "density of Foamular 400")
+        sigmafoam = Variable("\\sigma_{foam400}", 0.414, "MPa",
+                             "shear stress of Foamular 400")
+        tfoam = Variable("t_{foam}", "in", "structural foam thickness")
+        wbolt = Variable("w_{bolt}", 1, "in", "supporting bolt width")
+        Nbolt = Variable("N_{bolt}", 6, "-",
+                         "number of bolts from wing to fuselage")
+        W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
+        N_max = Variable("N_{max}", 5, "-", "Load factor")
+        mfoam = Variable("m_{foam}", "kg", "mass of structural foam")
+        tmin = Variable("t_{min}", 0.03, "in", "minimum skin thickness")
+        tskin = Variable("t_{skin}", "in", "skin thickness")
+        hengine = Variable("h_{engine}", 6, "in", "engine height")
 
-        constraints = [m_skin >= S_fuse*rho_skin,
-                       pi*(d/2)**2*l_fuel/m_facfuel >= W_fueltot/rho_fuel,
-                       S_fuse >= pi*d*l_fuel + pi*d**2,
-                       W/m_fac >= m_skin*g,
-                       1.0/3*pi*d**3 >= Vol_pay,
-                       l_ref == l_fuel,
-                       S_ref == S_fuse
-                      ]
+        ft = FuelTank()
 
-        Model.__init__(self, None, constraints, **kwargs)
+        constraints = [
+            mskin >= Sfuse*rhokevlar*tskin,
+            tskin >= tmin,
+            Sfuse >= pi*d*l + pi*d**2,
+            pi*(d/2)**2*l >= ft["\\mathcal{V}"] + l*tfoam*d/2 + Volavn,
+            l >= ft["l"],
+            d >= hengine,
+            W/m_fac >= mskin*g + mfoam*g + ft["W"],
+            sigmafoam >= W_cent*N_max/Nbolt/tfoam/wbolt,
+            mfoam >= rhofoam*l*tfoam*d/2,
+            l_ref == l,
+            S_ref == Sfuse
+            ]
+
+        lc = LinkedConstraintSet([ft, constraints], include_only=["g"])
+
+        Model.__init__(self, None, lc, **kwargs)
 
 class Wind(Model):
     """
@@ -885,7 +931,7 @@ class TailBoom(Model):
 class HorizontalTail(Model):
     def __init__(self, **kwargs):
         Sh = Variable("S_h", "ft**2", "horizontal tail area")
-        ARh = Variable("AR_h", 5, "-", "horizontal tail aspect ratio")
+        ARh = Variable("AR_h", "-", "horizontal tail aspect ratio")
         Abar = Variable("\\bar{A}_{NACA0008}", 0.0548, "-",
                         "cross sectional area of NACA 0008")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
@@ -941,7 +987,7 @@ class VerticalTail(Model):
     def __init__(self, **kwargs):
         W = Variable("W", "lbf", "one vertical tail weight")
         Sv = Variable("S_v", "ft**2", "total vertical tail surface area")
-        Vv = Variable("V_v", 0.02, "-", "vertical tail volume coefficient")
+        Vv = Variable("V_v", 0.03, "-", "vertical tail volume coefficient")
         ARv = Variable("AR_v", 2, "-", "vertical tail aspect ratio")
         bv = Variable("b_v", "ft", "one vertical tail span")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
@@ -1022,9 +1068,9 @@ class Weight(ConstraintSet):
 
         constraints = [
             SummingConstraintSet(W_cent, "W", center_loads,
-                                 [W_fueltot, W_pay, W_skid, W_fueltank]),
+                                 [W_fueltot, W_pay, W_skid]),
             SummingConstraintSet(W_zfw, "W", zf_loads,
-                                 [W_pay, W_skid, W_fueltank])
+                                 [W_pay, W_skid])
             ]
 
         ConstraintSet.__init__(self, constraints, **kwargs)
@@ -1102,60 +1148,60 @@ class GasMALE(Model):
 
         Model.__init__(self, objective, lc, **kwargs)
 
-    def process_solution(self, sol):
-        xwing = 0.5*(sol("l_{fuel}")+sol("d"))
-        xnp = xwing + (sol("m_h")/sol("m_w")*(1.0-4.0/(sol("AR")+2.0))*
-                       sol("V_h"))*sol("S")/sol("b")
-        weights = [sol("W_Fuselage, GasMALE"),
-                   sol("W_{pay}"),
-                   sol("W_EngineWeight, GasMALE"),
-                   sol("W_{fuel-tot}"),
-                   sol("W_Wing, GasMALE"),
-                   sol("W_TailBoom, Empennage, GasMALE"),
-                   sol("W_HorizontalTail, Empennage, GasMALE"),
-                   sol("W_VerticalTail, Empennage, GasMALE")
-                  ]
+    # def process_solution(self, sol):
+    #     xwing = 0.5*(sol("l_{fuel}")+sol("d"))
+    #     xnp = xwing + (sol("m_h")/sol("m_w")*(1.0-4.0/(sol("AR")+2.0))*
+    #                    sol("V_h"))*sol("S")/sol("b")
+    #     weights = [sol("W_Fuselage, GasMALE"),
+    #                sol("W_{pay}"),
+    #                sol("W_EngineWeight, GasMALE"),
+    #                sol("W_{fuel-tot}"),
+    #                sol("W_Wing, GasMALE"),
+    #                sol("W_TailBoom, Empennage, GasMALE"),
+    #                sol("W_HorizontalTail, Empennage, GasMALE"),
+    #                sol("W_VerticalTail, Empennage, GasMALE")
+    #               ]
 
-        xlocs = [0.5*(sol("l_{fuel}") + sol("d")),
-                 0.5*sol("d"),
-                 sol("l_{fuel}") + 0.5*sol("d"),
-                 0.5*(sol("l_{fuel}") + sol("d")),
-                 xwing,
-                 xwing + 0.5*sol("L"),
-                 xwing + sol("L"),
-                 xwing + sol("L")
-                ]
+    #     xlocs = [0.5*(sol("l_{fuel}") + sol("d")),
+    #              0.5*sol("d"),
+    #              sol("l_{fuel}") + 0.5*sol("d"),
+    #              0.5*(sol("l_{fuel}") + sol("d")),
+    #              xwing,
+    #              xwing + 0.5*sol("L"),
+    #              xwing + sol("L"),
+    #              xwing + sol("L")
+    #             ]
 
-        xcg = return_cg(weights, xlocs)
-        SM = (xnp - xcg)/(sol("S")/sol("b"))
+    #     xcg = return_cg(weights, xlocs)
+    #     SM = (xnp - xcg)/(sol("S")/sol("b"))
 
-        wpay = sol("W_{pay}")*np.linspace(0.5, 2.5, 15)
-        ind = weights.index(sol("W_{pay}"))
-        cgs = []
-        SMs = []
-        xws = []
-        for w in wpay:
-            weights[ind] = w
-            cg = return_cg(weights, xlocs)
-            cgs.extend([cg])
-            SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
-            xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
+    #     wpay = sol("W_{pay}")*np.linspace(0.5, 2.5, 15)
+    #     ind = weights.index(sol("W_{pay}"))
+    #     cgs = []
+    #     SMs = []
+    #     xws = []
+    #     for w in wpay:
+    #         weights[ind] = w
+    #         cg = return_cg(weights, xlocs)
+    #         cgs.extend([cg])
+    #         SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
+    #         xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
 
-        fig, ax = plt.subplots(2)
-        ax[0].plot(wpay, SMs)
-        ax[1].plot(wpay, xws)
-        ax[0].set_ylabel("Static Margin")
-        ax[1].set_ylabel("Wing location [ft]")
-        ax[0].set_xlabel("Payload weight [lbf]")
-        ax[1].set_xlabel("Payload weight [lbf]")
-        fig.savefig("smvswpay.pdf")
+    #     fig, ax = plt.subplots(2)
+    #     ax[0].plot(wpay, SMs)
+    #     ax[1].plot(wpay, xws)
+    #     ax[0].set_ylabel("Static Margin")
+    #     ax[1].set_ylabel("Wing location [ft]")
+    #     ax[0].set_xlabel("Payload weight [lbf]")
+    #     ax[1].set_xlabel("Payload weight [lbf]")
+    #     fig.savefig("smvswpay.pdf")
 
-        self.xnp = xnp
-        self.xcg = xcg
-        self.SM = SM
+    #     self.xnp = xnp
+    #     self.xcg = xcg
+    #     self.SM = SM
 
-    def get_cgs(self):
-        return self.xnp, self.xcg, self.SM
+    # def get_cgs(self):
+    #     return self.xnp, self.xcg, self.SM
 
 if __name__ == "__main__":
     M = GasMALE(DF70=True)
