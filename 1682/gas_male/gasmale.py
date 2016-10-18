@@ -405,7 +405,7 @@ class Aerodynamics(Model):
     """
     Aero model assuming jh01 airfoil, designed by Mark Drela
     """
-    def __init__(self, N, dragcomps=None, **kwargs):
+    def __init__(self, N, dragcomps=None, jh01=True, **kwargs):
 
         CLmax = Variable("C_{L-max}", 1.39, "-", "Maximum lift coefficient")
         e = Variable("e", 0.9, "-", "Spanwise efficiency")
@@ -425,18 +425,19 @@ class Aerodynamics(Model):
         m_fac = Variable("m_{fac}", 1.5, "-", "CDA0 margin factor")
         CDA0 = VectorVariable(N, "CDA_0", "-", "sum of component drag")
 
-        constraints = [
-            CD >= CDA0 + cdp + CL**2/(pi*e*AR),
-            #jh01
-            cdp >= ((0.0075 + 0.002*CL**2 +
-                     0.00033*CL**10)*(Re/Re_ref)**-0.4),
+        constraints = [CD >= CDA0 + cdp + CL**2/(pi*e*AR),
+                       b**2 == S*AR,
+                       CL <= CLmax,
+                       Re == rho*V/mu_atm*(S/AR)**0.5,
+                      ]
+
+        if jh01:
+            constraints.extend([cdp >= ((0.0075 + 0.002*CL**2 +
+                                         0.00033*CL**10)*(Re/Re_ref)**-0.4)])
+        else:
             #sd7032
-            # cdp >= ((0.006 + 0.005*CL**2 +
-            #         0.00012*CL**10)*(Re/Re_ref)**-0.3),
-            b**2 == S*AR,
-            CL <= CLmax,
-            Re == rho*V/mu_atm*(S/AR)**0.5,
-            ]
+            constraints.extend([cdp >= ((0.006 + 0.005*CL**2 +
+                                         0.00012*CL**10)*(Re/Re_ref)**-0.3)])
 
         if dragcomps:
             dragbuild = [ComponentDrag(N, c) for c in dragcomps]
@@ -460,7 +461,7 @@ class Aerodynamics(Model):
                                      include_only=includes)
 
         else:
-            constraints.extend([CDA0/m_fac >= 0.001])
+            constraints.extend([CDA0/m_fac >= 0.01])
             cs = ConstraintSet([constraints])
 
         Model.__init__(self, None, cs, **kwargs)
