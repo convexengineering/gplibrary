@@ -397,8 +397,7 @@ class Fuselage(Model):
             # Dfuse >= Dfrict
             ]
 
-        objective = Wfuse + Vcabin*units('N/m^3') + tshell*units('N/m') + lfuse*units('N/m') #+ Dfuse
-        Model.__init__(self, objective, constraints, **kwargs)
+        Model.__init__(self, None, constraints, **kwargs)
 
     def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
         "Returns model with additional constraints bounding all free variables"
@@ -439,46 +438,54 @@ class Fuselage(Model):
         return out, solhold
 
 
-# class Aircraft(Model):
-#     """
-#     Combined fuselage, tail, and landing gear model
-#     """
+class Aircraft(Model):
+    "The D8 Double Bubble"
 
-#     def __init__(self):
+    def dynamic(self,state):
+        """Creates an instance of this component's performance model,
+        given a state"""
+        return AircraftP(self,state)
 
-#         # Free variables
-#         W       = Variable('W', 'N', 'Total aircraft weight')
-#         Wfuse   = Variable('W_{fuse}', 'N', 'Fuselage weight')
-#         Wlg     = Variable('W_{lg}', 'N', 'Landing gear weight')
-#         Wvt     = Variable('W_{vt}', 'N', 'Vertical tail weight')
-#         xCG     = Variable('x_{CG}', 'm', 'x-location of CG')
-#         xCGfu   = Variable('x_{CG_{fu}}', 'm', 'x-location of fuselage CG')
-#         xCGlg   = Variable('x_{CG_{lg}}', 'm', 'x-location of landing gear CG')
-#         xCGvt   = Variable('x_{CG_{vt}}', 'm', 'x-location of tail CG') 
+    def __init__(self,**kwargs):
+        self.fuse = Fuselage()
+        #self.wing = Wing()
+        #self.tail = Tail()
 
-#         # Fixed variables (pulled from Philippe's aircraft model)
-#         Weng    = Variable('W_{eng}', 10000, 'N', 'Engine weight')
-#         Wht     = Variable('W_{ht}', 5000, 'N', 'Horizontal tail weight')
-#         Wwing   = Variable('W_{wing}', 30000, 'N', 'Wing weight')
-#         xCGeng  = Variable('x_{CG_{eng}}', 15, 'm', 'x-location of engine CG')
-#         xCGht   = Variable('x_{CG_{ht}}', 38, 'm', 'x-location of horizontal tail CG')
-#         xCGwing = Variable('x_{CG_{wing}}', 15, 'm', 'x-location of wing CG')
+        self.components = [self.fuse]#, self.wing, self.tail]
 
-#         fuselage = Fuselage()
+        W       = Variable('W', 'lbf', 'Total aircraft weight')
 
-#         self.submodels = [Fuselage]
+        self.weight = W
 
-#         constraints = [];
+        constraints = [W >= self.fuse["W_{fuse}"]]
 
-#         lc = LinkedConstraintSet([self.submodels, constraints],
-#                                  include_only=INCLUDE)
+        objective = self.fuse["W_{fuse}"] + \
+                     self.fuse["V_{cabin}"]*units('N/m^3') + \
+                     self.fuse["t_{shell}"]*units('N/m') + \
+                     self.fuse["l_{fuse}"]*units('N/m')
 
-#         objective = 1/W;
 
-#         Model.__init__(self, objective, lc, **kwargs)
+        Model.__init__(self, objective, self.components + constraints, **kwargs)
+
+        # # Free variables
+        # Wfuse   = Variable('W_{fuse}', 'N', 'Fuselage weight')
+        # Wlg     = Variable('W_{lg}', 'N', 'Landing gear weight')
+        # Wvt     = Variable('W_{vt}', 'N', 'Vertical tail weight')
+        # xCG     = Variable('x_{CG}', 'm', 'x-location of CG')
+        # xCGfu   = Variable('x_{CG_{fu}}', 'm', 'x-location of fuselage CG')
+        # xCGlg   = Variable('x_{CG_{lg}}', 'm', 'x-location of landing gear CG')
+        # xCGvt   = Variable('x_{CG_{vt}}', 'm', 'x-location of tail CG') 
+
+        # # Fixed variables (pulled from Philippe's aircraft model)
+        # Weng    = Variable('W_{eng}', 10000, 'N', 'Engine weight')
+        # Wht     = Variable('W_{ht}', 5000, 'N', 'Horizontal tail weight')
+        # Wwing   = Variable('W_{wing}', 30000, 'N', 'Wing weight')
+        # xCGeng  = Variable('x_{CG_{eng}}', 15, 'm', 'x-location of engine CG')
+        # xCGht   = Variable('x_{CG_{ht}}', 38, 'm', 'x-location of horizontal tail CG')
+        # xCGwing = Variable('x_{CG_{wing}}', 15, 'm', 'x-location of wing CG')
 
 if __name__ == "__main__":
-    M = Fuselage()
+    M = Aircraft()
     #M = Model(M.cost, BCS(M))
     if sweep == False:
         #M.substitutions.update({'f_{string}':0.1})
