@@ -1154,7 +1154,7 @@ class GasMALE(Model):
         Model.__init__(self, objective, lc, **kwargs)
 
     def process_solution(self, sol):
-        xwing = 0.5*(sol("l_Fuselage, GasMALE")+sol("d"))*0.8
+        xwing = 0.5*(sol("l_Fuselage, GasMALE")+sol("d"))*0.82 # 0.93 for 10lb
         self.xwing = xwing
         xnp = xwing + (sol("m_h")/sol("m_w")*(1.0-4.0/(sol("AR")+2.0))*
                        sol("V_h"))*sol("S")/sol("b")
