@@ -953,7 +953,7 @@ class HorizontalTail(Model):
         l_ref = Variable("l_{ref}", "ft", "horizontal tail reference length")
         S_ref = Variable("S_{ref}", "ft**2", "horizontal tail reference area")
 
-        SMcorr = Variable("SM_{corr}", 0.3, "-", "corrected static margin")
+        SMcorr = Variable("SM_{corr}", 0.35, "-", "corrected static margin")
         Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
         deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
         mw = Variable("m_w", 2.0*pi/(1+2.0/23), "-",
@@ -989,7 +989,7 @@ class VerticalTail(Model):
         W = Variable("W", "lbf", "one vertical tail weight")
         Sv = Variable("S_v", "ft**2", "total vertical tail surface area")
         Vv = Variable("V_v", 0.025, "-", "vertical tail volume coefficient")
-        ARv = Variable("AR_v", 2, "-", "vertical tail aspect ratio")
+        ARv = Variable("AR_v", "-", "vertical tail aspect ratio")
         bv = Variable("b_v", "ft", "one vertical tail span")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
                            "Density of formular 250")
@@ -1004,13 +1004,17 @@ class VerticalTail(Model):
         l_ref = Variable("l_{ref}", "ft", "vertical tail reference length")
         S_ref = Variable("S_{ref}", "ft**2", "vertical tail reference area")
         ctv = Variable("c_{t_v}", "ft", "vertical tail tip chord")
-        lamvfac = Variable("\\lambda_v/(\\lambda_v+1)", 0.8/(0.8+1), "-",
+        lamvfac = Variable("\\lambda_v/(\\lambda_v+1)", 1.0/(1.0+1), "-",
                            "vertical tail taper ratio factor")
+        lantenna = Variable("l_{antenna}", 13.4, "in", "antenna length")
+        wantenna = Variable("w_{antenna}", 10.2, "in", "antenna width")
 
         constraints = [Vv <= 2*Sv*L/S/b,
                        bv**2 == ARv*Sv,
                        W >= rhofoam*Sv**2/bv*Abar + g*rhoskin*Sv,
                        ctv == 2*Sv/bv*lamvfac,
+                       ctv >= wantenna*1.3,
+                       bv >= lantenna,
                        S_ref == Sv,
                        l_ref == Sv/bv,
                       ]
@@ -1150,12 +1154,12 @@ class GasMALE(Model):
         Model.__init__(self, objective, lc, **kwargs)
 
     def process_solution(self, sol):
-        xwing = 0.5*(sol("l_Fuselage, GasMALE")+sol("d"))*0.95
+        xwing = 0.5*(sol("l_Fuselage, GasMALE")+sol("d"))*0.8
         self.xwing = xwing
         xnp = xwing + (sol("m_h")/sol("m_w")*(1.0-4.0/(sol("AR")+2.0))*
                        sol("V_h"))*sol("S")/sol("b")
         weights = [sol("W_Fuselage, GasMALE"),
-                   sol("W_{pay}"),
+                   sol("W_{pay}")*2.5,
                    sol("W_EngineWeight, GasMALE"),
                    sol("W_{fuel-tot}"),
                    sol("W_Wing, GasMALE"),
@@ -1181,29 +1185,29 @@ class GasMALE(Model):
         self.xcg = xcg
         self.SM = SM
 
-        wpay = sol("W_{pay}")*np.linspace(0.5, 2.5, 15)
-        ind = weights.index(sol("W_{pay}"))
-        cgs = []
-        SMs = []
-        xws = []
-        for w in wpay:
-            weights[ind] = w
-            cg = return_cg(weights, xlocs)
-            cgs.extend([cg])
-            SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
-            xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
+        # wpay = sol("W_{pay}")*np.linspace(0.5, 2.5, 15)
+        # ind = weights.index(sol("W_{pay}"))
+        # cgs = []
+        # SMs = []
+        # xws = []
+        # for w in wpay:
+        #     weights[ind] = w
+        #     cg = return_cg(weights, xlocs)
+        #     cgs.extend([cg])
+        #     SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
+        #     xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
 
-        weights[ind] = sol("W_{pay}")
+        # weights[ind] = sol("W_{pay}")
 
-        fig, ax = plt.subplots(2)
-        ax[0].plot(wpay, SMs)
-        ax[1].plot(wpay, xws)
-        ax[0].set_ylabel("Static Margin")
-        ax[1].set_ylabel("Wing location [ft]")
-        ax[0].set_xticks([])
-        ax[1].set_xlabel("Payload weight [lbf]")
-        ax[0].set_title("Static Margin Full Fuel")
-        fig.savefig("smvswpay.pdf")
+        # fig, ax = plt.subplots(2)
+        # ax[0].plot(wpay, SMs)
+        # ax[1].plot(wpay, xws)
+        # ax[0].set_ylabel("Static Margin")
+        # ax[1].set_ylabel("Wing location [ft]")
+        # ax[0].set_xticks([])
+        # ax[1].set_xlabel("Payload weight [lbf]")
+        # ax[0].set_title("Static Margin Full Fuel")
+        # fig.savefig("smvswpay.pdf")
 
         indf = weights.index(sol("W_{fuel-tot}"))
         del weights[indf]
@@ -1212,43 +1216,43 @@ class GasMALE(Model):
         SM = (xnp - xcg)/(sol("S")/sol("b"))
         self.xcgempty = xcg
         self.SMempty = SM
-        cgs = []
-        SMs = []
-        xws = []
-        for w in wpay:
-            weights[ind] = w
-            cg = return_cg(weights, xlocs)
-            cgs.extend([cg])
-            SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
-            xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
+        # cgs = []
+        # SMs = []
+        # xws = []
+        # for w in wpay:
+        #     weights[ind] = w
+        #     cg = return_cg(weights, xlocs)
+        #     cgs.extend([cg])
+        #     SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
+        #     xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
 
-        fig, ax = plt.subplots(2)
-        ax[0].plot(wpay, SMs)
-        ax[1].plot(wpay, xws)
-        ax[0].set_ylabel("Static Margin")
-        ax[1].set_ylabel("Wing location [ft]")
-        ax[0].set_xticks([])
-        ax[1].set_xlabel("Payload weight [lbf]")
-        ax[0].set_title("Static Margin Empty Fuel")
-        fig.savefig("smvswpayempty.pdf")
+        # fig, ax = plt.subplots(2)
+        # ax[0].plot(wpay, SMs)
+        # ax[1].plot(wpay, xws)
+        # ax[0].set_ylabel("Static Margin")
+        # ax[1].set_ylabel("Wing location [ft]")
+        # ax[0].set_xticks([])
+        # ax[1].set_xlabel("Payload weight [lbf]")
+        # ax[0].set_title("Static Margin Empty Fuel")
+        # fig.savefig("smvswpayempty.pdf")
 
-        indh = weights.index(sol("W_HorizontalTail, Empennage, GasMALE"))
-        indv = weights.index(sol("W_VerticalTail, Empennage, GasMALE"))
-        del weights[indv]
-        del weights[indh]
-        del xlocs[indv]
-        del xlocs[indh]
-        weights[ind] = sol("W_{pay}")
-        wtail = []
-        for w in wpay:
-            weights[ind] = w
-            wtail.append(((self.xcg*sum(weights)-sum(list(map(mul, weights, xlocs))))/(xwing+sol("L"))).magnitude)
+        # indh = weights.index(sol("W_HorizontalTail, Empennage, GasMALE"))
+        # indv = weights.index(sol("W_VerticalTail, Empennage, GasMALE"))
+        # del weights[indv]
+        # del weights[indh]
+        # del xlocs[indv]
+        # del xlocs[indh]
+        # weights[ind] = sol("W_{pay}")
+        # wtail = []
+        # for w in wpay:
+        #     weights[ind] = w
+        #     wtail.append(((self.xcg*sum(weights)-sum(list(map(mul, weights, xlocs))))/(xwing+sol("L"))).magnitude)
 
-        fig, ax = plt.subplots()
-        ax.plot(wpay, wtail)
-        ax.set_xlabel("Payload weight [lbf]")
-        ax.set_ylabel("Tail weight [lbf]")
-        fig.savefig("wtailvswpay.pdf")
+        # fig, ax = plt.subplots()
+        # ax.plot(wpay, wtail)
+        # ax.set_xlabel("Payload weight [lbf]")
+        # ax.set_ylabel("Tail weight [lbf]")
+        # fig.savefig("wtailvswpay.pdf")
 
     def get_cg(self):
         """ return cg location at full and empty """
@@ -1269,7 +1273,7 @@ class GasMALE(Model):
 if __name__ == "__main__":
     M = GasMALE(DF70=True)
     M.substitutions.update({"t_{loiter}": 6})
-    M.substitutions.update({"b": 24})
+    # M.substitutions.update({"b": 24})
     M.cost = M["MTOW"]
     if SIGNOMIALS:
         sol = M.localsolve("mosek")
