@@ -10,7 +10,7 @@ from wind_speeds import get_windspeed
 class GasSimple(Model):
     def __init__(self, latitude=45, h_station=16000, N=5, avail=90, **kwargs):
 
-        slf = SteadyLevelFlight(N, [0.7]*N)
+        slf = SteadyLevelFlight(N, [0.65]*N)
         fuel = Fuel(N)
         aero = Aerodynamics(N)
         atm = Atmosphere(N, [h_station]*5)
@@ -20,7 +20,7 @@ class GasSimple(Model):
         wind = get_windspeed(latitude, avail, h_station)
 
         etaengine = Variable("\\eta_{engine}", 0.95, "-", "motor efficiency")
-        fstructures = Variable("f_{structures}", 0.4, "-",
+        fstructures = Variable("f_{structures}", 0.35, "-",
                                "fractional structural weight")
         Wstructures = Variable("W_{structures}", "lbf", "structural weight")
         mtow = Variable("MTOW", 200, "lbf", "max take off weight")
