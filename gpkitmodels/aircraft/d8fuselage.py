@@ -222,12 +222,11 @@ class Fuselage(Model):
         xwing        = Variable('x_{wing}','m', 'x-location of wing')
         dxwing       = Variable('dx_{wing}','m','wing box offset')
         
-        # Wing and wingbox variables
+                # Wing and wingbox variables
         xf           = Variable('x_f','m','x-location of front of wingbox')
         xb           = Variable('x_b','m','x-location of back of wingbox')
         c0           = Variable('c_0','m','Root chord of the wing')
         wbar         = Variable('\\bar_w',0.5,'-','Wingbox to chord ratio') #Temporarily
-
         # Drag variables
         # Dfuse    = Variable('D_{fuse}', 'N', 'Total drag in cruise')
         # Dfrict   = Variable('D_{friction}', 'N', 'Friction drag')
@@ -399,6 +398,36 @@ class Fuselage(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+# class HTail(Model):
+#     def dynamic(self,state):
+#         return HTailP(self,state)
+
+#     def __init__(self,**kwargs):
+
+# class VTail(Model):
+#     def dynamic(self,state):
+#         return VTailP(self,state)
+
+#     def __init__(self,**kwargs):
+
+
+# class Tail(Model):
+#     def dynamic(self,state):
+#         return TailP(self,state)
+
+#     def __init__(self,**kwargs):
+
+class Wing(Model):
+    def dynamic(self,state):
+        return WingP(self,state)
+
+    def __init__(self,**kwargs):
+
+        constraints = [];
+        Model.__init__(self,None,constraints,**kwargs)
+
+
+
 class Aircraft(Model):
     "The D8 Double Bubble"
 
@@ -409,10 +438,10 @@ class Aircraft(Model):
 
     def __init__(self,**kwargs):
         self.fuse = Fuselage()
-        #self.wing = Wing()
+        self.wing = Wing()
         #self.tail = Tail()
 
-        self.components = [self.fuse]#, self.wing, self.tail]
+        self.components = [self.fuse, self.wing] #, self.tail]
 
         W       = Variable('W', 'lbf', 'Total aircraft weight')
 
