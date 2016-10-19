@@ -24,15 +24,19 @@ from collections import defaultdict
 from gpkit.small_scripts import mag
 
 # Note that sweep has to be True for any sweep to take place. 
-sweep         = True
+sweep         = False
 nsweep        = 10
-sweep_thetadb = True
+
+sweep_thetadb = False
 thetadb_bounds=[0.0,0.5]
+
 sweep_npass   = False
 npass_bounds  = [160, 232]
+
 sweep_Shtail   = False
 Shtail_bounds  = [10,50]
-sweep_fstring = False
+
+sweep_fstring = True
 fstring_bounds= [0.0,0.3]
 
 class Fuselage(Model):
@@ -146,7 +150,7 @@ class Fuselage(Model):
         ffadd        = Variable('f_{fadd}',0.2, '-','Fractional added weight of local reinforcements') #[TAS]
         fapu         = Variable('f_{apu}',0.035,'-','APU weight as fraction of payload weight') #[TAS]
         #ffairing     = Variable('f_{fairing}',0.151,'-','  Fractional fairing weight')
-        fframe       = Variable('f_{frame}',0.634,'-', 'Fractional frame weight')
+        fframe       = Variable('f_{frame}',0.25,'-', 'Fractional frame weight') #[Philippe]
         flugg1       = Variable('f_{lugg,1}',0.4,'-','Proportion of passengers with one suitcase') #[Philippe]
         flugg2       = Variable('f_{lugg,2}',0.1, '-','Proportion of passengers with two suitcases') #[Philippe]
         fpadd        = Variable('f_{padd}',0.4, '-', 'Other misc weight as fraction of payload weight')
@@ -244,7 +248,7 @@ class Fuselage(Model):
             
             # Fuselage joint angle relations
             thetadb     == wdb/Rfuse, # first order Taylor works...
-            #thetadb     >= 0.05, thetadb <= 0.4, #Temporarily
+            thetadb     >= 0.05, thetadb <= 0.5, #Temporarily
             hdb         >= Rfuse*(1.0-.5*thetadb**2), #[SP]
             
             # Fuselage cross-sectional relations
@@ -477,7 +481,7 @@ if __name__ == "__main__":
     M = Fuselage()
     #M = Model(M.cost, BCS(M))
     if sweep == False:
-        M.substitutions.update({'f_{string}':0.1})
+        #M.substitutions.update({'f_{string}':0.1})
         #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
         sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
         varVals = sol['variables']
@@ -570,6 +574,8 @@ if __name__ == "__main__":
             npass = sol('n_{pass}')
             Wfuse    = sol('W_{fuse}')
             Wfloor   = sol('W_{floor}')
+            lfuse    = sol('l_{fuse}')
+            fstring  = sol('f_{string}')
 
             plt.close()
             plt.plot(npass, Wfuse)
@@ -587,6 +593,14 @@ if __name__ == "__main__":
             plt.ylabel('W_{floor} (N)')
             plt.grid()
             plt.savefig('Wfloor_vs_npass.pdf')
+
+            plt.close()
+            plt.plot(lfuse, fstring)
+            plt.title('f_{string} vs. l_{fuse}')
+            plt.xlabel('l_{fuse} (m)')
+            plt.ylabel('f_{string}')
+            plt.grid()
+            plt.savefig('fstring_vs_lfuse.pdf')
 
         if sweep_Shtail == True:
             M.substitutions.update({'S_{htail}':\
@@ -628,7 +642,7 @@ if __name__ == "__main__":
             plt.xlabel('\\theta_{db} (radians)')
             plt.ylabel('W_{fuse} (N)')
             plt.grid()
-            plt.savefig('Wfuse_vs_thetadb')
+            plt.savefig('Wfuse_vs_thetadb.pdf')
 
             plt.close()
             plt.plot(thetadb,fstring)
@@ -636,7 +650,7 @@ if __name__ == "__main__":
             plt.xlabel('\\theta_{db} (radians)')
             plt.ylabel('f_{string}')
             plt.grid()
-            plt.savefig('fstring_vs_thetadb')
+            plt.savefig('fstring_vs_thetadb.pdf')
 
             plt.close()
             plt.plot(thetadb,Whbend)
@@ -644,4 +658,4 @@ if __name__ == "__main__":
             plt.xlabel('\\theta_{db} (radians)')
             plt.ylabel('W_{hbend} (N)')
             plt.grid()
-            plt.savefig('Whbend_vs_thetadb')
+            plt.savefig('Whbend_vs_thetadb.pdf')
