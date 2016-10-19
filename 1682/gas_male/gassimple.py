@@ -8,16 +8,16 @@ import matplotlib.pyplot as plt
 from wind_speeds import get_windspeed
 
 class GasSimple(Model):
-    def __init__(self, latitude=45, h_station=16000, N=5, avail=90, **kwargs):
+    def __init__(self, latitude=45, altitude=16000, N=5, avail=90, **kwargs):
 
-        slf = SteadyLevelFlight(N, [0.65]*N)
+        slf = SteadyLevelFlight(N, [0.8]*N)
         fuel = Fuel(N)
         aero = Aerodynamics(N)
-        atm = Atmosphere(N, [h_station]*5)
+        atm = Atmosphere(N, [altitude]*5)
         be = BreguetEndurance(N)
         aero.substitutions.update({"AR": 25})
         be.substitutions.update({"BSFC": np.linspace(0.6, 0.6, N)})
-        wind = get_windspeed(latitude, avail, h_station)
+        wind = get_windspeed(latitude, avail, altitude)
 
         etaengine = Variable("\\eta_{engine}", 0.95, "-", "motor efficiency")
         fstructures = Variable("f_{structures}", 0.35, "-",

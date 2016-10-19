@@ -461,7 +461,7 @@ class Aerodynamics(Model):
                                      include_only=includes)
 
         else:
-            constraints.extend([CDA0/m_fac >= 0.01])
+            constraints.extend([CDA0/m_fac >= 0.002])
             cs = ConstraintSet([constraints])
 
         Model.__init__(self, None, cs, **kwargs)

@@ -30,11 +30,11 @@ def get_Eirr(latitude, day):
     Rsun = 695842 # radius of the sun, km
     E0 = Esun*4*np.pi*Rsun**2/4/np.pi/Reo**2
     tau = np.exp(-0.175/costhsun)
-    E = E0*costhsun #*tau
-    # fig, ax = plt.subplots()
-    # ax.plot(t, E)
-    # ax.set_xlabel("Time [hr]")
-    # ax.set_ylabel("Available Solar Power [W/m$^2$]")
-    # ax.grid()
-    # fig.savefig("lat45.pdf")
-    return np.trapz(E), tstart*2, 24-tstart*2
+    E = E0*costhsun# *tau
+    fig, ax = plt.subplots()
+    ax.plot(t, E)
+    ax.set_xlabel("Time [hr]")
+    ax.set_ylabel("Available Solar Power [W/m$^2$]")
+    ax.grid()
+    fig.savefig("lat45.pdf")
+    return np.trapz(E)*(abs(tend-tstart))/50.0, tstart*2, 24-tstart*2
