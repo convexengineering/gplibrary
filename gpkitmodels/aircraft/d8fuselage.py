@@ -40,7 +40,8 @@ sweep_fstring = True
 fstring_bounds= [0.0,0.3]
 
 class Fuselage(Model):
-    def __init__(self, **kwargs):
+    def __init__(self,wingbox,**kwargs):
+        self.wingbox = wingbox
         constraints = []
         g = 9.81*units('m*s**-2')
         ndisc = 10
@@ -219,17 +220,10 @@ class Fuselage(Model):
         xshell1      = Variable('x_{shell1}', 'm', 'Start of cylinder section')
         xshell2      = Variable('x_{shell2}', 'm', 'End of cylinder section')
         xtail        = Variable('x_{tail}','m', 'x-location of tail')
-        xwing        = Variable('x_{wing}','m', 'x-location of wing')
-        dxwing       = Variable('dx_{wing}','m','wing box offset')
         
-                # Wing and wingbox variables
-        xf           = Variable('x_f','m','x-location of front of wingbox')
-        xb           = Variable('x_b','m','x-location of back of wingbox')
-        c0           = Variable('c_0','m','Root chord of the wing')
-        wbar         = Variable('\\bar_w',0.5,'-','Wingbox to chord ratio') #Temporarily
         # Drag variables
         # Dfuse    = Variable('D_{fuse}', 'N', 'Total drag in cruise')
-        # Dfrict   = Variable('D_{friction}', 'N', 'Friction drag')
+        # Dfrict   =riable('D_{friction}', 'N', 'Friction drag')
         # Dupswp   = Variable('D_{upsweep}', 'N', 'Drag due to fuse upsweep')
         # f        = Variable('f', '-', 'Fineness ratio')
         # FF       = Variable('FF', '-','Fuselage form factor')
@@ -331,7 +325,6 @@ class Fuselage(Model):
             # Tail aero loads
             xtail    >= lnose + lshell + .5*lcone, #Temporarily
             Lhmax    == 0.5*rho0*VNE**2*Shtail*CLhmax,
-            SignomialEquality(xwing, lnose + 0.6*lshell),
             #Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
             #Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
 
@@ -345,22 +338,21 @@ class Fuselage(Model):
         
             # Horizontal bending material model
             # Calculating xbend, the location where additional bending material is required
-            xhbend  >= xwing,
             SignomialEquality(A0,A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP] #[SPEquality] 
             A2      >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh), # Landing loads constant A2
             A1      >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),                                # Aero loads constant A1
             A0      == (Ihshell/(rE*hfuse**2)),                                                # Shell inertia constant A0
-            Ahbendf >= A2*(xshell2-xf)**2 + A1*(xtail-xf) - A0, #[SP]                           # Bending area forward of wingbox
-            Ahbendb >= A2*(xshell2-xb)**2 + A1*(xtail-xb) - A0, #[SP]                           # Bending area behind wingbox
+            Ahbendf >= A2*(xshell2-self.wingbox['x_f'])**2 + A1*(xtail-self.wingbox['x_f']) - A0, #[SP]                           # Bending area forward of wingbox
+            Ahbendb >= A2*(xshell2-self.wingbox['x_b'])**2 + A1*(xtail-self.wingbox['x_b']) - A0, #[SP]                           # Bending area behind wingbox
 
-            Vhbendf >= A2/3*((xshell2-xf)**3 - (xshell2-xhbend)**3) \
-                            + A1/2*((xtail-xf)**2 - (xtail - xhbend)**2) \
-                            + A0*(xhbend-xf), #[SP]
+            Vhbendf >= A2/3*((xshell2-self.wingbox['x_f'])**3 - (xshell2-xhbend)**3) \
+                            + A1/2*((xtail-self.wingbox['x_f'])**2 - (xtail - xhbend)**2) \
+                            + A0*(xhbend-self.wingbox['x_f']), #[SP]
 
-            Vhbendb >= A2/3*((xshell2-xb)**3 - (xshell2-xhbend)**3) \
-                            + A1/2*((xtail-xb)**2 - (xtail - xhbend)**2) \
-                            + A0*(xhbend-xb), #[SP]
-            Vhbendc >= .5*(Ahbendf + Ahbendb)*c0*wbar,
+            Vhbendb >= A2/3*((xshell2-self.wingbox['x_b'])**3 - (xshell2-xhbend)**3) \
+                            + A1/2*((xtail-self.wingbox['x_b'])**2 - (xtail - xhbend)**2) \
+                            + A0*(xhbend-self.wingbox['x_b']), #[SP]
+            Vhbendc >= .5*(Ahbendf + Ahbendb)*self.wingbox['c_0']*self.wingbox['\\bar_w'],
             Vhbend  >= Vhbendc + Vhbendf + Vhbendb,
             Whbend  >= g*rhobend*Vhbend,
             
@@ -378,14 +370,9 @@ class Fuselage(Model):
             #Wvbend  >= g*rhobend*Vvbend,
 
             # Temporary wing variable substitutions
-            c0       == 0.1*lshell, #Temporarily
-            dxwing   == 0.25*c0, #Temporarily
-            # Setting bending area integration bounds (defining wing box locations)
-            SignomialEquality(xf,xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
-            #xf >= xwing + dxwing + .5*c0*wbar,
-            SignomialEquality(xb, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
-            #xb <= xwing - dxwing + .5*c0*wbar, #[SP]        
-            
+            self.wingbox['c_0']       == 0.1*lshell, #Temporarily
+            self.wingbox['dx_{wing}']   == 0.25*self.wingbox['c_0'], #Temporarily
+                        
             sigMh   <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
             #sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell,
 
@@ -426,7 +413,25 @@ class Wing(Model):
         constraints = [];
         Model.__init__(self,None,constraints,**kwargs)
 
+class WingBox(Model):
+    def dynamic(self,state):
+        return WingBoxP(self,state)
 
+    def __init__(self,**kwargs):
+        xf           = Variable('x_f','m','x-location of front of wingbox')
+        xb           = Variable('x_b','m','x-location of back of wingbox')
+        c0           = Variable('c_0','m','Root chord of the wing')
+        wbar         = Variable('\\bar_w',0.5,'-','Wingbox to chord ratio') #Temporarily
+        xwing        = Variable('x_{wing}','m', 'x-location of wing')
+        dxwing       = Variable('dx_{wing}','m','wing box offset')
+        # Setting bending area integration bounds (defining wing box locations)
+        with SignomialsEnabled():
+            constraints  = [SignomialEquality(xf,xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
+                        #xf >= xwing + dxwing + .5*c0*wbar,
+                        SignomialEquality(xb, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
+                        #xb <= xwing - dxwing + .5*c0*wbar, #[SP]        
+                        ];
+        Model.__init__(self,None,constraints,**kwargs)
 
 class Aircraft(Model):
     "The D8 Double Bubble"
@@ -437,18 +442,22 @@ class Aircraft(Model):
         return AircraftP(self,state)
 
     def __init__(self,**kwargs):
-        self.fuse = Fuselage()
-        self.wing = Wing()
+        self.wing    = Wing()
+        self.wingbox = WingBox()
+        self.fuse    = Fuselage(self.wingbox)
         #self.tail = Tail()
 
-        self.components = [self.fuse, self.wing] #, self.tail]
+        self.components = [self.fuse, self.wing, self.wingbox] #, self.tail]
 
         W       = Variable('W', 'lbf', 'Total aircraft weight')
 
         self.weight = W
-
-        constraints = [W >= self.fuse["W_{fuse}"]]
-
+        with SignomialsEnabled():
+            constraints = [W >= self.fuse["W_{fuse}"],
+                SignomialEquality(self.wingbox['x_{wing}'], \
+                                 self.fuse['l_{nose}'] + 0.6*self.fuse['l_{shell}']),
+                            self.fuse['x_{hbend}']  >= self.wingbox['x_{wing}']
+                          ]
         objective = self.fuse["W_{fuse}"] + \
                      self.fuse["V_{cabin}"]*units('N/m^3') + \
                      self.fuse["t_{shell}"]*units('N/m') + \
