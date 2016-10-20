@@ -455,10 +455,10 @@ class Aircraft(Model):
         return AircraftP(self,state)
 
     def __init__(self,**kwargs):
-        self.ops = Ops()
-        self.wing    = Wing(self.ops)
-        self.wingbox = WingBox(self.ops)
-        self.fuse    = Fuselage(self.ops,self.wingbox)
+        ops = Ops()
+        self.wing    = Wing(ops)
+        self.wingbox = WingBox(ops)
+        self.fuse    = Fuselage(ops,self.wingbox)
         #self.tail = Tail()
 
         self.components = [self.fuse, self.wing, self.wingbox] #, self.tail]
