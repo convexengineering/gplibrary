@@ -23,7 +23,7 @@ if __name__ == "__main__":
     for p in [80, 90, 95]:
         wind = []
         for l in np.arange(0, 70, 1):
-            wind.append(get_windspeed(l, p, 50000))
+            wind.append(get_windspeed(l, p, 16000))
         ax.plot(wind, np.arange(0, 70, 1))
 
     ax.set_xlabel("Latitude [deg]")
@@ -31,4 +31,4 @@ if __name__ == "__main__":
     ax.set_ylim([0, 70])
     ax.grid()
     ax.legend(["%d Percentile Winds" % a for a in [80, 90, 95]])
-    fig.savefig("latvswindh50.pdf")
+    fig.savefig("latvswindh16.pdf")

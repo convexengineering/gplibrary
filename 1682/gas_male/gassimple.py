@@ -28,16 +28,18 @@ class GasSimple(Model):
         tflight = Variable("t_{flight}", "days", "flight time")
         Vmin = Variable("V_{min}", wind, "m/s", "minimum velocity")
         Wpay = Variable("W_{pay}", 1, "lbf", "payload")
+        Pacc = Variable("P_{acc}", 0.0, "W", "accessory power draw")
 
-        constraints = [mtow >= fuel["W_{start}"],
-                       mtow >= Wstructures + Wfueltot + Wpay,
-                       Wstructures >= mtow*fstructures,
-                       Wstructures + Wpay <= fuel["W_{end}"],
-                       Wfueltot >= fuel["W_{fuel-fs}"],
-                       slf["P_{shaft}"] == be["P_{shaft-tot}"]*etaengine,
-                       be["t"] >= tflight/N,
-                       slf["V"] >= Vmin,
-                      ]
+        constraints = [
+            mtow >= fuel["W_{start}"],
+            mtow >= Wstructures + Wfueltot + Wpay,
+            Wstructures >= mtow*fstructures,
+            Wstructures + Wpay <= fuel["W_{end}"],
+            Wfueltot >= fuel["W_{fuel-fs}"],
+            Pacc + slf["P_{shaft}"] <= be["P_{shaft-tot}"]*etaengine,
+            be["t"] >= tflight/N,
+            slf["V"] >= Vmin,
+            ]
 
         cost = 1/tflight
 

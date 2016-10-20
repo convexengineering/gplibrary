@@ -34,7 +34,7 @@ class Power(Model):
         S = Variable("S", "ft**2", "wing area")
 
         constraints = [
-            TCS([ESirr*eta_solar*Ssolar >= Poper*tday + Ebatt/eta_charge]),
+            ESirr*eta_solar*Ssolar >= Poper*tday + Ebatt/eta_charge,
             Ssolar <= S,
             Poper >= P_shaft + Pacc,
             Ebatt >= Poper*tnight/eta_discharge]
