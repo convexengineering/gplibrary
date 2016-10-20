@@ -39,24 +39,29 @@ Shtail_bounds  = [10,50]
 sweep_fstring = True
 fstring_bounds= [0.0,0.3]
 
+class Ops(Model):
+    def __init__(self,**kwargs):
+        # Operational, arbitrary constraints listed here. 
+        Nland = Variable('N_{land}',6.,'-', 'Emergency landing load factor') #[TAS]
+        
+        constraints = [Nland == Nland]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+
 class Fuselage(Model):
-    def __init__(self,wingbox,**kwargs):
+    def __init__(self,ops,wingbox,**kwargs):
+        self.ops = ops
         self.wingbox = wingbox
         constraints = []
         g = 9.81*units('m*s**-2')
-        ndisc = 10
 
         # Will try to stick to Philippe's naming methods as closely as possible
         # for cross-compatibility (to be able to switch models quickly)
 
         # Fixed variables
         SPR          = Variable('SPR', 8, '-', 'Number of seats per row')
-        npass        = Variable('n_{pass}',192,'-', 'Number of passengers')
         nseat        = Variable('n_{seat}','-','Number of seats')
-
-        nrows        = Variable('n_{rows}', '-', 'Number of rows')
-        pitch        = Variable('p_s',81., 'cm', 'Seat pitch')
-        Nland        = Variable('N_{land}',6.,'-', 'Emergency landing load factor') #[TAS]
         dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
         rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)') #[stdAtm]
         VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed') #[Philippe]
@@ -64,6 +69,10 @@ class Fuselage(Model):
         Vinf         = Variable('V_{\\infty}',234, 'm/s','Cruise velocity')
         muinf        = Variable('\\mu_{\\infty}', 'N*s/m^2', 'Dynamic viscosity (35,000 ft)')
 
+        npass        = Variable('n_{pass}',192,'-', 'Number of passengers')
+        nrows        = Variable('n_{rows}', '-', 'Number of rows')
+        pitch        = Variable('p_s',81., 'cm', 'Seat pitch')
+        
         # Cross sectional parameters
         Adb          = Variable('A_{db}', 'm^2', 'Web cross sectional area')
         Afloor       = Variable('A_{floor}', 'm^2', 'Floor beam x-sectional area')
@@ -304,7 +313,7 @@ class Fuselage(Model):
             
             # Floor loading 
             lfloor   >= lshell + 2*Rfuse,            
-            Pfloor   >= Nland*(Wpay + Wseat),
+            Pfloor   >= self.ops['N_{land}']*(Wpay + Wseat),
             Mfloor   == 9./256.*Pfloor*wfloor,
             Afloor   >= 2.*Mfloor/(sigfloor*hfloor) + 1.5*Sfloor/taufloor,
             Vfloor   == 2*wfloor*Afloor,
@@ -339,8 +348,8 @@ class Fuselage(Model):
             # Horizontal bending material model
             # Calculating xbend, the location where additional bending material is required
             SignomialEquality(A0,A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP] #[SPEquality] 
-            A2      >= Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh), # Landing loads constant A2
-            A1      >= (Nland*Wtail + rMh*Lhmax)/(hfuse*sigMh),                                # Aero loads constant A1
+            A2      >=  self.ops['N_{land}']*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh), # Landing loads constant A2
+            A1      >= (self.ops['N_{land}']*Wtail + rMh*Lhmax)/(hfuse*sigMh),                                # Aero loads constant A1
             A0      == (Ihshell/(rE*hfuse**2)),                                                # Shell inertia constant A0
             Ahbendf >= A2*(xshell2-self.wingbox['x_f'])**2 + A1*(xtail-self.wingbox['x_f']) - A0, #[SP]                           # Bending area forward of wingbox
             Ahbendb >= A2*(xshell2-self.wingbox['x_b'])**2 + A1*(xtail-self.wingbox['x_b']) - A0, #[SP]                           # Bending area behind wingbox
@@ -411,8 +420,8 @@ class Wing(Model):
     def dynamic(self,state):
         return WingP(self,state)
 
-    def __init__(self,**kwargs):
-
+    def __init__(self,ops,**kwargs):
+        self.ops = ops
         constraints = [];
         Model.__init__(self,None,constraints,**kwargs)
 
@@ -420,7 +429,8 @@ class WingBox(Model):
     def dynamic(self,state):
         return WingBoxP(self,state)
 
-    def __init__(self,**kwargs):
+    def __init__(self,ops,**kwargs):
+        self.ops = ops
         xf           = Variable('x_f','m','x-location of front of wingbox')
         xb           = Variable('x_b','m','x-location of back of wingbox')
         c0           = Variable('c_0','m','Root chord of the wing')
@@ -445,9 +455,10 @@ class Aircraft(Model):
         return AircraftP(self,state)
 
     def __init__(self,**kwargs):
-        self.wing    = Wing()
-        self.wingbox = WingBox()
-        self.fuse    = Fuselage(self.wingbox)
+        self.ops = Ops()
+        self.wing    = Wing(self.ops)
+        self.wingbox = WingBox(self.ops)
+        self.fuse    = Fuselage(self.ops,self.wingbox)
         #self.tail = Tail()
 
         self.components = [self.fuse, self.wing, self.wingbox] #, self.tail]
