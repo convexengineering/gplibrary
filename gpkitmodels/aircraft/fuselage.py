@@ -1,10 +1,9 @@
 "Implements Fuselage model"
 import numpy as np
 from gpkit import Variable, Model, SignomialsEnabled, units
-from gpkit.constraints.costed import CostedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
 
-class Fuselage(CostedConstraintSet):
+class Fuselage(Model):
     """
     Fuselage model
     """
@@ -177,7 +176,7 @@ class Fuselage(CostedConstraintSet):
         xshell2  = Variable('x_{shell2}', 'm', 'End of cylinder section')
 
         with SignomialsEnabled():
-            objective = Dfuse + 0.5*Wfuse
+            objective = Dfuse + 0.5*Wfuse  # PERFORMANCE MODEL????
 
             constraints = [
                             # Geometry relations
@@ -191,8 +190,8 @@ class Fuselage(CostedConstraintSet):
                             # TODO: Bending loads
 
                             # Pressure shell loads
-                            sigx == dp/2*Rfuse/tshell,
-                            sigth == dp*Rfuse/tskin,
+                            sigx == dp/2*Rfuse/tshell,  
+                            sigth == dp*Rfuse/tskin, 
                             sigskin >= sigth,
                             sigskin >= sigx,
                             Snose**(8./5) >= (2*np.pi*Rfuse**2)**(8./5) *
@@ -206,9 +205,9 @@ class Fuselage(CostedConstraintSet):
                             Wshell >= Wskin*(1 + fstring + fframe + ffadd),
 
                             # Fuselage volume and buoyancy weight
-                            rhocabin == (1/(R*Tcabin))*pcabin,
+                            rhocabin == (1/(R*Tcabin))*pcabin,  
                             Vfuse >= Afuse*(lshell + 0.67*lnose + 0.67*Rfuse),
-                            TCS([Wbuoy >= (rhocabin - rhoinf)*g*Vfuse], reltol=1E-3), # [SP]
+                            TCS([Wbuoy >= (rhocabin - rhoinf)*g*Vfuse], reltol=1E-3), # [SP]  
 
                             # Windows and insulation
                             Wwindow == Wpwindow * lshell,
@@ -287,7 +286,7 @@ class Fuselage(CostedConstraintSet):
                             f == lfuse/((4/np.pi*Afuse)**0.5), # fineness ratio
                             FF >= 1 + 60/f**3 + f/400, # form factor
                             Dfrict >= FF * np.pi*Rfuse * mu*Vinf
-                                      * 0.074*(rhoinf*Vinf*lfuse/mu)**0.8,
+                                      * 0.074*(rhoinf*Vinf*lfuse/mu)**0.8,  # PERFORMANCE MODEL
 
                             # Drag due to fuselage upsweep (Raymer p286)
                             xshell2 >= xshell1 + lshell,
@@ -295,8 +294,8 @@ class Fuselage(CostedConstraintSet):
                             x_upswp + lcone <= lfuse,
                             1.13226*phi**1.03759 == Rfuse/lcone, # monomial fit
                                                                  # of tan(phi)
-                            Dupswp >= 3.83*phi**2.5*Afuse * 0.5*rhoinf*Vinf**2,
-                            Dfuse >= Dfrict + Dupswp
+                            Dupswp >= 3.83*phi**2.5*Afuse * 0.5*rhoinf*Vinf**2,  # PERFORMANCE MODEL
+                            Dfuse >= Dfrict + Dupswp  # PERFORMANCE MODEL
                           ]
 
 
@@ -406,7 +405,7 @@ class Fuselage(CostedConstraintSet):
 
         self.CG_constraints = CG_constraints
 
-        CostedConstraintSet.__init__(self, objective, constraints)
+        Model.__init__(self, objective, constraints)
 
 
     def defaultsubs(self, fuselage_type = 'narrowbody'):
@@ -414,7 +413,7 @@ class Fuselage(CostedConstraintSet):
         substitutions = {
                          'LF': 0.898, # Might want to look into other values
                          'N_{land}': 6.0, # [TAS]
-                         'T_{cabin}': 300,
+                         'T_{cabin}': 300,  
                          'W\'\'_{floor}': 60, # [TAS]
                          'W\'\'_{insul}': 22, # [TAS]
                          'W\'_{seat}': 150, # Boeing
@@ -423,9 +422,9 @@ class Fuselage(CostedConstraintSet):
                          'W_{carry on}': 15,
                          'W_{checked}': 40,
                          'W_{fix}': 3000, # might differe depending on aircraft
-                         '\\Delta p': 52000,
-                         '\\mu': 1.4E-5,
-                         '\\rho_{\\infty}': 0.38,
+                         '\\Delta p': 83000,  
+                         '\\mu': 1.4E-5,  # PERFORMANCE MODEL
+                         '\\rho_{\\infty}': 0.38,  # PERFORMANCE MODEL
                          '\\rho_{bend}': 2700, # [TAS]
                          '\\rho_{cargo}': 150, # b757 freight doc
                          '\\rho_{cone}': 2700, # [TAS]
@@ -443,7 +442,7 @@ class Fuselage(CostedConstraintSet):
                          'f_{padd}': 0.4, # [TAS]
                          'f_{string}': 0.35, # [TAS]
                          'p_s': 31,
-                         'p_{cabin}': 75000,
+                         'p_{cabin}': 75000,  
                          'r_E': 1.0, # [TAS]
                          'w_{aisle}': 0.51, # Boeing
                          'w_{seat}': 0.5,
@@ -453,9 +452,9 @@ class Fuselage(CostedConstraintSet):
         if fuselage_type == 'narrowbody':
 
             subs737 = {
-                         'L_{v_{max}}': 35000,
+                         'L_{v_{max}}': 35000,  
                          'SPR': 6,
-                         'V_{\\infty}': 234,
+                         'V_{\\infty}': 234,  # PERFORMANCE MODEL
                          'W_{cargo}': 10000,
                          'b_{vt}': 7,
                          'c_{vt}': 4,
@@ -470,7 +469,7 @@ class Fuselage(CostedConstraintSet):
             subs777 = {
                          'L_{v_{max}}': 35000, # UPDATE vertical tail loading
                          'SPR': 9,
-                         'V_{\\infty}': 248,
+                         'V_{\\infty}': 248,  # PERFORMANCE MODEL
                          'W_{cargo}': 10000*10, # up for debate, 10x of 737
                          'b_{vt}': 9.24,
                          'c_{vt}': 5.78,
@@ -484,10 +483,10 @@ class Fuselage(CostedConstraintSet):
             raise NotImplementedError
 
             subsD8 = {
-                         'L_{v_{max}}': 35000, # UPDATE vertical tail loading
+                         'L_{v_{max}}': 35000, # UPDATE vertical tail loading 
                          'SPR': 9, #UPDATE
-                         'V_{\\infty}': 248, # UPDATE
-                         'W_{cargo}': 100000, # up for debate, 10x of 737
+                         'V_{\\infty}': 248, # UPDATE  # PERFORMANCE MODEL
+                         'W_{cargo}': 100000, # up for debate
                          'b_{vt}': 9.24, # UPDATE
                          'c_{vt}': 5.78, # UPDATE
                          '\\Delta h': 1, # UPDATE
@@ -508,7 +507,9 @@ class Fuselage(CostedConstraintSet):
         return substitutions
 
 
-
+    def dynamic(self, state):
+        #Creates an performance model
+        return FuselagePerformance(self, state)
 
     @classmethod
     def standalonefuselage(cls, fuselage_type = 'narrowbody'):
@@ -542,9 +543,132 @@ class Fuselage(CostedConstraintSet):
     	
         fu = cls.standalonefuselage(fuselage_type)
 
-        return fu.localsolve(verbosity=4)
+        return fu.localsolve(solver = None, verbosity=4)
+
+
+class Atmosphere(Model):
+    def __init__(self, **kwargs):
+        g = Variable('g', 'm/s^2', 'Gravitational acceleration')
+        p_sl = Variable("p_{sl}", "Pa", "Pressure at sea level")
+        T_sl = Variable("T_{sl}", "K", "Temperature at sea level")
+        L_atm = Variable("L_{atm}", "K/m", "Temperature lapse rate")
+        T_atm = Variable("T_{atm}", "K", "air temperature")
+        M_atm = Variable("M_{atm}", "kg/mol",
+                         "Molar mass of dry air")
+        R_atm = Variable("R_{atm}", "J/mol/K",
+                         "air specific heating value")
+        p_atm = Variable("P_{atm}", "Pa", "air pressure")
+        TH = (g*M_atm/R_atm/L_atm).value
+
+        rho = Variable('\\rho', 'kg/m^3', 'Density of air')
+
+        h = Variable("h", "ft", "Altitude")
+
+        """
+        Dynamic viscosity (mu) as a function of temperature
+        References:
+        http://www-mdp.eng.cam.ac.uk/web/library/enginfo/aerothermal_dvd_only/aero/
+            atmos/atmos.html
+        http://www.cfd-online.com/Wiki/Sutherland's_law
+        """
+        mu  = Variable('\\mu', 'kg/(m*s)', 'Dynamic viscosity')
+
+        T_s = Variable('T_s', 110.4, "K", "Sutherland Temperature")
+        C_1 = Variable('C_1', 1.458E-6, "kg/(m*s*K^0.5)",
+                       'Sutherland coefficient')
+
+        t_plus_ts_approx = (T_atm + T_s).mono_approximation({T_atm: 288.15,
+                                                         T_s: T_s.value})
+
+        with SignomialsEnabled():
+            constraints = [
+                # Pressure-altitude relation
+                (p_atm/p_sl)**(1/5.257) == T_atm/T_sl,
+
+                # Ideal gas law
+                rho == p_atm/(R_atm/M_atm*T_atm),
+
+                #temperature equation
+                SignomialEquality(T_sl, T_atm + L_atm*h),
+
+                #constraint on mu
+##                SignomialEquality((T_atm + T_s) * mu, C_1 * T_atm**1.5),
+                TCS([(T_atm + T_s) * mu >= C_1 * T_atm**1.5])
+                ]
+
+
+        Model.__init__(self, T_atm, constraints, **kwargs)
+
+
+class FlightState(Atmosphere):
+    """
+    creates atm model for each flight segment, has variables
+    such as veloicty and altitude
+    """
+    def __init__(self, **kwargs):
+        #declare variables
+        Vinf     = Variable('V_{\\infty}', 'm/s', 'Cruise velocity')
+        a        = Variable('a', 'm/s', 'Speed of Sound')
+        gamma    = Variable('\\gamma', '-', 'Air Specific Heat Ratio')
+        h        = Variable('h', 'm', 'Segment Altitude [meters]')
+        hft      = Variable('hft', 'feet', 'Segment Altitude [feet]')
+
+        #make new constraints
+        constraints = []
+
+        constraints.extend([
+            V == V, #required so velocity variable enters the model
+
+            h == hft, #convert the units on altitude
+
+            #compute the speed of sound with the state
+            a  == (gamma * R_atm * T_atm)**.5,
+
+            #compute the mach number
+            M == V * a,
+            ])
+
+        #build the model
+        Model.__init__(self, None, [self.atm + constraints], **kwargs)
+
+
+class FuselagePerformance(Model):
+    "Wing drag model"
+    def __init__(self, fuselage, state, **kwargs):
+
+        Dfuse    = Variable('D_{fuse}', 'N', 'Total drag in cruise')
+        Dfrict   = Variable('D_{friction}', 'N', 'Friction drag')
+        Dupswp   = Variable('D_{upsweep}', 'N', 'Drag due to fuse upsweep')
+        
+        #Vinf     = Variable('V_{\\infty}', 'm/s', 'Cruise velocity')
+        #mu       = Variable('\\mu', 'N*s/m^2', 'Dynamic viscosity (35,000 ft)')
+        #rhoinf   = Variable('\\rho_{\\infty}', 'kg/m^3',
+        #                    'Air density (35,000ft)')
+        
+        constraints = [
+
+                # Drag
+                # sources: Raymer (p285), kfid 325 notes (p180)
+                Dfrict >= fuselage['FF'] * np.pi*fuselage['R_{fuse}'] * state['\\mu'] * state['V_{\\infty}']
+                          * 0.074*(state['\\rho_{\\infty}']*state['V_{\\infty}']*fuselage['l_{fuse}']/state['\\mu'])**0.8,
+
+                # Drag due to fuselage upsweep (Raymer p286)
+                Dupswp >= 3.83*phi**2.5*fuselage['A_{fuse}'] * 0.5*state['\\rho_{\\infty}']*state['V_{\\infty}']**2,
+                Dfuse >= Dfrict + Dupswp
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
 
 
 if __name__ == "__main__":
-    sol = Fuselage.test(fuselage_type = 'widebody')
+    sol = Fuselage.test(fuselage_type = 'narrowbody')
     print(sol.table())
+
+
+
+
+
+
+
+
+
