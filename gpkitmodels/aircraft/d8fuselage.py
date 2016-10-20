@@ -381,6 +381,9 @@ class Fuselage(Model):
             # FF >= 1 + 60/f**3 + f/400, # form factor
             # Dfrict >= FF * (pi*Rfuse+2*wdb) * muinf*Vinf* 0.074*(rhoinf*Vinf*lfuse/muinf)**0.8,
             # Dfuse >= Dfrict
+
+            # Wingbox/fuselage constraints
+            SignomialEquality(self.wingbox['x_{wing}'], lnose + 0.6*lshell),
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -454,16 +457,13 @@ class Aircraft(Model):
         self.weight = W
         with SignomialsEnabled():
             constraints = [W >= self.fuse["W_{fuse}"],
-                SignomialEquality(self.wingbox['x_{wing}'], \
-                                 self.fuse['l_{nose}'] + 0.6*self.fuse['l_{shell}']),
-                            self.fuse['x_{hbend}']  >= self.wingbox['x_{wing}']
+                           self.fuse['x_{hbend}']  >= self.wingbox['x_{wing}']
                           ]
         objective = self.fuse["W_{fuse}"] + \
                      self.fuse["V_{cabin}"]*units('N/m^3') + \
                      self.fuse["t_{shell}"]*units('N/m') + \
                      self.fuse["l_{fuse}"]*units('N/m')
-
-
+                     
         Model.__init__(self, objective, self.components + constraints, **kwargs)
 
         # # Free variables
@@ -489,7 +489,7 @@ if __name__ == "__main__":
     if sweep == False:
         #M.substitutions.update({'f_{string}':0.1})
         #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
-        sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
+        sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 2, iteration_limit=50)
         varVals = sol['variables']
         print 'Cabin volume        : ' + str(sol('V_{cabin}'))
         print 'Fuselage width  : ' + str(sol('w_{fuse}'))
