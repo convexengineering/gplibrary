@@ -60,10 +60,11 @@ class Ops(Model):
 
 
 class Fuselage(Model):
-    def __init__(self,ops,wingbox,htail,**kwargs):
+    def __init__(self,ops,wingbox,htail,vtail,**kwargs):
         self.ops = ops
         self.wingbox = wingbox
         self.htail = htail
+        self.vtail = vtail
         constraints = []
         g = 9.81*units('m*s**-2')
 
@@ -105,11 +106,9 @@ class Fuselage(Model):
         wsys         = Variable('w_{sys}', 0.1,'m', 'Width between cabin and skin for systems') #[Philippe]
         
         # Tail cone variables
-        bvt          = Variable('b_{vt}', 'm', 'Vertical tail span')
-        lamcone      = Variable('\\lambda_{cone}', '-','Tailcone radius taper ratio (xshell2->xtail)')
+        lamcone      = Variable('\\lambda_{cone}',0.4, '-','Tailcone radius taper ratio (xshell2->xtail)')
         lcone        = Variable('l_{cone}', 'm', 'Cone length')
-        Lvmax        = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
-        plamv        = Variable('p_{\\lambda_v}', '-', '1 + 2*Tail taper ratio')
+        plamv        = Variable('p_{\\lambda_v}',1.4,'-', '1 + 2*Tail taper ratio')
         Qv           = Variable('Q_{v}', 'N*m', 'Torsion moment imparted by tail')
         tcone        = Variable('t_{cone}', 'm', 'Cone thickness')
         
@@ -156,8 +155,6 @@ class Fuselage(Model):
         Wshell       = Variable('W_{shell}','N','Shell weight')
         Wskin        = Variable('W_{skin}', 'N', 'Skin weight')
         Wwindow      = Variable('W_{window}', 'N', 'Window weight')
-        Wvtail       = Variable('W_{vtail}',10000, 'N', 'Vertical tail weight') #Temporarily
-        Whtail       = Variable('W_{htail}',10000, 'N', 'Horizontal tail weight') #Temporarily
         Wtail        = Variable('W_{tail}','N','Total tail weight')
 
         # Weight fractions and crago densities
@@ -325,15 +322,11 @@ class Fuselage(Model):
             Sfloor   == (5./16.)*Pfloor,
 
             # Tail cone sizing
-            Lvmax                           == 35000*units('N'), # based on 737
-            bvt                             == 7*units('m'),
-            plamv                           == 1.6, #Temporarily
             taucone                         == sigskin,
-            3*Qv*(plamv-1)                  >= Lvmax*bvt*(plamv),
-            lamcone                         == 0.4, # TODO remove
+            3*Qv*(plamv-1)                  >= self.vtail['L_{v_{max}}']*self.vtail['b_{vt}']*(plamv),
             Vcone*(1+lamcone)*(pi+4*thetadb)>= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
             Wcone                           >= rhocone*g*Vcone*(1+fstring+fframe),
-            Wtail                           >= Wvtail + Whtail + Wcone,
+            Wtail                           >= self.vtail['W_{vtail}'] + self.htail['W_{htail}'] + Wcone,
             
             # Tail aero loads
             xtail    >= lnose + lshell + .5*lcone, #Temporarily
@@ -408,17 +401,28 @@ class HTail(Model):
 
     def __init__(self,ops,**kwargs):
         self.ops = ops
+        Whtail       = Variable('W_{htail}',10000, 'N', 'Horizontal tail weight') #Temporarily
         Lhmax        = Variable('L_{h_max}','N', 'Max horizontal tail load')
         Shtail       = Variable('S_{htail}',32*0.8,'m^2','Horizontal tail area') #Temporarily
         CLhmax       = Variable('C_{L_{hmax}}', 2.5, '-', 'Max lift coefficient') #Temporarily
-        constraints = [Lhmax    == 0.5*self.ops['\\rho_{\\infty}']*self.ops['V_{NE}']**2*Shtail*CLhmax]
+        constraints = [Lhmax    == 0.5*self.ops['\\rho_{\\infty}']*self.ops['V_{NE}']**2*Shtail*CLhmax,
+                       Whtail == Whtail,
+                       Shtail == Shtail,
+                       CLhmax == CLhmax]
         Model.__init__(self, None, constraints, **kwargs)
 
-# class VTail(Model):
-#     def dynamic(self,state):
-#         return VTailP(self,state)
+class VTail(Model):
+    def dynamic(self,state):
+        return VTailP(self,state)
 
-#     def __init__(self,**kwargs):
+    def __init__(self,ops,**kwargs):
+        bvt          = Variable('b_{vt}',7, 'm', 'Vertical tail span')
+        Lvmax        = Variable('L_{v_{max}}',35000,'N', 'Max vertical tail load')
+        Wvtail       = Variable('W_{vtail}',10000, 'N', 'Vertical tail weight') #Temporarily
+        constraints = [bvt == bvt, 
+                       Lvmax == Lvmax,
+                       Wvtail == Wvtail]
+        Model.__init__(self, None, constraints, **kwargs)
 
 
 # class Tail(Model):
@@ -466,21 +470,17 @@ class Aircraft(Model):
         return AircraftP(self,state)
 
     def __init__(self,**kwargs):
-        ops = Ops()
-        self.wing    = Wing(ops)
-        self.wingbox = WingBox(ops)
-        self.htail   = HTail(ops)
-        #self.vtail   = Vtail(ops)
-        self.fuse    = Fuselage(ops,self.wingbox,self.htail)
+        self.ops = Ops()
+        self.wing    = Wing(self.ops)
+        self.wingbox = WingBox(self.ops)
+        self.htail   = HTail(self.ops)
+        self.vtail   = VTail(self.ops)
+        self.fuse    = Fuselage(self.ops,self.wingbox,self.htail,self.vtail)
 
-        self.components = [self.fuse, self.wing, self.wingbox, self.htail] #, self.tail]
+        self.components = [self.fuse, self.wing, self.wingbox, self.htail, self.vtail] 
 
-        W       = Variable('W', 'lbf', 'Total aircraft weight')
-
-        self.weight = W
         with SignomialsEnabled():
-            constraints = [W >= self.fuse["W_{fuse}"]]
-
+            constraints = []
         objective = self.fuse["W_{fuse}"] + \
                      self.fuse["V_{cabin}"]*units('N/m^3') + \
                      self.fuse["t_{shell}"]*units('N/m') + \
