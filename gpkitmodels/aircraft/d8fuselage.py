@@ -109,7 +109,6 @@ class Fuselage(Model):
         lamcone      = Variable('\\lambda_{cone}',0.4, '-','Tailcone radius taper ratio (xshell2->xtail)')
         lcone        = Variable('l_{cone}', 'm', 'Cone length')
         plamv        = Variable('p_{\\lambda_v}',1.4,'-', '1 + 2*Tail taper ratio')
-        Qv           = Variable('Q_{v}', 'N*m', 'Torsion moment imparted by tail')
         tcone        = Variable('t_{cone}', 'm', 'Cone thickness')
         
         # Lengths (free)
@@ -303,7 +302,7 @@ class Fuselage(Model):
             Wskin    >= rhoskin*g*(Vcyl + Vnose + Vbulk),
             Wshell   >= Wskin*(1 + fstring + ffadd + fframe) + Wdb + Whbend, #+ Wvbend,
             #Wfuse    >= Wapu + Wcargo + Wlugg + Wfix + Winsul + Wshell + Wfloor + Wwindow + Whbend + Wvbend + Wtail,
-            Wfuse    >= Wfix + Wapu + Wpadd + Wseat + Wshell + Wwindow + Winsul + Wcone + Wfloor,
+            Wfuse    >= Wfix + Wapu + Wpadd + Wseat + Wshell + Wwindow + Winsul + Wfloor + Wtail,
 
             ## Stress relations
             #Pressure shell loading
@@ -323,8 +322,8 @@ class Fuselage(Model):
 
             # Tail cone sizing
             taucone                         == sigskin,
-            3*Qv*(plamv-1)                  >= self.vtail['L_{v_{max}}']*self.vtail['b_{vt}']*(plamv),
-            Vcone*(1+lamcone)*(pi+4*thetadb)>= Qv/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
+            3*self.vtail['Q_v']*(plamv-1)                  >= self.vtail['L_{v_{max}}']*self.vtail['b_{vt}']*(plamv),
+            Vcone*(1+lamcone)*(pi+4*thetadb)>= self.vtail['Q_v']/taucone*(pi+2*thetadb)*(lcone/Rfuse)*2,
             Wcone                           >= rhocone*g*Vcone*(1+fstring+fframe),
             Wtail                           >= self.vtail['W_{vtail}'] + self.htail['W_{htail}'] + Wcone,
             
@@ -419,9 +418,12 @@ class VTail(Model):
         bvt          = Variable('b_{vt}',7, 'm', 'Vertical tail span')
         Lvmax        = Variable('L_{v_{max}}',35000,'N', 'Max vertical tail load')
         Wvtail       = Variable('W_{vtail}',10000, 'N', 'Vertical tail weight') #Temporarily
+        Qv           = Variable('Q_v', 'N*m', 'Torsion moment imparted by tail')
+
         constraints = [bvt == bvt, 
                        Lvmax == Lvmax,
-                       Wvtail == Wvtail]
+                       Wvtail == Wvtail,
+                       Qv == Qv]
         Model.__init__(self, None, constraints, **kwargs)
 
 
@@ -532,7 +534,7 @@ if __name__ == "__main__":
         #print 'Cone weight         : ' + str(sol('W_{cone}'))
         #print 'Cone length         : ' + str(sol('l_{cone}'))
         #print 'Cone volume         : ' + str(sol('V_{cone}'))
-        #print 'Tail torsion moment : ' + str(sol('Q_{v}'))
+        #print 'Tail torsion moment : ' + str(sol('Q_v'))
         #print 'Cone taper ratio    : ' + str(sol('\\lambda_{cone}'))
         #print 'Max horizontal tail loading:' + str(sol('L_{h_max}'))
         #print 'Max horizontal tail aero bending load: ' +  str(sol('M_{h_aero}'))
