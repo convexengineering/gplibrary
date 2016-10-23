@@ -208,12 +208,12 @@ class Fuselage(Model):
         B0           = Variable('B0','m^2','Vertical bending area constant B0') #(shell inertia contribution)
         B1           = Variable('B1','m','Vertical bending area constant B1') #(vertical tail bending load)
         Ihshell      = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
-        #Ivshell      = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
+        Ivshell      = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
         rMh          = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') #[TAS]
         rMv          = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor') #[TAS]
         sigbend      = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
         sigMh        = Variable('\\sigma_{M_h}','N/m^2','Horizontal bending material stress')
-        #sigMv        = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
+        sigMv        = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
         Vhbend       = Variable('V_{hbend}','m^3','Horizontal bending material volume')
         Vhbendb      = Variable('V_{hbendb}','m^3','Horizontal bending material volume b') #back fuselage
         Vhbendc      = Variable('V_{hbendc}','m^3','Horizontal bending material volume c') #center fuselage
@@ -224,7 +224,7 @@ class Fuselage(Model):
         Whbend       = Variable('W_{hbend}','N','Horizontal bending material weight')
         #Wvbend       = Variable('W_{vbend}','N','Vertical bending material weight')
         xhbend       = Variable('x_{hbend}','m','Horizontal zero bending location')
-        #xvbend       = Variable('x_{vbend}','m','Vertical zero bending location')
+        xvbend       = Variable('x_{vbend}','m','Vertical zero bending location')
         # x-location variables
         xshell1      = Variable('x_{shell1}', 'm', 'Start of cylinder section')
         xshell2      = Variable('x_{shell2}', 'm', 'End of cylinder section')
@@ -364,9 +364,9 @@ class Fuselage(Model):
             
             # Vertical bending material model
             # Calculating xvbend, the location where additional bending material is required
-            #xvbend  >= xwing,
-            #SignomialEquality(B0,B1*(xtail-xvbend)), #[SP] #[SPEquality]
-            #B1      == rMv*Lvmax/(wfloor*sigMv),                                               # Aero loads constant B1
+            #xvbend  >= self.wingbox['x_{wing}'],
+            SignomialEquality(B0,B1*(xtail-xvbend)), #[SP] #[SPEquality]
+            B1      == rMv*self.vtail['L_{v_{max}}']/(wfloor*sigMv),                                               # Aero loads constant B1
             #B0      == Ivshell/(rE*wfloor**2),                                                 # Shell inertia constant B0
             #Avbendb >= B1*(xtail-xb) - B0,                                                      # Bending area behind wingbox
             
@@ -546,8 +546,8 @@ if __name__ == "__main__":
         # print 'A2: ' + str(sol('A2'))
         # print 'A1: ' + str(sol('A1'))
         # print 'A0:  ' + str(sol('A0'))
-        # print 'B1: ' + str(sol('B1'))
-        # print 'B0: ' + str(sol('B0'))
+        print 'B1: ' + str(sol('B1'))
+        print 'B0: ' + str(sol('B0'))
         #print 'Shell start location: ' + str(sol('x_{shell1}'))
         #print 'Shell end location: ' + str(sol('x_{shell2}'))
         print 'Zero hbending location: ' + str(sol('x_{hbend}'))
