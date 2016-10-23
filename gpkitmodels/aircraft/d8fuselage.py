@@ -43,16 +43,27 @@ class Ops(Model):
     def __init__(self,**kwargs):
         # Operational, arbitrary constraints listed here. 
         Nland = Variable('N_{land}',6.,'-', 'Emergency landing load factor') #[TAS]
-        
-        constraints = [Nland == Nland]
+        VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed') #[Philippe]
+        rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)') #[stdAtm]
+        rhoinf       = Variable('\\rho_{\\infty}',0.38,'kg/m^3','Air density (35,000ft)') #[stdAtm]
+        Vinf         = Variable('V_{\\infty}',234, 'm/s','Cruise velocity')
+        muinf        = Variable('\\mu_{\\infty}',1.46*10**-5, 'N*s/m^2', 'Dynamic viscosity (35,000 ft)')
+
+        constraints = [Nland == Nland,
+                        VNE == VNE,
+                        rho0 == rho0,
+                        rhoinf == rhoinf,
+                        Vinf  == Vinf,
+                        muinf == muinf]
 
         Model.__init__(self, None, constraints, **kwargs)
 
 
 class Fuselage(Model):
-    def __init__(self,ops,wingbox,**kwargs):
+    def __init__(self,ops,wingbox,htail,**kwargs):
         self.ops = ops
         self.wingbox = wingbox
+        self.htail = htail
         constraints = []
         g = 9.81*units('m*s**-2')
 
@@ -63,11 +74,7 @@ class Fuselage(Model):
         SPR          = Variable('SPR', 8, '-', 'Number of seats per row')
         nseat        = Variable('n_{seat}','-','Number of seats')
         dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
-        rho0         = Variable(r'\rho_0', 1.225,'kg/m^3', 'Air density (0 ft)') #[stdAtm]
-        VNE          = Variable('V_{NE}',144,'m/s','Never-exceed speed') #[Philippe]
-        rhoinf       = Variable('\\rho_{\\infty}',0.38,'kg/m^3','Air density (35,000ft)') #[stdAtm]
-        Vinf         = Variable('V_{\\infty}',234, 'm/s','Cruise velocity')
-        muinf        = Variable('\\mu_{\\infty}', 'N*s/m^2', 'Dynamic viscosity (35,000 ft)')
+        
 
         npass        = Variable('n_{pass}',192,'-', 'Number of passengers')
         nrows        = Variable('n_{rows}', '-', 'Number of rows')
@@ -102,9 +109,6 @@ class Fuselage(Model):
         lamcone      = Variable('\\lambda_{cone}', '-','Tailcone radius taper ratio (xshell2->xtail)')
         lcone        = Variable('l_{cone}', 'm', 'Cone length')
         Lvmax        = Variable('L_{v_{max}}', 'N', 'Max vertical tail load')
-        Lhmax        = Variable('L_{h_max}','N', 'Max horizontal tail load')
-        Shtail       = Variable('S_{htail}',32*0.8,'m^2','Horizontal tail area') #Temporarily
-        CLhmax       = Variable('C_{L_{hmax}}', 2.5, '-', 'Max lift coefficient') #Temporarily
         plamv        = Variable('p_{\\lambda_v}', '-', '1 + 2*Tail taper ratio')
         Qv           = Variable('Q_{v}', 'N*m', 'Torsion moment imparted by tail')
         tcone        = Variable('t_{cone}', 'm', 'Cone thickness')
@@ -333,11 +337,12 @@ class Fuselage(Model):
             
             # Tail aero loads
             xtail    >= lnose + lshell + .5*lcone, #Temporarily
-            Lhmax    == 0.5*rho0*VNE**2*Shtail*CLhmax,
             #Mhaero   >= rMh*Lhmax*(xtail-xwing), #[SP]
             #Mvaero   >= rMv*Lvmax*(xtail-xwing), #[SP]
 
             hfuse    == Rfuse, # may want to consider adding deltaRfuse later...
+            xhbend >= self.wingbox['x_{wing}'],
+
             
             # Horizontal bending model
             # Maximum axial stress is the sum of bending and pressurization stresses
@@ -349,7 +354,7 @@ class Fuselage(Model):
             # Calculating xbend, the location where additional bending material is required
             SignomialEquality(A0,A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP] #[SPEquality] 
             A2      >=  self.ops['N_{land}']*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh), # Landing loads constant A2
-            A1      >= (self.ops['N_{land}']*Wtail + rMh*Lhmax)/(hfuse*sigMh),                                # Aero loads constant A1
+            A1      >= (self.ops['N_{land}']*Wtail + rMh*self.htail['L_{h_max}'])/(hfuse*sigMh),                                # Aero loads constant A1
             A0      == (Ihshell/(rE*hfuse**2)),                                                # Shell inertia constant A0
             Ahbendf >= A2*(xshell2-self.wingbox['x_f'])**2 + A1*(xtail-self.wingbox['x_f']) - A0, #[SP]                           # Bending area forward of wingbox
             Ahbendb >= A2*(xshell2-self.wingbox['x_b'])**2 + A1*(xtail-self.wingbox['x_b']) - A0, #[SP]                           # Bending area behind wingbox
@@ -397,11 +402,17 @@ class Fuselage(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-# class HTail(Model):
-#     def dynamic(self,state):
-#         return HTailP(self,state)
+class HTail(Model):
+    def dynamic(self,state):
+        return HTailP(self,state)
 
-#     def __init__(self,**kwargs):
+    def __init__(self,ops,**kwargs):
+        self.ops = ops
+        Lhmax        = Variable('L_{h_max}','N', 'Max horizontal tail load')
+        Shtail       = Variable('S_{htail}',32*0.8,'m^2','Horizontal tail area') #Temporarily
+        CLhmax       = Variable('C_{L_{hmax}}', 2.5, '-', 'Max lift coefficient') #Temporarily
+        constraints = [Lhmax    == 0.5*self.ops['\\rho_{\\infty}']*self.ops['V_{NE}']**2*Shtail*CLhmax]
+        Model.__init__(self, None, constraints, **kwargs)
 
 # class VTail(Model):
 #     def dynamic(self,state):
@@ -458,18 +469,18 @@ class Aircraft(Model):
         ops = Ops()
         self.wing    = Wing(ops)
         self.wingbox = WingBox(ops)
-        self.fuse    = Fuselage(ops,self.wingbox)
-        #self.tail = Tail()
+        self.htail   = HTail(ops)
+        #self.vtail   = Vtail(ops)
+        self.fuse    = Fuselage(ops,self.wingbox,self.htail)
 
-        self.components = [self.fuse, self.wing, self.wingbox] #, self.tail]
+        self.components = [self.fuse, self.wing, self.wingbox, self.htail] #, self.tail]
 
         W       = Variable('W', 'lbf', 'Total aircraft weight')
 
         self.weight = W
         with SignomialsEnabled():
-            constraints = [W >= self.fuse["W_{fuse}"],
-                           self.fuse['x_{hbend}']  >= self.wingbox['x_{wing}']
-                          ]
+            constraints = [W >= self.fuse["W_{fuse}"]]
+
         objective = self.fuse["W_{fuse}"] + \
                      self.fuse["V_{cabin}"]*units('N/m^3') + \
                      self.fuse["t_{shell}"]*units('N/m') + \
@@ -500,7 +511,7 @@ if __name__ == "__main__":
     if sweep == False:
         #M.substitutions.update({'f_{string}':0.1})
         #bounds, sol = M.determine_unbounded_variables(M, solver="mosek",verbosity=2, iteration_limit=100)
-        sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 2, iteration_limit=50)
+        sol = M.localsolve("mosek",tolerance = 0.01, verbosity = 1, iteration_limit=50)
         varVals = sol['variables']
         print 'Cabin volume        : ' + str(sol('V_{cabin}'))
         print 'Fuselage width  : ' + str(sol('w_{fuse}'))
