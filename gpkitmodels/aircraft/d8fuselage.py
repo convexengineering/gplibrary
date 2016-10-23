@@ -74,7 +74,7 @@ class Fuselage(Model):
         # Fixed variables
         SPR          = Variable('SPR', 8, '-', 'Number of seats per row')
         nseat        = Variable('n_{seat}','-','Number of seats')
-        dPover       = Variable('\\delta_P_{over-pressure}',18.4,'psi','Cabin overpressure')
+        dPover       = Variable('\\delta_P_{over-pressure}',12,'psi','Cabin overpressure')
         
 
         npass        = Variable('n_{pass}',192,'-', 'Number of passengers')
