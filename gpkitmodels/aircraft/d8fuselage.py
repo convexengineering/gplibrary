@@ -204,16 +204,16 @@ class Fuselage(Model):
         A2           = Variable('A2','-','Horizontal bending area constant A2') #(fuselage impact)
         Ahbendb      = Variable('A_{hbendb}','m^2','Horizontal bending area at rear wingbox')
         Ahbendf      = Variable('A_{hbendf}','m^2','Horizontal bending area at front wingbox')
-        #Avbendb      = Variable('A_{vbendb}','m^2','Vertical bending material area at rear wingbox')
-        B0           = Variable('B0','m^2','Vertical bending area constant B0') #(shell inertia contribution)
-        B1           = Variable('B1','m','Vertical bending area constant B1') #(vertical tail bending load)
+        Avbendb      = Variable('A_{vbendb}','m^2','Vertical bending material area at rear wingbox')
+        #B0           = Variable('B0','m^2','Vertical bending area constant B0') #(shell inertia contribution)
+        #B1           = Variable('B1','m','Vertical bending area constant B1') #(vertical tail bending load)
         Ihshell      = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
-        Ivshell      = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
+        #Ivshell      = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
         rMh          = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') #[TAS]
         rMv          = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor') #[TAS]
         sigbend      = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
         sigMh        = Variable('\\sigma_{M_h}','N/m^2','Horizontal bending material stress')
-        sigMv        = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
+        #sigMv        = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
         Vhbend       = Variable('V_{hbend}','m^3','Horizontal bending material volume')
         Vhbendb      = Variable('V_{hbendb}','m^3','Horizontal bending material volume b') #back fuselage
         Vhbendc      = Variable('V_{hbendc}','m^3','Horizontal bending material volume c') #center fuselage
@@ -224,7 +224,7 @@ class Fuselage(Model):
         Whbend       = Variable('W_{hbend}','N','Horizontal bending material weight')
         #Wvbend       = Variable('W_{vbend}','N','Vertical bending material weight')
         xhbend       = Variable('x_{hbend}','m','Horizontal zero bending location')
-        xvbend       = Variable('x_{vbend}','m','Vertical zero bending location')
+        #xvbend       = Variable('x_{vbend}','m','Vertical zero bending location')
         # x-location variables
         xshell1      = Variable('x_{shell1}', 'm', 'Start of cylinder section')
         xshell2      = Variable('x_{shell2}', 'm', 'End of cylinder section')
@@ -346,7 +346,7 @@ class Fuselage(Model):
             # Calculating xbend, the location where additional bending material is required
             SignomialEquality(A0,A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP] #[SPEquality] 
             A2      >=  self.ops['N_{land}']*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh), # Landing loads constant A2
-            A1      >= (self.ops['N_{land}']*Wtail + rMh*self.htail['L_{h_max}'])/(hfuse*sigMh),                                # Aero loads constant A1
+            A1      >= (self.ops['N_{land}']*Wtail + rMh*self.htail['L_{h_{max}}'])/(hfuse*sigMh),                                # Aero loads constant A1
             A0      == (Ihshell/(rE*hfuse**2)),                                                # Shell inertia constant A0
             Ahbendf >= A2*(xshell2-self.wingbox['x_f'])**2 + A1*(xtail-self.wingbox['x_f']) - A0, #[SP]                           # Bending area forward of wingbox
             Ahbendb >= A2*(xshell2-self.wingbox['x_b'])**2 + A1*(xtail-self.wingbox['x_b']) - A0, #[SP]                           # Bending area behind wingbox
@@ -365,13 +365,13 @@ class Fuselage(Model):
             # Vertical bending material model
             # Calculating xvbend, the location where additional bending material is required
             #xvbend  >= self.wingbox['x_{wing}'],
-            SignomialEquality(B0,B1*(xtail-xvbend)), #[SP] #[SPEquality]
-            B1      == rMv*self.vtail['L_{v_{max}}']/(wfloor*sigMv),                                               # Aero loads constant B1
+            #SignomialEquality(B0,B1*(xtail-xvbend)), #[SP] #[SPEquality]
+            #B1      == rMv*self.vtail['L_{v_{max}}']/(wfloor*sigMv),                                               # Aero loads constant B1
             #B0      == Ivshell/(rE*wfloor**2),                                                 # Shell inertia constant B0
-            #Avbendb >= B1*(xtail-xb) - B0,                                                      # Bending area behind wingbox
+            #Avbendb >= B1*(xtail-self.wingbox['x_b']) - B0,                                                      # Bending area behind wingbox
             
-            #Vvbendb >= .5*B1*((xtail-xb)**2 - (xtail-xvbend)**2) - B0*(xvbend - xb), #[SP]
-            #Vvbendc >= .5*Avbendb*c0*wbar,
+            #Vvbendb >= .5*B1*((xtail-self.wingbox['x_b'])**2 - (xtail-xvbend)**2) - B0*(xvbend - self.wingbox['x_b']), #[SP]
+            #Vvbendc >= .5*Avbendb*self.wingbox['c_0']*self.wingbox['\\bar_w'],
             #Vvbend  >= Vvbendb + Vvbendc,
             #Wvbend  >= g*rhobend*Vvbend,
 
@@ -380,7 +380,7 @@ class Fuselage(Model):
             self.wingbox['dx_{wing}']   == 0.25*self.wingbox['c_0'], #Temporarily
                         
             sigMh   <= sigbend - rE*dPover/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
-            #sigMv   <= sigbend - rE*dPover/2*Rfuse/tshell,
+            #sigMv   == sigMh,
 
             # Drag model
             # f == lfuse/((4/np.pi*Afuse)**0.5), # fineness ratio
@@ -401,13 +401,14 @@ class HTail(Model):
     def __init__(self,ops,**kwargs):
         self.ops = ops
         Whtail       = Variable('W_{htail}',10000, 'N', 'Horizontal tail weight') #Temporarily
-        Lhmax        = Variable('L_{h_max}','N', 'Max horizontal tail load')
+        Lhmax        = Variable('L_{h_{max}}',35000,'N', 'Max horizontal tail load')
         Shtail       = Variable('S_{htail}',32*0.8,'m^2','Horizontal tail area') #Temporarily
-        CLhmax       = Variable('C_{L_{hmax}}', 2.5, '-', 'Max lift coefficient') #Temporarily
-        constraints = [Lhmax    == 0.5*self.ops['\\rho_{\\infty}']*self.ops['V_{NE}']**2*Shtail*CLhmax,
-                       Whtail == Whtail,
-                       Shtail == Shtail,
-                       CLhmax == CLhmax]
+        CLhmax       = Variable('C_{L_{h_{max}}}', 2.5, '-', 'Max lift coefficient') #Temporarily
+        constraints = [#Lhmax    == 0.5*self.ops['\\rho_{\\infty}']*self.ops['V_{NE}']**2*Shtail*CLhmax,
+                       Lhmax    == Lhmax,
+                       Whtail   == Whtail,
+                       Shtail   == Shtail,
+                       CLhmax   == CLhmax]
         Model.__init__(self, None, constraints, **kwargs)
 
 class VTail(Model):
@@ -536,7 +537,7 @@ if __name__ == "__main__":
         #print 'Cone volume         : ' + str(sol('V_{cone}'))
         #print 'Tail torsion moment : ' + str(sol('Q_v'))
         #print 'Cone taper ratio    : ' + str(sol('\\lambda_{cone}'))
-        #print 'Max horizontal tail loading:' + str(sol('L_{h_max}'))
+        #print 'Max horizontal tail loading:' + str(sol('L_{h_{max}}'))
         #print 'Max horizontal tail aero bending load: ' +  str(sol('M_{h_aero}'))
         #print 'Max vertical tail aero bending load: ' +  str(sol('M_{v_aero}'))
         #print 'Wing location: ' + str(sol('x_{wing}'))
@@ -546,8 +547,8 @@ if __name__ == "__main__":
         # print 'A2: ' + str(sol('A2'))
         # print 'A1: ' + str(sol('A1'))
         # print 'A0:  ' + str(sol('A0'))
-        print 'B1: ' + str(sol('B1'))
-        print 'B0: ' + str(sol('B0'))
+        # print 'B1: ' + str(sol('B1'))
+        # print 'B0: ' + str(sol('B0'))
         #print 'Shell start location: ' + str(sol('x_{shell1}'))
         #print 'Shell end location: ' + str(sol('x_{shell2}'))
         print 'Zero hbending location: ' + str(sol('x_{hbend}'))
@@ -639,20 +640,20 @@ if __name__ == "__main__":
             fstring = sol('f_{string}')
             Whbend = sol('W_{hbend}')
             Shtail = sol('S_{htail}')
-            Lhmax  = sol('L_{h_max}')
+            Lhmax  = sol('L_{h_{max}}')
 
             plt.close()
             plt.plot(Lhmax, fstring)
-            plt.title('f_{string} vs. L_{h_max}')
-            plt.xlabel('L_{h_max} (N)')
+            plt.title('f_{string} vs. L_{h_{max}}')
+            plt.xlabel('L_{h_{max}} (N)')
             plt.ylabel('f_{string}')
             plt.grid()
             plt.savefig('fstring_vs_Lhmax.pdf')
 
             plt.close()
             plt.plot(Lhmax, Whbend)
-            plt.title('W_{hbend} vs. L_{h_max}')
-            plt.xlabel('L_{h_max} (N)')
+            plt.title('W_{hbend} vs. L_{h_{max}}')
+            plt.xlabel('L_{h_{max}} (N)')
             plt.ylabel('W_{hbend} (N)')
             plt.grid()
             plt.savefig('Whbend_vs_Lhmax.pdf')
