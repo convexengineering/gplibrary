@@ -10,6 +10,7 @@ from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 from helpers import SummingConstraintSet
 #from gpkit.tools import BoundedConstraintSet
+plt.rcParams.update({'font.size':19})
 PLOT = False
 SIGNOMIALS = False
 
@@ -432,8 +433,10 @@ class Aerodynamics(Model):
                       ]
 
         if jh01:
-            constraints.extend([cdp >= ((0.0075 + 0.002*CL**2 +
-                                         0.00033*CL**10)*(Re/Re_ref)**-0.4)])
+            constraints.extend([
+                (cdp/(Re/Re_ref)**-0.4)**0.00544 >= (0.33*CL**-0.0809 +
+                                                     0.645*CL**0.045 +
+                                                     7.35e-5*CL**12)])
         else:
             #sd7032
             constraints.extend([cdp >= ((0.006 + 0.005*CL**2 +
@@ -502,70 +505,70 @@ class Beam(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-    def process_solution(self, sol):
-        load = sol("W_{cent}")/sol("b")*self.q
-        dx = sol("b")/2/(self.N-1)
-        S = [0]*self.N
-        for i in range(1, self.N):
-            S[self.N-i-1] = S[self.N-i] + 0.5*dx*(load[self.N-i] +
-                                                  load[self.N-i-1])
-        M = [0]*self.N
-        for i in range(1, self.N):
-            M[self.N-i-1] = M[self.N-i] + 0.5*dx*(S[self.N-i] + S[self.N-i-1])
-        th = [0]*self.N
-        for i in range(self.N-1):
-            th[i+1] = (th[i] + 0.5*dx*(M[i] + M[i+1])/
-                       sol("E_CapSpar, Wing, GasMALE")/sol("I")[i])
-        d = [0]*self.N
-        for i in range(self.N-1):
-            d[i+1] = d[i] + 0.5*dx*(th[i] + th[i+1])
-        load = load.to("N/m").magnitude
-        for i in range(self.N-1):
-            S[i] = S[i].to("N").magnitude
-            M[i] = M[i].to("N*m").magnitude
-            th[i+1] = th[i+1].to("dimensionless").magnitude
-            d[i+1] = d[i+1].to("ft").magnitude
+    # def process_solution(self, sol):
+    #     load = sol("W_{cent}")/sol("b")*self.q
+    #     dx = sol("b")/2/(self.N-1)
+    #     S = [0]*self.N
+    #     for i in range(1, self.N):
+    #         S[self.N-i-1] = S[self.N-i] + 0.5*dx*(load[self.N-i] +
+    #                                               load[self.N-i-1])
+    #     M = [0]*self.N
+    #     for i in range(1, self.N):
+    #         M[self.N-i-1] = M[self.N-i] + 0.5*dx*(S[self.N-i] + S[self.N-i-1])
+    #     th = [0]*self.N
+    #     for i in range(self.N-1):
+    #         th[i+1] = (th[i] + 0.5*dx*(M[i] + M[i+1])/
+    #                    sol("E_CapSpar, Wing, GasMALE")/sol("I")[i])
+    #     d = [0]*self.N
+    #     for i in range(self.N-1):
+    #         d[i+1] = d[i] + 0.5*dx*(th[i] + th[i+1])
+    #     load = load.to("N/m").magnitude
+    #     for i in range(self.N-1):
+    #         S[i] = S[i].to("N").magnitude
+    #         M[i] = M[i].to("N*m").magnitude
+    #         th[i+1] = th[i+1].to("dimensionless").magnitude
+    #         d[i+1] = d[i+1].to("ft").magnitude
 
-        fig, axis = plt.subplots(5)
-        loading = [load, S, M, th, d]
-        lunits = ["N/m", "N", "N*m", "-", "ft"]
-        label = ["Loading", "Shear", "Moment", "Angle", "Deflection"]
-        for ax, y, u, l in zip(axis, loading, lunits, label):
-            ax.plot(dx.magnitude*np.linspace(0, 4, 5), y)
-            ax.set_ylabel("%s [%s]" % (l, u), rotation=0)
-            ax.set_yticks([min(y), max(y)])
-            box = ax.get_position()
-            ax.set_position([box.x0*1.5, box.y0, box.width*0.85, box.height])
-            if not l == "Deflection":
-                ax.set_xticklabels([])
-                continue
-            ax.set_xlabel("y [%s]" % u)
-            ax.set_xticks(dx.magnitude*np.linspace(0, 4, 5))
-        fig.savefig("1gloading.pdf")
+    #     fig, axis = plt.subplots(5)
+    #     loading = [load, S, M, th, d]
+    #     lunits = ["N/m", "N", "N*m", "-", "ft"]
+    #     label = ["Loading", "Shear", "Moment", "Angle", "Deflection"]
+    #     for ax, y, u, l in zip(axis, loading, lunits, label):
+    #         ax.plot(dx.magnitude*np.linspace(0, 4, 5), y)
+    #         ax.set_ylabel("%s [%s]" % (l, u), rotation=0)
+    #         ax.set_yticks([min(y), max(y)])
+    #         box = ax.get_position()
+    #         ax.set_position([box.x0*1.5, box.y0, box.width*0.85, box.height])
+    #         if not l == "Deflection":
+    #             ax.set_xticklabels([])
+    #             continue
+    #         ax.set_xlabel("y [%s]" % u)
+    #         ax.set_xticks(dx.magnitude*np.linspace(0, 4, 5))
+    #     fig.savefig("sparforces.pdf", bbox_inches="tight")
 
-        fig, axis = plt.subplots(3)
-        d = len(sol("I"))
-        dx = dx.magnitude*np.array([0, 1, 1, 2, 2, 3, 3, 4])
-        I = np.insert(sol("I").magnitude, np.arange(d), sol("I").magnitude)
-        w = np.insert(sol("w").magnitude, np.arange(d), sol("w").magnitude)
-        t = np.insert(sol("\\vec{t_CapSpar, Wing, GasMALE}").magnitude,
-                      np.arange(d),
-                      sol("\\vec{t_CapSpar, Wing, GasMALE}").magnitude)
-        dims = [I, w, t]
-        lunits = ["m^4", "in", "in"]
-        label = ["Inertia", "Width", "Thickness"]
-        for ax, y, u, l in zip(axis, dims, lunits, label):
-            ax.plot(dx, y)
-            ax.set_ylabel("%s [%s]" % (l, u), rotation=0)
-            ax.set_yticks([min(y), max(y)])
-            box = ax.get_position()
-            ax.set_position([box.x0*1.5, box.y0, box.width*0.85, box.height])
-            if not l == "Thickness":
-                ax.set_xticklabels([])
-                continue
-            ax.set_xlabel("y [%s]" % u)
-            ax.set_xticks(dx)
-        fig.savefig("capspar.pdf")
+    #     fig, axis = plt.subplots(3)
+    #     d = len(sol("I"))
+    #     dx = dx.magnitude*np.array([0, 1, 1, 2, 2, 3, 3, 4])
+    #     I = np.insert(sol("I").magnitude, np.arange(d), sol("I").magnitude)
+    #     w = np.insert(sol("w").magnitude, np.arange(d), sol("w").magnitude)
+    #     t = np.insert(sol("\\vec{t_CapSpar, Wing, GasMALE}").magnitude,
+    #                   np.arange(d),
+    #                   sol("\\vec{t_CapSpar, Wing, GasMALE}").magnitude)
+    #     dims = [I, w, t]
+    #     lunits = ["m^4", "in", "in"]
+    #     label = ["Inertia", "Width", "Thickness"]
+    #     for ax, y, u, l in zip(axis, dims, lunits, label):
+    #         ax.plot(dx, y)
+    #         ax.set_ylabel("%s [%s]" % (l, u), rotation=0)
+    #         ax.set_yticks([min(y), max(y)])
+    #         box = ax.get_position()
+    #         ax.set_position([box.x0*1.5, box.y0, box.width*0.85, box.height])
+    #         if not l == "Thickness":
+    #             ax.set_xticklabels([])
+    #             continue
+    #         ax.set_xlabel("y [ft]")
+    #         ax.set_xticks(dx)
+    #     fig.savefig("spardims.pdf", bbox_inches="tight")
 
 
 def c_bar(lam, N):
@@ -961,7 +964,7 @@ class HorizontalTail(Model):
                       "assumed span wise effectiveness")
         mh = Variable("m_h", "-", "horizontal tail span effectiveness")
         cth = Variable("c_{t_h}", "ft", "horizontal tail tip chord")
-        lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", 0.8/(0.8+1), "-",
+        lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", 1.0/(1.0+1), "-",
                            "horizontal tail taper ratio factor")
 
         # signomial helper variables
@@ -1034,7 +1037,7 @@ class Empennage(Model):
 
         constraints = [
             W/m_fac >= 2.0*tb["W"] + ht["W"] + 2.0*vt["W"],
-            ht["c_{t_h}"] == vt["c_{t_v}"]
+            # ht["c_{t_h}"] == vt["c_{t_v}"]
             ]
 
         lc = LinkedConstraintSet(
@@ -1154,122 +1157,122 @@ class GasMALE(Model):
 
         Model.__init__(self, objective, lc, **kwargs)
 
-    def process_solution(self, sol):
-        xwing = 0.5*(sol("l_Fuselage, GasMALE")+sol("d"))*0.82 # 0.93 for 10lb
-        self.xwing = xwing
-        xnp = xwing + (sol("m_h")/sol("m_w")*(1.0-4.0/(sol("AR")+2.0))*
-                       sol("V_h"))*sol("S")/sol("b")
-        weights = [sol("W_Fuselage, GasMALE"),
-                   sol("W_{pay}")*2.5,
-                   sol("W_EngineWeight, GasMALE"),
-                   sol("W_{fuel-tot}"),
-                   sol("W_Wing, GasMALE"),
-                   sol("W_TailBoom, Empennage, GasMALE"),
-                   sol("W_HorizontalTail, Empennage, GasMALE"),
-                   sol("W_VerticalTail, Empennage, GasMALE")
-                  ]
+    # def process_solution(self, sol):
+    #     xwing = 0.5*(sol("l_Fuselage, GasMALE")+sol("d"))*0.93 # 0.93 for 10lb
+    #     self.xwing = xwing
+    #     xnp = xwing + (sol("m_h")/sol("m_w")*(1.0-4.0/(sol("AR")+2.0))*
+    #                    sol("V_h"))*sol("S")/sol("b")
+    #     weights = [sol("W_Fuselage, GasMALE"),
+    #                sol("W_{pay}")*2.5,
+    #                sol("W_EngineWeight, GasMALE"),
+    #                sol("W_{fuel-tot}"),
+    #                sol("W_Wing, GasMALE"),
+    #                sol("W_TailBoom, Empennage, GasMALE"),
+    #                sol("W_HorizontalTail, Empennage, GasMALE"),
+    #                sol("W_VerticalTail, Empennage, GasMALE")
+    #               ]
 
-        xlocs = [0.5*(sol("l_Fuselage, GasMALE") + sol("d")),
-                 0.25*sol("d"),
-                 sol("l_Fuselage, GasMALE") + 0.75*sol("d"),
-                 0.5*(sol("l_Fuselage, GasMALE") + sol("d")),
-                 xwing,
-                 xwing + 0.5*sol("L"),
-                 xwing + sol("L"),
-                 xwing + sol("L")
-                ]
+    #     xlocs = [0.5*(sol("l_Fuselage, GasMALE") + sol("d")),
+    #              0.25*sol("d"),
+    #              sol("l_Fuselage, GasMALE") + 0.75*sol("d"),
+    #              0.5*(sol("l_Fuselage, GasMALE") + sol("d")),
+    #              xwing,
+    #              xwing + 0.5*sol("L"),
+    #              xwing + sol("L"),
+    #              xwing + sol("L")
+    #             ]
 
-        xcg = return_cg(weights, xlocs)
-        SM = (xnp - xcg)/(sol("S")/sol("b"))
+    #     xcg = return_cg(weights, xlocs)
+    #     SM = (xnp - xcg)/(sol("S")/sol("b"))
 
-        self.xnp = xnp
-        self.xcg = xcg
-        self.SM = SM
+    #     self.xnp = xnp
+    #     self.xcg = xcg
+    #     self.SM = SM
 
-        # wpay = sol("W_{pay}")*np.linspace(0.5, 2.5, 15)
-        # ind = weights.index(sol("W_{pay}"))
-        # cgs = []
-        # SMs = []
-        # xws = []
-        # for w in wpay:
-        #     weights[ind] = w
-        #     cg = return_cg(weights, xlocs)
-        #     cgs.extend([cg])
-        #     SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
-        #     xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
+    #     # wpay = sol("W_{pay}")*np.linspace(0.5, 2.5, 15)
+    #     # ind = weights.index(sol("W_{pay}"))
+    #     # cgs = []
+    #     # SMs = []
+    #     # xws = []
+    #     # for w in wpay:
+    #     #     weights[ind] = w
+    #     #     cg = return_cg(weights, xlocs)
+    #     #     cgs.extend([cg])
+    #     #     SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
+    #     #     xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
 
-        # weights[ind] = sol("W_{pay}")
+    #     # weights[ind] = sol("W_{pay}")
 
-        # fig, ax = plt.subplots(2)
-        # ax[0].plot(wpay, SMs)
-        # ax[1].plot(wpay, xws)
-        # ax[0].set_ylabel("Static Margin")
-        # ax[1].set_ylabel("Wing location [ft]")
-        # ax[0].set_xticks([])
-        # ax[1].set_xlabel("Payload weight [lbf]")
-        # ax[0].set_title("Static Margin Full Fuel")
-        # fig.savefig("smvswpay.pdf")
+    #     # fig, ax = plt.subplots(2)
+    #     # ax[0].plot(wpay, SMs)
+    #     # ax[1].plot(wpay, xws)
+    #     # ax[0].set_ylabel("Static Margin")
+    #     # ax[1].set_ylabel("Wing location [ft]")
+    #     # ax[0].set_xticks([])
+    #     # ax[1].set_xlabel("Payload weight [lbf]")
+    #     # ax[0].set_title("Static Margin Full Fuel")
+    #     # fig.savefig("smvswpay.pdf")
 
-        indf = weights.index(sol("W_{fuel-tot}"))
-        del weights[indf]
-        del xlocs[indf]
-        xcg = return_cg(weights, xlocs)
-        SM = (xnp - xcg)/(sol("S")/sol("b"))
-        self.xcgempty = xcg
-        self.SMempty = SM
-        # cgs = []
-        # SMs = []
-        # xws = []
-        # for w in wpay:
-        #     weights[ind] = w
-        #     cg = return_cg(weights, xlocs)
-        #     cgs.extend([cg])
-        #     SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
-        #     xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
+    #     indf = weights.index(sol("W_{fuel-tot}"))
+    #     del weights[indf]
+    #     del xlocs[indf]
+    #     xcg = return_cg(weights, xlocs)
+    #     SM = (xnp - xcg)/(sol("S")/sol("b"))
+    #     self.xcgempty = xcg
+    #     self.SMempty = SM
+    #     # cgs = []
+    #     # SMs = []
+    #     # xws = []
+    #     # for w in wpay:
+    #     #     weights[ind] = w
+    #     #     cg = return_cg(weights, xlocs)
+    #     #     cgs.extend([cg])
+    #     #     SMs.extend([((xnp-cg)/sol("S")*sol("b")).magnitude])
+    #     #     xws.extend([(SM*sol("S")/sol("b")+cg-xnp+xwing).magnitude])
 
-        # fig, ax = plt.subplots(2)
-        # ax[0].plot(wpay, SMs)
-        # ax[1].plot(wpay, xws)
-        # ax[0].set_ylabel("Static Margin")
-        # ax[1].set_ylabel("Wing location [ft]")
-        # ax[0].set_xticks([])
-        # ax[1].set_xlabel("Payload weight [lbf]")
-        # ax[0].set_title("Static Margin Empty Fuel")
-        # fig.savefig("smvswpayempty.pdf")
+    #     # fig, ax = plt.subplots(2)
+    #     # ax[0].plot(wpay, SMs)
+    #     # ax[1].plot(wpay, xws)
+    #     # ax[0].set_ylabel("Static Margin")
+    #     # ax[1].set_ylabel("Wing location [ft]")
+    #     # ax[0].set_xticks([])
+    #     # ax[1].set_xlabel("Payload weight [lbf]")
+    #     # ax[0].set_title("Static Margin Empty Fuel")
+    #     # fig.savefig("smvswpayempty.pdf")
 
-        # indh = weights.index(sol("W_HorizontalTail, Empennage, GasMALE"))
-        # indv = weights.index(sol("W_VerticalTail, Empennage, GasMALE"))
-        # del weights[indv]
-        # del weights[indh]
-        # del xlocs[indv]
-        # del xlocs[indh]
-        # weights[ind] = sol("W_{pay}")
-        # wtail = []
-        # for w in wpay:
-        #     weights[ind] = w
-        #     wtail.append(((self.xcg*sum(weights)-sum(list(map(mul, weights, xlocs))))/(xwing+sol("L"))).magnitude)
+    #     # indh = weights.index(sol("W_HorizontalTail, Empennage, GasMALE"))
+    #     # indv = weights.index(sol("W_VerticalTail, Empennage, GasMALE"))
+    #     # del weights[indv]
+    #     # del weights[indh]
+    #     # del xlocs[indv]
+    #     # del xlocs[indh]
+    #     # weights[ind] = sol("W_{pay}")
+    #     # wtail = []
+    #     # for w in wpay:
+    #     #     weights[ind] = w
+    #     #     wtail.append(((self.xcg*sum(weights)-sum(list(map(mul, weights, xlocs))))/(xwing+sol("L"))).magnitude)
 
-        # fig, ax = plt.subplots()
-        # ax.plot(wpay, wtail)
-        # ax.set_xlabel("Payload weight [lbf]")
-        # ax.set_ylabel("Tail weight [lbf]")
-        # fig.savefig("wtailvswpay.pdf")
+    #     # fig, ax = plt.subplots()
+    #     # ax.plot(wpay, wtail)
+    #     # ax.set_xlabel("Payload weight [lbf]")
+    #     # ax.set_ylabel("Tail weight [lbf]")
+    #     # fig.savefig("wtailvswpay.pdf")
 
-    def get_cg(self):
-        """ return cg location at full and empty """
-        return self.xcg, self.xcgempty
+    # def get_cg(self):
+    #     """ return cg location at full and empty """
+    #     return self.xcg, self.xcgempty
 
-    def get_np(self):
-        """ return neutral point """
-        return self.xnp
+    # def get_np(self):
+    #     """ return neutral point """
+    #     return self.xnp
 
-    def get_SM(self):
-        """ return static margin at full and empty """
-        return self.SM, self.SMempty
+    # def get_SM(self):
+    #     """ return static margin at full and empty """
+    #     return self.SM, self.SMempty
 
-    def get_wingloc(self):
-        """ return wing location"""
-        return self.xwing
+    # def get_wingloc(self):
+    #     """ return wing location"""
+    #     return self.xwing
 
 if __name__ == "__main__":
     M = GasMALE(DF70=True)
