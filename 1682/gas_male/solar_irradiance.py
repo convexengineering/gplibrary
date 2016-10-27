@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import sin, arctan, tan, cos, arcsin, arccos, deg2rad, rad2deg
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size':19})
 
 def get_Eirr(latitude, day):
     """
@@ -31,10 +32,10 @@ def get_Eirr(latitude, day):
     E0 = Esun*4*np.pi*Rsun**2/4/np.pi/Reo**2
     tau = np.exp(-0.175/costhsun)
     E = E0*costhsun# *tau
-    fig, ax = plt.subplots()
-    ax.plot(t, E)
-    ax.set_xlabel("Time [hr]")
-    ax.set_ylabel("Available Solar Power [W/m$^2$]")
-    ax.grid()
-    fig.savefig("lat45.pdf")
+    # fig, ax = plt.subplots()
+    # ax.plot(t, E)
+    # ax.set_xlabel("Time [hr]")
+    # ax.set_ylabel("Available Solar Power [W/m$^2$]")
+    # ax.grid()
+    # fig.savefig("lat45.pdf", bbox_inches="tight")
     return np.trapz(E)*(abs(tend-tstart))/50.0, tstart*2, 24-tstart*2
