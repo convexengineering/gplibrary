@@ -22,15 +22,18 @@ class Aircraft(Model):
 class AircraftP(Model):
     def __init__(self, static, state, **kwargs):
 
+        self.wing = static.components[1].dynamic_model(static.wing, state)
+
         Pshaft = Variable("P_{shaft}", "W", "shaft power")
         Wend = Variable("W_{end}", "lbf", "vector-end weight")
         Wstart = Variable("W_{start}", "lbf", "vector-begin weight")
+        CD = Variable("C_D", "-", "drag coefficient")
 
         constraints = [Pshaft == Pshaft,
                        Wend == Wend,
-                       Wstart == Wstart]
+                       Wstart == Wstart,
+                       CD >= self.wing["c_{d_w}"]]
 
-        self.wing = static.components[1].dynamic_model(static.wing, state)
         Model.__init__(self, None, [self.wing, constraints], **kwargs)
 
 class FlightState(Model):
@@ -91,7 +94,7 @@ class SteadyLevelFlight(Model):
             (aircraftP["W_{end}"]*aircraftP["W_{start}"])**0.5 <= (
                 0.5*state["\\rho"]*state["V"]**2*aircraftP.wing["C_L"]
                 * aircraft.wing["S"]),
-            T == (0.5*state["\\rho"]*state["V"]**2*aircraftP.wing["C_D"]
+            T == (0.5*state["\\rho"]*state["V"]**2*aircraftP["C_D"]
                   *aircraft.wing["S"]),
             aircraftP["P_{shaft}"] == T*state["V"]/etaprop]
 
@@ -115,7 +118,7 @@ class Wing(Model):
 
 class WingP(Model):
     def __init__(self, static, state, **kwargs):
-        CD = Variable("C_D", "-", "drag coefficient")
+        cdw = Variable("c_{d_w}", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
         e = Variable("e", 0.9, "-", "Oswald efficiency")
         Re = Variable("Re", "-", "Reynold's number")
@@ -123,7 +126,7 @@ class WingP(Model):
         Reref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
 
         constraints = [
-            CD >= (cdp + CL**2/np.pi/static["A"]/e),
+            cdw >= (cdp + CL**2/np.pi/static["A"]/e),
             (cdp/(Re/Reref)**-0.4)**0.00544 >= (
                 0.33*CL**-0.0809 + 0.645*CL**0.045 + 7.35e-5*CL**12),
             Re == state["\\rho"]*state["V"]*static["c"]/state["\\mu"],
