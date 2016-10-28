@@ -21,7 +21,7 @@ class Aircraft(Model):
 
 class AircraftP(Model):
     def __init__(self, static, state, **kwargs):
-        self.wing = static.wing.dynamic_model(static.wing, state)
+        self.wing = static.components[1].dynamic_model(static.wing, state)
         Model.__init__(self, None, [self.wing], **kwargs)
 
 
@@ -41,11 +41,24 @@ class FlightSegment(Model):
     def __init__(self, N, aircraft, **kwargs):
         fs = FlightState()
         aircraftP = aircraft.dynamic_model(aircraft, fs)
-        csr = [aircraft["W_aircraft"] <= (0.5*fs["\\rho"]*fs["V"]**2
-                                              * aircraftP.wing["C_L"]
-                                              * aircraft.wing["S"])]
+        slf = SteadyLevelFlight(fs, aircraft, aircraftP.wing)
         Model.__init__(self, aircraftP.wing["C_D"].prod()**(1./N),
-                       [fs, aircraft, aircraftP, csr], **kwargs)
+                       [fs, aircraft, aircraftP, slf], **kwargs)
+
+class SteadyLevelFlight(Model):
+    def __init__(self, state, aircraft, wingP, **kwargs):
+        T = Variable("T", "N", "thrust")
+        etaprop = Variable("\\eta_{prop}", 0.7, "-", "propulsive efficiency")
+        Pshaft = Variable("P_{shaft}", "W", "shaft power")
+
+        csr = [aircraft["W_aircraft"] <= (0.5*state["\\rho"]*state["V"]**2
+                                          * wingP["C_L"]
+                                          * aircraft.wing["S"]),
+               T == (0.5*state["\\rho"]*state["V"]**2*wingP["C_D"]
+                     *aircraft.wing["S"]),
+               Pshaft == T*state["V"]/etaprop]
+
+        Model.__init__(self, None, csr, **kwargs)
 
 
 class Wing(Model):
