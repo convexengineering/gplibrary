@@ -19,7 +19,6 @@ class Aircraft(Model):
 
         super(Aircraft, self).__init__(None, self.components + constraints, **kwargs)
 
-
 class AircraftP(Model):
     def __init__(self, static, state, **kwargs):
 
@@ -37,7 +36,7 @@ class AircraftP(Model):
 class FlightState(Model):
     "One chunk of a mission"
     def __init__(self, **kwargs):
-        V = Variable("V", 40, "knots", "true airspeed")
+        V = Variable("V", 25, "m/s", "true airspeed")
         mu = Variable("\\mu", 1.628e-5, "N*s/m^2", "dynamic viscosity")
         rho = Variable("\\rho", 0.74, "kg/m^3", "air density")
         constraints = [V == V,
@@ -47,13 +46,20 @@ class FlightState(Model):
 
 
 class FlightSegment(Model):
-    def __init__(self, aircraft, **kwargs):
-        fs = FlightState()
-        aircraftP = aircraft.dynamic_model(aircraft, fs)
-        slf = SteadyLevelFlight(fs, aircraft, aircraftP)
-        be = BreguetEndurance(aircraftP)
+    def __init__(self, N, aircraft, **kwargs):
+        with vectorize(N):
+            fs = FlightState()
+            aircraftP = aircraft.dynamic_model(aircraft, fs)
+            slf = SteadyLevelFlight(fs, aircraft, aircraftP)
+            be = BreguetEndurance(aircraftP)
 
-        Model.__init__(self, None, [fs, aircraft, aircraftP, slf, be], **kwargs)
+        Wfuelfs = Variable("W_{fuel-fs}", "lbf", "flight segment fuel weight")
+
+        constraints = [Wfuelfs >= be["W_{fuel}"].sum(),
+                       aircraftP["W_{end}"][:-1] >= aircraftP["W_{start}"][1:]
+                      ]
+
+        Model.__init__(self, None, [fs, aircraft, aircraftP, slf, be, constraints], **kwargs)
 
 class BreguetEndurance(Model):
     def __init__(self, aircraftP, **kwargs):
@@ -140,8 +146,8 @@ class Mission(Model):
     def __init__(self, **kwargs):
         JHO = Aircraft()
         N = 4
-        with vectorize(N):
-            loiter = FlightSegment(JHO)
+        # with vectorize(N):
+        loiter = FlightSegment(N, JHO)
 
         loiter.substitutions["V"] = np.linspace(20, 40, N)
         mtow = Variable("MTOW", "lbf", "max-take off weight")
@@ -149,9 +155,8 @@ class Mission(Model):
 
         constraints = [mtow >= loiter["W_{start}"][0],
                        mtow >= JHO["W_{zfw}"] + Wfueltot,
-                       Wfueltot >= loiter["W_{fuel}"].sum(),
+                       Wfueltot >= loiter["W_{fuel-fs}"],
                        loiter["W_{end}"][-1] >= JHO["W_{zfw}"],
-                       loiter["W_{end}"][:-1] >= loiter["W_{start}"][1:]
                       ]
 
         Model.__init__(self, mtow, [JHO, loiter, constraints], **kwargs)
