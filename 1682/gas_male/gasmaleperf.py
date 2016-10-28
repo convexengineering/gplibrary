@@ -119,8 +119,13 @@ class WingP(Model):
         CL = Variable("C_L", "-", "lift coefficient")
         e = Variable("e", 0.9, "-", "Oswald efficiency")
         Re = Variable("Re", "-", "Reynold's number")
+        cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
+        Reref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
+
         constraints = [
-            CD >= (0.074/Re**0.2 + CL**2/np.pi/static["A"]/e),
+            CD >= (cdp + CL**2/np.pi/static["A"]/e),
+            (cdp/(Re/Reref)**-0.4)**0.00544 >= (
+                0.33*CL**-0.0809 + 0.645*CL**0.045 + 7.35e-5*CL**12),
             Re == state["\\rho"]*state["V"]*static["c"]/state["\\mu"],
             ]
         Model.__init__(self, None, constraints, **kwargs)
