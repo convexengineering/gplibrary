@@ -1,13 +1,19 @@
 "Implements Fuselage model"
 import numpy as np
-from gpkit import Variable, Model, SignomialsEnabled, units, SignomialEquality
+from gpkit import Variable, Model, SignomialsEnabled, units, SignomialEquality, ConstraintSet, LinkedConstraintSet
 from gpkit.constraints.tight import TightConstraintSet as TCS
+
+from gpkit.small_scripts import mag
+from collections import defaultdict
 
 class Fuselage(Model):
     """
     Fuselage model
     """
-    def __init__(self, fuselage_type = 'narrowbody', version = 'Philip'):
+    def __init__(self, wingbox, htail, vtail, fuselage_type = 'narrowbody', version = 'Philip'):
+
+        if fuselage_type == 'widebody' and version == 'Philip':
+            raise NameError('Widebody frame and Philip version are not compatable')
 
 
         Afuse    = Variable('A_{fuse}', 'm^2', 'Fuselage x-sectional area')
@@ -160,9 +166,42 @@ class Fuselage(Model):
         xshell1  = Variable('x_{shell1}', 'm', 'Start of cylinder section')
         xshell2  = Variable('x_{shell2}', 'm', 'End of cylinder section')
 
-        with SignomialsEnabled():
 
-            objective = Dfuse + 0.5*Wfuse
+
+
+        # Bending inertias (ported from TASOPT)
+        A0           = Variable('A0','m^2','Horizontal bending area constant A0') #(shell inertia contribution)
+        A1           = Variable('A1','m','Horizontal bending area constant A1') #(tail impact + aero loading)
+        A2           = Variable('A2','-','Horizontal bending area constant A2') #(fuselage impact)
+        Ahbendb      = Variable('A_{hbendb}','m^2','Horizontal bending area at rear wingbox')
+        Ahbendf      = Variable('A_{hbendf}','m^2','Horizontal bending area at front wingbox')
+        Avbendb      = Variable('A_{vbendb}','m^2','Vertical bending material area at rear wingbox')
+        #B0           = Variable('B0','m^2','Vertical bending area constant B0') #(shell inertia contribution)
+        #B1           = Variable('B1','m','Vertical bending area constant B1') #(vertical tail bending load)
+        Ihshell      = Variable('I_{hshell}','m^4','Shell horizontal bending inertia')
+        #Ivshell      = Variable('I_{vshell}','m^4','Shell vertical bending inertia')
+        rMh          = Variable('r_{M_h}',.4,'-','Horizontal inertial relief factor') #[TAS]
+        rMv          = Variable('r_{M_v}',.7,'-','Vertical inertial relief factor') #[TAS]
+        sigbend      = Variable('\\sigma_{bend}','N/m^2','Bending material stress')
+        sigMh        = Variable('\\sigma_{M_h}','N/m^2','Horizontal bending material stress')
+        #sigMv        = Variable('\\sigma_{M_v}','N/m^2','Vertical bending material stress')
+        Vhbend       = Variable('V_{hbend}','m^3','Horizontal bending material volume')
+        Vhbendb      = Variable('V_{hbendb}','m^3','Horizontal bending material volume b') #back fuselage
+        Vhbendc      = Variable('V_{hbendc}','m^3','Horizontal bending material volume c') #center fuselage
+        Vhbendf      = Variable('V_{hbendf}','m^3','Horizontal bending material volume f') #front fuselage
+        #Vvbend       = Variable('V_{vbend}','m^3','Vertical bending material volume')
+        #Vvbendb      = Variable('V_{vbendb}','m^3','Vertical bending material volume b') #back fuselage
+        #Vvbendc      = Variable('V_{vbendc}','m^3','Vertical bending material volume c') #center fuselage
+        Whbend       = Variable('W_{hbend}','N','Horizontal bending material weight')
+        #Wvbend       = Variable('W_{vbend}','N','Vertical bending material weight')
+        xhbend       = Variable('x_{hbend}','m','Horizontal zero bending location')
+        #xvbend       = Variable('x_{vbend}','m','Vertical zero bending location')
+        # x-location variables
+        xshell1      = Variable('x_{shell1}', 'm', 'Start of cylinder section')
+        xshell2      = Variable('x_{shell2}', 'm', 'End of cylinder section')
+        xtail        = Variable('x_{tail}','m', 'x-location of tail')
+
+        with SignomialsEnabled():
 
             if version == 'Philip':
 
@@ -188,6 +227,15 @@ class Fuselage(Model):
                             Rfuse >= dh + hfloor + hhold,
                             Wfloor >= rhofloor*g*Vfloor
                                       + 2*wfloor*lfloor*Wppfloor,
+                            Wshell >= Wskin*(1 + fstring + fframe + ffadd),
+
+                            # Cone
+                            Rfuse*taucone*(1+plamv)*Vcone*(1+lamcone)/(4*lcone)
+                                >= Lvmax*bvt*plamv/3, # [SP]
+
+                            # Total fuselage weight
+                            Wfuse >= Wfix + Wapu + Wpadd + Wseat + Wshell
+                                   + Wwindow + Winsul + Wcone + Wfloor + Wbuoy,
                             
                             ]
 
@@ -205,6 +253,12 @@ class Fuselage(Model):
                 hcargofl = Variable('h_{cargo_{floor}}', 'm', 'Cargo floor beam height')
                 Ppassfl  = Variable('P_{pass_{floor}}', 'N', 'Distributed passenger floor load')
                 Pcargofl = Variable('P_{cargo_{floor}}', 'N', 'Distributed cargo floor load')
+                hfuse    = Variable('h_{fuse}','m','Fuselage height')
+                Wtail    = Variable('W_{tail}','N','Total tail weight')
+
+                thetadb  = Variable('\\theta_{db}', 0, '-','DB fuselage joining angle')
+                hdb      = Variable('h_{db}','m', 0, 'Web half-height')
+                tdb      = Variable('t_{db}', 0, 'm', 'Web thickness')
 
                 constraints = [
                             Ppassfl >= Nland*(Wpass + Wseat + Wcarryon), # might want to remove Wcarryon
@@ -234,6 +288,58 @@ class Fuselage(Model):
                             Rfuse >= dh + hpassfl + hcargofl + hhold,
                             Wfloor >= rhofloor*g*Vfloor
                                       + 2*(wcargofl + wpassfl)*lfloor*Wppfloor,
+
+                            Wtail >= vtail['W_{vtail}'] + htail['W_{htail}'] + Wcone,
+                            Wshell >= Wskin*(1 + fstring + fframe + ffadd),# + Whbend,
+
+                            SignomialEquality(xtail, lnose + lshell + .5*lcone), #Temporarily
+                            hfuse    == Rfuse,
+                            xhbend >= wingbox['x_{wing}'],
+
+
+                            # Tail cone sizing
+                            Rfuse*taucone*(1+plamv)*Vcone*(1+lamcone)/(4*lcone)
+                                >= Lvmax*bvt*plamv/3, # [SP]
+                            #Vcone*(1+lamcone)*(np.pi+4*thetadb)>= vtail['Q_v']/taucone*(np.pi+2*thetadb)*(lcone/Rfuse)*2,
+
+                            # Total fuselage weight
+                            Wfuse >= Wfix + Wapu + Wpadd + Wseat + Wshell
+                                   + Wwindow + Winsul + Wfloor + Wbuoy + Wtail,
+
+
+                            Ihshell <= ((np.pi+4*thetadb)*Rfuse**2)*Rfuse*tshell + 2/3*hdb**3*tdb, # [SP]
+                            sigbend == rE*sigskin,
+
+                            # Horizontal bending material model
+                            # Calculating xbend, the location where additional bending material is required
+                            SignomialEquality(A0,A2*(xshell2-xhbend)**2 + A1*(xtail-xhbend)), #[SP] #[SPEquality] 
+                            A2      >=  Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh), # Landing loads constant A2
+                            A1      >= (Nland*Wtail + rMh*htail['L_{h_{max}}'])/(hfuse*sigMh),                                # Aero loads constant A1
+                            A0      == (Ihshell/(rE*hfuse**2)),                                                # Shell inertia constant A0
+                            SignomialEquality(Ahbendf, A2*(xshell2-wingbox['x_f'])**2 + A1*(xtail-wingbox['x_f']) - A0), #[SP]                           # Bending area forward of wingbox
+                            SignomialEquality(Ahbendb, A2*(xshell2-wingbox['x_b'])**2 + A1*(xtail-wingbox['x_b']) - A0), #[SP]                           # Bending area behind wingbox
+
+                            SignomialEquality(Vhbendf, A2/3*((xshell2-wingbox['x_f'])**3 - (xshell2-xhbend)**3) \
+                                            + A1/2*((xtail-wingbox['x_f'])**2 - (xtail - xhbend)**2) \
+                                            + A0*(xhbend-wingbox['x_f'])), #[SP]
+
+                            Vhbendb >= A2/3*((xshell2-wingbox['x_b'])**3 - (xshell2-xhbend)**3) \
+                                            + A1/2*((xtail-wingbox['x_b'])**2 - (xtail - xhbend)**2) \
+                                            + A0*(xhbend-wingbox['x_b']), #[SP]
+                            Vhbend <= 1*units('m^3'),
+                            Vhbendc >= .5*(Ahbendf + Ahbendb)*wingbox['c_0']*wingbox['\\bar_w'],
+                            Vhbend >= Vhbendc + Vhbendf + Vhbendb,
+                            Whbend  >= g*rhobend*Vhbend,
+                            Whbend  <= 35000*units('N'),
+
+
+                            # Temporary wing variable substitutions
+                            wingbox['c_0']       == 0.1*lshell, #Temporarily
+                            wingbox['dx_{wing}']   == 0.25*wingbox['c_0'], #Temporarily
+                                        
+                            sigMh   <= sigbend - rE*dp/2*Rfuse/tshell, # The stress available to the bending material reduced because of pressurization
+                            #sigMv   == sigMh,
+
                             ]
 
             else:
@@ -246,9 +352,8 @@ class Fuselage(Model):
                             # Cross section relations
                             wfuse == 2*Rfuse,
                             Askin >= 2*np.pi*Rfuse*tskin, # simplified
-                            tshell >= tskin*(1 + rE*fstring*rhoskin/rhobend),
+                            SignomialEquality(tshell,tskin*(1+rE*fstring*rhoskin/rhobend)),
 
-                            # TODO: Bending loads
 
                             # Pressure shell loads
                             sigx == dp/2*Rfuse/tshell,  
@@ -263,7 +368,7 @@ class Fuselage(Model):
                             Vnose == Snose*tskin,
                             Vbulk == Sbulk*tskin,
                             Wskin >= rhoskin*g*(Vcyl + Vnose + Vbulk),
-                            Wshell >= Wskin*(1 + fstring + fframe + ffadd),
+                            
 
                             # Fuselage volume and buoyancy weight
                             rhocabin == (1/(R*Tcabin))*pcabin,  
@@ -285,12 +390,12 @@ class Fuselage(Model):
                             lshell >= nrows*pitch,
 
                             # Tail cone
-                            Rfuse*taucone*(1+plamv)*Vcone*(1+lamcone)/(4*lcone)
-                                >= Lvmax*bvt*plamv/3, # [SP]
+                            
                             plamv >= 1.6,
                             taucone == sigskin,
                             lamcone == 0.4, # TODO remove
                             lamcone == cvt/lcone,
+                            #Wcone == 0.2*units('N')*rhocone*units('m')*units('m')*units('m')/units('kg'),
                             Wcone >= rhocone*g*Vcone*(1 + fstring + fframe
                                                       + ffadd),
 
@@ -309,10 +414,6 @@ class Fuselage(Model):
                             # [SP] Harris stocker 1998 (wolfram)
                             
                             Wpay >= Wpass + Wlugg + Wcargo, 
-
-                            # Total fuselage weight
-                            Wfuse >= Wfix + Wapu + Wpadd + Wseat + Wshell
-                                   + Wwindow + Winsul + Wcone + Wfloor + Wbuoy,
 
                             # Drag
                             # sources: Raymer (p285), kfid 325 notes (p180)
@@ -341,7 +442,7 @@ class Fuselage(Model):
 
                             Afuse >= np.pi*Rfuse**2, # simplified
                             lnose >= 5.2*units.m, # TODO less arbitrary
-                            wfuse >= SPR*wseat + waisle + 2*wsys,
+                            wfuse >= SPR*wseat + waisle + 2*wsys + 2*tshell,
 
 
                                 ]
@@ -367,22 +468,21 @@ class Fuselage(Model):
 
                                 Afuse >= np.pi*Rfuse**2,
                                 lnose >= 2*5.2*units.m, # TODO UPDATE - less arbitrary
-                                wfuse >= SPR*wseat + 2*waisle + 2*wsys,
+                                wfuse >= SPR*wseat + 2*waisle + 2*wsys + 2*tshell,
                                 Ahold <= wcargofl*2*hhold,
 
-                                ]
-                if version == 'Philip':
+                                
+#                if version == 'Philip':
 
-                    constraints = [constraints,
-                                Mfloor == Pfloor*wfloor/4.,
-                                ]
+#                   constraints = [constraints,
+#                              Mfloor == Pfloor*wfloor/4.,
+#                             ]
 
-                elif version == 'NextGen':
-                    constraints = [constraints,
+
                                 Mpassfl == Ppassfl*wpassfl/4.,
                                 ]
-                else:
-                    raise NotImplementedError
+                #else:
+                 #   raise NotImplementedError
 
         elif fuselage_type == 'D8':
             raise NotImplementedError
@@ -460,7 +560,13 @@ class Fuselage(Model):
 
         self.CG_constraints = CG_constraints
 
-        Model.__init__(self, objective, constraints)
+        if version == 'Philip':
+        
+            Model.__init__(self, Dfuse + 0.5*Wfuse, constraints)
+
+        elif version == 'NextGen':
+
+            Model.__init__(self, None, constraints)
 
 
     def defaultsubs(self, fuselage_type = 'narrowbody'):
@@ -566,6 +672,7 @@ class Fuselage(Model):
         #Creates an performance model
         return FuselagePerformance(self, state)
 
+
     @classmethod
     def standalonefuselage(cls, fuselage_type = 'narrowbody'):
         """Create standalone instance of fuselage model"""
@@ -615,7 +722,7 @@ class Atmosphere(Model):
         p_atm = Variable("P_{atm}", "Pa", "air pressure")
         TH = (g*M_atm/R_atm/L_atm).value
 
-        rho = Variable('\\rho_{\\infty}', 'kg/m^3', 'Density of air')
+        rho = Variable('\\rho_{\\infty}', 0.38, 'kg/m^3', 'Density of air')
 
         h = Variable("h", "ft", "Altitude")
 
@@ -626,7 +733,7 @@ class Atmosphere(Model):
             atmos/atmos.html
         http://www.cfd-online.com/Wiki/Sutherland's_law
         """
-        mu  = Variable('\\mu', 'kg/(m*s)', 'Dynamic viscosity')
+        mu  = Variable('\\mu', 1.4E-5,'kg/(m*s)', 'Dynamic viscosity')
 
         T_s = Variable('T_s', 110.4, "K", "Sutherland Temperature")
         C_1 = Variable('C_1', 1.458E-6, "kg/(m*s*K^0.5)",
@@ -642,13 +749,14 @@ class Atmosphere(Model):
 
                 # Ideal gas law
                 rho == p_atm/(R_atm/M_atm*T_atm),
+                #rho == rho,
 
                 #temperature equation
                 SignomialEquality(T_sl, T_atm + L_atm*h),
 
                 #constraint on mu
-##                SignomialEquality((T_atm + T_s) * mu, C_1 * T_atm**1.5),
-                TCS([(T_atm + T_s) * mu >= C_1 * T_atm**1.5])
+                SignomialEquality((T_atm + T_s) * mu, C_1 * T_atm**1.5),
+                #mu == mu,
                 ]
 
 
@@ -663,11 +771,11 @@ class FlightState(Atmosphere):
     def __init__(self, **kwargs):
         #declare variables
         Vinf     = Variable('V_{\\infty}', 245, 'm/s', 'Cruise velocity')
-        a        = Variable('a', 'm/s', 'Speed of Sound')
-        gamma    = Variable('\\gamma', 1.4, '-', 'Air Specific Heat Ratio')
-        h        = Variable('h', 'm', 'Segment Altitude [meters]')
-        hft      = Variable('hft', 35000, 'feet', 'Segment Altitude [feet]')
-        Minf     = Variable('M_{\\infty}', '-', 'Cruise Mach number')
+        #a        = Variable('a', 'm/s', 'Speed of Sound')
+        #gamma    = Variable('\\gamma', 1.4, '-', 'Air Specific Heat Ratio')
+        #h        = Variable('h', 'm', 'Segment Altitude [meters]')
+        #hft      = Variable('hft', 35000, 'feet', 'Segment Altitude [feet]')
+        #Minf     = Variable('M_{\\infty}', '-', 'Cruise Mach number')
 
         atm      = Atmosphere()
 
@@ -677,13 +785,13 @@ class FlightState(Atmosphere):
         constraints.extend([
             Vinf == Vinf, #required so velocity variable enters the model
 
-            h == hft, #convert the units on altitude
+         #   h == hft, #convert the units on altitude
 
             #compute the speed of sound with the state
-            a  == (gamma * atm['R_{atm}'] * atm['T_{atm}'] / atm['M_{atm}'])**.5,
+          #  a  == (gamma * atm['R_{atm}'] * atm['T_{atm}'] / atm['M_{atm}'])**.5,
 
             #compute the mach number
-            Minf == Vinf / a
+           # Minf == Vinf / a
             ])
 
         #build the model
@@ -714,16 +822,202 @@ class FuselagePerformance(Model):
         Model.__init__(self, None, constraints, **kwargs)
 
 
-if __name__ == "__main__":
+
+
+
+
+
+
+class HTail(Model):
+
+
+    def __init__(self,ops,**kwargs):
+        self.ops = ops
+        Whtail       = Variable('W_{htail}',10000, 'N', 'Horizontal tail weight') #Temporarily
+        Lhmax        = Variable('L_{h_{max}}',35000,'N', 'Max horizontal tail load')
+        Shtail       = Variable('S_{htail}',32*0.8,'m^2','Horizontal tail area') #Temporarily
+        CLhmax       = Variable('C_{L_{h_{max}}}', 2.5, '-', 'Max lift coefficient') #Temporarily
+        constraints = [#Lhmax    == 0.5*self.ops['\\rho_{\\infty}']*self.ops['V_{NE}']**2*Shtail*CLhmax,
+                       Lhmax    == Lhmax,
+                       Whtail   == Whtail,
+                       Shtail   == Shtail,
+                       CLhmax   == CLhmax]
+        Model.__init__(self, None, constraints, **kwargs)
+
+class VTail(Model):
+
+
+    def __init__(self,ops,**kwargs):
+        #bvt          = Variable('b_{vt}',7, 'm', 'Vertical tail span')
+        #Lvmax        = Variable('L_{v_{max}}',35000,'N', 'Max vertical tail load')
+        Wvtail       = Variable('W_{vtail}',10000, 'N', 'Vertical tail weight') #Temporarily
+        Qv           = Variable('Q_v', 'N*m', 'Torsion moment imparted by tail')
+
+        constraints = [#bvt == bvt, 
+                       #Lvmax == Lvmax,
+                       Wvtail == Wvtail,
+                       Qv == Qv]
+        Model.__init__(self, None, constraints, **kwargs)
+
+
+
+
+class Wing(Model):
+
+
+    def __init__(self,ops,**kwargs):
+        self.ops = ops
+        constraints = [];
+        Model.__init__(self,None,constraints,**kwargs)
+
+class WingBox(Model):
+    def dynamic(self,state):
+        return WingBoxP(self,state)
+
+    def __init__(self,ops,**kwargs):
+        self.ops = ops
+        xf           = Variable('x_f','m','x-location of front of wingbox')
+        xb           = Variable('x_b','m','x-location of back of wingbox')
+        c0           = Variable('c_0','m','Root chord of the wing')
+        wbar         = Variable('\\bar_w',0.5,'-','Wingbox to chord ratio') #Temporarily
+        xwing        = Variable('x_{wing}','m', 'x-location of wing')
+        dxwing       = Variable('dx_{wing}','m','wing box offset')
+        # Setting bending area integration bounds (defining wing box locations)
+        with SignomialsEnabled():
+            constraints  = [SignomialEquality(xf,xwing + dxwing + .5*c0*wbar), #[SP] [SPEquality]
+                        #xf >= xwing + dxwing + .5*c0*wbar,
+                        SignomialEquality(xb, xwing - dxwing + .5*c0*wbar), #[SP] [SPEquality]
+                        #xb <= xwing - dxwing + .5*c0*wbar, #[SP]        
+                        ];
+        Model.__init__(self,None,constraints,**kwargs)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class CommericalAircraft(Model):
+
+    """
+    class to link all models needed to simulate a commercial flight
+    """
+    def __init__(self, fuselage_type = 'narrowbody', version = 'Philip', **kwargs):
+        #defining the number of segments
+        Nclimb = 2
+        Ncruise = 2
+
+        #make the segment range
+        Nseg = Nclimb + Ncruise
+
+        #define all the submodels
+        state = FlightState()
+        wing = Wing(state)
+        wingbox = WingBox(state)
+        htail = HTail(state)
+        vtail = VTail(state)
+
+
+
+        fuse = Fuselage(wingbox, htail, vtail, fuselage_type, version)
+        
+        fusep = FuselagePerformance(fuse, state)
+
+
+        substitutions = fuse.defaultsubs(fuselage_type)
+
+        submodels = [fuse, state, fusep, wing, wingbox, htail, vtail]
+
+
+        constraints = ConstraintSet([submodels])
+
+        objective = fusep['D_{fuse}'] + 0.5*fuse['W_{fuse}']# + fuse['W_{hbend}']
+
+        lc = LinkedConstraintSet(constraints)
+
+        if version == 'Philip':
+            Model.__init__(self, fuse.cost, lc + submodels, substitutions, **kwargs)
+        elif version == 'NextGen':
+            Model.__init__(self, objective, lc + submodels, substitutions, **kwargs)
+        else:
+            raise NameError('Version not yet implemented')
+
+    def bound_all_variables(self, model, eps=1e-30, lower=None, upper=None):
+        "Returns model with additional constraints bounding all free variables"
+        lb = lower if lower else eps
+        ub = upper if upper else 1/eps
+        constraints = []
+        freevks = tuple(vk for vk in model.varkeys if "value" not in vk.descr)
+        for varkey in freevks:
+            units = varkey.descr.get("units", 1)
+            constraints.append([ub*units >= Variable(**varkey.descr),
+                                Variable(**varkey.descr) >= lb*units])
+        m = Model(model.cost, [constraints, model], model.substitutions)
+        m.bound_all = {"lb": lb, "ub": ub, "varkeys": freevks}
+        return m
+
+    # pylint: disable=too-many-locals
+    def determine_unbounded_variables(self, model, solver=None, verbosity=0,
+                                      eps=1e-30, lower=None, upper=None, **kwargs):
+        "Returns labeled dictionary of unbounded variables."
+        m = self.bound_all_variables(model, eps, lower, upper)
+        sol = m.localsolve(solver, verbosity, **kwargs)
+        solhold = sol
+        lam = sol["sensitivities"]["la"][1:]
+        out = defaultdict(list)
+        for i, varkey in enumerate(m.bound_all["varkeys"]):
+            lam_gt, lam_lt = lam[2*i], lam[2*i+1]
+            if abs(lam_gt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to upper bound"].append(varkey)
+            if abs(lam_lt) >= 1e-7:  # arbitrary threshold
+                out["sensitive to lower bound"].append(varkey)
+            value = mag(sol["variables"][varkey])
+            distance_below = np.log(value/m.bound_all["lb"])
+            distance_above = np.log(m.bound_all["ub"]/value)
+            if distance_below <= 3:  # arbitrary threshold
+                out["value near lower bound"].append(varkey)
+            elif distance_above <= 3:  # arbitrary threshold
+                out["value near upper bound"].append(varkey)
+        return out, solhold
+
+if __name__ == '__main__':
+    #Fuse = Fuselage(fuselage_type = 'narrowbody')
+    #State = FlightState()
+    #FuseP = FuselagePerformance(Fuse, State)
+    #Mission = Model(Fuse.cost, [Fuse, FuseP])
+
+    #sol, solhold = FuseP.determine_unbounded_variables(FuseP,verbosity=4, iteration_limit=100)
+    #sol, solhold = Fuse.determine_unbounded_variables(Fuse, verbosity = 4, iteration_limit = 100)
+    CA = CommericalAircraft(fuselage_type = 'narrowbody', version = 'NextGen')
+
+    sol, solhold = CA.determine_unbounded_variables(CA, verbosity = 4, iteration_limit = 100)
+    #solold = CA.localsolve()
+    print(solhold.table())
+
+
+# if __name__ == "__main__":
     #sol = Fuselage.test(fuselage_type = 'widebody')
     #print(sol.table())
 
-    Fuse = Fuselage(fuselage_type = 'narrowbody')
-    State = FlightState()
-    FuseP = FuselagePerformance(Fuse, State)
-    Mission = Model(Fuse.cost, [Fuse, FuseP])
-    sol = Mission.localsolve()
-    print(sol.table())
+    #Fuse = Fuselage(fuselage_type = 'narrowbody')
+    #State = FlightState()
+    #FuseP = FuselagePerformance(Fuse, State)
+    #Mission = Model(Fuse.cost, [Fuse, FuseP])
+    #sol = Mission.localsolve()#(solver = 'mosek')
+    #print(sol.table())
+
+
 
 
 
