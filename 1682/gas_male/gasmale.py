@@ -390,12 +390,8 @@ class ComponentDrag(Model):
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
         V = VectorVariable(N, "V", "m/s", "Cruise speed")
-        if comp.name in ["VerticalTail", "TailBoom"]:
-            n = 2
-        else:
-            n = 1
 
-        constraints = [CDA >= n*Cf*comp["S_{ref}"]/S,
+        constraints = [CDA >= Cf*comp["S_{ref}"]/S,
                        Re == V*rho*comp["l_{ref}"]/mu_atm,
                        Cf >= 0.455/Re**0.3
                       ]
@@ -993,7 +989,7 @@ class VerticalTail(Model):
         W = Variable("W", "lbf", "one vertical tail weight")
         Sv = Variable("S_v", "ft**2", "total vertical tail surface area")
         Vv = Variable("V_v", 0.025, "-", "vertical tail volume coefficient")
-        ARv = Variable("AR_v", "-", "vertical tail aspect ratio")
+        ARv = Variable("AR_v", 2, "-", "vertical tail aspect ratio")
         bv = Variable("b_v", "ft", "one vertical tail span")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
                            "Density of formular 250")
@@ -1013,7 +1009,7 @@ class VerticalTail(Model):
         lantenna = Variable("l_{antenna}", 13.4, "in", "antenna length")
         wantenna = Variable("w_{antenna}", 10.2, "in", "antenna width")
 
-        constraints = [Vv <= 2*Sv*L/S/b,
+        constraints = [Vv <= Sv*L/S/b,
                        bv**2 == ARv*Sv,
                        W >= rhofoam*Sv**2/bv*Abar + g*rhoskin*Sv,
                        ctv == 2*Sv/bv*lamvfac,
@@ -1036,8 +1032,7 @@ class Empennage(Model):
         self.submodels = [tb, ht, vt]
 
         constraints = [
-            W/m_fac >= 2.0*tb["W"] + ht["W"] + 2.0*vt["W"],
-            # ht["c_{t_h}"] == vt["c_{t_v}"]
+            W/m_fac >= tb["W"] + ht["W"] + vt["W"],
             ]
 
         lc = LinkedConstraintSet(
