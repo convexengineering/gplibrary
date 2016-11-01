@@ -1,6 +1,6 @@
 """Jungle Hawk Owl Concept"""
 import numpy as np
-from gpkit import Model, Variable, vectorize
+from gpkit import Model, Variable, vectorize, units
 from gpkit.tools import te_exp_minus1
 
 # pylint: disable=invalid-name
@@ -22,7 +22,12 @@ class Aircraft(Model):
 class AircraftP(Model):
     def __init__(self, static, state, **kwargs):
 
-        self.wing = static.components[1].dynamic_model(static.wing, state)
+        self.dmodels = []
+        self.dmodelnames = []
+        for c in static.components:
+            if "dynamic_model" in c.__dict__.keys():
+                self.dmodels.append(c.dynamic_model(c, state))
+                self.dmodelnames.append(c.__class__.__name__)
 
         Pshaft = Variable("P_{shaft}", "W", "shaft power")
         Wend = Variable("W_{end}", "lbf", "vector-end weight")
@@ -32,9 +37,9 @@ class AircraftP(Model):
         constraints = [Pshaft == Pshaft,
                        Wend == Wend,
                        Wstart == Wstart,
-                       CD >= self.wing["c_{d_w}"]]
+                       CD >= self.dmodels[self.dmodelnames == "Wing"]["c_{d_w}"]]
 
-        Model.__init__(self, None, [self.wing, constraints], **kwargs)
+        Model.__init__(self, None, [self.dmodels, constraints], **kwargs)
 
 class FlightState(Model):
     "One chunk of a mission"
@@ -42,9 +47,11 @@ class FlightState(Model):
         V = Variable("V", 25, "m/s", "true airspeed")
         mu = Variable("\\mu", 1.628e-5, "N*s/m^2", "dynamic viscosity")
         rho = Variable("\\rho", 0.74, "kg/m^3", "air density")
+        h = Variable("h", 15000, "ft", "altitude")
         constraints = [V == V,
                        mu == mu,
-                       rho == rho]
+                       rho == rho,
+                       h == h]
         super(FlightState, self).__init__(None, constraints, **kwargs)
 
 
@@ -92,7 +99,7 @@ class SteadyLevelFlight(Model):
 
         constraints = [
             (aircraftP["W_{end}"]*aircraftP["W_{start}"])**0.5 <= (
-                0.5*state["\\rho"]*state["V"]**2*aircraftP.wing["C_L"]
+                0.5*state["\\rho"]*state["V"]**2*aircraftP.dmodels[aircraftP.dmodelnames == "Wing"]["C_L"]
                 * aircraft.wing["S"]),
             T == (0.5*state["\\rho"]*state["V"]**2*aircraftP["C_D"]
                   *aircraft.wing["S"]),
@@ -154,7 +161,7 @@ class Mission(Model):
     def __init__(self, **kwargs):
         JHO = Aircraft()
         N = 4
-        # with vectorize(N):
+
         loiter = FlightSegment(N, JHO)
 
         loiter.substitutions["V"] = np.linspace(20, 40, N)
