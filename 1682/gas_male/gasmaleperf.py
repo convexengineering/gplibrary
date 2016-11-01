@@ -72,7 +72,7 @@ class FlightSegment(Model):
         Model.__init__(self, None, [fs, aircraft, aircraftP, slf, be, constraints], **kwargs)
 
 class BreguetEndurance(Model):
-    def __init__(self, aircraftP, **kwargs):
+    def __init__(self, perf, **kwargs):
         z_bre = Variable("z_{bre}", "-", "Breguet coefficient")
         t = Variable("t", 1, "days", "Time per flight segment")
         f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
@@ -82,28 +82,29 @@ class BreguetEndurance(Model):
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [
-            z_bre >= (aircraftP["P_{shaft}"]*t*bsfc*g/
-                      (aircraftP["W_{end}"]*aircraftP["W_{start}"])**0.5),
+            z_bre >= (perf["P_{shaft}"]*t*bsfc*g/
+                      (perf["W_{end}"]*perf["W_{start}"])**0.5),
             # TCS([z_bre >= P_shafttot*t*bsfc*g/(Wend*Wstart)**0.5]),
             # TCS([z_bre >= P_shafttot*t*bsfc*g/Wend]),
-            f_fueloil*Wfuel/aircraftP["W_{end}"] >= te_exp_minus1(z_bre, 3),
-            aircraftP["W_{start}"] >= aircraftP["W_{end}"] + Wfuel
+            f_fueloil*Wfuel/perf["W_{end}"] >= te_exp_minus1(z_bre, 3),
+            perf["W_{start}"] >= perf["W_{end}"] + Wfuel
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
 
 class SteadyLevelFlight(Model):
-    def __init__(self, state, aircraft, aircraftP, **kwargs):
+    def __init__(self, state, aircraft, perf, **kwargs):
+
         T = Variable("T", "N", "thrust")
         etaprop = Variable("\\eta_{prop}", 0.7, "-", "propulsive efficiency")
 
         constraints = [
-            (aircraftP["W_{end}"]*aircraftP["W_{start}"])**0.5 <= (
-                0.5*state["\\rho"]*state["V"]**2*aircraftP.dmodels[aircraftP.dmodelnames == "Wing"]["C_L"]
+            (perf["W_{end}"]*perf["W_{start}"])**0.5 <= (
+                0.5*state["\\rho"]*state["V"]**2*perf["C_L"]
                 * aircraft.wing["S"]),
-            T == (0.5*state["\\rho"]*state["V"]**2*aircraftP["C_D"]
+            T == (0.5*state["\\rho"]*state["V"]**2*perf["C_D"]
                   *aircraft.wing["S"]),
-            aircraftP["P_{shaft}"] == T*state["V"]/etaprop]
+            perf["P_{shaft}"] == T*state["V"]/etaprop]
 
         Model.__init__(self, None, constraints, **kwargs)
 
