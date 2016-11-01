@@ -44,14 +44,14 @@ class AircraftP(Model):
 
 class FlightState(Model):
     "One chunk of a mission"
-    def __init__(self, onStation, **kwargs):
+    def __init__(self, alt, onStation, **kwargs):
 
         self.onStation = onStation
 
         V = Variable("V", 25, "m/s", "true airspeed")
         mu = Variable("\\mu", 1.628e-5, "N*s/m^2", "dynamic viscosity")
         rho = Variable("\\rho", 0.74, "kg/m^3", "air density")
-        h = Variable("h", 15000, "ft", "altitude")
+        h = Variable("h", alt, "ft", "altitude")
         constraints = [V == V,
                        mu == mu,
                        rho == rho,
@@ -60,9 +60,9 @@ class FlightState(Model):
 
 
 class FlightSegment(Model):
-    def __init__(self, N, aircraft, onStation=False, **kwargs):
+    def __init__(self, N, aircraft, alt=15000, onStation=False, **kwargs):
         with vectorize(N):
-            fs = FlightState(onStation)
+            fs = FlightState(alt, onStation)
             aircraftP = aircraft.dynamic_model(aircraft, fs)
             slf = SteadyLevelFlight(fs, aircraft, aircraftP)
             be = BreguetEndurance(aircraftP)
