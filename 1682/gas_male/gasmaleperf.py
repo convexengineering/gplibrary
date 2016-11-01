@@ -37,7 +37,7 @@ class AircraftP(Model):
         constraints = [Pshaft == Pshaft,
                        Wend == Wend,
                        Wstart == Wstart,
-                       CD >= self.dmodels[self.dmodelnames == "Wing"]["c_{d_w}"]]
+                       CD >= sum(dm["C_d"] for dm in self.dmodels)]
 
         Model.__init__(self, None, [self.dmodels, constraints], **kwargs)
 
@@ -126,7 +126,7 @@ class Wing(Model):
 
 class WingP(Model):
     def __init__(self, static, state, **kwargs):
-        cdw = Variable("c_{d_w}", "-", "wing drag coefficient")
+        Cd = Variable("C_d", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
         e = Variable("e", 0.9, "-", "Oswald efficiency")
         Re = Variable("Re", "-", "Reynold's number")
@@ -134,7 +134,7 @@ class WingP(Model):
         Reref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
 
         constraints = [
-            cdw >= (cdp + CL**2/np.pi/static["A"]/e),
+            Cd >= (cdp + CL**2/np.pi/static["A"]/e),
             (cdp/(Re/Reref)**-0.4)**0.00544 >= (
                 0.33*CL**-0.0809 + 0.645*CL**0.045 + 7.35e-5*CL**12),
             Re == state["\\rho"]*state["V"]*static["c"]/state["\\mu"],
