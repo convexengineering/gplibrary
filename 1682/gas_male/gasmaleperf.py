@@ -45,11 +45,10 @@ class AircraftP(Model):
 
 class FlightState(Model):
     "One chunk of a mission"
-    def __init__(self, alt, onStation, **kwargs):
+    def __init__(self, alt, onStation, wind, **kwargs):
 
         self.onStation = onStation
 
-        V = Variable("V", 25, "m/s", "true airspeed")
         mu = Variable("\\mu", 1.628e-5, "N*s/m^2", "dynamic viscosity")
         rho = Variable("\\rho", "kg/m^3", "air density")
         h = Variable("h", alt, "ft", "altitude")
@@ -69,18 +68,31 @@ class FlightState(Model):
         # Atmospheric variation with altitude (valid from 0-7km of altitude)
         constraints = [rho == psl*Tatm**(5.257-1)/Rspec/(Tsl**5.257),
                        (mu/musl)**0.1 == 0.991*(h/href)**(-0.00529),
-                       V == V,
-                       mu == mu,
                        h == h,
                        href == href]
+
+        V = Variable("V", "m/s", "true airspeed")
+
+        if wind:
+
+            V_wind = Variable("V_{wind}", 25, "m/s", "Wind speed")
+            constraints.extend([V >= V_wind])
+
+        else:
+
+            V_wind = Variable("V_{wind}", "m/s", "Wind speed")
+            V_ref = Variable("V_{ref}", 25, "m/s", "Reference wind speed")
+
+            constraints.extend([(V_wind/V_ref) >= 0.6462*(h/href) + 0.3538,
+                                V >= V_wind])
         Model.__init__(self, None, constraints, **kwargs)
 
 
 class FlightSegment(Model):
     "creates flight segment for aircraft"
-    def __init__(self, N, aircraft, alt=15000, onStation=False, **kwargs):
+    def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False, **kwargs):
         with vectorize(N):
-            fs = FlightState(alt, onStation)
+            fs = FlightState(alt, onStation, wind)
             aircraftP = aircraft.dynamic_model(aircraft, fs)
             slf = SteadyLevelFlight(fs, aircraft, aircraftP)
             be = BreguetEndurance(aircraftP)
@@ -242,6 +254,9 @@ class WingP(Model):
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
         Reref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
+        print state["V"]
+        print state["\\rho"]
+        print state["\\mu"]
 
         constraints = [
             Cd >= (cdp + CL**2/np.pi/static["A"]/e),
@@ -275,7 +290,6 @@ class Mission(Model):
 
         loiter = FlightSegment(N, JHO)
 
-        loiter.substitutions["V"] = np.linspace(20, 40, N)
         mtow = Variable("MTOW", "lbf", "max-take off weight")
         Wfueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
 
