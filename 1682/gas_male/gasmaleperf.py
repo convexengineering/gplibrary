@@ -51,12 +51,26 @@ class FlightState(Model):
 
         V = Variable("V", 25, "m/s", "true airspeed")
         mu = Variable("\\mu", 1.628e-5, "N*s/m^2", "dynamic viscosity")
-        rho = Variable("\\rho", 0.74, "kg/m^3", "air density")
+        rho = Variable("\\rho", "kg/m^3", "air density")
         h = Variable("h", alt, "ft", "altitude")
         href = Variable("h_{ref}", 15000, "ft", "Reference altitude")
-        constraints = [V == V,
+        psl = Variable("p_{sl}", 101325, "Pa", "Pressure at sea level")
+        Latm = Variable("L_{atm}", 0.0065, "K/m", "Temperature lapse rate")
+        Tsl = Variable("T_{sl}", 288.15, "K", "Temperature at sea level")
+        temp = [(t.value - l.value*v.value).magnitude
+                for t, v, l in zip(Tsl, h, Latm)]
+        Tatm = Variable("t_{atm}", temp, "K", "Air temperature")
+        mu = Variable("\\mu", "N*s/m^2", "Dynamic viscosity")
+        musl = Variable("\\mu_{sl}", 1.789*10**-5, "N*s/m^2",
+                        "Dynamic viscosity at sea level")
+        Rspec = Variable("R_{spec}", 287.058, "J/kg/K",
+                         "Specific gas constant of air")
+
+        # Atmospheric variation with altitude (valid from 0-7km of altitude)
+        constraints = [rho == psl*Tatm**(5.257-1)/Rspec/(Tsl**5.257),
+                       (mu/musl)**0.1 == 0.991*(h/href)**(-0.00529),
+                       V == V,
                        mu == mu,
-                       rho == rho,
                        h == h,
                        href == href]
         Model.__init__(self, None, constraints, **kwargs)
