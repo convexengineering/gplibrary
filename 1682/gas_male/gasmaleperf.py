@@ -7,12 +7,13 @@ from gpkit.tools import te_exp_minus1
 
 class Aircraft(Model):
     "the JHO vehicle"
-    def __init__(self, **kwargs):
+    def __init__(self, DF70=False, **kwargs):
         self.dynamic_model = AircraftP
         self.fuse = Fuselage()
         self.wing = Wing()
+        self.engine = Engine(DF70)
 
-        self.components = [self.fuse, self.wing]
+        self.components = [self.fuse, self.wing, self.engine]
 
         Wzfw = Variable("W_{zfw}", "lbf", "weight")
         constraints = [Wzfw >= sum(c["W"] for c in self.components)]
@@ -23,18 +24,16 @@ class AircraftP(Model):
     def __init__(self, static, state, **kwargs):
 
         self.dmodels = []
-        self.dmodelnames = []
         for c in static.components:
             if "dynamic_model" in c.__dict__.keys():
                 self.dmodels.append(c.dynamic_model(c, state))
-                self.dmodelnames.append(c.__class__.__name__)
 
         Pshaft = Variable("P_{shaft}", "W", "shaft power")
         Wend = Variable("W_{end}", "lbf", "vector-end weight")
         Wstart = Variable("W_{start}", "lbf", "vector-begin weight")
         CD = Variable("C_D", "-", "drag coefficient")
 
-        constraints = [Pshaft == Pshaft,
+        constraints = [static.engine["P_{sl-max}"] >= Pshaft,
                        Wend == Wend,
                        Wstart == Wstart,
                        CD >= sum(dm["C_d"] for dm in self.dmodels)]
@@ -108,6 +107,32 @@ class SteadyLevelFlight(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class Engine(Model):
+    def __init__(self, DF70, **kwargs):
+
+        W = Variable("W", "lbf", "Installed/Total engine weight")
+        m_fac = Variable("m_{fac}", 1.0, "-", "Engine weight margin factor")
+
+        if DF70:
+            W_df70 = Variable("W_{DF70}", 7.1, "lbf",
+                              "Installed/Total DF70 engine weight")
+            Pslmax = Variable("P_{sl-max}", 5.17, "hp",
+                              "Max shaft power at sea level")
+            constraints = [W/m_fac >= W_df70]
+
+        else:
+            Pref = Variable("P_{ref}", 2.295, "hp", "Reference shaft power")
+            W_engref = Variable("W_{eng-ref}", 4.4107, "lbf",
+                                "Reference engine weight")
+            W_eng = Variable("W_{eng}", "lbf", "engine weight")
+            Pslmax = Variable("P_{sl-max}", "hp",
+                              "Max shaft power at sea level")
+
+            constraints = [
+                W_eng/W_engref >= 0.5538*(Pslmax/Pref)**1.075,
+                W/m_fac >= 2.572*W_eng**0.922*units("lbf")**0.078]
+
+        Model.__init__(self, None, constraints, **kwargs)
 
 class Wing(Model):
     "The thing that creates the lift"
