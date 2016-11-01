@@ -254,9 +254,6 @@ class WingP(Model):
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
         Reref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
-        print state["V"]
-        print state["\\rho"]
-        print state["\\mu"]
 
         constraints = [
             Cd >= (cdp + CL**2/np.pi/static["A"]/e),
@@ -288,18 +285,25 @@ class Mission(Model):
         JHO = Aircraft()
         N = 4
 
-        loiter = FlightSegment(N, JHO)
+        loiter1 = FlightSegment(N, JHO)
+        loiter2 = FlightSegment(N, JHO)
+        mission = [loiter1, loiter2]
 
         mtow = Variable("MTOW", "lbf", "max-take off weight")
         Wfueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
 
-        constraints = [mtow >= loiter["W_{start}"][0],
+        constraints = [mtow >= mission[0]["W_{start}"][0],
                        mtow >= JHO["W_{zfw}"] + Wfueltot,
-                       Wfueltot >= loiter["W_{fuel-fs}"],
-                       loiter["W_{end}"][-1] >= JHO["W_{zfw}"],
+                       Wfueltot >= sum(fs["W_{fuel-fs}"] for fs in mission),
+                       mission[-1]["W_{end}"][-1] >= JHO["W_{zfw}"],
                       ]
 
-        Model.__init__(self, mtow, [JHO, loiter, constraints], **kwargs)
+        for i, fs in enumerate(mission[1:]):
+            constraints.extend([
+                mission[i]["W_{end}"][-1] == fs["W_{start}"][0]
+                ])
+
+        Model.__init__(self, mtow, [JHO, mission, constraints], **kwargs)
 
 
 if __name__ == "__main__":
