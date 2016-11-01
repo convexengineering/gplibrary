@@ -90,30 +90,71 @@ class FlightState(Model):
 
 class FlightSegment(Model):
     "creates flight segment for aircraft"
-    def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False, **kwargs):
+    def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
+                 **kwargs):
+
         with vectorize(N):
-            fs = FlightState(alt, onStation, wind)
-            aircraftP = aircraft.dynamic_model(aircraft, fs)
-            slf = SteadyLevelFlight(fs, aircraft, aircraftP)
-            be = BreguetEndurance(aircraftP)
+            self.fs = FlightState(alt, onStation, wind)
+            self.aircraftP = aircraft.dynamic_model(aircraft, self.fs)
+            self.slf = SteadyLevelFlight(self.fs, aircraft, self.aircraftP)
+            self.be = BreguetEndurance(self.aircraftP)
+
+        self.submodels = [self.fs, self.aircraftP, self.slf, self.be]
 
         Wfuelfs = Variable("W_{fuel-fs}", "lbf", "flight segment fuel weight")
 
-        constraints = [Wfuelfs >= be["W_{fuel}"].sum(),
-                       aircraftP["W_{end}"][:-1] >= aircraftP["W_{start}"][1:]
-                      ]
+        self.constraints = [
+            Wfuelfs >= self.be["W_{fuel}"].sum(),
+            self.aircraftP["W_{end}"][:-1] >= self.aircraftP["W_{start}"][1:]
+            ]
 
-        Model.__init__(self, None, [fs, aircraft, aircraftP, slf, be,
-                                    constraints], **kwargs)
+        Model.__init__(self, None, [aircraft, self.submodels,
+                                    self.constraints], **kwargs)
+
+class Loiter(FlightSegment):
+    "make a loiter flight segment"
+    def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
+                 **kwargs):
+        super(Loiter, self).__init__(N, aircraft, alt, onStation, wind,
+                                     **kwargs)
+
+        t = Variable("t", 6, "days", "time loitering")
+        self.constraints.extend([self.be["t"] >= t/N])
+
+        Model.__init__(self, None, [aircraft, self.submodels,
+                                    self.constraints], **kwargs)
+class Climb(FlightSegment):
+    "make a loiter flight segment"
+    def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
+                 dh=15000, **kwargs):
+        super(Climb, self).__init__(N, aircraft, alt, onStation, wind,
+                                    **kwargs)
+
+        with vectorize(N):
+            hdot = Variable("\\dot{h}", "ft/min", "Climb rate")
+
+        deltah = Variable("\\Delta_h", dh, "ft", "altitude difference")
+        hdotmin = Variable("\\dot{h}_{min}", 100, "ft/min",
+                           "minimum climb rate")
+
+        self.constraints.extend([
+            hdot*self.be["t"] >= deltah/N,
+            hdot >= hdotmin,
+            self.slf["T"] >=
+            (0.5*self.fs["\\rho"]*self.fs["V"]**2*self.aircraftP["C_D"]
+             * aircraft.wing["S"] + self.aircraftP["W_{start}"]*hdot
+             / self.aircraftP["V"]),
+            ])
+
+        Model.__init__(self, None, [aircraft, self.submodels,
+                                    self.constraints], **kwargs)
 
 class BreguetEndurance(Model):
     "breguet endurance model"
     def __init__(self, perf, **kwargs):
         z_bre = Variable("z_{bre}", "-", "Breguet coefficient")
-        t = Variable("t", 1, "days", "Time per flight segment")
+        t = Variable("t", "days", "Time per flight segment")
         f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
-        # # bsfc = Variable("BSFC", "lb/hr/hp", 0.6,
-        # #                 "Brake specific fuel consumption")
         Wfuel = Variable("W_{fuel}", "lbf", "Segment-fuel weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
@@ -139,9 +180,9 @@ class SteadyLevelFlight(Model):
             (perf["W_{end}"]*perf["W_{start}"])**0.5 <= (
                 0.5*state["\\rho"]*state["V"]**2*perf["C_L"]
                 * aircraft.wing["S"]),
-            T == (0.5*state["\\rho"]*state["V"]**2*perf["C_D"]
+            T >= (0.5*state["\\rho"]*state["V"]**2*perf["C_D"]
                   *aircraft.wing["S"]),
-            perf["P_{shaft}"] == T*state["V"]/etaprop]
+            perf["P_{shaft}"] >= T*state["V"]/etaprop]
 
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -181,17 +222,17 @@ class EngineP(Model):
     "engine performance model"
     def __init__(self, static, state, **kwargs):
 
-        P_shaft = Variable("P_{shaft}", "hp", "Shaft power")
+        Pshaft = Variable("P_{shaft}", "hp", "Shaft power")
         bsfc = Variable("BSFC", "lb/hr/hp", "Brake specific fuel consumption")
         rpm = Variable("RPM", "rpm", "Engine operating RPM")
-        P_avn = Variable("P_{avn}", 40, "watts", "Avionics power")
-        P_pay = Variable("P_{pay}", 10, "watts", "Payload power")
+        Pavn = Variable("P_{avn}", 40, "watts", "Avionics power")
+        Ppay = Variable("P_{pay}", 10, "watts", "Payload power")
         Ptotal = Variable("P_{total}", "hp", "Total power, avionics included")
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
                                   "alternator efficiency")
         lfac = [1 - 0.906**(1/0.15)*(v.value/hr.value)**0.92
                 for v, hr in zip(state["h"], state["h_{ref}"])]
-        h_loss = Variable("h_{loss}", lfac, "-", "shaft power loss factor")
+        Leng = Variable("L_{eng}", lfac, "-", "shaft power loss factor")
         Pshaftmax = Variable("P_{shaft-max}",
                              "hp", "Max shaft power at altitude")
         mfac = Variable("m_{fac}", 1.0, "-", "BSFC margin factor")
@@ -217,16 +258,16 @@ class EngineP(Model):
                 (Ptotal/Pshaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292,
                 ]
 
-        constraints.extend([Pshaftmax/static["P_{sl-max}"] == h_loss,
+        constraints.extend([Pshaftmax/static["P_{sl-max}"] == Leng,
                             Pshaftmax >= Ptotal,
                             rpm <= rpm_max,
                            ])
 
         if state.onStation:
             constraints.extend([
-                Ptotal >= P_shaft + (P_avn + P_pay)/eta_alternator])
+                Ptotal >= Pshaft + (Pavn + Ppay)/eta_alternator])
         else:
-            constraints.extend([Ptotal >= P_shaft + P_avn/eta_alternator])
+            constraints.extend([Ptotal >= Pshaft + Pavn/eta_alternator])
 
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -281,13 +322,13 @@ class Fuselage(Model):
         super(Fuselage, self).__init__(None, constraints, **kwargs)
 
 class Mission(Model):
+    "creates flight profile"
     def __init__(self, **kwargs):
         JHO = Aircraft()
-        N = 4
 
-        loiter1 = FlightSegment(N, JHO)
-        loiter2 = FlightSegment(N, JHO)
-        mission = [loiter1, loiter2]
+        climb1 = Climb(10, JHO, alt=np.linspace(0, 15000, 11)[1:])
+        loiter1 = Loiter(5, JHO)
+        mission = [climb1, loiter1]
 
         mtow = Variable("MTOW", "lbf", "max-take off weight")
         Wfueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
