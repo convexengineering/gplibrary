@@ -24,25 +24,30 @@ class AircraftP(Model):
     def __init__(self, static, state, **kwargs):
 
         self.dmodels = []
+        self.dragcomps = []
         for c in static.components:
             if "dynamic_model" in c.__dict__.keys():
-                self.dmodels.append(c.dynamic_model(c, state))
+                dm = c.dynamic_model(c, state)
+                self.dmodels.append(dm)
+                if "C_d" in dm.varkeys:
+                    self.dragcomps.append(dm)
 
-        Pshaft = Variable("P_{shaft}", "W", "shaft power")
         Wend = Variable("W_{end}", "lbf", "vector-end weight")
         Wstart = Variable("W_{start}", "lbf", "vector-begin weight")
         CD = Variable("C_D", "-", "drag coefficient")
 
-        constraints = [static.engine["P_{sl-max}"] >= Pshaft,
-                       Wend == Wend,
+        constraints = [Wend == Wend,
                        Wstart == Wstart,
-                       CD >= sum(dm["C_d"] for dm in self.dmodels)]
+                       CD >= sum(dm["C_d"] for dm in self.dragcomps)]
 
         Model.__init__(self, None, [self.dmodels, constraints], **kwargs)
 
 class FlightState(Model):
     "One chunk of a mission"
-    def __init__(self, **kwargs):
+    def __init__(self, onStation, **kwargs):
+
+        self.onStation = onStation
+
         V = Variable("V", 25, "m/s", "true airspeed")
         mu = Variable("\\mu", 1.628e-5, "N*s/m^2", "dynamic viscosity")
         rho = Variable("\\rho", 0.74, "kg/m^3", "air density")
@@ -55,9 +60,9 @@ class FlightState(Model):
 
 
 class FlightSegment(Model):
-    def __init__(self, N, aircraft, **kwargs):
+    def __init__(self, N, aircraft, onStation=False, **kwargs):
         with vectorize(N):
-            fs = FlightState()
+            fs = FlightState(onStation)
             aircraftP = aircraft.dynamic_model(aircraft, fs)
             slf = SteadyLevelFlight(fs, aircraft, aircraftP)
             be = BreguetEndurance(aircraftP)
@@ -75,13 +80,13 @@ class BreguetEndurance(Model):
         z_bre = Variable("z_{bre}", "-", "Breguet coefficient")
         t = Variable("t", 1, "days", "Time per flight segment")
         f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
-        bsfc = Variable("BSFC", "lb/hr/hp", 0.6,
-                        "Brake specific fuel consumption")
+        # # bsfc = Variable("BSFC", "lb/hr/hp", 0.6,
+        # #                 "Brake specific fuel consumption")
         Wfuel = Variable("W_{fuel}", "lbf", "Segment-fuel weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         constraints = [
-            z_bre >= (perf["P_{shaft}"]*t*bsfc*g/
+            z_bre >= (perf["P_{shaft}"]*t*perf["BSFC"]*g/
                       (perf["W_{end}"]*perf["W_{start}"])**0.5),
             # TCS([z_bre >= P_shafttot*t*bsfc*g/(Wend*Wstart)**0.5]),
             # TCS([z_bre >= P_shafttot*t*bsfc*g/Wend]),
@@ -110,6 +115,8 @@ class SteadyLevelFlight(Model):
 class Engine(Model):
     def __init__(self, DF70, **kwargs):
 
+        self.DF70 = DF70
+
         W = Variable("W", "lbf", "Installed/Total engine weight")
         m_fac = Variable("m_{fac}", 1.0, "-", "Engine weight margin factor")
 
@@ -131,6 +138,65 @@ class Engine(Model):
             constraints = [
                 W_eng/W_engref >= 0.5538*(Pslmax/Pref)**1.075,
                 W/m_fac >= 2.572*W_eng**0.922*units("lbf")**0.078]
+
+        self.dynamic_model = EngineP
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class EngineP(Model):
+    def __init__(self, static, state, **kwargs):
+
+        h_ref = Variable("h_{ref}", 15000, "ft", "Reference altitude")
+        P_shaft = Variable("P_{shaft}", "hp", "Shaft power")
+        bsfc = Variable("BSFC", "lb/hr/hp",
+                        "Brake specific fuel consumption")
+        rpm = Variable("RPM", "rpm", "Engine operating RPM")
+        P_avn = Variable("P_{avn}", 40, "watts", "Avionics power")
+        P_pay = Variable("P_{pay}", 10, "watts", "Payload power")
+        P_shafttot = Variable("P_{shaft-tot}", "hp",
+                              "Total power, avionics included")
+        eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
+                                  "alternator efficiency")
+        lfac = [1 - 0.906**(1/0.15)*(v.value.magnitude/15000)**0.92
+                for v in state["h"]]
+        h_loss = Variable("h_{loss}", lfac, "-",
+                          "Max shaft power loss factor")
+        P_shaftmax = Variable("P_{shaft-max}",
+                              "hp", "Max shaft power at altitude")
+        m_fac = Variable("m_{fac}", 1.0, "-", "BSFC margin factor")
+
+        if static.DF70:
+            rpm_max = Variable("RPM_{max}", 7698, "rpm", "Maximum RPM")
+            bsfc_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr",
+                                "Minimum BSFC")
+
+            constraints = [
+                (bsfc/m_fac/bsfc_min)**35.7 >=
+                (2.29*(rpm/rpm_max)**8.02 + 0.00114*(rpm/rpm_max)**-38.3),
+                (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294,
+                ]
+        else:
+            bsfc_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr",
+                                "Minimum BSFC")
+            rpm_max = Variable("RPM_{max}", 9000, "rpm", "Maximum RPM")
+
+            constraints = [
+                (bsfc/m_fac/bsfc_min)**0.129 >=
+                (0.972*(rpm/rpm_max)**-0.141 + 0.0268*(rpm/rpm_max)**9.62),
+                (P_shafttot/P_shaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292,
+                ]
+
+        constraints.extend([P_shaftmax/static["P_{sl-max}"] == h_loss,
+                            P_shaftmax >= P_shafttot,
+                            rpm <= rpm_max,
+                           ])
+
+        if state.onStation:
+            constraints.extend([
+                P_shafttot >= P_shaft + (P_avn + P_pay)/eta_alternator])
+        else:
+            constraints.extend([P_shafttot >= P_shaft + P_avn/eta_alternator])
+
 
         Model.__init__(self, None, constraints, **kwargs)
 
