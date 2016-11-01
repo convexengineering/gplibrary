@@ -103,10 +103,11 @@ class FlightSegment(Model):
 
         Wfuelfs = Variable("W_{fuel-fs}", "lbf", "flight segment fuel weight")
 
-        self.constraints = [
-            Wfuelfs >= self.be["W_{fuel}"].sum(),
-            self.aircraftP["W_{end}"][:-1] >= self.aircraftP["W_{start}"][1:]
-            ]
+        self.constraints = [Wfuelfs >= self.be["W_{fuel}"].sum()]
+
+        if N > 1:
+            self.constraints.extend([self.aircraftP["W_{end}"][:-1] >=
+                                     self.aircraftP["W_{start}"][1:]])
 
         Model.__init__(self, None, [aircraft, self.submodels,
                                     self.constraints], **kwargs)
@@ -123,8 +124,22 @@ class Loiter(FlightSegment):
 
         Model.__init__(self, None, [aircraft, self.submodels,
                                     self.constraints], **kwargs)
+
+class Cruise(FlightSegment):
+    "make a cruise flight segment"
+    def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
+                 R=200, **kwargs):
+        super(Cruise, self).__init__(N, aircraft, alt, onStation, wind,
+                                     **kwargs)
+
+        R = Variable("R", R, "nautical_miles", "Range to station")
+        self.constraints.extend([R/N <= self.aircraftP["V"]*self.be["t"]])
+
+        Model.__init__(self, None, [aircraft, self.submodels,
+                                    self.constraints], **kwargs)
+
 class Climb(FlightSegment):
-    "make a loiter flight segment"
+    "make a climb flight segment"
     def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
                  dh=15000, **kwargs):
         super(Climb, self).__init__(N, aircraft, alt, onStation, wind,
@@ -327,8 +342,10 @@ class Mission(Model):
         JHO = Aircraft()
 
         climb1 = Climb(10, JHO, alt=np.linspace(0, 15000, 11)[1:])
+        cruise1 = Cruise(1, JHO)
         loiter1 = Loiter(5, JHO)
-        mission = [climb1, loiter1]
+        cruise2 = Cruise(1, JHO)
+        mission = [climb1, cruise1, loiter1, cruise2]
 
         mtow = Variable("MTOW", "lbf", "max-take off weight")
         Wfueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
