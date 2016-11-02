@@ -3,6 +3,7 @@ import pandas as pd
 from gasmale import GasMALE
 from gpkit.small_scripts import unitstr
 from gpkit import Variable
+from gen_tex import find_submodels
 import xlsxwriter
 
 def mission_vars(M, sol, varnames, margins):
@@ -196,6 +197,23 @@ def write_to_excel(path, filename, df, sens_formatting):
 
     writer.save()
 
+def model_params(subM, sol):
+
+    data = {}
+    for v in subM.varkeys:
+        if "Mission" not in v.descr["models"]:
+            data[v] = [sol(v).magnitude]
+            data[v].append(unitstr(M[v].units))
+            data[v].append(v.descr["label"])
+
+    if data:
+        df = pd.DataFrame(data)
+        df = df.transpose()
+        df.columns = ["Value", "Units", "Label"]
+    else:
+        df = None
+    return df
+
 if __name__ == "__main__":
     M = GasMALE(DF70=True)
     M.substitutions.update({"t_{loiter}": 6})
@@ -216,9 +234,16 @@ if __name__ == "__main__":
     DF = bd_vars(M, Sol, "W", ["MTOW", "W_{fuel-tot}", "W_{zfw}"])
     write_to_excel(PATH, "W_breakdown.xlsx", DF, Sens_boundaries)
 
-    df = sketch_params(
-        M, Sol, ["S", "b", "l_{fuel}", "d", "L", "S_h", "S_v", "b_h", "b_v", "d_0"],
-        othervars={"lambda":[0.5, "-", "taper ratio"],
-                   "eta":[3, "-", "tail boom separation/fuselage diameter"]}
-        )
-    df.to_csv("sketch_params.csv")
+    m, mn = find_submodels([M], [])
+    mn = [""] + mn
+    for subm, name in zip(m, mn):
+        df = model_params(subm, Sol)
+        if df is not None:
+            df.to_csv(PATH + "%s.csv" % name)
+
+    # df = sketch_params(
+    #     M, Sol, ["S", "b", "l_{fuel}", "d", "L", "S_h", "S_v", "b_h", "b_v", "d_0"],
+    #     othervars={"lambda":[0.5, "-", "taper ratio"],
+    #                "eta":[3, "-", "tail boom separation/fuselage diameter"]}
+    #     )
+    # df.to_csv("sketch_params.csv")
