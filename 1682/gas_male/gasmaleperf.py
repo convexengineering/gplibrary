@@ -15,10 +15,12 @@ class Aircraft(Model):
 
         self.components = [self.fuse, self.wing, self.engine]
 
+        loadingcase = LoadingCase(self.wing)
+
         Wzfw = Variable("W_{zfw}", "lbf", "weight")
         constraints = [Wzfw >= sum(c["W"] for c in self.components)]
 
-        Model.__init__(self, None, self.components + constraints, **kwargs)
+        Model.__init__(self, None, self.components + constraints + loadingcase, **kwargs)
 
 class AircraftP(Model):
     "performance model for aircraft"
@@ -260,7 +262,7 @@ class EngineP(Model):
             constraints = [
                 (bsfc/mfac/bsfc_min)**35.7 >=
                 (2.29*(rpm/rpm_max)**8.02 + 0.00114*(rpm/rpm_max)**-38.3),
-                (Ptotal/Pshaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294,
+                (Ptotal/Pshaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294
                 ]
         else:
             bsfc_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr",
@@ -270,13 +272,12 @@ class EngineP(Model):
             constraints = [
                 (bsfc/mfac/bsfc_min)**0.129 >=
                 (0.972*(rpm/rpm_max)**-0.141 + 0.0268*(rpm/rpm_max)**9.62),
-                (Ptotal/Pshaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292,
+                (Ptotal/Pshaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292
                 ]
 
         constraints.extend([Pshaftmax/static["P_{sl-max}"] == Leng,
                             Pshaftmax >= Ptotal,
-                            rpm <= rpm_max,
-                           ])
+                            rpm <= rpm_max])
 
         if state.onStation:
             constraints.extend([
@@ -291,15 +292,141 @@ class Wing(Model):
     "The thing that creates the lift"
     def __init__(self, **kwargs):
         W = Variable("W", "lbf", "weight")
-        S = Variable("S", 190, "ft^2", "surface area")
-        rho = Variable("\\rho", 1, "lbf/ft^2", "areal density")
-        A = Variable("A", 27, "-", "aspect ratio")
-        c = Variable("c", "ft", "mean chord")
-        self.dynamic_model = WingP
+        S = Variable("S", "ft^2", "surface area")
+        A = Variable("A", "-", "aspect ratio")
+        b = Variable("b", "ft", "wing span")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
-        constraints = [W >= S*rho,
-                       c == (S/A)**0.5]
-        super(Wing, self).__init__(None, constraints, **kwargs)
+        self.dynamic_model = WingP
+        self.loading = WingLoading
+
+        constraints = [b**2 == S*A]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+        capspar = CapSpar(self)
+        self.components = [capspar]
+
+        constraints.extend([W >= capspar["m"]*g])
+
+        Model.__init__(self, None, [self.components, constraints], **kwargs)
+
+class WingLoading(Model):
+    "wing loading cases"
+    def __init__(self, static, state, **kwargs):
+
+        self.capspar = static.components[0].dynamic_model(static.components[0], state)
+
+        Model.__init__(self, None, self.capspar, **kwargs)
+
+def c_bar(lam, N):
+    eta = np.linspace(0, 1, N)
+    c = 2/(1+lam)*(1+(lam-1)*eta)
+    return c
+
+class LoadingState(Model):
+    def __init__(self, N=5, **kwargs):
+
+        cbar = c_bar(0.5, 5)
+        Nmax = Variable("N_{max}", 5, "-", "max loading")
+        Wcent = Variable("W_{cent}", "lbf", "Center aircraft weight")
+        kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
+        with vectorize(N):
+            qbar = Variable("\\bar{q}", cbar, "-", "normalized loading")
+
+        constraints = [Nmax == Nmax,
+                       qbar == qbar,
+                       kappa == kappa,
+                       Wcent == Wcent]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class LoadingCase(Model):
+    def __init__(self, wing, **kwargs):
+        ls = LoadingState()
+        wl = WingLoading(wing, ls)
+
+        Model.__init__(self, None, [ls, wl], **kwargs)
+
+class CapSpar(Model):
+    "cap spar model"
+    def __init__(self, wing, N=5, **kwargs):
+
+        # phyiscal properties
+        rho_cfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
+        E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
+        sigma_cfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
+
+        # Structural lengths
+        cb = c_bar(0.5, N)
+        cbavg = (cb[:-1] + cb[1:])/2
+        with vectorize(N-1):
+            cbar = Variable("\\bar{c}", cbavg, "-",
+                            "normalized chord at mid element")
+            t = Variable("t", "in", "spar cap thickness")
+            hin = Variable("h_{in}", "in", "inner spar height")
+            w = Variable("w", "in", "spar width")
+            I = Variable("I", "m^4", "spar x moment of inertia")
+            dm = Variable("dm", "kg", "segment spar mass")
+
+        m = Variable("m", "kg", "spar mass")
+        tau = Variable("\\tau", 0.115, "-", "Airfoil thickness ratio")
+
+        w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
+
+        self.dynamic_model = Beam
+
+        constraints = [
+            I <= 2*w*t*(hin/2)**2,
+            dm >= rho_cfrp*w*t*wing["b"]/(N-1),
+            m >= dm.sum(),
+            w <= w_lim*wing["S"]/wing["b"]*cbar,
+            wing["S"]/wing["b"]*cbar*tau >= hin + 2*t,
+            E == E,
+            sigma_cfrp == sigma_cfrp
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Beam(Model):
+    def __init__(self, static, state, N=5, **kwargs):
+
+        with vectorize(N-1):
+            EIbar = Variable("\\bar{EI}", "-",
+                             "normalized YM and moment of inertia")
+
+        with vectorize(N):
+            Sbar = Variable("\\bar{S}", "-", "normalized shear")
+            Mbar = Variable("\\bar{M}", "-", "normalized moment")
+            th = Variable("\\theta", "-", "deflection slope")
+            dbar = Variable("\\bar{\\delta}", "-", "normalized displacement")
+
+
+        Sbar_tip = Variable("\\bar{S}_{tip}", 1e-10, "-", "Tip loading")
+        Mbar_tip = Variable("\\bar{M}_{tip}", 1e-10, "-", "Tip moment")
+        th_root = Variable("\\theta_{root}", 1e-10, "-", "Base angle")
+        dbar_root = Variable("\\bar{\\delta}_{root}", 1e-10, "-",
+                             "Base deflection")
+        dx = Variable("dx", "-", "normalized length of element")
+
+        constraints = [
+            Sbar[:-1] >= Sbar[1:] + 0.5*dx*(state["\\bar{q}"][:-1] +
+                                            state["\\bar{q}"][1:]),
+            Sbar[-1] >= Sbar_tip,
+            Mbar[:-1] >= Mbar[1:] + 0.5*dx*(Sbar[:-1] + Sbar[1:]),
+            Mbar[-1] >= Mbar_tip,
+            th[0] >= th_root,
+            th[1:] >= th[:-1] + 0.5*dx*(Mbar[1:] + Mbar[:-1])/EIbar,
+            dbar[0] >= dbar_root,
+            dbar[1:] >= dbar[:-1] + 0.5*dx*(th[1:] + th[:-1]),
+            1 == (N-1)*dx,
+            EIbar <= static["E"]*static["I"]/state["N_{max}"]/state["W_{cent}"]*static["b"]/(static["b"]/2)**3,
+            static["\\sigma_{CFRP}"] >=
+            ((Mbar[:-1] + Mbar[1:])/2*static["b"]*state["W_{cent}"]*state["N_{max}"]/4*(static["h_{in}"]+static["t"])/static["I"]),
+            dbar[-1] <= state["\\kappa"],
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
 
 
 class WingP(Model):
@@ -315,7 +442,7 @@ class WingP(Model):
             Cd >= (cdp + CL**2/np.pi/static["A"]/e),
             (cdp/(Re/Reref)**-0.4)**0.00544 >= (
                 0.33*CL**-0.0809 + 0.645*CL**0.045 + 7.35e-5*CL**12),
-            Re == state["\\rho"]*state["V"]*static["c"]/state["\\mu"],
+            Re == state["\\rho"]*state["V"]*static["S"]/static["b"]/state["\\mu"],
             ]
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -328,7 +455,7 @@ class Fuselage(Model):
         # S = Variable("S", "ft^2", "wetted area")
         cd = Variable("c_d", .0047, "-", "drag coefficient")
         CDA = Variable("CDA", "ft^2", "drag area")
-        W = Variable("W", 100, "lbf", "weight")
+        W = Variable("W", 10, "lbf", "weight")
 
         constraints = [  # CDA >= cd*4*V/d,
             W == W,  # todo replace with model
@@ -354,6 +481,7 @@ class Mission(Model):
                        mtow >= JHO["W_{zfw}"] + Wfueltot,
                        Wfueltot >= sum(fs["W_{fuel-fs}"] for fs in mission),
                        mission[-1]["W_{end}"][-1] >= JHO["W_{zfw}"],
+                       JHO["W_{cent}"] >= Wfueltot + JHO.fuse["W"]
                       ]
 
         for i, fs in enumerate(mission[1:]):
