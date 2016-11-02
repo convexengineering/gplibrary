@@ -419,7 +419,7 @@ class Aerodynamics(Model):
         S = Variable("S", "ft^2", "wing area")
         rho = VectorVariable(N, "\\rho", "kg/m^3", "Air density")
         mu_atm = VectorVariable(N, "\\mu", "N*s/m^2", "Dynamic viscosity")
-        m_fac = Variable("m_{fac}", 1.5, "-", "CDA0 margin factor")
+        m_fac = Variable("m_{fac}", 1.7, "-", "CDA0 margin factor")
         CDA0 = VectorVariable(N, "CDA_0", "-", "sum of component drag")
 
         constraints = [CD >= CDA0 + cdp + CL**2/(pi*e*AR),
@@ -697,7 +697,7 @@ class Wing(Model):
         m_skin = Variable("m_{skin}", "kg", "Skin mass")
         W = Variable("W", "lbf", "Total wing structural weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        m_fac = Variable("m_{fac}", 1.1, "-", "Wing weight margin factor")
+        m_fac = Variable("m_{fac}", 1.2, "-", "Wing weight margin factor")
         taucfrp = Variable("\\tau_{CFRP}", 570, "MPa", "torsional stress limit")
         ts = Variable("t_s", "mm", "wing skin thickness")
         Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
@@ -779,7 +779,7 @@ class Fuselage(Model):
         Vol_pay = Variable("\\mathcal{V}_{pay}", 1.0, "ft^3", "Payload volume")
         W = Variable("W", "lbf", "Fuselage weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        m_fac = Variable("m_{fac}", 2.5, "-", "Fuselage weight margin factor")
+        m_fac = Variable("m_{fac}", 2.1, "-", "Fuselage weight margin factor")
         S_ref = Variable("S_{ref}", "ft**2", "fuselage reference area")
         l_ref = Variable("l_{ref}", "ft", "fuselage reference length")
         rhofoam = Variable("\\rho_{foam400}", 29, "kg/m^3",
