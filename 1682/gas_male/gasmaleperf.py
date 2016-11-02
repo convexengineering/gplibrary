@@ -17,8 +17,9 @@ class Aircraft(Model):
 
         loadingcase = LoadingCase(self.wing)
 
-        Wzfw = Variable("W_{zfw}", "lbf", "weight")
-        constraints = [Wzfw >= sum(c["W"] for c in self.components)]
+        Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
+        Wpay = Variable("W_{pay}", 10, "lbf", "payload weight")
+        constraints = [Wzfw >= sum(c["W"] for c in self.components) + Wpay]
 
         Model.__init__(self, None, self.components + constraints + loadingcase, **kwargs)
 
