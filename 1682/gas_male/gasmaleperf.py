@@ -14,14 +14,20 @@ class Aircraft(Model):
         self.engine = Engine(DF70)
 
         self.components = [self.fuse, self.wing, self.engine]
+        compnames = [c.__class__.__name__ for c in self.components]
 
-        loadingcase = LoadingCase(self.wing)
+        # loadingcase = WLoadingCase(self.wing)
 
         Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
         Wpay = Variable("W_{pay}", 10, "lbf", "payload weight")
-        constraints = [Wzfw >= sum(c["W"] for c in self.components) + Wpay]
 
-        Model.__init__(self, None, self.components + constraints + loadingcase, **kwargs)
+        wvarkeys = np.hstack([list(c.varkeys["W"]) for c in self.components])
+        wvarkeys = [w for w in wvarkeys if w.models[-1] in compnames]
+        wvars = [cm[v] for cm, v in zip(self.components, wvarkeys)]
+
+        constraints = [Wzfw >= sum(wvars) + Wpay]
+
+        Model.__init__(self, None, [self.components, constraints], **kwargs)
 
 class AircraftP(Model):
     "performance model for aircraft"
@@ -296,10 +302,8 @@ class Wing(Model):
         S = Variable("S", "ft^2", "surface area")
         A = Variable("A", "-", "aspect ratio")
         b = Variable("b", "ft", "wing span")
-        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         self.dynamic_model = WingP
-        self.loading = WingLoading
 
         constraints = [b**2 == S*A]
 
@@ -307,31 +311,28 @@ class Wing(Model):
 
         capspar = CapSpar(self)
         self.components = [capspar]
+        loading = SparLoading(capspar)
 
-        constraints.extend([W >= capspar["m"]*g])
+        constraints.extend([W >= capspar["W"]])
 
-        Model.__init__(self, None, [self.components, constraints], **kwargs)
-
-class WingLoading(Model):
-    "wing loading cases"
-    def __init__(self, static, state, **kwargs):
-
-        self.capspar = static.components[0].dynamic_model(static.components[0], state)
-
-        Model.__init__(self, None, self.capspar, **kwargs)
+        Model.__init__(self, None, [self.components, constraints, loading],
+                       **kwargs)
 
 def c_bar(lam, N):
+    "returns wing chord lengths for constant taper wing"
     eta = np.linspace(0, 1, N)
     c = 2/(1+lam)*(1+(lam-1)*eta)
     return c
 
-class LoadingState(Model):
+class ChordLoadingCase(Model):
+    "wing loading state"
     def __init__(self, N=5, **kwargs):
 
-        cbar = c_bar(0.5, 5)
         Nmax = Variable("N_{max}", 5, "-", "max loading")
         Wcent = Variable("W_{cent}", "lbf", "Center aircraft weight")
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
+
+        cbar = c_bar(0.5, 5)
         with vectorize(N):
             qbar = Variable("\\bar{q}", cbar, "-", "normalized loading")
 
@@ -342,12 +343,13 @@ class LoadingState(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class LoadingCase(Model):
-    def __init__(self, wing, **kwargs):
-        ls = LoadingState()
-        wl = WingLoading(wing, ls)
+class SparLoading(Model):
+    "wing loading case"
+    def __init__(self, capspar, **kwargs):
+        case = ChordLoadingCase()
+        wl = capspar.dynamic_model(capspar, case)
 
-        Model.__init__(self, None, [ls, wl], **kwargs)
+        Model.__init__(self, None, [case, wl], **kwargs)
 
 class CapSpar(Model):
     "cap spar model"
@@ -370,17 +372,17 @@ class CapSpar(Model):
             I = Variable("I", "m^4", "spar x moment of inertia")
             dm = Variable("dm", "kg", "segment spar mass")
 
-        m = Variable("m", "kg", "spar mass")
+        W = Variable("W", "lbf", "spar weight")
         tau = Variable("\\tau", 0.115, "-", "Airfoil thickness ratio")
-
         w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
 
         self.dynamic_model = Beam
 
         constraints = [
             I <= 2*w*t*(hin/2)**2,
             dm >= rho_cfrp*w*t*wing["b"]/(N-1),
-            m >= dm.sum(),
+            W >= dm.sum()*g,
             w <= w_lim*wing["S"]/wing["b"]*cbar,
             wing["S"]/wing["b"]*cbar*tau >= hin + 2*t,
             E == E,
