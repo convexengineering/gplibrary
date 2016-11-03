@@ -180,7 +180,7 @@ class BreguetEndurance(Model):
         t = Variable("t", "days", "Time per flight segment")
         f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
         Wfuel = Variable("W_{fuel}", "lbf", "Segment-fuel weight")
-        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
         constraints = [
             z_bre >= (perf["P_{total}"]*t*perf["BSFC"]*g/
@@ -312,10 +312,11 @@ class Wing(Model):
         Model.__init__(self, None, constraints, **kwargs)
 
         capspar = CapSpar(self)
-        self.components = [capspar]
+        wingskin = WingSkin(self)
+        self.components = [capspar, wingskin]
         loading = SparLoading(capspar)
 
-        constraints.extend([W >= capspar["W"]])
+        constraints.extend([W >= sum(c["W"] for c in self.components)])
 
         Model.__init__(self, None, [self.components, constraints, loading],
                        **kwargs)
@@ -326,7 +327,7 @@ def c_bar(lam, N):
     c = 2/(1+lam)*(1+(lam-1)*eta)
     return c
 
-class ChordLoading(Model):
+class SparChordLoading(Model):
     "wing loading state"
     def __init__(self, N, **kwargs):
 
@@ -346,10 +347,28 @@ class ChordLoading(Model):
 class SparLoading(Model):
     "wing loading case"
     def __init__(self, capspar, **kwargs):
-        case = ChordLoading(capspar.N)
+        case = SparChordLoading(capspar.N)
         wl = capspar.loading_model(capspar, case)
 
         Model.__init__(self, None, [case, wl], **kwargs)
+
+class WingSkin(Model):
+    "wing skin model"
+    def __init__(self, wing, **kwargs):
+
+        rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
+        W = Variable("W", "lbf", "wing skin weight")
+        g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
+        t = Variable("t", "in", "wing skin thickness")
+        tmin = Variable("t_{min}", 0.012, "in",
+                        "minimum gague wing skin thickness")
+
+        # self.loading_model = WingSkinL
+
+        constraints = [W >= rhocfrp*wing["S"]*2*t*g,
+                       t >= tmin]
+
+        Model.__init__(self, None, constraints, **kwargs)
 
 class CapSpar(Model):
     "cap spar model"
@@ -359,7 +378,7 @@ class CapSpar(Model):
         self.N = N
 
         # phyiscal properties
-        rho_cfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
+        rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
 
         # Structural lengths
@@ -382,7 +401,7 @@ class CapSpar(Model):
 
         constraints = [
             I <= 2*w*t*(hin/2)**2,
-            dm >= rho_cfrp*w*t*wing["b"]/(N-1),
+            dm >= rhocfrp*w*t*wing["b"]/(N-1),
             W >= dm.sum()*g,
             w <= w_lim*wing["S"]/wing["b"]*cbar,
             wing["S"]/wing["b"]*cbar*wing["\\tau"] >= hin + 2*t,
