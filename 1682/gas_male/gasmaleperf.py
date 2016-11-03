@@ -12,15 +12,17 @@ class Aircraft(Model):
         self.fuse = Fuselage()
         self.wing = Wing()
         self.engine = Engine(DF70)
+        self.empennage = Empennage(self.wing)
 
-        self.components = [self.fuse, self.wing, self.engine]
+        self.components = [self.fuse, self.wing, self.engine, self.empennage]
         self.smeared_loads = [self.fuse, self.engine]
 
         Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
         Wpay = Variable("W_{pay}", 10, "lbf", "payload weight")
         Wavn = Variable("W_{avn}", 8, "lbf", "avionics weight")
 
-        constraints = [Wzfw >= sum(summing_vars(self.components, "W")) + Wpay]
+        constraints = [
+            Wzfw >= sum(summing_vars(self.components, "W")) + Wpay + Wavn]
 
         Model.__init__(self, None, [self.components, constraints], **kwargs)
 
@@ -595,13 +597,118 @@ class FuselageP(Model):
     "fuselage drag model"
     def __init__(self, static, state, **kwargs):
 
-        CDA = Variable("CDA", "-", "fuselage area drag normalized by wing area")
         Cf = Variable("C_f", "-", "fuselage skin friction coefficient")
         Re = Variable("Re", "-", "fuselage reynolds number")
 
         constraints = [
             Re == state["V"]*state["\\rho"]*static["l_{fuse}"]/state["\\mu"],
             Cf >= 0.455/Re**0.3
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class Empennage(Model):
+    def __init__(self, wing, **kwargs):
+        m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
+        W = Variable("W", "lbf", "empennage weight")
+
+        ht = HorizontalTail(wing)
+        # tb = TailBoom(ht)
+        self.submodels = [ht]
+
+        constraints = [
+            W/m_fac >= ht["W"],
+            ]
+
+        Model.__init__(self, None, [self.submodels, constraints], **kwargs)
+
+class HorizontalTail(Model):
+    def __init__(self, wing, **kwargs):
+        Sh = Variable("S_h", "ft**2", "horizontal tail area")
+        ARh = Variable("AR_h", 6, "-", "horizontal tail aspect ratio")
+        Abar = Variable("\\bar{A}_{NACA0008}", 0.0548, "-",
+                        "cross sectional area of NACA 0008")
+        rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
+                           "Density of formular 250")
+        rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
+                           "horizontal tail skin density")
+        bh = Variable("b_h", "ft", "horizontal tail span")
+        W = Variable("W", "lbf", "horizontal tail weight")
+        Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        lh = Variable("l_h", 6, "ft", "horizontal tail moment arm")
+        CLhmin = Variable("(C_{L_h})_{min}", 0.75, "-",
+                          "max downlift coefficient")
+        CLmax = Variable("C_{L-max}", 1.39, "-", "Maximum lift coefficient")
+        CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
+
+        SMcorr = Variable("SM_{corr}", 0.35, "-", "corrected static margin")
+        Fne = Variable("F_{NE}", 1.5, "-", "tail boom flexibility factor")
+        deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
+        mw = Variable("m_w", 2.0*np.pi/(1+2.0/23), "-",
+                      "assumed span wise effectiveness")
+        mh = Variable("m_h", "-", "horizontal tail span effectiveness")
+        cth = Variable("c_{t_h}", "ft", "horizontal tail tip chord")
+        lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", 1.0/(1.0+1), "-",
+                           "horizontal tail taper ratio factor")
+
+        # signomial helper variables
+        sph1 = Variable("sph1", "-", "first term involving $V_h$")
+        sph2 = Variable("sph2", "-", "second term involving $V_h$")
+
+        constraints = [
+            Vh <= Sh*lh/wing["S"]**2*wing["b"],
+            bh**2 == ARh*Sh,
+            sph1*(mw*Fne/mh/Vh) + deda <= 1,
+            sph2 <= Vh*CLhmin/CLmax,
+            (sph1 + sph2).mono_lower_bound(
+                {"sph1": .48, "sph2": .52}) >= SMcorr + CM/CLmax,
+            deda >= mw*wing["S"]/wing["b"]/4/np.pi/lh,
+            mh*(1+2/ARh) <= 2*np.pi,
+            W >= g*rhoskin*Sh + rhofoam*Sh**2/bh*Abar,
+            cth == 2*Sh/bh*lamhfac,
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class TailBoom(Model):
+    def __init__(self, horizontaltail, **kwargs):
+
+        F1 = Variable("F1", "N", "horizontal tail force")
+        l = Variable("l", "ft", "tail boom length")
+        E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
+        k = Variable("k", 0.8, "-", "tail boom inertia value")
+        kfac = Variable("(1-k/2)", 1-k.value/2, "-", "(1-k/2)")
+        I0 = Variable("I_0", "m^4", "tail boom moment of inertia")
+        d0 = Variable("d_0", "ft", "tail boom diameter")
+        t0 = Variable("t_0", "mm", "tail boom thickness")
+        tmin = Variable("t_{min}", 0.25, "mm", "minimum tail boom thickness")
+        rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        W = Variable("W", "lbf", "tail boom weight")
+        th1 = Variable("\\theta1", "-", "tail boom deflection angle1")
+        thmax = Variable("\\theta_{max}", 0.3, "-",
+                         "max tail boom deflection angle")
+        Vne = Variable("V_{NE}", 40, "m/s", "never exceed vehicle speed")
+        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
+                         "air density at sea level")
+        CLmax = Variable("C_{L-max}", 1.39, "-", "Maximum lift coefficient")
+        CLhtmax = Variable("C_{L-max_h}", "-",
+                           "max lift coefficient of horizontal tail")
+        mw = Variable("m_w", 2.0*np.pi/(1+2.0/23), "-",
+                      "assumed span wise effectiveness")
+
+        constraints = [
+            I0 <= np.pi*t0*d0**3/8.0,
+            W >= np.pi*g*rho_cfrp*d0*l*t0*kfac,
+            t0 >= tmin,
+            th1 <= thmax,
+            l >= horizontaltail["l_h"],
+            # L <= Lmax,
+            th1 >= F1*l**2/E/I0*(1+k)/2,
+            CLhtmax/horizontaltail["m_h"] >= CLmax/mw,
+            horizontaltail["F_{NE}"] >= 1 + horizontaltail["m_h"]*0.5*Vne**2*rhosl*horizontaltail["S_h"]*l**2/E/I0*kfac,
+            F1 >= 0.5*rhosl*Vne**2*horizontaltail["S_h"]*CLhtmax,
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
