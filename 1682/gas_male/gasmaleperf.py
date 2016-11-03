@@ -302,10 +302,12 @@ class Wing(Model):
         S = Variable("S", "ft^2", "surface area")
         A = Variable("A", "-", "aspect ratio")
         b = Variable("b", "ft", "wing span")
+        tau = Variable("\\tau", 0.115, "-", "airfoil thickness ratio")
 
         self.dynamic_model = WingP
 
-        constraints = [b**2 == S*A]
+        constraints = [b**2 == S*A,
+                       tau == tau]
 
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -373,7 +375,6 @@ class CapSpar(Model):
             dm = Variable("dm", "kg", "segment spar mass")
 
         W = Variable("W", "lbf", "spar weight")
-        tau = Variable("\\tau", 0.115, "-", "airfoil thickness ratio")
         w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
@@ -384,7 +385,7 @@ class CapSpar(Model):
             dm >= rho_cfrp*w*t*wing["b"]/(N-1),
             W >= dm.sum()*g,
             w <= w_lim*wing["S"]/wing["b"]*cbar,
-            wing["S"]/wing["b"]*cbar*tau >= hin + 2*t,
+            wing["S"]/wing["b"]*cbar*wing["\\tau"] >= hin + 2*t,
             E == E,
             ]
 
