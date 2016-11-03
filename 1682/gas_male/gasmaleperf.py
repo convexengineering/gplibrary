@@ -297,24 +297,36 @@ class EngineP(Model):
 
 class Wing(Model):
     "The thing that creates the lift"
-    def __init__(self, **kwargs):
+    def __init__(self, N=5, **kwargs):
+        self.N = N
+
         W = Variable("W", "lbf", "weight")
         S = Variable("S", "ft^2", "surface area")
         A = Variable("A", "-", "aspect ratio")
         b = Variable("b", "ft", "wing span")
         tau = Variable("\\tau", 0.115, "-", "airfoil thickness ratio")
+        cb = c_bar(0.5, N)
+        cbavg = (cb[:-1] + cb[1:])/2
+        with vectorize(N-1):
+            cbar = Variable("\\bar{c}", cbavg, "-",
+                            "normalized chord at mid element")
+        croot = Variable("c_{root}", "ft", "root chord")
+        cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
 
         self.dynamic_model = WingP
 
         constraints = [b**2 == S*A,
-                       tau == tau]
+                       tau == tau,
+                       cbar == cbar,
+                       croot == S/b*cb[0],
+                       cmac == S/b]
 
         Model.__init__(self, None, constraints, **kwargs)
 
         capspar = CapSpar(self)
         wingskin = WingSkin(self)
         self.components = [capspar, wingskin]
-        loading = SparLoading(capspar)
+        loading = WingLoading(capspar, wingskin)
 
         constraints.extend([W >= sum(c["W"] for c in self.components)])
 
@@ -327,30 +339,13 @@ def c_bar(lam, N):
     c = 2/(1+lam)*(1+(lam-1)*eta)
     return c
 
-class SparChordLoading(Model):
-    "wing loading state"
-    def __init__(self, N, **kwargs):
-
-        Nmax = Variable("N_{max}", 5, "-", "max loading")
-        Wcent = Variable("W_{cent}", "lbf", "Center aircraft weight")
-
-        cbar = c_bar(0.5, N)
-        with vectorize(N):
-            qbar = Variable("\\bar{q}", cbar, "-", "normalized loading")
-
-        constraints = [Nmax == Nmax,
-                       qbar == qbar,
-                       Wcent == Wcent]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
-class SparLoading(Model):
+class WingLoading(Model):
     "wing loading case"
-    def __init__(self, capspar, **kwargs):
-        case = SparChordLoading(capspar.N)
-        wl = capspar.loading_model(capspar, case)
+    def __init__(self, capspar, wingskin, **kwargs):
+        wl = capspar.loading_model(capspar)
+        wl1 = wingskin.loading_model(wingskin)
 
-        Model.__init__(self, None, [case, wl], **kwargs)
+        Model.__init__(self, None, [wl, wl1], **kwargs)
 
 class WingSkin(Model):
     "wing skin model"
@@ -362,31 +357,44 @@ class WingSkin(Model):
         t = Variable("t", "in", "wing skin thickness")
         tmin = Variable("t_{min}", 0.012, "in",
                         "minimum gague wing skin thickness")
+        Jtbar = Variable("\\bar{J/t}", 0.01114, "1/mm",
+                         "torsional moment of inertia")
 
-        # self.loading_model = WingSkinL
+        self.loading_model = WingSkinL
 
         constraints = [W >= rhocfrp*wing["S"]*2*t*g,
-                       t >= tmin]
+                       t >= tmin,
+                       Jtbar == Jtbar,
+                       wing["c_{root}"] == wing["c_{root}"]]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class WingSkinL(Model):
+    "wing skin loading model"
+    def __init__(self, static, **kwargs):
+
+        taucfrp = Variable("\\tau_{CFRP}", 570, "MPa", "torsional stress limit")
+        Cmw = Variable("C_{m_w}", 0.121, "-", "negative wing moment coefficent")
+        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
+                         "air density at sea level")
+        Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
+
+        constraints = [
+            taucfrp >= (1/static["\\bar{J/t}"]/static["c_{root}"]**2/static["t"]
+                        * Cmw*static["S"]*rhosl*Vne**2)]
 
         Model.__init__(self, None, constraints, **kwargs)
 
 class CapSpar(Model):
     "cap spar model"
-    def __init__(self, wing, N=5, **kwargs):
-
-        # N is number of nodes
-        self.N = N
+    def __init__(self, wing, **kwargs):
+        self.N = wing.N
 
         # phyiscal properties
         rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
 
-        # Structural lengths
-        cb = c_bar(0.5, N)
-        cbavg = (cb[:-1] + cb[1:])/2
-        with vectorize(N-1):
-            cbar = Variable("\\bar{c}", cbavg, "-",
-                            "normalized chord at mid element")
+        with vectorize(self.N-1):
             t = Variable("t", "in", "spar cap thickness")
             hin = Variable("h_{in}", "in", "inner spar height")
             w = Variable("w", "in", "spar width")
@@ -401,29 +409,33 @@ class CapSpar(Model):
 
         constraints = [
             I <= 2*w*t*(hin/2)**2,
-            dm >= rhocfrp*w*t*wing["b"]/(N-1),
+            dm >= rhocfrp*w*t*wing["b"]/(self.N-1),
             W >= dm.sum()*g,
-            w <= w_lim*wing["S"]/wing["b"]*cbar,
-            wing["S"]/wing["b"]*cbar*wing["\\tau"] >= hin + 2*t,
+            w <= w_lim*wing["S"]/wing["b"]*wing["\\bar{c}"],
+            wing["S"]/wing["b"]*wing["\\bar{c}"]*wing["\\tau"] >= hin + 2*t,
             E == E,
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
 
 class CapSparL(Model):
-    def __init__(self, static, state, **kwargs):
+    def __init__(self, static, **kwargs):
 
+        Nmax = Variable("N_{max}", 5, "-", "max loading")
+        Wcent = Variable("W_{cent}", "lbf", "Center aircraft weight")
+
+        cbar = c_bar(0.5, 5)
         sigmacfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
         Mroot = Variable("M_{root}", "N*m", "wing root moment")
 
-        beam = Beam(state, static.N)
+        beam = Beam(static.N, cbar)
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/state["N_{max}"]
-                                  / state["W_{cent}"]/static["b"]**2),
-            Mroot == (beam["\\bar{M}"][0]*state["W_{cent}"]*state["N_{max}"]
+            beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
+                                  / Wcent/static["b"]**2),
+            Mroot == (beam["\\bar{M}"][0]*Wcent*Nmax
                       * static["b"]/4),
             sigmacfrp >= Mroot*(static["h_{in}"]+static["t"])/static["I"],
             beam["\\bar{\\delta}"][-1] <= kappa,
@@ -432,13 +444,14 @@ class CapSparL(Model):
         Model.__init__(self, None, [beam, constraints], **kwargs)
 
 class Beam(Model):
-    def __init__(self, state, N, **kwargs):
+    def __init__(self, N, q, **kwargs):
 
         with vectorize(N-1):
             EIbar = Variable("\\bar{EI}", "-",
                              "normalized YM and moment of inertia")
 
         with vectorize(N):
+            qbar = Variable("\\bar{q}", q, "-", "normalized loading")
             Sbar = Variable("\\bar{S}", "-", "normalized shear")
             Mbar = Variable("\\bar{M}", "-", "normalized moment")
             th = Variable("\\theta", "-", "deflection slope")
@@ -453,8 +466,7 @@ class Beam(Model):
         dx = Variable("dx", "-", "normalized length of element")
 
         constraints = [
-            Sbar[:-1] >= Sbar[1:] + 0.5*dx*(state["\\bar{q}"][:-1] +
-                                            state["\\bar{q}"][1:]),
+            Sbar[:-1] >= Sbar[1:] + 0.5*dx*(qbar[:-1] + qbar[1:]),
             Sbar[-1] >= Sbar_tip,
             Mbar[:-1] >= Mbar[1:] + 0.5*dx*(Sbar[:-1] + Sbar[1:]),
             Mbar[-1] >= Mbar_tip,
