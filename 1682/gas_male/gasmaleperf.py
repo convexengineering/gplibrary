@@ -613,11 +613,11 @@ class Empennage(Model):
         W = Variable("W", "lbf", "empennage weight")
 
         ht = HorizontalTail(wing)
-        # tb = TailBoom(ht)
-        self.submodels = [ht]
+        tb = TailBoom(ht)
+        self.submodels = [ht, tb]
 
         constraints = [
-            W/m_fac >= ht["W"],
+            W/m_fac >= ht["W"] + tb["W"],
             ]
 
         Model.__init__(self, None, [self.submodels, constraints], **kwargs)
@@ -636,14 +636,14 @@ class HorizontalTail(Model):
         W = Variable("W", "lbf", "horizontal tail weight")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        lh = Variable("l_h", 6, "ft", "horizontal tail moment arm")
+        lh = Variable("l_h", "ft", "horizontal tail moment arm")
         CLhmin = Variable("(C_{L_h})_{min}", 0.75, "-",
                           "max downlift coefficient")
         CLmax = Variable("C_{L-max}", 1.39, "-", "Maximum lift coefficient")
         CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
 
         SMcorr = Variable("SM_{corr}", 0.35, "-", "corrected static margin")
-        Fne = Variable("F_{NE}", 1.5, "-", "tail boom flexibility factor")
+        Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
         deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
         mw = Variable("m_w", 2.0*np.pi/(1+2.0/23), "-",
                       "assumed span wise effectiveness")
