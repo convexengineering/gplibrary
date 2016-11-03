@@ -501,6 +501,7 @@ class Beam(Model):
 
 class WingP(Model):
     def __init__(self, static, state, **kwargs):
+        "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
         e = Variable("e", 0.9, "-", "Oswald efficiency")
@@ -516,22 +517,65 @@ class WingP(Model):
             ]
         Model.__init__(self, None, constraints, **kwargs)
 
+class FuelTank(Model):
+    """
+    Returns the weight of the fuel tank.  Assumes a cylinder shape with some
+    fineness ratio
+    """
+    def __init__(self, **kwargs):
+
+        phi = Variable("\\phi", 6, "-", "fuel tank fineness ratio")
+        l = Variable("l", "ft", "fuel tank length")
+        Stank = Variable("S_{tank}", "ft^2", "fuel tank surface area")
+        W = Variable("W", "lbf", "fuel tank weight")
+        Wfueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
+        m_fac = Variable("m_{fac}", 1.1, "-", "fuel volume margin factor")
+        rhofuel = Variable("\\rho_{fuel}", 6.01, "lbf/gallon",
+                           "density of 100LL")
+        rhotank = Variable("\\rho_{fuel-tank}", 0.089, "g/cm^2",
+                           "density of plastic fuel tank")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        Voltank = Variable("\\mathcal{V}", "ft^3", "fuel tank volume")
+
+        constraints = [W >= Stank*rhotank*g,
+                       Stank/4/phi >= Voltank/l,
+                       Voltank/m_fac >= Wfueltot/rhofuel,
+                      ]
+
+        Model.__init__(self, None, constraints, **kwargs)
 
 class Fuselage(Model):
     "The thing that carries the fuel, engine, and payload"
     def __init__(self, **kwargs):
-        V = Variable("V", 16, "gal", "volume")
-        d = Variable("d", 12, "in", "diameter")
-        # S = Variable("S", "ft^2", "wetted area")
-        cd = Variable("c_d", .0047, "-", "drag coefficient")
-        CDA = Variable("CDA", "ft^2", "drag area")
-        W = Variable("W", 10, "lbf", "weight")
+        d = Variable("d", "ft", "fuselage diameter")
+        l = Variable("l", "ft", "fuselage length")
 
-        constraints = [  # CDA >= cd*4*V/d,
-            W == W,  # todo replace with model
+        mskin = Variable("m_{skin}", "kg", "fuselage skin mass")
+        rhokevlar = Variable("\\rho_{kevlar}", 1.3629, "g/cm**3",
+                             "kevlar density")
+        Sfuse = Variable("S_{fuse}", "ft^2", "Fuselage surface area")
+        Volavn = Variable("\\mathcal{V}_{avn}", 0.125, "ft^3",
+                          "Avionics volume")
+        W = Variable("W", "lbf", "Fuselage weight")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        m_fac = Variable("m_{fac}", 2.5, "-", "Fuselage weight margin factor")
+        tmin = Variable("t_{min}", 0.03, "in", "minimum skin thickness")
+        tskin = Variable("t_{skin}", "in", "skin thickness")
+        hengine = Variable("h_{engine}", 6, "in", "engine height")
+
+        ft = FuelTank()
+
+        constraints = [
+            mskin >= Sfuse*rhokevlar*tskin,
+            tskin >= tmin,
+            Sfuse >= np.pi*d*l + np.pi*d**2,
+            np.pi*(d/2)**2*l >= ft["\\mathcal{V}"] + Volavn,
+            l >= ft["l"],
+            d >= hengine,
+            W/m_fac >= mskin*g + ft["W"],
             ]
 
-        super(Fuselage, self).__init__(None, constraints, **kwargs)
+        Model.__init__(self, None, [constraints, ft], **kwargs)
 
 class Mission(Model):
     "creates flight profile"
@@ -545,14 +589,15 @@ class Mission(Model):
         mission = [climb1, cruise1, loiter1, cruise2]
 
         mtow = Variable("MTOW", "lbf", "max-take off weight")
-        Wfueltot = Variable("W_{fuel-tot}", "lbf", "total fuel weight")
+        print [JHO[w] for w in JHO.varkeys["W"] if "Fuselage" in w.models[-1]]
 
-        constraints = [mtow >= mission[0]["W_{start}"][0],
-                       mtow >= JHO["W_{zfw}"] + Wfueltot,
-                       Wfueltot >= sum(fs["W_{fuel-fs}"] for fs in mission),
-                       mission[-1]["W_{end}"][-1] >= JHO["W_{zfw}"],
-                       JHO["W_{cent}"] >= Wfueltot + JHO.fuse["W"]
-                      ]
+        constraints = [
+            mtow >= mission[0]["W_{start}"][0],
+            mtow >= JHO["W_{zfw}"] + JHO["W_{fuel-tot}"],
+            JHO["W_{fuel-tot}"] >= sum(fs["W_{fuel-fs}"] for fs in mission),
+            mission[-1]["W_{end}"][-1] >= JHO["W_{zfw}"],
+            JHO["W_{cent}"] >= JHO["W_{fuel-tot}"] + [JHO[w] for w in JHO.varkeys["W"] if "Fuselage" in w.models[-1]][0]
+            ]
 
         for i, fs in enumerate(mission[1:]):
             constraints.extend([
