@@ -324,21 +324,19 @@ def c_bar(lam, N):
     c = 2/(1+lam)*(1+(lam-1)*eta)
     return c
 
-class ChordLoadingCase(Model):
+class ChordLoading(Model):
     "wing loading state"
-    def __init__(self, N=5, **kwargs):
+    def __init__(self, N, **kwargs):
 
         Nmax = Variable("N_{max}", 5, "-", "max loading")
         Wcent = Variable("W_{cent}", "lbf", "Center aircraft weight")
-        kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
 
-        cbar = c_bar(0.5, 5)
+        cbar = c_bar(0.5, N)
         with vectorize(N):
             qbar = Variable("\\bar{q}", cbar, "-", "normalized loading")
 
         constraints = [Nmax == Nmax,
                        qbar == qbar,
-                       kappa == kappa,
                        Wcent == Wcent]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -346,8 +344,8 @@ class ChordLoadingCase(Model):
 class SparLoading(Model):
     "wing loading case"
     def __init__(self, capspar, **kwargs):
-        case = ChordLoadingCase()
-        wl = capspar.dynamic_model(capspar, case)
+        case = ChordLoading(capspar.N)
+        wl = capspar.loading_model(capspar, case)
 
         Model.__init__(self, None, [case, wl], **kwargs)
 
@@ -355,10 +353,12 @@ class CapSpar(Model):
     "cap spar model"
     def __init__(self, wing, N=5, **kwargs):
 
+        # N is number of nodes
+        self.N = N
+
         # phyiscal properties
         rho_cfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
-        sigma_cfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
 
         # Structural lengths
         cb = c_bar(0.5, N)
@@ -373,11 +373,11 @@ class CapSpar(Model):
             dm = Variable("dm", "kg", "segment spar mass")
 
         W = Variable("W", "lbf", "spar weight")
-        tau = Variable("\\tau", 0.115, "-", "Airfoil thickness ratio")
+        tau = Variable("\\tau", 0.115, "-", "airfoil thickness ratio")
         w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
-        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
-        self.dynamic_model = Beam
+        self.loading_model = CapSparL
 
         constraints = [
             I <= 2*w*t*(hin/2)**2,
@@ -386,13 +386,33 @@ class CapSpar(Model):
             w <= w_lim*wing["S"]/wing["b"]*cbar,
             wing["S"]/wing["b"]*cbar*tau >= hin + 2*t,
             E == E,
-            sigma_cfrp == sigma_cfrp
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class CapSparL(Model):
+    def __init__(self, static, state, **kwargs):
+
+        sigmacfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
+        kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
+        Mroot = Variable("M_{root}", "N*m", "wing root moment")
+
+        beam = Beam(state, static.N)
+
+        constraints = [
+            # dimensionalize moment of inertia and young's modulus
+            beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/state["N_{max}"]
+                                  / state["W_{cent}"]/static["b"]**2),
+            Mroot == (beam["\\bar{M}"][0]*state["W_{cent}"]*state["N_{max}"]
+                      * static["b"]/4),
+            sigmacfrp >= Mroot*(static["h_{in}"]+static["t"])/static["I"],
+            beam["\\bar{\\delta}"][-1] <= kappa,
+            ]
+
+        Model.__init__(self, None, [beam, constraints], **kwargs)
+
 class Beam(Model):
-    def __init__(self, static, state, N=5, **kwargs):
+    def __init__(self, state, N, **kwargs):
 
         with vectorize(N-1):
             EIbar = Variable("\\bar{EI}", "-",
@@ -423,10 +443,6 @@ class Beam(Model):
             dbar[0] >= dbar_root,
             dbar[1:] >= dbar[:-1] + 0.5*dx*(th[1:] + th[:-1]),
             1 == (N-1)*dx,
-            EIbar <= static["E"]*static["I"]/state["N_{max}"]/state["W_{cent}"]*static["b"]/(static["b"]/2)**3,
-            static["\\sigma_{CFRP}"] >=
-            ((Mbar[:-1] + Mbar[1:])/2*static["b"]*state["W_{cent}"]*state["N_{max}"]/4*(static["h_{in}"]+static["t"])/static["I"]),
-            dbar[-1] <= state["\\kappa"],
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
