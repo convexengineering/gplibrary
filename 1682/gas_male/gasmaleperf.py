@@ -322,13 +322,13 @@ class Wing(Model):
                        cave == (cb[1:] + cb[:-1])/2*S/b,
                        croot == S/b*cb[0],
                        cmac == S/b]
-        print constraints
 
         Model.__init__(self, None, constraints, **kwargs)
 
         capspar = CapSpar(self)
         wingskin = WingSkin(self)
-        self.components = [capspar, wingskin]
+        winginterior = WingInterior(self)
+        self.components = [capspar, wingskin, winginterior]
         loading = WingLoading(self.components)
 
         constraints.extend([W >= sum(c["W"] for c in self.components)])
@@ -347,9 +347,26 @@ class WingLoading(Model):
     def __init__(self, components, **kwargs):
         loadingcases = []
         for c in components:
-            loadingcases.append(c.loading_model(c))
+            if "loading_model" in c.__dict__.keys():
+                loadingcases.append(c.loading_model(c))
 
         Model.__init__(self, None, loadingcases, **kwargs)
+
+class WingInterior(Model):
+    "wing interior model"
+    def __init__(self, wing, **kwargs):
+
+        W = Variable("W", "lbf", "interior mass of wing")
+        rhofoam = Variable("\\rho_{foam}", 0.036, "g/cm^3", "foam density")
+        Abar = Variable("\\bar{A}_{jh01}", 0.0753449, "-",
+                        "jh01 non dimensional area")
+        g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
+
+        constraints = [
+            W >= (g*rhofoam*Abar*(wing["c_{ave}"])**2*(wing["b"]/2)
+                  / (wing.N-1)).sum()]
+
+        Model.__init__(self, None, constraints, **kwargs)
 
 class WingSkin(Model):
     "wing skin model"
@@ -374,7 +391,7 @@ class WingSkin(Model):
         Model.__init__(self, None, constraints, **kwargs)
 
 class WingSkinL(Model):
-    "wing skin loading model"
+    "wing skin loading model for torsional loads in skin"
     def __init__(self, static, **kwargs):
 
         taucfrp = Variable("\\tau_{CFRP}", 570, "MPa", "torsional stress limit")
@@ -410,7 +427,6 @@ class CapSpar(Model):
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
         self.loading_model = CapSparL
-        print wing.varkeys
 
         constraints = [I <= 2*w*t*(hin/2)**2,
                        dm >= rhocfrp*w*t*wing["b"]/(self.N-1),
