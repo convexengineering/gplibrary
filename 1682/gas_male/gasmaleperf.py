@@ -14,20 +14,22 @@ class Aircraft(Model):
         self.engine = Engine(DF70)
 
         self.components = [self.fuse, self.wing, self.engine]
-        compnames = [c.__class__.__name__ for c in self.components]
-
-        # loadingcase = WLoadingCase(self.wing)
+        self.smeared_loads = [self.fuse, self.engine]
 
         Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
         Wpay = Variable("W_{pay}", 10, "lbf", "payload weight")
 
-        wvarkeys = np.hstack([list(c.varkeys["W"]) for c in self.components])
-        wvarkeys = [w for w in wvarkeys if w.models[-1] in compnames]
-        wvars = [cm[v] for cm, v in zip(self.components, wvarkeys)]
-
-        constraints = [Wzfw >= sum(wvars) + Wpay]
+        constraints = [Wzfw >= sum(summing_vars(self.components, "W")) + Wpay]
 
         Model.__init__(self, None, [self.components, constraints], **kwargs)
+
+def summing_vars(models, varname):
+    "take models, a variable name a returns a list of variables with shared vname"
+    modelnames = [m.__class__.__name__ for m in models]
+    vkeys = np.hstack([list(m.varkeys[varname]) for m in models])
+    vkeys = [v for v in vkeys if v.models[-1] in modelnames]
+    vrs = [m[v] for m, v in zip(models, vkeys)]
+    return vrs
 
 class AircraftP(Model):
     "performance model for aircraft"
@@ -589,14 +591,14 @@ class Mission(Model):
         mission = [climb1, cruise1, loiter1, cruise2]
 
         mtow = Variable("MTOW", "lbf", "max-take off weight")
-        print [JHO[w] for w in JHO.varkeys["W"] if "Fuselage" in w.models[-1]]
 
         constraints = [
             mtow >= mission[0]["W_{start}"][0],
             mtow >= JHO["W_{zfw}"] + JHO["W_{fuel-tot}"],
             JHO["W_{fuel-tot}"] >= sum(fs["W_{fuel-fs}"] for fs in mission),
             mission[-1]["W_{end}"][-1] >= JHO["W_{zfw}"],
-            JHO["W_{cent}"] >= JHO["W_{fuel-tot}"] + [JHO[w] for w in JHO.varkeys["W"] if "Fuselage" in w.models[-1]][0]
+            JHO["W_{cent}"] >= (JHO["W_{fuel-tot}"] +
+                                sum(summing_vars(JHO.smeared_loads, "W")))
             ]
 
         for i, fs in enumerate(mission[1:]):
