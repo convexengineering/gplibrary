@@ -18,6 +18,7 @@ class Aircraft(Model):
 
         Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
         Wpay = Variable("W_{pay}", 10, "lbf", "payload weight")
+        Wavn = Variable("W_{avn}", 8, "lbf", "avionics weight")
 
         constraints = [Wzfw >= sum(summing_vars(self.components, "W")) + Wpay]
 
@@ -35,24 +36,34 @@ class AircraftP(Model):
     "performance model for aircraft"
     def __init__(self, static, state, **kwargs):
 
-        self.dmodels = []
+        self.dynamicmodels = []
         self.dragcomps = []
+        self.dragmodels = []
         for c in static.components:
             if "dynamic_model" in c.__dict__.keys():
                 dm = c.dynamic_model(c, state)
-                self.dmodels.append(dm)
-                if "C_d" in dm.varkeys:
-                    self.dragcomps.append(dm)
+                self.dynamicmodels.append(dm)
+                if "C_d" or "C_f" in dm.varkeys:
+                    self.dragmodels.append(dm)
+                    self.dragcomps.append(c)
 
         Wend = Variable("W_{end}", "lbf", "vector-end weight")
         Wstart = Variable("W_{start}", "lbf", "vector-begin weight")
         CD = Variable("C_D", "-", "drag coefficient")
+        mfac = Variable("m_{fac}", 1.7, "-", "drag margin factor")
+
+        dvars = []
+        for dc, dm in zip(self.dragcomps, self.dragmodels):
+            if "C_d" in dm.varkeys:
+                dvars.append(dm["C_d"])
+            elif "C_f" in dm.varkeys:
+                dvars.append(dm["C_f"]*dc["S"]/static.wing["S"])
 
         constraints = [Wend == Wend,
                        Wstart == Wstart,
-                       CD >= sum(dm["C_d"] for dm in self.dragcomps)]
+                       CD/mfac >= sum(dvars)]
 
-        Model.__init__(self, None, [self.dmodels, constraints], **kwargs)
+        Model.__init__(self, None, [self.dynamicmodels, constraints], **kwargs)
 
 class FlightState(Model):
     "One chunk of a mission"
@@ -550,12 +561,12 @@ class Fuselage(Model):
     "The thing that carries the fuel, engine, and payload"
     def __init__(self, **kwargs):
         d = Variable("d", "ft", "fuselage diameter")
-        l = Variable("l", "ft", "fuselage length")
+        lfuse = Variable("l_{fuse}", "ft", "fuselage length")
 
         mskin = Variable("m_{skin}", "kg", "fuselage skin mass")
         rhokevlar = Variable("\\rho_{kevlar}", 1.3629, "g/cm**3",
                              "kevlar density")
-        Sfuse = Variable("S_{fuse}", "ft^2", "Fuselage surface area")
+        Sfuse = Variable("S", "ft^2", "Fuselage surface area")
         Volavn = Variable("\\mathcal{V}_{avn}", 0.125, "ft^3",
                           "Avionics volume")
         W = Variable("W", "lbf", "Fuselage weight")
@@ -566,18 +577,34 @@ class Fuselage(Model):
         hengine = Variable("h_{engine}", 6, "in", "engine height")
 
         ft = FuelTank()
+        self.dynamic_model = FuselageP
 
         constraints = [
             mskin >= Sfuse*rhokevlar*tskin,
             tskin >= tmin,
-            Sfuse >= np.pi*d*l + np.pi*d**2,
-            np.pi*(d/2)**2*l >= ft["\\mathcal{V}"] + Volavn,
-            l >= ft["l"],
+            Sfuse >= np.pi*d*lfuse + np.pi*d**2,
+            np.pi*(d/2)**2*lfuse >= ft["\\mathcal{V}"] + Volavn,
+            lfuse >= ft["l"],
             d >= hengine,
             W/m_fac >= mskin*g + ft["W"],
             ]
 
         Model.__init__(self, None, [constraints, ft], **kwargs)
+
+class FuselageP(Model):
+    "fuselage drag model"
+    def __init__(self, static, state, **kwargs):
+
+        CDA = Variable("CDA", "-", "fuselage area drag normalized by wing area")
+        Cf = Variable("C_f", "-", "fuselage skin friction coefficient")
+        Re = Variable("Re", "-", "fuselage reynolds number")
+
+        constraints = [
+            Re == state["V"]*state["\\rho"]*static["l_{fuse}"]/state["\\mu"],
+            Cf >= 0.455/Re**0.3
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
 
 class Mission(Model):
     "creates flight profile"
