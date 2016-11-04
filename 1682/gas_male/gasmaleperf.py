@@ -72,7 +72,7 @@ class AircraftP(Model):
         Wend = Variable("W_{end}", "lbf", "vector-end weight")
         Wstart = Variable("W_{start}", "lbf", "vector-begin weight")
         CD = Variable("C_D", "-", "drag coefficient")
-        mfac = Variable("m_{fac}", 1.7, "-", "drag margin factor")
+        mfac = Variable("m_{fac}", 1.5, "-", "drag margin factor")
 
         dvars = []
         for dc, dm in zip(self.dragcomps, self.dragmodels):
@@ -743,6 +743,8 @@ class VerticalTail(Model):
         lantenna = Variable("l_{antenna}", 13.4, "in", "antenna length")
         wantenna = Variable("w_{antenna}", 10.2, "in", "antenna width")
 
+        self.dynamic_model = VerticalTailP
+
         constraints = [Vv <= 2*Sv*lv/wing["S"]/wing["b"],
                        bv**2 == ARv*Sv,
                        W >= rhofoam*Sv**2/bv*Abar + g*rhoskin*Sv,
@@ -753,6 +755,24 @@ class VerticalTail(Model):
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
+
+class VerticalTailP(Model):
+    "horizontal tail aero model"
+    def __init__(self, static, state, **kwargs):
+
+        Cd = Variable("C_d", "-", "drag coefficient of horizontal tail")
+        Cf = Variable("C_f", "-", "fuselage skin friction coefficient")
+        Re = Variable("Re", "-", "fuselage reynolds number")
+
+        constraints = [
+            Re == (state["V"]*state["\\rho"]*static["S_v"]/static["b_v"]
+                   / state["\\mu"]),
+            Cf >= 0.455/Re**0.3,
+            Cd >= Cf*static["S_v"]/static["S"]
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 
 class TailBoom(Model):
     "tail boom model"
@@ -770,8 +790,10 @@ class TailBoom(Model):
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         W = Variable("W", "lbf", "tail boom weight")
         J = Variable("J", "m^4", "tail boom polar moment of inertia")
+        S = Variable("S", "ft**2", "tail boom surface area")
 
-        self.state = TailBoomState()
+        self.case = TailBoomState()
+        self.dynamic_model = TailBoomP
         self.loading = [[HorizontalBoomBending, htail],
                         [VerticalBoomBending, vtail],
                         [VerticalBoomTorsion, vtail]]
@@ -782,11 +804,26 @@ class TailBoom(Model):
             t0 >= tmin,
             l >= htail["l_h"],
             l >= vtail["l_v"],
-            htail["F_{NE}"] >= (1 + htail["m_h"]*0.5*self.state["V_{NE}"]**2
-                                * self.state["\\rho_{sl}"]*htail["S_h"]*l**2
+            htail["F_{NE}"] >= (1 + htail["m_h"]*0.5*self.case["V_{NE}"]**2
+                                * self.case["\\rho_{sl}"]*htail["S_h"]*l**2
                                 / E/I0*kfac),
             J <= np.pi/8.0*d0**3*t0,
+            S == l*np.pi*d0,
             k == k
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class TailBoomP(Model):
+    "horizontal tail aero model"
+    def __init__(self, static, state, **kwargs):
+
+        Cf = Variable("C_f", "-", "fuselage skin friction coefficient")
+        Re = Variable("Re", "-", "fuselage reynolds number")
+
+        constraints = [
+            Re == (state["V"]*state["\\rho"]*static["l"]/state["\\mu"]),
+            Cf >= 0.455/Re**0.3,
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -821,7 +858,7 @@ class VerticalBoomTorsion(Model):
         T = Variable("T", "N*m", "vertical tail moment")
         taucfrp = Variable("\\tau_{CFRP}", 210, "MPa", "torsional stress limit")
 
-        state = tailboom.state
+        state = tailboom.case
         constraints = [
             T >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S_v"]
                   * vtail["C_{L_{max}}"]*vtail["b_v"]),
@@ -839,7 +876,7 @@ class VerticalBoomBending(Model):
         thmax = Variable("\\theta_{max}", 0.3, "-",
                          "max tail boom deflection angle")
 
-        state = tailboom.state
+        state = tailboom.case
         constraints = [
             F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S_v"]
                   * model_var(vtail, "C_{L_{max}}")),
@@ -858,7 +895,7 @@ class HorizontalBoomBending(Model):
         thmax = Variable("\\theta_{max}", 0.3, "-",
                          "max tail boom deflection angle")
 
-        state = tailboom.state
+        state = tailboom.case
         constraints = [
             F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*htail["S_h"]
                   * model_var(htail, "C_{L_{max}}")),
