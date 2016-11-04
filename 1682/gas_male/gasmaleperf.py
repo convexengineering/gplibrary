@@ -615,16 +615,18 @@ class Empennage(Model):
         W = Variable("W", "lbf", "empennage weight")
 
         ht = HorizontalTail(wing)
-        tb = TailBoom(ht)
-        self.components = [ht, tb]
+        vt = VerticalTail(wing)
+        tb = TailBoom(ht, vt)
+        self.components = [ht, vt, tb]
 
         loading = TailBoomLoading(tb, ht)
 
         constraints = [
-            W/m_fac >= ht["W"] + tb["W"],
+            W/m_fac >= ht["W"] + vt["W"] + tb["W"],
             ]
 
-        Model.__init__(self, None, [self.components, loading, constraints], **kwargs)
+        Model.__init__(self, None, [self.components, loading, constraints],
+                       **kwargs)
 
 class HorizontalTail(Model):
     "horizontal tail model"
@@ -676,9 +678,42 @@ class HorizontalTail(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
+class VerticalTail(Model):
+    "vertical tail model"
+    def __init__(self, wing, **kwargs):
+
+        W = Variable("W", "lbf", "one vertical tail weight")
+        Sv = Variable("S_v", "ft**2", "total vertical tail surface area")
+        Vv = Variable("V_v", 0.025, "-", "vertical tail volume coefficient")
+        ARv = Variable("AR_v", 2, "-", "vertical tail aspect ratio")
+        bv = Variable("b_v", "ft", "one vertical tail span")
+        rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
+                           "Density of formular 250")
+        rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
+                           "vertical tail skin density")
+        Abar = Variable("\\bar{A}_{NACA0008}", 0.0548, "-",
+                        "cross sectional area of NACA 0008")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        lv = Variable("l_v", "ft", "horizontal tail moment arm")
+        ctv = Variable("c_{t_v}", "ft", "vertical tail tip chord")
+        lamvfac = Variable("\\lambda_v/(\\lambda_v+1)", 1.0/(1.0+1), "-",
+                           "vertical tail taper ratio factor")
+        lantenna = Variable("l_{antenna}", 13.4, "in", "antenna length")
+        wantenna = Variable("w_{antenna}", 10.2, "in", "antenna width")
+
+        constraints = [Vv <= 2*Sv*lv/wing["S"]/wing["b"],
+                       bv**2 == ARv*Sv,
+                       W >= rhofoam*Sv**2/bv*Abar + g*rhoskin*Sv,
+                       ctv == 2*Sv/bv*lamvfac,
+                       ctv >= wantenna*1.3,
+                       bv >= lantenna,
+                      ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
 class TailBoom(Model):
     "tail boom model"
-    def __init__(self, htail, **kwargs):
+    def __init__(self, htail, vtail, **kwargs):
 
         l = Variable("l", "ft", "tail boom length")
         E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
@@ -700,6 +735,7 @@ class TailBoom(Model):
             W >= np.pi*g*rho_cfrp*d0*l*t0*kfac,
             t0 >= tmin,
             l >= htail["l_h"],
+            l >= vtail["l_v"],
             htail["F_{NE}"] >= (1 + htail["m_h"]*0.5*self.state["V_{NE}"]**2
                                 * self.state["\\rho_{sl}"]*htail["S_h"]*l**2
                                 / E/I0*kfac),
