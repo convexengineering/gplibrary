@@ -619,7 +619,7 @@ class Empennage(Model):
         tb = TailBoom(ht, vt)
         self.components = [ht, vt, tb]
 
-        loading = TailBoomLoading(tb, ht)
+        loading = TailBoomLoading(tb)
 
         constraints = [
             W/m_fac >= ht["W"] + vt["W"] + tb["W"],
@@ -726,24 +726,26 @@ class TailBoom(Model):
         d0 = Variable("d_0", "ft", "tail boom diameter")
         t0 = Variable("t_0", "mm", "tail boom thickness")
         tmin = Variable("t_{min}", 0.25, "mm", "minimum tail boom thickness")
-        rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
+        rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         W = Variable("W", "lbf", "tail boom weight")
         J = Variable("J", "m^4", "tail boom polar moment of inertia")
 
         self.state = TailBoomState()
         self.loading = [[HorizontalBoomBending, htail],
-                        [VerticalBoomBending, vtail]]
+                        [VerticalBoomBending, vtail],
+                        [VerticalBoomTorsion, vtail]]
 
         constraints = [
             I0 <= np.pi*t0*d0**3/8.0,
-            W >= np.pi*g*rho_cfrp*d0*l*t0*kfac,
+            W >= np.pi*g*rhocfrp*d0*l*t0*kfac,
             t0 >= tmin,
             l >= htail["l_h"],
             l >= vtail["l_v"],
             htail["F_{NE}"] >= (1 + htail["m_h"]*0.5*self.state["V_{NE}"]**2
                                 * self.state["\\rho_{sl}"]*htail["S_h"]*l**2
                                 / E/I0*kfac),
+            J <= np.pi/8.0*d0**3*t0,
             k == k
             ]
 
@@ -771,6 +773,22 @@ class TailBoomLoading(Model):
             loading.append(model(tailboom, comp))
 
         Model.__init__(self, None, loading, **kwargs)
+
+class VerticalBoomTorsion(Model):
+    "tail boom torison case"
+    def __init__(self, tailboom, vtail, **kwargs):
+
+        T = Variable("T", "N*m", "vertical tail moment")
+        taucfrp = Variable("\\tau_{CFRP}", 210, "MPa", "torsional stress limit")
+
+        state = tailboom.state
+        constraints = [
+            T >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S_v"]
+                  * vtail["C_{L_{max}}"]*vtail["b_v"]),
+            taucfrp >= T*tailboom["d_0"]/2/tailboom["J"]
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
 
 class VerticalBoomBending(Model):
     "tail boom bending loading case"
