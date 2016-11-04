@@ -698,6 +698,8 @@ class VerticalTail(Model):
         ctv = Variable("c_{t_v}", "ft", "vertical tail tip chord")
         lamvfac = Variable("\\lambda_v/(\\lambda_v+1)", 1.0/(1.0+1), "-",
                            "vertical tail taper ratio factor")
+        CLvtmax = Variable("C_{L_{max}}", 1.1, "-",
+                           "maximum CL of vertical tail")
         lantenna = Variable("l_{antenna}", 13.4, "in", "antenna length")
         wantenna = Variable("w_{antenna}", 10.2, "in", "antenna width")
 
@@ -707,6 +709,7 @@ class VerticalTail(Model):
                        ctv == 2*Sv/bv*lamvfac,
                        ctv >= wantenna*1.3,
                        bv >= lantenna,
+                       CLvtmax == CLvtmax
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -726,9 +729,11 @@ class TailBoom(Model):
         rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         W = Variable("W", "lbf", "tail boom weight")
+        J = Variable("J", "m^4", "tail boom polar moment of inertia")
 
         self.state = TailBoomState()
-        self.htbending = TailBoomBending
+        self.loading = [[HorizontalBoomBending, htail],
+                        [VerticalBoomBending, vtail]]
 
         constraints = [
             I0 <= np.pi*t0*d0**3/8.0,
@@ -759,15 +764,36 @@ class TailBoomState(Model):
 
 class TailBoomLoading(Model):
     "tail boom loading case"
-    def __init__(self, tailboom, horizontaltail, **kwargs):
+    def __init__(self, tailboom, **kwargs):
 
-        tboom = tailboom.htbending(tailboom, horizontaltail)
+        loading = []
+        for model, comp in tailboom.loading:
+            loading.append(model(tailboom, comp))
 
-        Model.__init__(self, None, tboom, **kwargs)
+        Model.__init__(self, None, loading, **kwargs)
 
-class TailBoomBending(Model):
+class VerticalBoomBending(Model):
     "tail boom bending loading case"
-    def __init__(self, tailboom, tail, **kwargs):
+    def __init__(self, tailboom, vtail, **kwargs):
+
+        F = Variable("F", "N", "vertical tail force")
+        th = Variable("\\theta", "-", "tail boom deflection angle")
+        thmax = Variable("\\theta_{max}", 0.3, "-",
+                         "max tail boom deflection angle")
+
+        state = tailboom.state
+        constraints = [
+            F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S_v"]
+                  * model_var(vtail, "C_{L_{max}}")),
+            th >= (F*tailboom["l"]**2/tailboom["E"]/tailboom["I_0"]
+                   * (1+tailboom["k"])/2),
+            th <= thmax,
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+class HorizontalBoomBending(Model):
+    "tail boom bending loading case"
+    def __init__(self, tailboom, htail, **kwargs):
 
         F = Variable("F", "N", "horizontal tail force")
         th = Variable("\\theta", "-", "tail boom deflection angle")
@@ -776,8 +802,8 @@ class TailBoomBending(Model):
 
         state = tailboom.state
         constraints = [
-            F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*tail["S_h"]
-                  * model_var(tail, "C_{L_{max}}")),
+            F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*htail["S_h"]
+                  * model_var(htail, "C_{L_{max}}")),
             th >= (F*tailboom["l"]**2/tailboom["E"]/tailboom["I_0"]
                    * (1+tailboom["k"])/2),
             th <= thmax,
