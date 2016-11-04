@@ -57,7 +57,6 @@ class AircraftP(Model):
     "performance model for aircraft"
     def __init__(self, static, state, **kwargs):
 
-
         self.dynamicmodels = []
         self.dragcomps = []
         self.dragmodels = []
@@ -333,7 +332,6 @@ class EngineP(Model):
 class Wing(Model):
     "The thing that creates the lift"
     def __init__(self, N=5, lam=0.5, **kwargs):
-        self.N = N
 
         W = Variable("W", "lbf", "weight")
         S = Variable("S", "ft^2", "surface area")
@@ -360,11 +358,9 @@ class Wing(Model):
                        croot == S/b*cb[0],
                        cmac == S/b]
 
-        Model.__init__(self, None, constraints, **kwargs)
-
-        capspar = CapSpar(self)
-        wingskin = WingSkin(self)
-        winginterior = WingInterior(self)
+        capspar = CapSpar(b, cave, tau, N)
+        wingskin = WingSkin(S, croot)
+        winginterior = WingInterior(cave, b, N)
         self.components = [capspar, wingskin, winginterior]
         loading = WingLoading(self.components)
 
@@ -391,7 +387,7 @@ class WingLoading(Model):
 
 class WingInterior(Model):
     "wing interior model"
-    def __init__(self, wing, **kwargs):
+    def __init__(self, cave, b, N, **kwargs):
 
         W = Variable("W", "lbf", "interior mass of wing")
         rhofoam = Variable("\\rho_{foam}", 0.036, "g/cm^3", "foam density")
@@ -399,15 +395,13 @@ class WingInterior(Model):
                         "jh01 non dimensional area")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
-        constraints = [
-            W >= (g*rhofoam*Abar*(wing["c_{ave}"])**2*(wing["b"]/2)
-                  / (wing.N-1)).sum()]
+        constraints = [W >= (g*rhofoam*Abar*(cave)**2*(b/2)/(N-1)).sum()]
 
         Model.__init__(self, None, constraints, **kwargs)
 
 class WingSkin(Model):
     "wing skin model"
-    def __init__(self, wing, **kwargs):
+    def __init__(self, S, croot, **kwargs):
 
         rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
         W = Variable("W", "lbf", "wing skin weight")
@@ -420,10 +414,10 @@ class WingSkin(Model):
 
         self.loading_model = WingSkinL
 
-        constraints = [W >= rhocfrp*wing["S"]*2*t*g,
+        constraints = [W >= rhocfrp*S*2*t*g,
                        t >= tmin,
                        Jtbar == Jtbar,
-                       wing["c_{root}"] == wing["c_{root}"]]
+                       croot == croot]
 
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -445,8 +439,8 @@ class WingSkinL(Model):
 
 class CapSpar(Model):
     "cap spar model"
-    def __init__(self, wing, **kwargs):
-        self.N = wing.N
+    def __init__(self, b, cave, tau, N=5, **kwargs):
+        self.N = N
 
         # phyiscal properties
         rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
@@ -466,10 +460,10 @@ class CapSpar(Model):
         self.loading_model = CapSparL
 
         constraints = [I <= 2*w*t*(hin/2)**2,
-                       dm >= rhocfrp*w*t*wing["b"]/(self.N-1),
+                       dm >= rhocfrp*w*t*b/(self.N-1),
                        W >= dm.sum()*g,
-                       w <= w_lim*wing["c_{ave}"],
-                       wing["c_{ave}"]*wing["\\tau"] >= hin + 2*t,
+                       w <= w_lim*cave,
+                       cave*tau >= hin + 2*t,
                        E == E,
                       ]
 
@@ -480,7 +474,7 @@ class CapSparL(Model):
 
         Nmax = Variable("N_{max}", 5, "-", "max loading")
         Wcent = Variable("W_{cent}", "lbf", "Center aircraft weight")
-        cbar = c_bar(0.5, 5)
+        cbar = c_bar(0.5, static.N)
         sigmacfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
         Mroot = Variable("M_{root}", "N*m", "wing root moment")
