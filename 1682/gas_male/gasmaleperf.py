@@ -614,13 +614,15 @@ class Empennage(Model):
 
         ht = HorizontalTail(wing)
         tb = TailBoom(ht)
-        self.submodels = [ht, tb]
+        self.components = [ht, tb]
+
+        loading = TBLoading(tb, ht)
 
         constraints = [
             W/m_fac >= ht["W"] + tb["W"],
             ]
 
-        Model.__init__(self, None, [self.submodels, constraints], **kwargs)
+        Model.__init__(self, None, [self.components, loading, constraints], **kwargs)
 
 class HorizontalTail(Model):
     def __init__(self, wing, **kwargs):
@@ -651,6 +653,8 @@ class HorizontalTail(Model):
         cth = Variable("c_{t_h}", "ft", "horizontal tail tip chord")
         lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", 1.0/(1.0+1), "-",
                            "horizontal tail taper ratio factor")
+        CLhtmax = Variable("C_{L-max_h}", "-",
+                           "max lift coefficient of horizontal tail")
 
         # signomial helper variables
         sph1 = Variable("sph1", "-", "first term involving $V_h$")
@@ -667,6 +671,7 @@ class HorizontalTail(Model):
             mh*(1+2/ARh) <= 2*np.pi,
             W >= g*rhoskin*Sh + rhofoam*Sh**2/bh*Abar,
             cth == 2*Sh/bh*lamhfac,
+            CLhtmax/mh >= CLmax/mw,
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -674,7 +679,6 @@ class HorizontalTail(Model):
 class TailBoom(Model):
     def __init__(self, horizontaltail, **kwargs):
 
-        F1 = Variable("F1", "N", "horizontal tail force")
         l = Variable("l", "ft", "tail boom length")
         E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
         k = Variable("k", 0.8, "-", "tail boom inertia value")
@@ -686,29 +690,56 @@ class TailBoom(Model):
         rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         W = Variable("W", "lbf", "tail boom weight")
-        th1 = Variable("\\theta1", "-", "tail boom deflection angle1")
-        thmax = Variable("\\theta_{max}", 0.3, "-",
-                         "max tail boom deflection angle")
-        Vne = Variable("V_{NE}", 40, "m/s", "never exceed vehicle speed")
         rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
                          "air density at sea level")
-        CLmax = Variable("C_{L-max}", 1.39, "-", "Maximum lift coefficient")
-        CLhtmax = Variable("C_{L-max_h}", "-",
-                           "max lift coefficient of horizontal tail")
-        mw = Variable("m_w", 2.0*np.pi/(1+2.0/23), "-",
-                      "assumed span wise effectiveness")
+        Vne = Variable("V_{NE}", 40, "m/s", "never exceed vehicle speed")
+
+        self.loading = TBTailL
 
         constraints = [
             I0 <= np.pi*t0*d0**3/8.0,
             W >= np.pi*g*rho_cfrp*d0*l*t0*kfac,
             t0 >= tmin,
-            th1 <= thmax,
             l >= horizontaltail["l_h"],
-            # L <= Lmax,
-            th1 >= F1*l**2/E/I0*(1+k)/2,
-            CLhtmax/horizontaltail["m_h"] >= CLmax/mw,
             horizontaltail["F_{NE}"] >= 1 + horizontaltail["m_h"]*0.5*Vne**2*rhosl*horizontaltail["S_h"]*l**2/E/I0*kfac,
-            F1 >= 0.5*rhosl*Vne**2*horizontaltail["S_h"]*CLhtmax,
+            k == k
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class TBState(Model):
+    def __init__(self, **kwargs):
+
+        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
+                         "air density at sea level")
+        Vne = Variable("V_{NE}", 40, "m/s", "never exceed vehicle speed")
+
+        constraints = [rhosl == rhosl,
+                       Vne == Vne]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class TBLoading(Model):
+    def __init__(self, tailboom, horizontaltail, **kwargs):
+
+        ls = TBState()
+        tboom = tailboom.loading(tailboom, horizontaltail, ls)
+
+        Model.__init__(self, None, tboom, **kwargs)
+
+class TBTailL(Model):
+    def __init__(self, tailboom, tail, state, **kwargs):
+
+        F = Variable("F", "N", "horizontal tail force")
+        th = Variable("\\theta", "-", "tail boom deflection angle")
+        thmax = Variable("\\theta_{max}", 0.3, "-",
+                         "max tail boom deflection angle")
+
+        constraints = [
+            F >= 0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*tail["S_h"]*tail["C_{L-max_h}"],
+            th >= (F*tailboom["l"]**2/tailboom["E"]/tailboom["I_0"]
+                   * (1+tailboom["k"])/2),
+            th <= thmax,
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
