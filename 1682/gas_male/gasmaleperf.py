@@ -14,7 +14,7 @@ class Aircraft(Model):
         self.engine = Engine(DF70)
         self.empennage = Empennage(self.wing)
 
-        self.components = [self.fuse, self.wing, self.engine, self.empennage]
+        components = [self.fuse, self.wing, self.engine, self.empennage]
         self.smeared_loads = [self.fuse, self.engine]
 
         Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
@@ -22,26 +22,46 @@ class Aircraft(Model):
         Wavn = Variable("W_{avn}", 8, "lbf", "avionics weight")
 
         constraints = [
-            Wzfw >= sum(summing_vars(self.components, "W")) + Wpay + Wavn]
+            Wzfw >= sum(summing_vars(components, "W")) + Wpay + Wavn]
 
-        Model.__init__(self, None, [self.components, constraints], **kwargs)
+        Model.__init__(self, None, [components, constraints], **kwargs)
+
+        self.allcomponents, _ = find_subcomponents(
+            components, [c.__class__.__name__ for c in components])
 
 def summing_vars(models, varname):
-    "take models, a variable name a returns a list of variables with shared vname"
+    "returns a list of variables with shared varname in model list"
     modelnames = [m.__class__.__name__ for m in models]
     vkeys = np.hstack([list(m.varkeys[varname]) for m in models])
     vkeys = [v for v in vkeys if v.models[-1] in modelnames]
     vrs = [m[v] for m, v in zip(models, vkeys)]
     return vrs
 
+def find_subcomponents(comps, compnames):
+    "find all sub components using recursion"
+    runagain = 0
+    for c in comps:
+        if "components" in c.__dict__.keys():
+            for subc in c.components:
+                if subc.__class__.__name__ not in compnames:
+                    comps.append(subc)
+                    compnames.append(subc.__class__.__name__)
+                    runagain += 1
+
+    if runagain > 0:
+        return find_subcomponents(comps, compnames)
+    else:
+        return comps, compnames
+
 class AircraftP(Model):
     "performance model for aircraft"
     def __init__(self, static, state, **kwargs):
 
+
         self.dynamicmodels = []
         self.dragcomps = []
         self.dragmodels = []
-        for c in static.components:
+        for c in static.allcomponents:
             if "dynamic_model" in c.__dict__.keys():
                 dm = c.dynamic_model(c, state)
                 self.dynamicmodels.append(dm)
@@ -610,6 +630,7 @@ class FuselageP(Model):
         Model.__init__(self, None, constraints, **kwargs)
 
 class Empennage(Model):
+    "empennage model, consisting of vertical, horizontal and tailboom"
     def __init__(self, wing, **kwargs):
         m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "empennage weight")
@@ -662,6 +683,8 @@ class HorizontalTail(Model):
         sph1 = Variable("sph1", "-", "first term involving $V_h$")
         sph2 = Variable("sph2", "-", "second term involving $V_h$")
 
+        self.dynamic_model = HorizontalTailP
+
         constraints = [
             Vh <= Sh*lh/wing["S"]**2*wing["b"],
             bh**2 == ARh*Sh,
@@ -674,6 +697,23 @@ class HorizontalTail(Model):
             W >= g*rhoskin*Sh + rhofoam*Sh**2/bh*Abar,
             cth == 2*Sh/bh*lamhfac,
             CLhtmax/mh >= wing["C_{L_{max}}"]/mw,
+            ]
+
+        Model.__init__(self, None, constraints, **kwargs)
+
+class HorizontalTailP(Model):
+    "horizontal tail aero model"
+    def __init__(self, static, state, **kwargs):
+
+        Cd = Variable("C_d", "-", "drag coefficient of horizontal tail")
+        Cf = Variable("C_f", "-", "fuselage skin friction coefficient")
+        Re = Variable("Re", "-", "fuselage reynolds number")
+
+        constraints = [
+            Re == (state["V"]*state["\\rho"]*static["S_h"]/static["b_h"]
+                   / state["\\mu"]),
+            Cf >= 0.455/Re**0.3,
+            Cd >= Cf*static["S_h"]/static["S"]
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -841,6 +881,7 @@ class Mission(Model):
     "creates flight profile"
     def __init__(self, **kwargs):
         JHO = Aircraft()
+
 
         climb1 = Climb(10, JHO, alt=np.linspace(0, 15000, 11)[1:])
         cruise1 = Cruise(1, JHO)
