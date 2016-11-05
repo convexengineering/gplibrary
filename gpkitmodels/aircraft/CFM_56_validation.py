@@ -321,7 +321,7 @@ class FullEngineRun(Model):
         '\pi_{hc_D}': hpc,
         '\pi_{lc_D}': lpc,
 
-        '\\alpha_OperatingPoint2': 5.105,
+##        '\\alpha_OperatingPoint2': 5.105,
 
         'M_{4a}': M4a,
         'hold_{4a}': 1+.5*(1.313-1)*M4a**2,#sol('hold_{4a}'),
