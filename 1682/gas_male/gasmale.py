@@ -989,7 +989,7 @@ class VerticalTail(Model):
         W = Variable("W", "lbf", "one vertical tail weight")
         Sv = Variable("S_v", "ft**2", "total vertical tail surface area")
         Vv = Variable("V_v", 0.025, "-", "vertical tail volume coefficient")
-        ARv = Variable("AR_v", 2, "-", "vertical tail aspect ratio")
+        ARv = Variable("AR_v", "-", "vertical tail aspect ratio")
         bv = Variable("b_v", "ft", "one vertical tail span")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
                            "Density of formular 250")
@@ -1008,12 +1008,13 @@ class VerticalTail(Model):
                            "vertical tail taper ratio factor")
         lantenna = Variable("l_{antenna}", 13.4, "in", "antenna length")
         wantenna = Variable("w_{antenna}", 10.2, "in", "antenna width")
+        tanlam = Variable("tan(\\Lambda)", np.tan(10*np.pi/180))
 
         constraints = [Vv <= Sv*L/S/b,
                        bv**2 == ARv*Sv,
                        W >= rhofoam*Sv**2/bv*Abar + g*rhoskin*Sv,
                        ctv == 2*Sv/bv*lamvfac,
-                       ctv >= wantenna*1.3,
+                       ctv >= wantenna + bv*tanlam,
                        bv >= lantenna,
                        S_ref == Sv,
                        l_ref == Sv/bv,
