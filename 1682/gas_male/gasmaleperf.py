@@ -30,7 +30,8 @@ class Aircraft(Model):
             self.empennage.verticaltail["V_v"] <= (
                 self.empennage.verticaltail["S"]
                 * self.empennage.verticaltail["l_v"]/self.wing["S"]**2
-                * self.wing["b"])
+                * self.wing["b"]),
+            self.empennage.horizontaltail["C_{L_{max}}"]/self.empennage.horizontaltail["m_h"] >= self.wing["C_{L_{max}}"]/self.wing["m_w"]
             ]
 
         Model.__init__(self, None, [components, constraints], **kwargs)
@@ -349,6 +350,8 @@ class Wing(Model):
         tau = Variable("\\tau", 0.115, "-", "airfoil thickness ratio")
         CLmax = Variable("C_{L_{max}}", 1.39, "-", "maximum CL of JHO1")
         CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
+        mw = Variable("m_w", 2.0*np.pi/(1+2.0/23), "-",
+                      "assumed span wise effectiveness")
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
         cb = c_bar(lam, N)
@@ -364,6 +367,7 @@ class Wing(Model):
                        tau == tau,
                        CLmax == CLmax,
                        CM == CM,
+                       mw == mw,
                        cbar == cbar,
                        cave == (cb[1:] + cb[:-1])/2*S/b,
                        croot == S/b*cb[0],
@@ -641,7 +645,7 @@ class Empennage(Model):
         W = Variable("W", "lbf", "empennage weight")
 
         self.horizontaltail = HorizontalTail(wing)
-        self.verticaltail = VerticalTail(wing)
+        self.verticaltail = VerticalTail()
         tb = TailBoom(self.horizontaltail, self.verticaltail)
         self.components = [self.horizontaltail, self.verticaltail, tb]
 
@@ -676,8 +680,6 @@ class HorizontalTail(Model):
         lh = Variable("l_h", "ft", "horizontal tail moment arm")
         CLhmin = Variable("(C_{L_h})_{min}", 0.75, "-",
                           "max downlift coefficient")
-        mw = Variable("m_w", 2.0*np.pi/(1+2.0/23), "-",
-                      "assumed span wise effectiveness")
         mh = Variable("m_h", "-", "horizontal tail span effectiveness")
         cth = Variable("c_{t_h}", "ft", "horizontal tail tip chord")
         lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", 1.0/(1.0+1), "-",
@@ -692,9 +694,9 @@ class HorizontalTail(Model):
             mh*(1+2/ARh) <= 2*np.pi,
             W >= g*rhoskin*Sh + rhofoam*Sh**2/bh*Abar,
             cth == 2*Sh/bh*lamhfac,
-            CLhtmax/mh >= wing["C_{L_{max}}"]/mw,
             lh == lh,
             CLhmin == CLhmin,
+            CLhtmax == CLhtmax,
             Vh == Vh,
             ]
 
@@ -717,7 +719,7 @@ class HorizontalTailP(Model):
 
 class VerticalTail(Model):
     "vertical tail model"
-    def __init__(self, wing, **kwargs):
+    def __init__(self, **kwargs):
 
         W = Variable("W", "lbf", "one vertical tail weight")
         Sv = Variable("S", "ft**2", "total vertical tail surface area")
@@ -822,11 +824,11 @@ class TailBoomFlexibility(Model):
             Fne >= (1 + htail["m_h"]*0.5*case["V_{NE}"]**2*case["\\rho_{sl}"]
                     * htail["S"]*tailboom["l"]**2/tailboom["E"]
                     / tailboom["I_0"]*tailboom["(1-k/2)"]),
-            sph1*(htail["m_w"]*Fne/htail["m_h"]/htail["V_h"]) + deda <= 1,
+            sph1*(wing["m_w"]*Fne/htail["m_h"]/htail["V_h"]) + deda <= 1,
             sph2 <= htail["V_h"]*htail["(C_{L_h})_{min}"]/wing["C_{L_{max}}"],
             (sph1 + sph2).mono_lower_bound({"sph1": .48, "sph2": .52}) >= (
                 SMcorr + wing["C_M"]/wing["C_{L_{max}}"]),
-            deda >= htail["m_w"]*wing["S"]/wing["b"]/4/np.pi/htail["l_h"]]
+            deda >= wing["m_w"]*wing["S"]/wing["b"]/4/np.pi/htail["l_h"]]
 
         Model.__init__(self, None, constraints, **kwargs)
 
