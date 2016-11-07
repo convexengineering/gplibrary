@@ -95,7 +95,7 @@ class AircraftPerf(Model):
         Wend = Variable("W_{end}", "lbf", "vector-end weight")
         Wstart = Variable("W_{start}", "lbf", "vector-begin weight")
         CD = Variable("C_D", "-", "drag coefficient")
-        mfac = Variable("m_{fac}", 1.5, "-", "drag margin factor")
+        mfac = Variable("m_{fac}", 1.3, "-", "drag margin factor")
 
         dvars = []
         for dc, dm in zip(self.dragcomps, self.dragmodels):
@@ -618,7 +618,7 @@ class Fuselage(Model):
                           "Avionics volume")
         W = Variable("W", "lbf", "Fuselage weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        m_fac = Variable("m_{fac}", 2.5, "-", "Fuselage weight margin factor")
+        mfac = Variable("m_{fac}", 2.0, "-", "Fuselage weight margin factor")
         tmin = Variable("t_{min}", 0.03, "in", "minimum skin thickness")
         tskin = Variable("t_{skin}", "in", "skin thickness")
         hengine = Variable("h_{engine}", 6, "in", "engine height")
@@ -633,7 +633,7 @@ class Fuselage(Model):
             np.pi*(d/2)**2*lfuse >= ft["\\mathcal{V}"] + Volavn,
             lfuse >= ft["l"],
             d >= hengine,
-            W/m_fac >= mskin*g + ft["W"],
+            W/mfac >= mskin*g + ft["W"],
             ]
 
         Model.__init__(self, None, [constraints, ft], **kwargs)
@@ -947,9 +947,8 @@ def model_var(model, varname):
 
 class Mission(Model):
     "creates flight profile"
-    def __init__(self, **kwargs):
-        JHO = Aircraft()
-
+    def __init__(self, DF70=False, **kwargs):
+        JHO = Aircraft(DF70)
 
         climb1 = Climb(10, JHO, alt=np.linspace(0, 15000, 11)[1:])
         cruise1 = Cruise(1, JHO)
