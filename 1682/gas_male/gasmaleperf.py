@@ -864,23 +864,23 @@ class TailBoomState(Model):
 class TailBoomLoading(Model):
     "tail boom loading case"
     def __init__(self, tailboom, comps, **kwargs):
+        state = TailBoomState()
 
         loading = []
         for case in tailboom.loading_model:
             for c in comps:
                 if c.__class__.__name__ is tailboom.loading_model[case]:
-                    loading.append(case(tailboom, c))
+                    loading.append(case(tailboom, c, state))
 
         Model.__init__(self, None, loading, **kwargs)
 
 class VerticalBoomTorsion(Model):
     "tail boom torison case"
-    def __init__(self, tailboom, vtail, **kwargs):
+    def __init__(self, tailboom, vtail, state, **kwargs):
 
         T = Variable("T", "N*m", "vertical tail moment")
         taucfrp = Variable("\\tau_{CFRP}", 210, "MPa", "torsional stress limit")
 
-        state = tailboom.case
         constraints = [
             T >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S"]
                   * vtail["C_{L_{max}}"]*vtail["b_v"]),
@@ -891,14 +891,13 @@ class VerticalBoomTorsion(Model):
 
 class VerticalBoomBending(Model):
     "tail boom bending loading case"
-    def __init__(self, tailboom, vtail, **kwargs):
+    def __init__(self, tailboom, vtail, state, **kwargs):
 
         F = Variable("F", "N", "vertical tail force")
         th = Variable("\\theta", "-", "tail boom deflection angle")
         thmax = Variable("\\theta_{max}", 0.3, "-",
                          "max tail boom deflection angle")
 
-        state = tailboom.case
         constraints = [
             F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S"]
                   * model_var(vtail, "C_{L_{max}}")),
@@ -910,14 +909,13 @@ class VerticalBoomBending(Model):
         Model.__init__(self, None, constraints, **kwargs)
 class HorizontalBoomBending(Model):
     "tail boom bending loading case"
-    def __init__(self, tailboom, htail, **kwargs):
+    def __init__(self, tailboom, htail, state, **kwargs):
 
         F = Variable("F", "N", "horizontal tail force")
         th = Variable("\\theta", "-", "tail boom deflection angle")
         thmax = Variable("\\theta_{max}", 0.3, "-",
                          "max tail boom deflection angle")
 
-        state = tailboom.case
         constraints = [
             F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*htail["S"]
                   * model_var(htail, "C_{L_{max}}")),
