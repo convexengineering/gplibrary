@@ -8,7 +8,7 @@ from gpkit.tools import te_exp_minus1
 class Aircraft(Model):
     "the JHO vehicle"
     def __init__(self, DF70=False, **kwargs):
-        self.dynamic_model = AircraftP
+        self.flight_model = AircraftPerf
         self.fuse = Fuselage()
         self.wing = Wing()
         self.engine = Engine(DF70)
@@ -65,7 +65,7 @@ def find_subcomponents(comps, compnames):
     else:
         return comps, compnames
 
-class AircraftP(Model):
+class AircraftPerf(Model):
     "performance model for aircraft"
     def __init__(self, static, state, **kwargs):
 
@@ -73,8 +73,8 @@ class AircraftP(Model):
         self.dragcomps = []
         self.dragmodels = []
         for c in static.allcomponents:
-            if "dynamic_model" in c.__dict__.keys():
-                dm = c.dynamic_model(c, state)
+            if "flight_model" in c.__dict__.keys():
+                dm = c.flight_model(c, state)
                 self.dynamicmodels.append(dm)
                 if "C_d" or "C_f" in dm.varkeys:
                     self.dragmodels.append(dm)
@@ -150,19 +150,19 @@ class FlightSegment(Model):
 
         with vectorize(N):
             self.fs = FlightState(alt, onStation, wind)
-            self.aircraftP = aircraft.dynamic_model(aircraft, self.fs)
-            self.slf = SteadyLevelFlight(self.fs, aircraft, self.aircraftP)
-            self.be = BreguetEndurance(self.aircraftP)
+            self.aircraftPerf = aircraft.flight_model(aircraft, self.fs)
+            self.slf = SteadyLevelFlight(self.fs, aircraft, self.aircraftPerf)
+            self.be = BreguetEndurance(self.aircraftPerf)
 
-        self.submodels = [self.fs, self.aircraftP, self.slf, self.be]
+        self.submodels = [self.fs, self.aircraftPerf, self.slf, self.be]
 
         Wfuelfs = Variable("W_{fuel-fs}", "lbf", "flight segment fuel weight")
 
         self.constraints = [Wfuelfs >= self.be["W_{fuel}"].sum()]
 
         if N > 1:
-            self.constraints.extend([self.aircraftP["W_{end}"][:-1] >=
-                                     self.aircraftP["W_{start}"][1:]])
+            self.constraints.extend([self.aircraftPerf["W_{end}"][:-1] >=
+                                     self.aircraftPerf["W_{start}"][1:]])
 
         Model.__init__(self, None, [aircraft, self.submodels,
                                     self.constraints], **kwargs)
@@ -188,7 +188,7 @@ class Cruise(FlightSegment):
                                      **kwargs)
 
         R = Variable("R", R, "nautical_miles", "Range to station")
-        self.constraints.extend([R/N <= self.aircraftP["V"]*self.be["t"]])
+        self.constraints.extend([R/N <= self.aircraftPerf["V"]*self.be["t"]])
 
         Model.__init__(self, None, [aircraft, self.submodels,
                                     self.constraints], **kwargs)
@@ -211,9 +211,9 @@ class Climb(FlightSegment):
             hdot*self.be["t"] >= deltah/N,
             hdot >= hdotmin,
             self.slf["T"] >=
-            (0.5*self.fs["\\rho"]*self.fs["V"]**2*self.aircraftP["C_D"]
-             * aircraft.wing["S"] + self.aircraftP["W_{start}"]*hdot
-             / self.aircraftP["V"]),
+            (0.5*self.fs["\\rho"]*self.fs["V"]**2*self.aircraftPerf["C_D"]
+             * aircraft.wing["S"] + self.aircraftPerf["W_{start}"]*hdot
+             / self.aircraftPerf["V"]),
             ])
 
         Model.__init__(self, None, [aircraft, self.submodels,
@@ -284,11 +284,11 @@ class Engine(Model):
                 Weng/Wengref >= 0.5538*(Pslmax/Pref)**1.075,
                 W/mfac >= 2.572*Weng**0.922*units("lbf")**0.078]
 
-        self.dynamic_model = EngineP
+        self.flight_model = EnginePerf
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class EngineP(Model):
+class EnginePerf(Model):
     "engine performance model"
     def __init__(self, static, state, **kwargs):
 
@@ -363,7 +363,7 @@ class Wing(Model):
         with vectorize(N-1):
             cave = Variable("c_{ave}", "ft", "mid section chord")
 
-        self.dynamic_model = WingP
+        self.flight_model = WingAero
 
         constraints = [b**2 == S*A,
                        tau == tau,
@@ -547,7 +547,7 @@ class Beam(Model):
         Model.__init__(self, None, constraints, **kwargs)
 
 
-class WingP(Model):
+class WingAero(Model):
     def __init__(self, static, state, **kwargs):
         "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
@@ -612,7 +612,7 @@ class Fuselage(Model):
         hengine = Variable("h_{engine}", 6, "in", "engine height")
 
         ft = FuelTank()
-        self.dynamic_model = FuselageP
+        self.flight_model = FuselageAero
 
         constraints = [
             mskin >= Sfuse*rhokevlar*tskin,
@@ -626,7 +626,7 @@ class Fuselage(Model):
 
         Model.__init__(self, None, [constraints, ft], **kwargs)
 
-class FuselageP(Model):
+class FuselageAero(Model):
     "fuselage drag model"
     def __init__(self, static, state, **kwargs):
 
@@ -691,7 +691,7 @@ class HorizontalTail(Model):
         CLhtmax = Variable("C_{L_{max}}", "-", "maximum CL of horizontal tail")
 
 
-        self.dynamic_model = HorizontalTailP
+        self.flight_model = HorizontalTailAero
 
         constraints = [
             bh**2 == ARh*Sh,
@@ -706,7 +706,7 @@ class HorizontalTail(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class HorizontalTailP(Model):
+class HorizontalTailAero(Model):
     "horizontal tail aero model"
     def __init__(self, static, state, **kwargs):
 
@@ -746,7 +746,7 @@ class VerticalTail(Model):
         lantenna = Variable("l_{antenna}", 13.4, "in", "antenna length")
         wantenna = Variable("w_{antenna}", 10.2, "in", "antenna width")
 
-        self.dynamic_model = VerticalTailP
+        self.flight_model = VerticalTailAero
 
         constraints = [Vv == Vv,
                        lv == lv,
@@ -760,7 +760,7 @@ class VerticalTail(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class VerticalTailP(Model):
+class VerticalTailAero(Model):
     "horizontal tail aero model"
     def __init__(self, static, state, **kwargs):
 
@@ -795,7 +795,7 @@ class TailBoom(Model):
         S = Variable("S", "ft**2", "tail boom surface area")
 
         self.case = TailBoomState()
-        self.dynamic_model = TailBoomP
+        self.flight_model = TailBoomAero
         self.horizontalbending = HorizontalBoomBending
         self.verticalbending = VerticalBoomBending
         self.verticaltorsion = VerticalBoomTorsion
@@ -836,7 +836,7 @@ class TailBoomFlexibility(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class TailBoomP(Model):
+class TailBoomAero(Model):
     "horizontal tail aero model"
     def __init__(self, static, state, **kwargs):
 
