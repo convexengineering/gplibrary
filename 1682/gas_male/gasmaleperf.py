@@ -648,10 +648,12 @@ class Empennage(Model):
 
         self.horizontaltail = HorizontalTail()
         self.verticaltail = VerticalTail()
-        self.tailboom = TailBoom(self.horizontaltail, self.verticaltail)
-        self.components = [self.horizontaltail, self.verticaltail, self.tailboom]
+        self.tailboom = TailBoom()
+        self.components = [self.horizontaltail, self.verticaltail,
+                           self.tailboom]
 
-        loading = TailBoomLoading(self.tailboom, self.components)
+        loading = TailBoomLoading(self.tailboom, self.horizontaltail,
+                                  self.verticaltail)
         tailboomflex = TailBoomFlexibility(self.horizontaltail, self.tailboom, wing, self.tailboom.case)
 
         constraints = [
@@ -776,7 +778,7 @@ class VerticalTailP(Model):
 
 class TailBoom(Model):
     "tail boom model"
-    def __init__(self, htail, vtail, **kwargs):
+    def __init__(self, **kwargs):
 
         l = Variable("l", "ft", "tail boom length")
         E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
@@ -794,9 +796,9 @@ class TailBoom(Model):
 
         self.case = TailBoomState()
         self.dynamic_model = TailBoomP
-        self.loading_model = {HorizontalBoomBending: "HorizontalTail",
-                              VerticalBoomBending: "VerticalTail",
-                              VerticalBoomTorsion: "VerticalTail"}
+        self.horizontalbending = HorizontalBoomBending
+        self.verticalbending = VerticalBoomBending
+        self.verticaltorsion = VerticalBoomTorsion
 
         constraints = [
             I0 <= np.pi*t0*d0**3/8.0,
@@ -863,14 +865,12 @@ class TailBoomState(Model):
 
 class TailBoomLoading(Model):
     "tail boom loading case"
-    def __init__(self, tailboom, comps, **kwargs):
+    def __init__(self, tailboom, htail, vtail, **kwargs):
         state = TailBoomState()
 
-        loading = []
-        for case in tailboom.loading_model:
-            for c in comps:
-                if c.__class__.__name__ is tailboom.loading_model[case]:
-                    loading.append(case(tailboom, c, state))
+        loading = [tailboom.horizontalbending(tailboom, htail, state)]
+        loading.append(tailboom.verticalbending(tailboom, vtail, state))
+        loading.append(tailboom.verticaltorsion(tailboom, vtail, state))
 
         Model.__init__(self, None, loading, **kwargs)
 
