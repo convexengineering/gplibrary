@@ -31,7 +31,9 @@ class Aircraft(Model):
                 self.empennage.verticaltail["S"]
                 * self.empennage.verticaltail["l_v"]/self.wing["S"]**2
                 * self.wing["b"]),
-            self.empennage.horizontaltail["C_{L_{max}}"]/self.empennage.horizontaltail["m_h"] >= self.wing["C_{L_{max}}"]/self.wing["m_w"]
+            self.wing["C_{L_{max}}"]/self.wing["m_w"] <= (
+                self.empennage.horizontaltail["C_{L_{max}}"]
+                / self.empennage.horizontaltail["m_h"])
             ]
 
         Model.__init__(self, None, [components, constraints], **kwargs)
@@ -410,7 +412,7 @@ class WingInterior(Model):
                         "jh01 non dimensional area")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
-        constraints = [W >= (g*rhofoam*Abar*(cave)**2*(b/2)/(N-1)).sum()]
+        constraints = [W >= (g*rhofoam*Abar*cave**2*(b/2)/(N-1)).sum()]
 
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -644,18 +646,18 @@ class Empennage(Model):
         m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "empennage weight")
 
-        self.horizontaltail = HorizontalTail(wing)
+        self.horizontaltail = HorizontalTail()
         self.verticaltail = VerticalTail()
-        tb = TailBoom(self.horizontaltail, self.verticaltail)
-        self.components = [self.horizontaltail, self.verticaltail, tb]
+        self.tailboom = TailBoom(self.horizontaltail, self.verticaltail)
+        self.components = [self.horizontaltail, self.verticaltail, self.tailboom]
 
-        loading = TailBoomLoading(tb)
-        tailboomflex = TailBoomFlexibility(self.horizontaltail, tb, wing, tb.case)
+        loading = TailBoomLoading(self.tailboom, self.components)
+        tailboomflex = TailBoomFlexibility(self.horizontaltail, self.tailboom, wing, self.tailboom.case)
 
         constraints = [
-            W/m_fac >= self.horizontaltail["W"] + self.verticaltail["W"] + tb["W"],
-            tb["l"] >= self.horizontaltail["l_h"],
-            tb["l"] >= self.verticaltail["l_v"],
+            W/m_fac >= self.horizontaltail["W"] + self.verticaltail["W"] + self.tailboom["W"],
+            self.tailboom["l"] >= self.horizontaltail["l_h"],
+            self.tailboom["l"] >= self.verticaltail["l_v"],
             ]
 
         Model.__init__(self, None, [self.components, loading, constraints, tailboomflex],
@@ -663,7 +665,7 @@ class Empennage(Model):
 
 class HorizontalTail(Model):
     "horizontal tail model"
-    def __init__(self, wing, **kwargs):
+    def __init__(self, **kwargs):
         Sh = Variable("S", "ft**2", "horizontal tail area")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
         ARh = Variable("AR_h", 6, "-", "horizontal tail aspect ratio")
@@ -792,9 +794,9 @@ class TailBoom(Model):
 
         self.case = TailBoomState()
         self.dynamic_model = TailBoomP
-        self.loading = [[HorizontalBoomBending, htail],
-                        [VerticalBoomBending, vtail],
-                        [VerticalBoomTorsion, vtail]]
+        self.loading_model = {HorizontalBoomBending: "HorizontalTail",
+                              VerticalBoomBending: "VerticalTail",
+                              VerticalBoomTorsion: "VerticalTail"}
 
         constraints = [
             I0 <= np.pi*t0*d0**3/8.0,
@@ -861,11 +863,13 @@ class TailBoomState(Model):
 
 class TailBoomLoading(Model):
     "tail boom loading case"
-    def __init__(self, tailboom, **kwargs):
+    def __init__(self, tailboom, comps, **kwargs):
 
         loading = []
-        for model, comp in tailboom.loading:
-            loading.append(model(tailboom, comp))
+        for case in tailboom.loading_model:
+            for c in comps:
+                if c.__class__.__name__ is tailboom.loading_model[case]:
+                    loading.append(case(tailboom, c))
 
         Model.__init__(self, None, loading, **kwargs)
 
