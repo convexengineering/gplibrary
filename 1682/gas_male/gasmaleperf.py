@@ -15,7 +15,9 @@ class Aircraft(Model):
         self.empennage = Empennage(self.wing)
 
         components = [self.fuse, self.wing, self.engine, self.empennage]
-        self.smeared_loads = [self.fuse, self.engine]
+        self.smeared_loads = [self.fuse, self.engine, self.empennage]
+        self.loading = AircraftLoading(self.wing, self.empennage.horizontaltail,
+                                       self.empennage.tailboom)
 
         Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
         Wpay = Variable("W_{pay}", 10, "lbf", "payload weight")
@@ -36,7 +38,8 @@ class Aircraft(Model):
                 / self.empennage.horizontaltail["m_h"])
             ]
 
-        Model.__init__(self, None, [components, constraints], **kwargs)
+        Model.__init__(self, None, [components, self.loading, constraints],
+                       **kwargs)
 
         self.allcomponents, _ = find_subcomponents(
             components, [c.__class__.__name__ for c in components])
@@ -64,6 +67,15 @@ def find_subcomponents(comps, compnames):
         return find_subcomponents(comps, compnames)
     else:
         return comps, compnames
+
+class AircraftLoading(Model):
+    "aircraft loading model"
+    def __init__(self, wing, htail, tailboom, **kwargs):
+        tbstate = TailBoomState()
+
+        loading = TailBoomFlexibility(htail, tailboom, wing, tbstate, **kwargs)
+
+        Model.__init__(self, None, loading, **kwargs)
 
 class AircraftPerf(Model):
     "performance model for aircraft"
@@ -654,7 +666,6 @@ class Empennage(Model):
 
         loading = TailBoomLoading(self.tailboom, self.horizontaltail,
                                   self.verticaltail)
-        tailboomflex = TailBoomFlexibility(self.horizontaltail, self.tailboom, wing, self.tailboom.case)
 
         constraints = [
             W/m_fac >= self.horizontaltail["W"] + self.verticaltail["W"] + self.tailboom["W"],
@@ -662,7 +673,7 @@ class Empennage(Model):
             self.tailboom["l"] >= self.verticaltail["l_v"],
             ]
 
-        Model.__init__(self, None, [self.components, loading, constraints, tailboomflex],
+        Model.__init__(self, None, [self.components, loading, constraints],
                        **kwargs)
 
 class HorizontalTail(Model):
@@ -814,7 +825,7 @@ class TailBoom(Model):
 
 class TailBoomFlexibility(Model):
     "tail boom flexibility model"
-    def __init__(self, htail, tailboom, wing, case, **kwargs):
+    def __init__(self, htail, tailboom, wing, state, **kwargs):
 
         Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
         deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
@@ -825,7 +836,7 @@ class TailBoomFlexibility(Model):
         sph2 = Variable("sph2", "-", "second term involving $V_h$")
 
         constraints = [
-            Fne >= (1 + htail["m_h"]*0.5*case["V_{NE}"]**2*case["\\rho_{sl}"]
+            Fne >= (1 + htail["m_h"]*0.5*state["V_{NE}"]**2*state["\\rho_{sl}"]
                     * htail["S"]*tailboom["l"]**2/tailboom["E"]
                     / tailboom["I_0"]*tailboom["(1-k/2)"]),
             sph1*(wing["m_w"]*Fne/htail["m_h"]/htail["V_h"]) + deda <= 1,
