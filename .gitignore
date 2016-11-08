@@ -90,4 +90,4 @@ test_reports_nounits/
 *.png
 
 # xfoil polars
-.pol
+*.pol
