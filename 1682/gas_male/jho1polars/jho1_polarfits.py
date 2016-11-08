@@ -66,6 +66,8 @@ def plot_fits(re):
         cd = return_fit(cls, r)
         ax.plot(cls, cd, c=col, label="Re = %dk" % r)
     ax.legend(loc=2)
+    ax.set_xlabel("$C_L$")
+    ax.set_ylabel("$C_D$")
     ax.grid()
     return fig, ax
 
