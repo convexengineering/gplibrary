@@ -9,13 +9,13 @@ class Aircraft(Model):
     "the JHO vehicle"
     def __init__(self, DF70=False, **kwargs):
         self.flight_model = AircraftPerf
-        self.fuse = Fuselage()
+        self.fuselage = Fuselage()
         self.wing = Wing()
         self.engine = Engine(DF70)
         self.empennage = Empennage(self.wing)
 
-        components = [self.fuse, self.wing, self.engine, self.empennage]
-        self.smeared_loads = [self.fuse, self.engine, self.empennage]
+        components = [self.fuselage, self.wing, self.engine, self.empennage]
+        self.smeared_loads = [self.fuselage, self.engine, self.empennage]
         self.loading = AircraftLoading(self.wing, self.empennage.horizontaltail,
                                        self.empennage.tailboom)
 
@@ -81,32 +81,38 @@ class AircraftPerf(Model):
     "performance model for aircraft"
     def __init__(self, static, state, **kwargs):
 
-        self.dynamicmodels = []
-        self.dragcomps = []
-        self.dragmodels = []
-        for c in static.allcomponents:
-            if "flight_model" in c.__dict__.keys():
-                dm = c.flight_model(c, state)
-                self.dynamicmodels.append(dm)
-                if "C_d" or "C_f" in dm.varkeys:
-                    self.dragmodels.append(dm)
-                    self.dragcomps.append(c)
+        self.wing = static.wing.flight_model(static.wing, state)
+        self.fuselage = static.fuselage.flight_model(static.fuselage, state)
+        self.engine = static.engine.flight_model(static.engine, state)
+        self.htail = static.empennage.horizontaltail.flight_model(
+            static.empennage.horizontaltail, state)
+        self.vtail = static.empennage.verticaltail.flight_model(
+            static.empennage.verticaltail, state)
+        self.tailboom = static.empennage.tailboom.flight_model(
+            static.empennage.tailboom, state)
+
+        self.dynamicmodels = [self.wing, self.fuselage, self.engine,
+                              self.htail, self.vtail, self.tailboom]
+        areadragmodel = [self.fuselage, self.htail, self.vtail, self.tailboom]
+        areadragcomps = [static.fuselage, static.empennage.horizontaltail,
+                         static.empennage.verticaltail,
+                         static.empennage.tailboom]
 
         Wend = Variable("W_{end}", "lbf", "vector-end weight")
         Wstart = Variable("W_{start}", "lbf", "vector-begin weight")
         CD = Variable("C_D", "-", "drag coefficient")
+        CDA = Variable("CDA", "-", "area drag coefficient")
         mfac = Variable("m_{fac}", 1.3, "-", "drag margin factor")
 
         dvars = []
-        for dc, dm in zip(self.dragcomps, self.dragmodels):
-            if "C_d" in dm.varkeys:
-                dvars.append(dm["C_d"])
-            elif "C_f" in dm.varkeys:
+        for dc, dm in zip(areadragcomps, areadragmodel):
+            if "C_f" in dm.varkeys:
                 dvars.append(dm["C_f"]*dc["S"]/static.wing["S"])
 
         constraints = [Wend == Wend,
                        Wstart == Wstart,
-                       CD/mfac >= sum(dvars)]
+                       CDA/mfac >= sum(dvars),
+                       CD/mfac >= CDA + self.wing["C_d"]]
 
         Model.__init__(self, None, [self.dynamicmodels, constraints], **kwargs)
 
