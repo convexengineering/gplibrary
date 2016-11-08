@@ -15,12 +15,12 @@ class Aircraft(Model):
         self.empennage = Empennage(self.wing)
 
         components = [self.fuselage, self.wing, self.engine, self.empennage]
-        self.smeared_loads = [self.fuselage, self.engine, self.empennage]
+        self.smeared_loads = [self.fuselage, self.engine]
         self.loading = AircraftLoading(self.wing, self.empennage.horizontaltail,
                                        self.empennage.tailboom)
 
         Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
-        Wpay = Variable("W_{pay}", 10, "lbf", "payload weight")
+        Wpay = Variable("W_{pay}", 14, "lbf", "payload weight")
         Wavn = Variable("W_{avn}", 8, "lbf", "avionics weight")
 
         constraints = [
@@ -102,7 +102,7 @@ class AircraftPerf(Model):
         Wstart = Variable("W_{start}", "lbf", "vector-begin weight")
         CD = Variable("C_D", "-", "drag coefficient")
         CDA = Variable("CDA", "-", "area drag coefficient")
-        mfac = Variable("m_{fac}", 1.3, "-", "drag margin factor")
+        mfac = Variable("m_{fac}", 1.7, "-", "drag margin factor")
 
         dvars = []
         for dc, dm in zip(areadragcomps, areadragmodel):
@@ -112,7 +112,7 @@ class AircraftPerf(Model):
         constraints = [Wend == Wend,
                        Wstart == Wstart,
                        CDA/mfac >= sum(dvars),
-                       CD/mfac >= CDA + self.wing["C_d"]]
+                       CD >= CDA + self.wing["C_d"]]
 
         Model.__init__(self, None, [self.dynamicmodels, constraints], **kwargs)
 
@@ -365,6 +365,7 @@ class Wing(Model):
     def __init__(self, N=5, lam=0.5, **kwargs):
 
         W = Variable("W", "lbf", "weight")
+        mfac = Variable("m_{fac}", 1.1, "-", "wing weight margin factor")
         S = Variable("S", "ft^2", "surface area")
         A = Variable("A", "-", "aspect ratio")
         b = Variable("b", "ft", "wing span")
@@ -400,7 +401,7 @@ class Wing(Model):
         self.components = [capspar, wingskin, winginterior]
         loading = WingLoading(self.components)
 
-        constraints.extend([W >= sum(c["W"] for c in self.components)])
+        constraints.extend([W/mfac >= sum(c["W"] for c in self.components)])
 
         Model.__init__(self, None, [self.components, constraints, loading],
                        **kwargs)
@@ -688,7 +689,7 @@ class HorizontalTail(Model):
     def __init__(self, **kwargs):
         Sh = Variable("S", "ft**2", "horizontal tail area")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
-        ARh = Variable("AR_h", 6, "-", "horizontal tail aspect ratio")
+        ARh = Variable("AR_h", "-", "horizontal tail aspect ratio")
         Abar = Variable("\\bar{A}_{NACA0008}", 0.0548, "-",
                         "cross sectional area of NACA 0008")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
@@ -746,7 +747,7 @@ class VerticalTail(Model):
         W = Variable("W", "lbf", "one vertical tail weight")
         Sv = Variable("S", "ft**2", "total vertical tail surface area")
         Vv = Variable("V_v", 0.025, "-", "vertical tail volume coefficient")
-        ARv = Variable("AR_v", 2, "-", "vertical tail aspect ratio")
+        ARv = Variable("AR_v", "-", "vertical tail aspect ratio")
         bv = Variable("b_v", "ft", "one vertical tail span")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
                            "Density of formular 250")
@@ -958,8 +959,8 @@ class Mission(Model):
         JHO = Aircraft(DF70)
 
         climb1 = Climb(10, JHO, alt=np.linspace(0, 15000, 11)[1:], etap=0.508)
-        cruise1 = Cruise(1, JHO, etap=0.684)
-        loiter1 = Loiter(5, JHO, etap=0.684)
+        cruise1 = Cruise(1, JHO, etap=0.684, R=180)
+        loiter1 = Loiter(5, JHO, etap=0.647, onStation=True)
         cruise2 = Cruise(1, JHO, etap=0.684)
         mission = [climb1, cruise1, loiter1, cruise2]
 
