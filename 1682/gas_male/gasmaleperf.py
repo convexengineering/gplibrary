@@ -158,12 +158,12 @@ class FlightState(Model):
 class FlightSegment(Model):
     "creates flight segment for aircraft"
     def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
-                 **kwargs):
+                 etap=0.7, **kwargs):
 
         with vectorize(N):
             self.fs = FlightState(alt, onStation, wind)
             self.aircraftPerf = aircraft.flight_model(aircraft, self.fs)
-            self.slf = SteadyLevelFlight(self.fs, aircraft, self.aircraftPerf)
+            self.slf = SteadyLevelFlight(self.fs, aircraft, self.aircraftPerf, etap)
             self.be = BreguetEndurance(self.aircraftPerf)
 
         self.submodels = [self.fs, self.aircraftPerf, self.slf, self.be]
@@ -182,9 +182,9 @@ class FlightSegment(Model):
 class Loiter(FlightSegment):
     "make a loiter flight segment"
     def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
-                 **kwargs):
+                 etap=0.7, **kwargs):
         super(Loiter, self).__init__(N, aircraft, alt, onStation, wind,
-                                     **kwargs)
+                                     etap, **kwargs)
 
         t = Variable("t", 6, "days", "time loitering")
         self.constraints.extend([self.be["t"] >= t/N])
@@ -195,9 +195,9 @@ class Loiter(FlightSegment):
 class Cruise(FlightSegment):
     "make a cruise flight segment"
     def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
-                 R=200, **kwargs):
+                 etap=0.7, R=200, **kwargs):
         super(Cruise, self).__init__(N, aircraft, alt, onStation, wind,
-                                     **kwargs)
+                                     etap, **kwargs)
 
         R = Variable("R", R, "nautical_miles", "Range to station")
         self.constraints.extend([R/N <= self.aircraftPerf["V"]*self.be["t"]])
@@ -208,9 +208,9 @@ class Cruise(FlightSegment):
 class Climb(FlightSegment):
     "make a climb flight segment"
     def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
-                 dh=15000, **kwargs):
+                 etap=0.7, dh=15000, **kwargs):
         super(Climb, self).__init__(N, aircraft, alt, onStation, wind,
-                                    **kwargs)
+                                    etap=0.7, **kwargs)
 
         with vectorize(N):
             hdot = Variable("\\dot{h}", "ft/min", "Climb rate")
@@ -253,10 +253,10 @@ class BreguetEndurance(Model):
 
 class SteadyLevelFlight(Model):
     "steady level flight model"
-    def __init__(self, state, aircraft, perf, **kwargs):
+    def __init__(self, state, aircraft, perf, etap, **kwargs):
 
         T = Variable("T", "N", "thrust")
-        etaprop = Variable("\\eta_{prop}", 0.7, "-", "propulsive efficiency")
+        etaprop = Variable("\\eta_{prop}", etap, "-", "propulsive efficiency")
 
         constraints = [
             (perf["W_{end}"]*perf["W_{start}"])**0.5 <= (
@@ -282,7 +282,8 @@ class Engine(Model):
                              "Installed/Total DF70 engine weight")
             Pslmax = Variable("P_{sl-max}", 5.17, "hp",
                               "Max shaft power at sea level")
-            constraints = [W/mfac >= Wdf70]
+            constraints = [W/mfac >= Wdf70,
+                           Pslmax == Pslmax]
 
         else:
             Pref = Variable("P_{ref}", 2.295, "hp", "Reference shaft power")
@@ -950,10 +951,10 @@ class Mission(Model):
     def __init__(self, DF70=False, **kwargs):
         JHO = Aircraft(DF70)
 
-        climb1 = Climb(10, JHO, alt=np.linspace(0, 15000, 11)[1:])
-        cruise1 = Cruise(1, JHO)
-        loiter1 = Loiter(5, JHO)
-        cruise2 = Cruise(1, JHO)
+        climb1 = Climb(10, JHO, alt=np.linspace(0, 15000, 11)[1:], etap=0.508)
+        cruise1 = Cruise(1, JHO, etap=0.684)
+        loiter1 = Loiter(5, JHO, etap=0.684)
+        cruise2 = Cruise(1, JHO, etap=0.684)
         mission = [climb1, cruise1, loiter1, cruise2]
 
         mtow = Variable("MTOW", "lbf", "max-take off weight")
@@ -976,7 +977,7 @@ class Mission(Model):
 
 
 if __name__ == "__main__":
-    M = Mission()
+    M = Mission(DF70=True)
     # JHO.debug(solver="mosek")
     sol = M.solve("mosek")
     print sol.table()
