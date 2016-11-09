@@ -648,19 +648,18 @@ class CapSpar(Model):
         W_cent = Variable("W_{cent}", "lbf", "Center aircraft weight")
 
         kappa = Variable("\\kappa", 0.2, "-", "Max tip deflection ratio")
-        w_lim = Variable("w_{lim}", "-", "spar width to chord ratio")
+        w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
 
         beam = Beam(N, cb)
         self.submodels = [beam]
 
         constraints = [
-            dm >= rho_cfrp*w*t*b/(N-1) + rho_cfrp*b/2/(N-1)*2*tshear*(w+hin),
+            dm >= rho_cfrp*w*t*b/(N-1),
             m >= dm.sum(),
-            w_lim <= 2*units("in")/(S/b*1.3),
             w <= w_lim*S/b*cbar,
-            S/b*cbar*tau >= hin + 2*t + 2*tshear,
-            sigma_cfrp >= (beam["\\bar{S}"][:-1]*W_cent*N_max/2/tshear/
-                           (S/b*cbar*tau)),
+            S/b*cbar*tau >= hin + 2*t,
+            # sigma_cfrp >= (beam["\\bar{S}"][:-1]*W_cent*N_max/2/tshear/
+            #                (S/b*cbar*tau)),
             beam["\\bar{\\delta}"][-1] <= kappa,
             sigma_cfrp >= ((beam["\\bar{M}"][:-1] + beam["\\bar{M}"][1:])/
                            2*b*W_cent*N_max/4*(hin+t)/I),
@@ -1012,7 +1011,7 @@ class VerticalTail(Model):
                        bv**2 == ARv*Sv,
                        W >= rhofoam*Sv**2/bv*Abar + g*rhoskin*Sv,
                        ctv == 2*Sv/bv*lamvfac,
-                       ctv >= wantenna + bv*tanlam,
+                       ctv >= wantenna*1.3,
                        bv >= lantenna,
                        S_ref == Sv,
                        l_ref == Sv/bv,
@@ -1071,7 +1070,7 @@ class Weight(ConstraintSet):
 
         constraints = [
             SummingConstraintSet(W_cent, "W", center_loads,
-                                 [W_fueltot, W_pay, W_skid]),
+                                 [W_fueltot, W_skid]),
             SummingConstraintSet(W_zfw, "W", zf_loads,
                                  [W_pay, W_skid])
             ]
@@ -1115,8 +1114,8 @@ class GasMALE(Model):
         fuselage = Fuselage()
         dragcomps = [fuselage] + empennage.submodels
         mission = Mission(h_station, wind, DF70, Nclimb, Nloiter, dragcomps)
-        center_loads = [fuselage, avionics, engineweight]
-        zf_loads = center_loads + [empennage, wing]
+        center_loads = [fuselage, engineweight]
+        zf_loads = center_loads + [empennage, wing, avionics]
         weight = Weight(center_loads, zf_loads)
 
         self.submodels = zf_loads + [weight, mission]
