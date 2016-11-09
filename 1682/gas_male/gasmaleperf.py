@@ -166,10 +166,14 @@ class FlightSegment(Model):
     def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
                  etap=0.7, **kwargs):
 
+        self.aircraft = aircraft
+
         with vectorize(N):
             self.fs = FlightState(alt, onStation, wind)
-            self.aircraftPerf = aircraft.flight_model(aircraft, self.fs)
-            self.slf = SteadyLevelFlight(self.fs, aircraft, self.aircraftPerf, etap)
+            self.aircraftPerf = self.aircraft.flight_model(self.aircraft,
+                                                           self.fs)
+            self.slf = SteadyLevelFlight(self.fs, self.aircraft,
+                                         self.aircraftPerf, etap)
             self.be = BreguetEndurance(self.aircraftPerf)
 
         self.submodels = [self.fs, self.aircraftPerf, self.slf, self.be]
@@ -182,41 +186,36 @@ class FlightSegment(Model):
             self.constraints.extend([self.aircraftPerf["W_{end}"][:-1] >=
                                      self.aircraftPerf["W_{start}"][1:]])
 
-        Model.__init__(self, None, [aircraft, self.submodels,
+        Model.__init__(self, None, [self.aircraft, self.submodels,
                                     self.constraints], **kwargs)
 
-class Loiter(FlightSegment):
+class Loiter(Model):
     "make a loiter flight segment"
     def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
                  etap=0.7, **kwargs):
-        super(Loiter, self).__init__(N, aircraft, alt, onStation, wind,
-                                     etap, **kwargs)
+        fs = FlightSegment(N, aircraft, alt, onStation, wind, etap)
 
         t = Variable("t", 6, "days", "time loitering")
-        self.constraints.extend([self.be["t"] >= t/N])
+        constraints = [fs.be["t"] >= t/N]
 
-        Model.__init__(self, None, [aircraft, self.submodels,
-                                    self.constraints], **kwargs)
+        Model.__init__(self, None, [constraints, fs], **kwargs)
 
-class Cruise(FlightSegment):
+class Cruise(Model):
     "make a cruise flight segment"
     def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
                  etap=0.7, R=200, **kwargs):
-        super(Cruise, self).__init__(N, aircraft, alt, onStation, wind,
-                                     etap, **kwargs)
+        fs = FlightSegment(N, aircraft, alt, onStation, wind, etap)
 
         R = Variable("R", R, "nautical_miles", "Range to station")
-        self.constraints.extend([R/N <= self.aircraftPerf["V"]*self.be["t"]])
+        constraints = [R/N <= fs["V"]*fs.be["t"]]
 
-        Model.__init__(self, None, [aircraft, self.submodels,
-                                    self.constraints], **kwargs)
+        Model.__init__(self, None, [fs, constraints], **kwargs)
 
-class Climb(FlightSegment):
+class Climb(Model):
     "make a climb flight segment"
     def __init__(self, N, aircraft, alt=15000, onStation=False, wind=False,
                  etap=0.7, dh=15000, **kwargs):
-        super(Climb, self).__init__(N, aircraft, alt, onStation, wind,
-                                    etap=0.7, **kwargs)
+        fs = FlightSegment(N, aircraft, alt, onStation, wind, etap)
 
         with vectorize(N):
             hdot = Variable("\\dot{h}", "ft/min", "Climb rate")
@@ -225,17 +224,15 @@ class Climb(FlightSegment):
         hdotmin = Variable("\\dot{h}_{min}", 100, "ft/min",
                            "minimum climb rate")
 
-        self.constraints.extend([
-            hdot*self.be["t"] >= deltah/N,
+        constraints = [
+            hdot*fs.be["t"] >= deltah/N,
             hdot >= hdotmin,
-            self.slf["T"] >=
-            (0.5*self.fs["\\rho"]*self.fs["V"]**2*self.aircraftPerf["C_D"]
-             * aircraft.wing["S"] + self.aircraftPerf["W_{start}"]*hdot
-             / self.aircraftPerf["V"]),
-            ])
+            fs.slf["T"] >= (0.5*fs["\\rho"]*fs["V"]**2*fs["C_D"]
+                            * fs.aircraft.wing["S"] + fs["W_{start}"]*hdot
+                            / fs["V"]),
+            ]
 
-        Model.__init__(self, None, [aircraft, self.submodels,
-                                    self.constraints], **kwargs)
+        Model.__init__(self, None, [fs, constraints], **kwargs)
 
 class BreguetEndurance(Model):
     "breguet endurance model"
@@ -365,7 +362,7 @@ class Wing(Model):
     def __init__(self, N=5, lam=0.5, **kwargs):
 
         W = Variable("W", "lbf", "weight")
-        mfac = Variable("m_{fac}", 1.1, "-", "wing weight margin factor")
+        mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
         S = Variable("S", "ft^2", "surface area")
         A = Variable("A", "-", "aspect ratio")
         b = Variable("b", "ft", "wing span")
@@ -396,7 +393,7 @@ class Wing(Model):
                        cmac == S/b]
 
         capspar = CapSpar(b, cave, tau, N)
-        wingskin = WingSkin(S, croot)
+        wingskin = WingSkin(S, croot, b)
         winginterior = WingInterior(cave, b, N)
         self.components = [capspar, wingskin, winginterior]
         loading = WingLoading(self.components)
@@ -432,13 +429,13 @@ class WingInterior(Model):
                         "jh01 non dimensional area")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
-        constraints = [W >= (g*rhofoam*Abar*cave**2*(b/2)/(N-1)).sum()]
+        constraints = [W >= 2*(g*rhofoam*Abar*cave**2*(b/2)/(N-1)).sum()]
 
         Model.__init__(self, None, constraints, **kwargs)
 
 class WingSkin(Model):
     "wing skin model"
-    def __init__(self, S, croot, **kwargs):
+    def __init__(self, S, croot, b, **kwargs):
 
         rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
         W = Variable("W", "lbf", "wing skin weight")
@@ -454,6 +451,7 @@ class WingSkin(Model):
         constraints = [W >= rhocfrp*S*2*t*g,
                        t >= tmin,
                        Jtbar == Jtbar,
+                       b == b,
                        croot == croot]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -469,7 +467,7 @@ class WingSkinL(Model):
         Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
 
         constraints = [
-            taucfrp >= (1/static["\\bar{J/t}"]/static["c_{root}"]**2/static["t"]
+            taucfrp >= (1/static["\\bar{J/t}"]/(static["S"]/static["b"]*1.25)**2/static["t"]
                         * Cmw*static["S"]*rhosl*Vne**2)]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -498,7 +496,7 @@ class CapSpar(Model):
 
         constraints = [I <= 2*w*t*(hin/2)**2,
                        dm >= rhocfrp*w*t*b/(self.N-1),
-                       W >= dm.sum()*g,
+                       W >= 2*dm.sum()*g,
                        w <= w_lim*cave,
                        cave*tau >= hin + 2*t,
                        E == E,
@@ -522,9 +520,9 @@ class CapSparL(Model):
             # dimensionalize moment of inertia and young's modulus
             beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
                                   / Wcent/static["b"]**2),
-            Mroot == (beam["\\bar{M}"][0]*Wcent*Nmax
-                      * static["b"]/4),
-            sigmacfrp >= Mroot*(static["h_{in}"]+static["t"])/static["I"],
+            # Mroot == (beam["\\bar{M}"][0]*Wcent*Nmax
+            #           * static["b"]/4),
+            sigmacfrp >= (beam["\\bar{M}"][:-1] + beam["\\bar{M}"][1:])/2*Wcent*Nmax*static["b"]/4*(static["h_{in}"]+static["t"])/static["I"],
             beam["\\bar{\\delta}"][-1] <= kappa,
             ]
 
@@ -581,7 +579,7 @@ class WingAero(Model):
             Cd >= (cdp + CL**2/np.pi/static["A"]/e),
             (cdp/(Re/Reref)**-0.4)**0.00544 >= (
                 0.33*CL**-0.0809 + 0.645*CL**0.045 + 7.35e-5*CL**12),
-            Re == state["\\rho"]*state["V"]*static["S"]/static["b"]/state["\\mu"],
+            Re == state["\\rho"]*state["V"]*(static["S"]/static["A"])**0.5/state["\\mu"],
             ]
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -597,7 +595,7 @@ class FuelTank(Model):
         Stank = Variable("S_{tank}", "ft^2", "fuel tank surface area")
         W = Variable("W", "lbf", "fuel tank weight")
         Wfueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
-        m_fac = Variable("m_{fac}", 1.1, "-", "fuel volume margin factor")
+        mfac = Variable("m_{fac}", 1.1, "-", "fuel volume margin factor")
         rhofuel = Variable("\\rho_{fuel}", 6.01, "lbf/gallon",
                            "density of 100LL")
         rhotank = Variable("\\rho_{fuel-tank}", 0.089, "g/cm^2",
@@ -607,7 +605,7 @@ class FuelTank(Model):
 
         constraints = [W >= Stank*rhotank*g,
                        Stank/4/phi >= Voltank/l,
-                       Voltank/m_fac >= Wfueltot/rhofuel,
+                       Voltank/mfac >= Wfueltot/rhofuel,
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -626,7 +624,7 @@ class Fuselage(Model):
                           "Avionics volume")
         W = Variable("W", "lbf", "Fuselage weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        mfac = Variable("m_{fac}", 2.0, "-", "Fuselage weight margin factor")
+        mfac = Variable("m_{fac}", 2.1, "-", "Fuselage weight margin factor")
         tmin = Variable("t_{min}", 0.03, "in", "minimum skin thickness")
         tskin = Variable("t_{skin}", "in", "skin thickness")
         hengine = Variable("h_{engine}", 6, "in", "engine height")
@@ -663,7 +661,7 @@ class FuselageAero(Model):
 class Empennage(Model):
     "empennage model, consisting of vertical, horizontal and tailboom"
     def __init__(self, wing, **kwargs):
-        m_fac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
+        mfac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "empennage weight")
 
         self.horizontaltail = HorizontalTail()
@@ -676,7 +674,7 @@ class Empennage(Model):
                                   self.verticaltail)
 
         constraints = [
-            W/m_fac >= self.horizontaltail["W"] + self.verticaltail["W"] + self.tailboom["W"],
+            W/mfac >= self.horizontaltail["W"] + self.verticaltail["W"] + self.tailboom["W"],
             self.tailboom["l"] >= self.horizontaltail["l_h"],
             self.tailboom["l"] >= self.verticaltail["l_v"],
             ]
