@@ -31,8 +31,8 @@ class Aircraft(Model):
                 * self.wing["b"]),
             self.empennage.verticaltail["V_v"] <= (
                 self.empennage.verticaltail["S"]
-                * self.empennage.verticaltail["l_v"]/self.wing["S"]**2
-                * self.wing["b"]),
+                * self.empennage.verticaltail["l_v"]/self.wing["S"]
+                / self.wing["b"]),
             self.wing["C_{L_{max}}"]/self.wing["m_w"] <= (
                 self.empennage.horizontaltail["C_{L_{max}}"]
                 / self.empennage.horizontaltail["m_h"])

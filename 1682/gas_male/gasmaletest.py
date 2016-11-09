@@ -1070,7 +1070,7 @@ class Weight(ConstraintSet):
 
         constraints = [
             SummingConstraintSet(W_cent, "W", center_loads,
-                                 [W_fueltot, W_skid]),
+                                 [W_fueltot]),
             SummingConstraintSet(W_zfw, "W", zf_loads,
                                  [W_pay, W_skid])
             ]
