@@ -20,7 +20,7 @@ class Aircraft(Model):
                                        self.empennage.tailboom)
 
         Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
-        Wpay = Variable("W_{pay}", 14, "lbf", "payload weight")
+        Wpay = Variable("W_{pay}", 10, "lbf", "payload weight")
         Wavn = Variable("W_{avn}", 8, "lbf", "avionics weight")
 
         constraints = [
@@ -938,7 +938,6 @@ class Mission(Model):
         mtow = Variable("MTOW", "lbf", "max-take off weight")
 
         constraints = [
-            mtow >= mission[0]["W_{start}"][0],
             mtow >= JHO["W_{zfw}"] + JHO["W_{fuel-tot}"],
             JHO["W_{fuel-tot}"] >= sum(fs["W_{fuel-fs}"] for fs in mission),
             mission[-1]["W_{end}"][-1] >= JHO["W_{zfw}"],
