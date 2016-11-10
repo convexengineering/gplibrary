@@ -447,8 +447,8 @@ class WingSkinL(Model):
         Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
 
         constraints = [
-            taucfrp >= (1/static["\\bar{J/t}"]/(static["S"]/static["b"]*1.25)**2/static["t"]
-                        * Cmw*static["S"]*rhosl*Vne**2)]
+            taucfrp >= (1/static["\\bar{J/t}"]/(static["c_{root}"])**2
+                        / static["t"]*Cmw*static["S"]*rhosl*Vne**2)]
 
         Model.__init__(self, None, constraints, **kwargs)
 
@@ -485,6 +485,7 @@ class CapSpar(Model):
         Model.__init__(self, None, constraints, **kwargs)
 
 class CapSparL(Model):
+    "spar loading model"
     def __init__(self, static, **kwargs):
 
         Nmax = Variable("N_{max}", 5, "-", "max loading")
@@ -492,7 +493,8 @@ class CapSparL(Model):
         cbar = c_bar(0.5, static.N)
         sigmacfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
-        Mroot = Variable("M_{root}", "N*m", "wing root moment")
+        with vectorize(static.N-1):
+            Mr = Variable("M_r", "N*m", "wing section root moment")
 
         beam = Beam(static.N, cbar)
 
@@ -500,9 +502,8 @@ class CapSparL(Model):
             # dimensionalize moment of inertia and young's modulus
             beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
                                   / Wcent/static["b"]**2),
-            # Mroot == (beam["\\bar{M}"][0]*Wcent*Nmax
-            #           * static["b"]/4),
-            sigmacfrp >= (beam["\\bar{M}"][:-1] + beam["\\bar{M}"][1:])/2*Wcent*Nmax*static["b"]/4*(static["h_{in}"]+static["t"])/static["I"],
+            Mr == (beam["\\bar{M}"][:-1]*Wcent*Nmax*static["b"]/4),
+            sigmacfrp >= Mr*(static["h_{in}"]+static["t"])/static["I"],
             beam["\\bar{\\delta}"][-1] <= kappa,
             ]
 
