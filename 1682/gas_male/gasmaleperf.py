@@ -2,6 +2,7 @@
 import numpy as np
 from gpkit import Model, Variable, vectorize, units
 from gpkit.tools import te_exp_minus1
+from gpkit.constraints.tight import TightConstraintSet as TCS
 
 # pylint: disable=invalid-name
 
@@ -225,10 +226,8 @@ class BreguetEndurance(Model):
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
         constraints = [
-            z_bre >= (perf["P_{total}"]*t*perf["BSFC"]*g/
-                      (perf["W_{end}"]*perf["W_{start}"])**0.5),
-            # TCS([z_bre >= Ptotal*t*bsfc*g/(Wend*Wstart)**0.5]),
-            # TCS([z_bre >= Ptotal*t*bsfc*g/Wend]),
+            TCS([z_bre >= (perf["P_{total}"]*t*perf["BSFC"]*g
+                           / (perf["W_{end}"]*perf["W_{start}"])**0.5)]),
             f_fueloil*Wfuel/perf["W_{end}"] >= te_exp_minus1(z_bre, 3),
             perf["W_{start}"] >= perf["W_{end}"] + Wfuel
             ]
