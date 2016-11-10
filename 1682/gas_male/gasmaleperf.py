@@ -41,9 +41,6 @@ class Aircraft(Model):
         Model.__init__(self, None, [components, self.loading, constraints],
                        **kwargs)
 
-        self.allcomponents, _ = find_subcomponents(
-            components, [c.__class__.__name__ for c in components])
-
 def summing_vars(models, varname):
     "returns a list of variables with shared varname in model list"
     modelnames = [m.__class__.__name__ for m in models]
@@ -51,22 +48,6 @@ def summing_vars(models, varname):
     vkeys = [v for v in vkeys if v.models[-1] in modelnames]
     vrs = [m[v] for m, v in zip(models, vkeys)]
     return vrs
-
-def find_subcomponents(comps, compnames):
-    "find all sub components using recursion"
-    runagain = 0
-    for c in comps:
-        if "components" in c.__dict__.keys():
-            for subc in c.components:
-                if subc.__class__.__name__ not in compnames:
-                    comps.append(subc)
-                    compnames.append(subc.__class__.__name__)
-                    runagain += 1
-
-    if runagain > 0:
-        return find_subcomponents(comps, compnames)
-    else:
-        return comps, compnames
 
 class AircraftLoading(Model):
     "aircraft loading model"
@@ -707,7 +688,6 @@ class HorizontalTail(Model):
                            "horizontal tail taper ratio factor")
         CLhtmax = Variable("C_{L_{max}}", "-", "maximum CL of horizontal tail")
 
-
         self.flight_model = HorizontalTailAero
 
         constraints = [
@@ -917,13 +897,14 @@ class VerticalBoomBending(Model):
 
         constraints = [
             F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S"]
-                  * model_var(vtail, "C_{L_{max}}")),
+                  * vtail["C_{L_{max}}"]),
             th >= (F*tailboom["l"]**2/tailboom["E"]/tailboom["I_0"]
                    * (1+tailboom["k"])/2),
             th <= thmax,
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
+
 class HorizontalBoomBending(Model):
     "tail boom bending loading case"
     def __init__(self, tailboom, htail, state, **kwargs):
@@ -935,21 +916,13 @@ class HorizontalBoomBending(Model):
 
         constraints = [
             F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*htail["S"]
-                  * model_var(htail, "C_{L_{max}}")),
+                  * htail["C_{L_{max}}"]),
             th >= (F*tailboom["l"]**2/tailboom["E"]/tailboom["I_0"]
                    * (1+tailboom["k"])/2),
             th <= thmax,
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
-
-def model_var(model, varname):
-    "returns variable of the desired model"
-    var = None
-    for v in model.varkeys[varname]:
-        if model.__class__.__name__ in v.models[-1]:
-            var = model[v]
-    return var
 
 class Mission(Model):
     "creates flight profile"
