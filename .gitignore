@@ -88,3 +88,6 @@ test_reports_nounits/
 # generated graphs
 *.pdf
 *.png
+
+# xfoil polars
+*.pol
