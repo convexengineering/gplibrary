@@ -34,7 +34,7 @@ def fit_setup(Re_range):
         dataf = text_to_df("jh01.ncrit09.Re%dk.pol" % r)
         CL.append(dataf["CL"])
         CD.append(dataf["CD"])
-        RE.append([r]*len(dataf["CL"]))
+        RE.append([r*1000.0]*len(dataf["CL"]))
 
     u1 = np.hstack(CL)
     u2 = np.hstack(RE)
@@ -49,8 +49,8 @@ def fit_setup(Re_range):
 
 def return_fit(cl, re):
     "polar fit for the JHO1 airfoil"
-    cd = (1.19e-05*cl**2.5*re**-1.1 + 1.97e-08*cl**13*re**-0.34 +
-          3.19*cl**-0.24*re**-3.4 + 5.9e-08*cl**-1.9*re**-0.68)**(1/3.7)
+    cd = (0.0247*cl**2.49*re**-1.11 + 2.03e-7*cl**12.7*re**-0.338 +
+          6.35e10*cl**-0.243*re**-3.43 + 6.49e-6*cl**-1.9*re**-0.681)**(1/3.72)
     # SMA function, K=3, max RMS error = 0.00489
     return cd
 
@@ -63,7 +63,7 @@ def plot_fits(re):
     for r, col in zip(re, colors):
         dataf = text_to_df("jh01.ncrit09.Re%dk.pol" % r)
         ax.plot(dataf["CL"], dataf["CD"], "o", c=col)
-        cd = return_fit(cls, r)
+        cd = return_fit(cls, r*1000.)
         ax.plot(cls, cd, c=col, label="Re = %dk" % r)
     ax.legend(loc=2)
     ax.set_xlabel("$C_L$")

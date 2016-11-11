@@ -510,6 +510,7 @@ class CapSparL(Model):
         Model.__init__(self, None, [beam, constraints], **kwargs)
 
 class Beam(Model):
+    "discretized beam bending model"
     def __init__(self, N, q, **kwargs):
 
         with vectorize(N-1):
@@ -554,14 +555,16 @@ class WingAero(Model):
         e = Variable("e", 0.9, "-", "Oswald efficiency")
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
-        Reref = Variable("Re_{ref}", 3e5, "-", "Reference Re for cdp")
 
         constraints = [
             Cd >= (cdp + CL**2/np.pi/static["A"]/e),
-            (cdp/(Re/Reref)**-0.4)**0.00544 >= (
-                0.33*CL**-0.0809 + 0.645*CL**0.045 + 7.35e-5*CL**12),
-            Re == state["\\rho"]*state["V"]*(static["S"]/static["A"])**0.5/state["\\mu"],
+            cdp**3.72 >= (0.0247*CL**2.49*Re**-1.11
+                          + 2.03e-7*CL**12.7*Re**-0.338
+                          + 6.35e10*CL**-0.243*Re**-3.43
+                          + 6.49e-6*CL**-1.9*Re**-0.681),
+            Re == (state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"]),
             ]
+
         Model.__init__(self, None, constraints, **kwargs)
 
 class FuelTank(Model):
