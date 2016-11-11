@@ -54,15 +54,16 @@ class AircraftLoading(Model):
     "aircraft loading model"
     def __init__(self, aircraft, Wcent, **kwargs):
 
-        wingloading = aircraft.wing.loading(aircraft.wing, Wcent)
-        tailloading = aircraft.empennage.loading(aircraft.empennage)
+        loading = [aircraft.wing.loading(aircraft.wing, Wcent)]
+        loading.append(aircraft.empennage.loading(aircraft.empennage))
+        loading.append(aircraft.fuselage.loading(aircraft.fuselage, Wcent))
 
         tbstate = TailBoomState()
-        tbflex = TailBoomFlexibility(aircraft.empennage.horizontaltail,
-                                     aircraft.empennage.tailboom,
-                                     aircraft.wing, tbstate, **kwargs)
+        loading.append(TailBoomFlexibility(aircraft.empennage.horizontaltail,
+                                           aircraft.empennage.tailboom,
+                                           aircraft.wing, tbstate, **kwargs))
 
-        Model.__init__(self, None, [wingloading, tailloading, tbflex], **kwargs)
+        Model.__init__(self, None, loading, **kwargs)
 
 class AircraftPerf(Model):
     "performance model for aircraft"
@@ -605,24 +606,33 @@ class Fuselage(Model):
         hengine = Variable("h_{engine}", 6, "in", "engine height")
         phi = Variable("\\phi", 6, "-", "fuselage fineness ratio")
 
-        ft = FuelTank(Wfueltot)
-        skin = FuselageSkin(S)
-        self.components = [ft, skin]
+        self.fueltank = FuelTank(Wfueltot)
+        self.skin = FuselageSkin(S, d, l)
+        self.components = [self.fueltank, self.skin]
         self.flight_model = FuselageAero
+        self.loading = FuselageLoading
 
         constraints = [
             phi == l/d,
             S >= np.pi*d*l + np.pi*d**2,
-            np.pi*(d/2)**2*l >= ft["\\mathcal{V}"] + Volavn,
+            np.pi*(d/2)**2*l >= self.fueltank["\\mathcal{V}"] + Volavn,
             d >= hengine,
-            W/mfac >= ft["W"] + skin["W"],
+            W/mfac >= self.fueltank["W"] + self.skin["W"],
             ]
 
         Model.__init__(self, None, [self.components, constraints], **kwargs)
 
+class FuselageLoading(Model):
+    "fuselage loading cases"
+    def __init__(self, fuselage, Wcent):
+
+        skinloading = fuselage.skin.loading(fuselage.skin, Wcent)
+
+        Model.__init__(self, None, skinloading)
+
 class FuselageSkin(Model):
     "fuselage skin model"
-    def __init__(self, S):
+    def __init__(self, S, d, l):
 
         W = Variable("W", "lbf", "fuselage skin weight")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
@@ -630,9 +640,28 @@ class FuselageSkin(Model):
                              "kevlar density")
         t = Variable("t", "in", "skin thickness")
         tmin = Variable("t_{min}", 0.012, "in", "minimum skin thickness")
+        I = Variable("I", "m**4", "wing skin moment of inertia")
+
+        self.loading = FuselageSkinL
 
         constraints = [W >= S*rhokevlar*t*g,
-                       t >= tmin]
+                       t >= tmin,
+                       I <= np.pi*(d/2)**3*t,
+                       l == l]
+
+        Model.__init__(self, None, constraints)
+
+class FuselageSkinL(Model):
+    "fuselage skin loading"
+    def __init__(self, static, Wcent):
+
+        Mh = Variable("M_h", "N*m", "horizontal axis center fuselage moment")
+        Nmax = Variable("N_{max}", 5, "-", "max loading")
+        sigmakevlar = Variable("\\sigma_{Kevlar}", 190, "MPa",
+                               "stress strength of Kevlar")
+
+        constraints = [Mh >= Nmax*Wcent/8*static["l"],
+                       sigmakevlar >= Mh*static["d"]/2/static["I"]]
 
         Model.__init__(self, None, constraints)
 
