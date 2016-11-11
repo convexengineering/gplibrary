@@ -51,6 +51,8 @@ def return_fit(cl, re):
     "polar fit for the JHO1 airfoil"
     cd = (0.0247*cl**2.49*re**-1.11 + 2.03e-7*cl**12.7*re**-0.338 +
           6.35e10*cl**-0.243*re**-3.43 + 6.49e-6*cl**-1.9*re**-0.681)**(1/3.72)
+    # cd = (0.0247*cl**2.5*re**-1.1 + 2.03e-7*cl**13*re**-0.34 +
+    #       6.35e10*cl**-0.24*re**-3.4 + 6.49e-6*cl**-1.9*re**-0.68)**(1/3.7)
     # SMA function, K=3, max RMS error = 0.00489
     return cd
 
@@ -75,4 +77,4 @@ if __name__ == "__main__":
     Re = range(200, 750, 50)
     X, Y = fit_setup(Re) # call fit(X, Y, 4, "SMA") to get fit
     F, A = plot_fits([300, 350, 400, 450, 500])
-    F.savefig("jh01polarfit.pdf")
+    F.savefig("jh01polarfit1.pdf")
