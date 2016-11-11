@@ -493,7 +493,6 @@ class CapSparL(Model):
     def __init__(self, static, Wcent, **kwargs):
 
         Nmax = Variable("N_{max}", 5, "-", "max loading")
-        # Wcent = Variable("W_{cent}", "lbf", "Center aircraft weight")
         cbar = c_bar(0.5, static.N)
         sigmacfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
@@ -579,22 +578,15 @@ class FuelTank(Model):
     """
     def __init__(self, Wfueltot, **kwargs):
 
-        phi = Variable("\\phi", 6, "-", "fuel tank fineness ratio")
-        l = Variable("l", "ft", "fuel tank length")
-        Stank = Variable("S_{tank}", "ft^2", "fuel tank surface area")
         W = Variable("W", "lbf", "fuel tank weight")
-        # Wfueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
+        f = Variable("f", 0.03, "-", "fraction fuel tank weight to fuel weight")
         mfac = Variable("m_{fac}", 1.1, "-", "fuel volume margin factor")
         rhofuel = Variable("\\rho_{fuel}", 6.01, "lbf/gallon",
                            "density of 100LL")
-        rhotank = Variable("\\rho_{fuel-tank}", 0.089, "g/cm^2",
-                           "density of plastic fuel tank")
-        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
-        Voltank = Variable("\\mathcal{V}", "ft^3", "fuel tank volume")
+        Vol = Variable("\\mathcal{V}", "ft^3", "fuel tank volume")
 
-        constraints = [W >= Stank*rhotank*g,
-                       Stank/4/phi >= Voltank/l,
-                       Voltank/mfac >= Wfueltot/rhofuel,
+        constraints = [W >= f*Wfueltot,
+                       Vol/mfac >= Wfueltot/rhofuel,
                       ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -602,36 +594,47 @@ class FuelTank(Model):
 class Fuselage(Model):
     "The thing that carries the fuel, engine, and payload"
     def __init__(self, Wfueltot, **kwargs):
-        d = Variable("d", "ft", "fuselage diameter")
-        lfuse = Variable("l_{fuse}", "ft", "fuselage length")
 
-        mskin = Variable("m_{skin}", "kg", "fuselage skin mass")
-        rhokevlar = Variable("\\rho_{kevlar}", 1.3629, "g/cm**3",
-                             "kevlar density")
-        Sfuse = Variable("S", "ft^2", "Fuselage surface area")
+        d = Variable("d", "ft", "fuselage diameter")
+        l = Variable("l", "ft", "fuselage length")
+        S = Variable("S", "ft^2", "Fuselage surface area")
         Volavn = Variable("\\mathcal{V}_{avn}", 0.125, "ft^3",
                           "Avionics volume")
         W = Variable("W", "lbf", "Fuselage weight")
-        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
         mfac = Variable("m_{fac}", 2.1, "-", "Fuselage weight margin factor")
-        tmin = Variable("t_{min}", 0.03, "in", "minimum skin thickness")
-        tskin = Variable("t_{skin}", "in", "skin thickness")
         hengine = Variable("h_{engine}", 6, "in", "engine height")
+        phi = Variable("\\phi", 6, "-", "fuselage fineness ratio")
 
         ft = FuelTank(Wfueltot)
+        skin = FuselageSkin(S)
+        self.components = [ft, skin]
         self.flight_model = FuselageAero
 
         constraints = [
-            mskin >= Sfuse*rhokevlar*tskin,
-            tskin >= tmin,
-            Sfuse >= np.pi*d*lfuse + np.pi*d**2,
-            np.pi*(d/2)**2*lfuse >= ft["\\mathcal{V}"] + Volavn,
-            lfuse >= ft["l"],
+            phi == l/d,
+            S >= np.pi*d*l + np.pi*d**2,
+            np.pi*(d/2)**2*l >= ft["\\mathcal{V}"] + Volavn,
             d >= hengine,
-            W/mfac >= mskin*g + ft["W"],
+            W/mfac >= ft["W"] + skin["W"],
             ]
 
-        Model.__init__(self, None, [constraints, ft], **kwargs)
+        Model.__init__(self, None, [self.components, constraints], **kwargs)
+
+class FuselageSkin(Model):
+    "fuselage skin model"
+    def __init__(self, S):
+
+        W = Variable("W", "lbf", "fuselage skin weight")
+        g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
+        rhokevlar = Variable("\\rho_{kevlar}", 1.3629, "g/cm**3",
+                             "kevlar density")
+        t = Variable("t", "in", "skin thickness")
+        tmin = Variable("t_{min}", 0.012, "in", "minimum skin thickness")
+
+        constraints = [W >= S*rhokevlar*t*g,
+                       t >= tmin]
+
+        Model.__init__(self, None, constraints)
 
 class FuselageAero(Model):
     "fuselage drag model"
@@ -641,7 +644,7 @@ class FuselageAero(Model):
         Re = Variable("Re", "-", "fuselage reynolds number")
 
         constraints = [
-            Re == state["V"]*state["\\rho"]*static["l_{fuse}"]/state["\\mu"],
+            Re == state["V"]*state["\\rho"]*static["l"]/state["\\mu"],
             Cf >= 0.455/Re**0.3
             ]
 
