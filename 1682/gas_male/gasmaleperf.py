@@ -17,8 +17,8 @@ class Aircraft(Model):
 
         components = [self.fuselage, self.wing, self.engine, self.empennage]
         self.smeared_loads = [self.fuselage, self.engine]
-        self.loading = AircraftLoading(self.wing, self.empennage.horizontaltail,
-                                       self.empennage.tailboom)
+
+        self.loading = AircraftLoading
 
         Wzfw = Variable("W_{zfw}", "lbf", "zero fuel weight")
         Wpay = Variable("W_{pay}", 10, "lbf", "payload weight")
@@ -39,7 +39,7 @@ class Aircraft(Model):
                 / self.empennage.horizontaltail["m_h"])
             ]
 
-        Model.__init__(self, None, [components, self.loading, constraints],
+        Model.__init__(self, None, [components, constraints],
                        **kwargs)
 
 def summing_vars(models, varname):
@@ -52,12 +52,16 @@ def summing_vars(models, varname):
 
 class AircraftLoading(Model):
     "aircraft loading model"
-    def __init__(self, wing, htail, tailboom, **kwargs):
+    def __init__(self, aircraft, Wcent, **kwargs):
+
+        wingloading = aircraft.wing.loading(aircraft.wing, Wcent)
+
         tbstate = TailBoomState()
+        tbloading = TailBoomFlexibility(aircraft.empennage.horizontaltail,
+                                        aircraft.empennage.tailboom,
+                                        aircraft.wing, tbstate, **kwargs)
 
-        loading = TailBoomFlexibility(htail, tailboom, wing, tbstate, **kwargs)
-
-        Model.__init__(self, None, loading, **kwargs)
+        Model.__init__(self, None, [wingloading, tbloading], **kwargs)
 
 class AircraftPerf(Model):
     "performance model for aircraft"
@@ -372,15 +376,15 @@ class Wing(Model):
                        croot == S/b*cb[0],
                        cmac == S/b]
 
-        capspar = CapSpar(b, cave, tau, N)
-        wingskin = WingSkin(S, croot, b)
-        winginterior = WingInterior(cave, b, N)
-        self.components = [capspar, wingskin, winginterior]
-        loading = WingLoading(self.components)
+        self.capspar = CapSpar(b, cave, tau, N)
+        self.wingskin = WingSkin(S, croot, b)
+        self.winginterior = WingInterior(cave, b, N)
+        self.components = [self.capspar, self.wingskin, self.winginterior]
+        self.loading = WingLoading
 
         constraints.extend([W/mfac >= sum(c["W"] for c in self.components)])
 
-        Model.__init__(self, None, [self.components, constraints, loading],
+        Model.__init__(self, None, [self.components, constraints],
                        **kwargs)
 
 def c_bar(lam, N):
@@ -391,13 +395,12 @@ def c_bar(lam, N):
 
 class WingLoading(Model):
     "wing loading cases"
-    def __init__(self, components, **kwargs):
-        loadingcases = []
-        for c in components:
-            if "loading_model" in c.__dict__.keys():
-                loadingcases.append(c.loading_model(c))
+    def __init__(self, wing, Wcent, **kwargs):
 
-        Model.__init__(self, None, loadingcases, **kwargs)
+        skinloading = wing.wingskin.loading(wing.wingskin)
+        caploading = wing.capspar.loading(wing.capspar, Wcent)
+
+        Model.__init__(self, None, [skinloading, caploading], **kwargs)
 
 class WingInterior(Model):
     "wing interior model"
@@ -426,7 +429,7 @@ class WingSkin(Model):
         Jtbar = Variable("\\bar{J/t}", 0.01114, "1/mm",
                          "torsional moment of inertia")
 
-        self.loading_model = WingSkinL
+        self.loading = WingSkinL
 
         constraints = [W >= rhocfrp*S*2*t*g,
                        t >= tmin,
@@ -472,7 +475,7 @@ class CapSpar(Model):
         w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
-        self.loading_model = CapSparL
+        self.loading = CapSparL
 
         constraints = [I <= 2*w*t*(hin/2)**2,
                        dm >= rhocfrp*w*t*b/(self.N-1),
@@ -486,10 +489,10 @@ class CapSpar(Model):
 
 class CapSparL(Model):
     "spar loading model"
-    def __init__(self, static, **kwargs):
+    def __init__(self, static, Wcent, **kwargs):
 
         Nmax = Variable("N_{max}", 5, "-", "max loading")
-        Wcent = Variable("W_{cent}", "lbf", "Center aircraft weight")
+        # Wcent = Variable("W_{cent}", "lbf", "Center aircraft weight")
         cbar = c_bar(0.5, static.N)
         sigmacfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
@@ -525,21 +528,21 @@ class Beam(Model):
             dbar = Variable("\\bar{\\delta}", "-", "normalized displacement")
 
 
-        Sbar_tip = Variable("\\bar{S}_{tip}", 1e-10, "-", "Tip loading")
-        Mbar_tip = Variable("\\bar{M}_{tip}", 1e-10, "-", "Tip moment")
-        th_root = Variable("\\theta_{root}", 1e-10, "-", "Base angle")
-        dbar_root = Variable("\\bar{\\delta}_{root}", 1e-10, "-",
-                             "Base deflection")
+        Sbartip = Variable("\\bar{S}_{tip}", 1e-10, "-", "Tip loading")
+        Mbartip = Variable("\\bar{M}_{tip}", 1e-10, "-", "Tip moment")
+        throot = Variable("\\theta_{root}", 1e-10, "-", "Base angle")
+        dbarroot = Variable("\\bar{\\delta}_{root}", 1e-10, "-",
+                            "Base deflection")
         dx = Variable("dx", "-", "normalized length of element")
 
         constraints = [
             Sbar[:-1] >= Sbar[1:] + 0.5*dx*(qbar[:-1] + qbar[1:]),
-            Sbar[-1] >= Sbar_tip,
+            Sbar[-1] >= Sbartip,
             Mbar[:-1] >= Mbar[1:] + 0.5*dx*(Sbar[:-1] + Sbar[1:]),
-            Mbar[-1] >= Mbar_tip,
-            th[0] >= th_root,
+            Mbar[-1] >= Mbartip,
+            th[0] >= throot,
             th[1:] >= th[:-1] + 0.5*dx*(Mbar[1:] + Mbar[:-1])/EIbar,
-            dbar[0] >= dbar_root,
+            dbar[0] >= dbarroot,
             dbar[1:] >= dbar[:-1] + 0.5*dx*(th[1:] + th[:-1]),
             1 == (N-1)*dx,
             ]
@@ -548,6 +551,7 @@ class Beam(Model):
 
 
 class WingAero(Model):
+    "wing aerodynamic model with profile and induced drag"
     def __init__(self, static, state, **kwargs):
         "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
@@ -557,12 +561,12 @@ class WingAero(Model):
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
 
         constraints = [
-            Cd >= (cdp + CL**2/np.pi/static["A"]/e),
+            Cd >= cdp + CL**2/np.pi/static["A"]/e,
             cdp**3.72 >= (0.0247*CL**2.49*Re**-1.11
                           + 2.03e-7*CL**12.7*Re**-0.338
                           + 6.35e10*CL**-0.243*Re**-3.43
                           + 6.49e-6*CL**-1.9*Re**-0.681),
-            Re == (state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"]),
+            Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -938,14 +942,18 @@ class Mission(Model):
         cruise2 = Cruise(1, JHO, etap=0.684)
         mission = [climb1, cruise1, loiter1, cruise2]
 
+
         mtow = Variable("MTOW", "lbf", "max-take off weight")
+        Wcent = Variable("W_{cent}", "lbf", "center aircraft weight")
+
+        loading = JHO.loading(JHO, Wcent)
 
         constraints = [
             mtow >= JHO["W_{zfw}"] + JHO["W_{fuel-tot}"],
             JHO["W_{fuel-tot}"] >= sum(fs["W_{fuel-fs}"] for fs in mission),
             mission[-1]["W_{end}"][-1] >= JHO["W_{zfw}"],
-            JHO["W_{cent}"] >= (JHO["W_{fuel-tot}"] +
-                                sum(summing_vars(JHO.smeared_loads, "W")))
+            Wcent >= (JHO["W_{fuel-tot}"] +
+                      sum(summing_vars(JHO.smeared_loads, "W")))
             ]
 
         for i, fs in enumerate(mission[1:]):
@@ -953,7 +961,8 @@ class Mission(Model):
                 mission[i]["W_{end}"][-1] == fs["W_{start}"][0]
                 ])
 
-        Model.__init__(self, mtow, [JHO, mission, constraints], **kwargs)
+        Model.__init__(self, mtow, [JHO, mission, loading, constraints],
+                       **kwargs)
 
 
 if __name__ == "__main__":
