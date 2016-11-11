@@ -13,7 +13,7 @@ class Aircraft(Model):
         self.fuselage = Fuselage()
         self.wing = Wing()
         self.engine = Engine(DF70)
-        self.empennage = Empennage(self.wing)
+        self.empennage = Empennage()
 
         components = [self.fuselage, self.wing, self.engine, self.empennage]
         self.smeared_loads = [self.fuselage, self.engine]
@@ -55,13 +55,14 @@ class AircraftLoading(Model):
     def __init__(self, aircraft, Wcent, **kwargs):
 
         wingloading = aircraft.wing.loading(aircraft.wing, Wcent)
+        tailloading = aircraft.empennage.loading(aircraft.empennage)
 
         tbstate = TailBoomState()
-        tbloading = TailBoomFlexibility(aircraft.empennage.horizontaltail,
-                                        aircraft.empennage.tailboom,
-                                        aircraft.wing, tbstate, **kwargs)
+        tbflex = TailBoomFlexibility(aircraft.empennage.horizontaltail,
+                                     aircraft.empennage.tailboom,
+                                     aircraft.wing, tbstate, **kwargs)
 
-        Model.__init__(self, None, [wingloading, tbloading], **kwargs)
+        Model.__init__(self, None, [wingloading, tailloading, tbflex], **kwargs)
 
 class AircraftPerf(Model):
     "performance model for aircraft"
@@ -648,7 +649,7 @@ class FuselageAero(Model):
 
 class Empennage(Model):
     "empennage model, consisting of vertical, horizontal and tailboom"
-    def __init__(self, wing, **kwargs):
+    def __init__(self, **kwargs):
         mfac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "empennage weight")
 
@@ -658,16 +659,16 @@ class Empennage(Model):
         self.components = [self.horizontaltail, self.verticaltail,
                            self.tailboom]
 
-        loading = TailBoomLoading(self.tailboom, self.horizontaltail,
-                                  self.verticaltail)
+        self.loading = EmpennageLoading
 
         constraints = [
-            W/mfac >= self.horizontaltail["W"] + self.verticaltail["W"] + self.tailboom["W"],
+            W/mfac >= (self.horizontaltail["W"] + self.verticaltail["W"]
+                       + self.tailboom["W"]),
             self.tailboom["l"] >= self.horizontaltail["l_h"],
             self.tailboom["l"] >= self.verticaltail["l_v"],
             ]
 
-        Model.__init__(self, None, [self.components, loading, constraints],
+        Model.__init__(self, None, [self.components, constraints],
                        **kwargs)
 
 class HorizontalTail(Model):
@@ -867,14 +868,17 @@ class TailBoomState(Model):
 
         Model.__init__(self, None, constraints, **kwargs)
 
-class TailBoomLoading(Model):
+class EmpennageLoading(Model):
     "tail boom loading case"
-    def __init__(self, tailboom, htail, vtail, **kwargs):
+    def __init__(self, empennage, **kwargs):
         state = TailBoomState()
 
-        loading = [tailboom.horizontalbending(tailboom, htail, state)]
-        loading.append(tailboom.verticalbending(tailboom, vtail, state))
-        loading.append(tailboom.verticaltorsion(tailboom, vtail, state))
+        loading = [empennage.tailboom.horizontalbending(
+            empennage.tailboom, empennage.horizontaltail, state)]
+        loading.append(empennage.tailboom.verticalbending(
+            empennage.tailboom, empennage.verticaltail, state))
+        loading.append(empennage.tailboom.verticaltorsion(
+            empennage.tailboom, empennage.verticaltail, state))
 
         Model.__init__(self, None, loading, **kwargs)
 
