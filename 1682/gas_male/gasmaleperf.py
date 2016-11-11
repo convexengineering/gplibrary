@@ -8,9 +8,9 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 
 class Aircraft(Model):
     "the JHO vehicle"
-    def __init__(self, DF70=False, **kwargs):
+    def __init__(self, Wfueltot, DF70=False, **kwargs):
         self.flight_model = AircraftPerf
-        self.fuselage = Fuselage()
+        self.fuselage = Fuselage(Wfueltot)
         self.wing = Wing()
         self.engine = Engine(DF70)
         self.empennage = Empennage()
@@ -577,13 +577,13 @@ class FuelTank(Model):
     Returns the weight of the fuel tank.  Assumes a cylinder shape with some
     fineness ratio
     """
-    def __init__(self, **kwargs):
+    def __init__(self, Wfueltot, **kwargs):
 
         phi = Variable("\\phi", 6, "-", "fuel tank fineness ratio")
         l = Variable("l", "ft", "fuel tank length")
         Stank = Variable("S_{tank}", "ft^2", "fuel tank surface area")
         W = Variable("W", "lbf", "fuel tank weight")
-        Wfueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
+        # Wfueltot = Variable("W_{fuel-tot}", "lbf", "Total fuel weight")
         mfac = Variable("m_{fac}", 1.1, "-", "fuel volume margin factor")
         rhofuel = Variable("\\rho_{fuel}", 6.01, "lbf/gallon",
                            "density of 100LL")
@@ -601,7 +601,7 @@ class FuelTank(Model):
 
 class Fuselage(Model):
     "The thing that carries the fuel, engine, and payload"
-    def __init__(self, **kwargs):
+    def __init__(self, Wfueltot, **kwargs):
         d = Variable("d", "ft", "fuselage diameter")
         lfuse = Variable("l_{fuse}", "ft", "fuselage length")
 
@@ -618,7 +618,7 @@ class Fuselage(Model):
         tskin = Variable("t_{skin}", "in", "skin thickness")
         hengine = Variable("h_{engine}", 6, "in", "engine height")
 
-        ft = FuelTank()
+        ft = FuelTank(Wfueltot)
         self.flight_model = FuselageAero
 
         constraints = [
@@ -938,7 +938,13 @@ class HorizontalBoomBending(Model):
 class Mission(Model):
     "creates flight profile"
     def __init__(self, DF70=False, **kwargs):
-        JHO = Aircraft(DF70)
+
+        mtow = Variable("MTOW", "lbf", "max-take off weight")
+        Wcent = Variable("W_{cent}", "lbf", "center aircraft weight")
+        Wfueltot = Variable("W_{fuel-tot}", "lbf", "total aircraft fuel weight")
+
+        JHO = Aircraft(Wfueltot, DF70)
+        loading = JHO.loading(JHO, Wcent)
 
         climb1 = Climb(10, JHO, alt=np.linspace(0, 15000, 11)[1:], etap=0.508)
         cruise1 = Cruise(1, JHO, etap=0.684, R=180)
@@ -946,18 +952,11 @@ class Mission(Model):
         cruise2 = Cruise(1, JHO, etap=0.684)
         mission = [climb1, cruise1, loiter1, cruise2]
 
-
-        mtow = Variable("MTOW", "lbf", "max-take off weight")
-        Wcent = Variable("W_{cent}", "lbf", "center aircraft weight")
-
-        loading = JHO.loading(JHO, Wcent)
-
         constraints = [
-            mtow >= JHO["W_{zfw}"] + JHO["W_{fuel-tot}"],
-            JHO["W_{fuel-tot}"] >= sum(fs["W_{fuel-fs}"] for fs in mission),
+            mtow >= JHO["W_{zfw}"] + Wfueltot,
+            Wfueltot >= sum(fs["W_{fuel-fs}"] for fs in mission),
             mission[-1]["W_{end}"][-1] >= JHO["W_{zfw}"],
-            Wcent >= (JHO["W_{fuel-tot}"] +
-                      sum(summing_vars(JHO.smeared_loads, "W")))
+            Wcent >= Wfueltot + sum(summing_vars(JHO.smeared_loads, "W"))
             ]
 
         for i, fs in enumerate(mission[1:]):
