@@ -639,7 +639,7 @@ class FuselageSkin(Model):
         rhokevlar = Variable("\\rho_{kevlar}", 1.3629, "g/cm**3",
                              "kevlar density")
         t = Variable("t", "in", "skin thickness")
-        tmin = Variable("t_{min}", 0.012, "in", "minimum skin thickness")
+        tmin = Variable("t_{min}", 0.03, "in", "minimum skin thickness")
         I = Variable("I", "m**4", "wing skin moment of inertia")
 
         self.loading = FuselageSkinL
@@ -660,7 +660,7 @@ class FuselageSkinL(Model):
         sigmakevlar = Variable("\\sigma_{Kevlar}", 190, "MPa",
                                "stress strength of Kevlar")
 
-        constraints = [Mh >= Nmax*Wcent/8*static["l"],
+        constraints = [Mh >= Nmax*Wcent/4*static["l"],
                        sigmakevlar >= Mh*static["d"]/2/static["I"]]
 
         Model.__init__(self, None, constraints)
