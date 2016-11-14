@@ -4,7 +4,9 @@ from submodels.breguet_endurance import BreguetEndurance
 from submodels.gas_engine import Engine
 from submodels.wing import Wing
 from submodels.fuselage import Fuselage
-from submodels.empennage import Empennage, TailBoomState, TailBoomFlexibility
+from submodels.empennage import Empennage
+from submodels.tail_boom import TailBoomState
+from submodels.tail_boom_flex import TailBoomFlexibility
 from helpers import summing_vars
 from gpkit import Model, Variable, vectorize, units
 
