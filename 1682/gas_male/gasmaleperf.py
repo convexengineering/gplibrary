@@ -180,7 +180,7 @@ class Loiter(Model):
                  etap=0.7, **kwargs):
         fs = FlightSegment(N, aircraft, alt, onStation, wind, etap)
 
-        t = Variable("t", 6, "days", "time loitering")
+        t = Variable("t", "days", "time loitering")
         constraints = [fs.be["t"] >= t/N]
 
         Model.__init__(self, None, [constraints, fs], **kwargs)
@@ -243,6 +243,7 @@ class Mission(Model):
         mtow = Variable("MTOW", "lbf", "max-take off weight")
         Wcent = Variable("W_{cent}", "lbf", "center aircraft weight")
         Wfueltot = Variable("W_{fuel-tot}", "lbf", "total aircraft fuel weight")
+        LS = Variable("(W/S)", "lbf/ft**2", "wing loading")
 
         JHO = Aircraft(Wfueltot, DF70)
         loading = JHO.loading(JHO, Wcent)
@@ -254,10 +255,11 @@ class Mission(Model):
         mission = [climb1, cruise1, loiter1, cruise2]
 
         constraints = [
-            mtow >= JHO["W_{zfw}"] + Wfueltot,
+            mtow >= climb1["W_{start}"][0],
             Wfueltot >= sum(fs["W_{fuel-fs}"] for fs in mission),
             mission[-1]["W_{end}"][-1] >= JHO["W_{zfw}"],
-            Wcent >= Wfueltot + sum(summing_vars(JHO.smeared_loads, "W"))
+            Wcent >= Wfueltot + sum(summing_vars(JHO.smeared_loads, "W")),
+            LS == mtow/JHO.wing["S"]
             ]
 
         for i, fs in enumerate(mission[1:]):
@@ -265,12 +267,14 @@ class Mission(Model):
                 mission[i]["W_{end}"][-1] == fs["W_{start}"][0]
                 ])
 
-        Model.__init__(self, mtow, [JHO, mission, loading, constraints],
-                       **kwargs)
+        cost = 1/loiter1["t_Mission, Loiter"]
 
+        Model.__init__(self, cost, [JHO, mission, loading, constraints],
+                       **kwargs)
 
 if __name__ == "__main__":
     M = Mission(DF70=True)
+    M.substitutions.update({"b": 24})
     # JHO.debug(solver="mosek")
     sol = M.solve("mosek")
     print sol.table()
