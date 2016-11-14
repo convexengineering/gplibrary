@@ -1,6 +1,10 @@
 " wing.py "
 import numpy as np
 from gpkit import Variable, Model, vectorize
+from wing_interior import WingInterior
+from wing_skin import WingSkin
+from capspar import CapSpar
+from constant_taper_chord import c_bar
 
 class Wing(Model):
     "The thing that creates the lift"
@@ -48,12 +52,6 @@ class Wing(Model):
         Model.__init__(self, None, [self.components, constraints],
                        **kwargs)
 
-def c_bar(lam, N):
-    "returns wing chord lengths for constant taper wing"
-    eta = np.linspace(0, 1, N)
-    c = 2/(1+lam)*(1+(lam-1)*eta)
-    return c
-
 class WingLoading(Model):
     "wing loading cases"
     def __init__(self, wing, Wcent, **kwargs):
@@ -62,153 +60,6 @@ class WingLoading(Model):
         caploading = wing.capspar.loading(wing.capspar, Wcent)
 
         Model.__init__(self, None, [skinloading, caploading], **kwargs)
-
-class WingInterior(Model):
-    "wing interior model"
-    def __init__(self, cave, b, N, **kwargs):
-
-        W = Variable("W", "lbf", "interior mass of wing")
-        rhofoam = Variable("\\rho_{foam}", 0.036, "g/cm^3", "foam density")
-        Abar = Variable("\\bar{A}_{jh01}", 0.0753449, "-",
-                        "jh01 non dimensional area")
-        g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
-
-        constraints = [W >= 2*(g*rhofoam*Abar*cave**2*(b/2)/(N-1)).sum()]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
-class WingSkin(Model):
-    "wing skin model"
-    def __init__(self, S, croot, b, **kwargs):
-
-        rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
-        W = Variable("W", "lbf", "wing skin weight")
-        g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
-        t = Variable("t", "in", "wing skin thickness")
-        tmin = Variable("t_{min}", 0.012, "in",
-                        "minimum gague wing skin thickness")
-        Jtbar = Variable("\\bar{J/t}", 0.01114, "1/mm",
-                         "torsional moment of inertia")
-
-        self.loading = WingSkinL
-
-        constraints = [W >= rhocfrp*S*2*t*g,
-                       t >= tmin,
-                       Jtbar == Jtbar,
-                       b == b,
-                       croot == croot]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
-class WingSkinL(Model):
-    "wing skin loading model for torsional loads in skin"
-    def __init__(self, static, **kwargs):
-
-        taucfrp = Variable("\\tau_{CFRP}", 570, "MPa", "torsional stress limit")
-        Cmw = Variable("C_{m_w}", 0.121, "-", "negative wing moment coefficent")
-        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
-                         "air density at sea level")
-        Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
-
-        constraints = [
-            taucfrp >= (1/static["\\bar{J/t}"]/(static["c_{root}"])**2
-                        / static["t"]*Cmw*static["S"]*rhosl*Vne**2)]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
-class CapSpar(Model):
-    "cap spar model"
-    def __init__(self, b, cave, tau, N=5, **kwargs):
-        self.N = N
-
-        # phyiscal properties
-        rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
-        E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
-
-        with vectorize(self.N-1):
-            t = Variable("t", "in", "spar cap thickness")
-            hin = Variable("h_{in}", "in", "inner spar height")
-            w = Variable("w", "in", "spar width")
-            I = Variable("I", "m^4", "spar x moment of inertia")
-            dm = Variable("dm", "kg", "segment spar mass")
-
-        W = Variable("W", "lbf", "spar weight")
-        w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
-        g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
-
-        self.loading = CapSparL
-
-        constraints = [I <= 2*w*t*(hin/2)**2,
-                       dm >= rhocfrp*w*t*b/(self.N-1),
-                       W >= 2*dm.sum()*g,
-                       w <= w_lim*cave,
-                       cave*tau >= hin + 2*t,
-                       E == E,
-                      ]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
-class CapSparL(Model):
-    "spar loading model"
-    def __init__(self, static, Wcent, **kwargs):
-
-        Nmax = Variable("N_{max}", 5, "-", "max loading")
-        cbar = c_bar(0.5, static.N)
-        sigmacfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
-        kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
-        with vectorize(static.N-1):
-            Mr = Variable("M_r", "N*m", "wing section root moment")
-
-        beam = Beam(static.N, cbar)
-
-        constraints = [
-            # dimensionalize moment of inertia and young's modulus
-            beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
-                                  / Wcent/static["b"]**2),
-            Mr == (beam["\\bar{M}"][:-1]*Wcent*Nmax*static["b"]/4),
-            sigmacfrp >= Mr*(static["h_{in}"]+static["t"])/static["I"],
-            beam["\\bar{\\delta}"][-1] <= kappa,
-            ]
-
-        Model.__init__(self, None, [beam, constraints], **kwargs)
-
-class Beam(Model):
-    "discretized beam bending model"
-    def __init__(self, N, q, **kwargs):
-
-        with vectorize(N-1):
-            EIbar = Variable("\\bar{EI}", "-",
-                             "normalized YM and moment of inertia")
-
-        with vectorize(N):
-            qbar = Variable("\\bar{q}", q, "-", "normalized loading")
-            Sbar = Variable("\\bar{S}", "-", "normalized shear")
-            Mbar = Variable("\\bar{M}", "-", "normalized moment")
-            th = Variable("\\theta", "-", "deflection slope")
-            dbar = Variable("\\bar{\\delta}", "-", "normalized displacement")
-
-
-        Sbartip = Variable("\\bar{S}_{tip}", 1e-10, "-", "Tip loading")
-        Mbartip = Variable("\\bar{M}_{tip}", 1e-10, "-", "Tip moment")
-        throot = Variable("\\theta_{root}", 1e-10, "-", "Base angle")
-        dbarroot = Variable("\\bar{\\delta}_{root}", 1e-10, "-",
-                            "Base deflection")
-        dx = Variable("dx", "-", "normalized length of element")
-
-        constraints = [
-            Sbar[:-1] >= Sbar[1:] + 0.5*dx*(qbar[:-1] + qbar[1:]),
-            Sbar[-1] >= Sbartip,
-            Mbar[:-1] >= Mbar[1:] + 0.5*dx*(Sbar[:-1] + Sbar[1:]),
-            Mbar[-1] >= Mbartip,
-            th[0] >= throot,
-            th[1:] >= th[:-1] + 0.5*dx*(Mbar[1:] + Mbar[:-1])/EIbar,
-            dbar[0] >= dbarroot,
-            dbar[1:] >= dbar[:-1] + 0.5*dx*(th[1:] + th[:-1]),
-            1 == (N-1)*dx,
-            ]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
 
 class WingAero(Model):
     "wing aerodynamic model with profile and induced drag"
