@@ -1,4 +1,14 @@
+" helpers.py "
+import numpy as np
 from gpkit import ConstraintSet, Variable
+
+def summing_vars(models, varname):
+    "returns a list of variables with shared varname in model list"
+    modelnames = [m.__class__.__name__ for m in models]
+    vkeys = np.hstack([list(m.varkeys[varname]) for m in models])
+    vkeys = [v for v in vkeys if v.models[-1] in modelnames]
+    vrs = [m[v] for m, v in zip(models, vkeys)]
+    return vrs
 
 class SummingConstraintSet(ConstraintSet):
     def __init__(self, lhs, varname, models=[], variables=[], **kwargs):

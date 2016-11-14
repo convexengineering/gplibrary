@@ -3,6 +3,7 @@ import numpy as np
 from submodels.breguet_endurance import BreguetEndurance
 from submodels.flight_state import FlightState
 from submodels.gas_engine import Engine
+from helpers import summing_vars
 from gpkit import Model, Variable, vectorize, units
 
 # pylint: disable=invalid-name
@@ -43,13 +44,13 @@ class Aircraft(Model):
         Model.__init__(self, None, [components, constraints],
                        **kwargs)
 
-def summing_vars(models, varname):
-    "returns a list of variables with shared varname in model list"
-    modelnames = [m.__class__.__name__ for m in models]
-    vkeys = np.hstack([list(m.varkeys[varname]) for m in models])
-    vkeys = [v for v in vkeys if v.models[-1] in modelnames]
-    vrs = [m[v] for m, v in zip(models, vkeys)]
-    return vrs
+# def summing_vars(models, varname):
+#     "returns a list of variables with shared varname in model list"
+#     modelnames = [m.__class__.__name__ for m in models]
+#     vkeys = np.hstack([list(m.varkeys[varname]) for m in models])
+#     vkeys = [v for v in vkeys if v.models[-1] in modelnames]
+#     vrs = [m[v] for m, v in zip(models, vkeys)]
+#     return vrs
 
 class AircraftLoading(Model):
     "aircraft loading model"
