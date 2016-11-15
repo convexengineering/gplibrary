@@ -19,6 +19,7 @@ class TailBoom(Model):
         W = Variable("W", "lbf", "tail boom weight")
         J = Variable("J", "m^4", "tail boom polar moment of inertia")
         S = Variable("S", "ft**2", "tail boom surface area")
+        mfac = Variable("m_{fac}", 1.0, "-", "tail boom margin factor")
 
         self.flight_model = TailBoomAero
         self.horizontalbending = HorizontalBoomBending
@@ -27,7 +28,7 @@ class TailBoom(Model):
 
         constraints = [
             I0 <= np.pi*t0*d0**3/8.0,
-            W >= np.pi*g*rhocfrp*d0*l*t0*kfac,
+            W/mfac >= np.pi*g*rhocfrp*d0*l*t0*kfac,
             t0 >= tmin,
             J <= np.pi/8.0*d0**3*t0,
             S == l*np.pi*d0,
