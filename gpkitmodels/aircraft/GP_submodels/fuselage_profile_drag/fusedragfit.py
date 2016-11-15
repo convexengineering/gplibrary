@@ -27,10 +27,12 @@ def fit_setup(filename):
 
 def return_fit(u_1, u_2, u_3):
     "fit using SMA, K = 4, max RMS = 0.479"
-    w = (0.0097 * (u_1)**0.866 * (u_2)**-0.209 * (u_3)**-0.156
-         + 0.0436 * (u_1)**0.0546 * (u_2)**0.258 * (u_3)**-1.43
-         + 0.00243 * (u_1)**0.0336 * (u_2)**1.22 * (u_3)**0.306
-         + 0.00255 * (u_1)**-0.0317 * (u_2)**-0.585 * (u_3)**1.15)**(1/0.996)
+    w = (
+        0.00243049 * (u_1)**0.033607 * (u_2)**1.21682 * (u_3)**0.306251
+        + 0.00255095 * (u_1)**-0.0316887 * (u_2)**-0.585489 * (u_3)**1.15394
+        + 0.0436011 * (u_1)**0.0545722 * (u_2)**0.258228 * (u_3)**-1.42664
+        + 0.00970479 * (u_1)**0.8661 * (u_2)**-0.209136 * (u_3)**-0.156166) \
+        ** (1/0.996232)
     return w
 
 def plot_fits(filename):
@@ -60,6 +62,7 @@ def plot_fits(filename):
             cd = return_fit(b, n, taillr)
             ax.plot(taillr, cd, c=clr, label="body finess ratio = %d" % b)
         ax.legend()
+        ax.grid()
         ax.set_title("nose finess ratio = %d" % n)
         ax.set_xlabel("tail finess ratio")
         ax.set_ylabel("fuselage $C_{dp}$")
