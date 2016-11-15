@@ -26,7 +26,7 @@ def fit_setup(filename):
     return x, y
 
 def return_fit(u_1, u_2, u_3):
-    "fit using SMA, K = 4"
+    "fit using SMA, K = 4, max RMS = 0.479"
     w = (0.0097 * (u_1)**0.866 * (u_2)**-0.209 * (u_3)**-0.156
          + 0.0436 * (u_1)**0.0546 * (u_2)**0.258 * (u_3)**-1.43
          + 0.00243 * (u_1)**0.0336 * (u_2)**1.22 * (u_3)**0.306
@@ -40,21 +40,35 @@ def plot_fits(filename):
     u1 = np.array(df["tubelr"])
     u2 = np.array(df["noselr"])
     u3 = np.array(df["taillr"])
-    c = np.unique(u1)
-    n = np.unique(u2)
-    t = np.unique(u3)
+    body = np.unique(u1)
+    nose = np.unique(u2)
+    tail = np.unique(u3)
 
-    fig, ax = plt.subplots()
+    figs = []
 
-    for a in c:
-        d = df[(df["tubelr"]==a)]
-        for b in n:
-            data = d[(df["noselr"]==b)]
-            ax.plot(data["taillr"], data["cd_front"])
+    colors = ["k", "m", "b", "g", "y"]
+    assert len(colors) == len(body)
 
+    for n in nose:
+        fig, ax = plt.subplots()
+        datan = df[(df["noselr"] == n)]
+        for b, clr in zip(body, colors):
+            datab = datan[(datan["tubelr"] == b)]
+            ax.plot(datab["taillr"], datab["cd_front"], "o", c=clr)
+            trl = np.array(datab["taillr"])
+            taillr = np.linspace(trl[0], trl[-1], 20)
+            cd = return_fit(b, n, taillr)
+            ax.plot(taillr, cd, c=clr, label="body finess ratio = %d" % b)
+        ax.legend()
+        ax.set_title("nose finess ratio = %d" % n)
+        ax.set_xlabel("tail finess ratio")
+        ax.set_ylabel("fuselage $C_{dp}$")
+        fig.savefig("fuse_drag_nose%d.pdf" % n)
+        figs.append(fig)
 
-
+    return figs
 
 if __name__ == "__main__":
     X, Y = fit_setup("fusedrag.csv")
-    df = plot_fits("fusedrag.csv")
+    df = pd.read_csv("fusedrag.csv")
+    F = plot_fits("fusedrag.csv")
