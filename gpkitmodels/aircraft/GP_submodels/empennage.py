@@ -1,5 +1,4 @@
 " empennage.py "
-import numpy as np
 from gpkit import Variable, Model
 from horizontal_tail import HorizontalTail
 from vertical_tail import VerticalTail
@@ -28,7 +27,6 @@ class Empennage(Model):
 
         Model.__init__(self, None, [self.components, constraints],
                        **kwargs)
-
 
 class EmpennageLoading(Model):
     "tail boom loading case"

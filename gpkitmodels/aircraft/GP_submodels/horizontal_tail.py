@@ -4,7 +4,7 @@ from gpkit import Model, Variable
 
 class HorizontalTail(Model):
     "horizontal tail model"
-    def __init__(self, **kwargs):
+    def __init__(self, lam=0.8, **kwargs):
         Sh = Variable("S", "ft**2", "horizontal tail area")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
         ARh = Variable("AR_h", "-", "horizontal tail aspect ratio")
@@ -23,17 +23,20 @@ class HorizontalTail(Model):
                           "max downlift coefficient")
         mh = Variable("m_h", "-", "horizontal tail span effectiveness")
         cth = Variable("c_{t_h}", "ft", "horizontal tail tip chord")
-        lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", 1.0/(1.0+1), "-",
+        crh = Variable("c_{r_h}", "ft", "horizontal tail root chord")
+        lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", lam/(lam+1), "-",
                            "horizontal tail taper ratio factor")
         CLhtmax = Variable("C_{L_{max}}", "-", "maximum CL of horizontal tail")
+        mfac = Variable("m_{fac}", 1.1, "-", "horizontal tail margin factor")
 
         self.flight_model = HorizontalTailAero
 
         constraints = [
             bh**2 == ARh*Sh,
             mh*(1+2/ARh) <= 2*np.pi,
-            W >= g*rhoskin*Sh + rhofoam*Sh**2/bh*Abar,
+            W/mfac >= g*rhoskin*Sh + rhofoam*Sh**2/bh*Abar,
             cth == 2*Sh/bh*lamhfac,
+            crh == cth/lam,
             lh == lh,
             CLhmin == CLhmin,
             CLhtmax == CLhtmax,
