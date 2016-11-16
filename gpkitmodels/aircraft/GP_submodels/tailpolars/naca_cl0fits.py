@@ -23,21 +23,22 @@ def text_to_df(filename):
             data[titles[i]].append(v)
 
     df = pd.DataFrame(data)
+    df = df.astype(float)
     return df
 
 def fit_setup(naca_range, re_range):
     "set up x and y parameters for gp fitting"
-    tau = [float(n)/100 for n in naca_range]*len(re_range)
-    re = []
+    tau = [[float(n)]*len(re_range) for n in naca_range]
+    re = [re_range]*len(naca_range)
     cd = []
-    for r in re_range:
-        for n in naca_range:
+    for n in naca_range:
+        for r in re_range:
             dataf = text_to_df("naca%s.cl0.Re%dk.pol" % (n, r))
             cd.append(dataf["CD"])
-        re.append([r*1000.0]*len(naca_range))
 
-    u1 = np.hstack(tau)
-    u2 = np.hstack(re)
+
+    u1 = np.hstack(re)
+    u2 = np.hstack(tau)
     w = np.hstack(cd)
     u1 = u1.astype(np.float)
     u2 = u2.astype(np.float)
@@ -47,31 +48,41 @@ def fit_setup(naca_range, re_range):
     y = np.log(w)
     return x, y
 
-def return_fit(cl, re):
-    "polar fit for the JHO1 airfoil"
-    cd = (0.0247*cl**2.49*re**-1.11 + 2.03e-7*cl**12.7*re**-0.338 +
-          6.35e10*cl**-0.243*re**-3.43 + 6.49e-6*cl**-1.9*re**-0.681)**(1/3.72)
-    # SMA function, K=3, max RMS error = 0.00489
-    return cd
+def return_fit(u_1, u_2):
+    "naca tau and reynolds fit"
+    w = (7.42688e-90 * (u_1)**-33.0637 * (u_2)**18.0419
+         + 5.02826e-163 * (u_1)**-18.7959 * (u_2)**53.1879
+         + 4.22901e-77 * (u_1)**-41.1704 * (u_2)**28.4609)**(1/70.5599)
+    # SMA function, K=3, max RMS error = 0.0173
+    return w
 
-def plot_fits(re):
+def plot_fits(naca_range, re_range):
     "plot fit compared to data"
-    colors = ["k", "m", "b", "g", "y"]
-    assert len(re) == len(colors)
+
     fig, ax = plt.subplots()
-    cls = np.linspace(0.2, 1.3, 20)
-    for r, col in zip(re, colors):
-        dataf = text_to_df("jh01.ncrit09.Re%dk.pol" % r)
-        ax.plot(dataf["CL"], dataf["CD"], "o", c=col)
-        cd = return_fit(cls, r*1000.)
-        ax.plot(cls, cd, c=col, label="Re = %dk" % r)
-    ax.legend(loc=2)
-    ax.set_xlabel("$C_L$")
-    ax.set_ylabel("$C_D$")
+    colors = ["k", "m", "b", "g", "y", "r"]
+    assert len(colors) == len(naca_range)
+    res = np.linspace(re_range[0], re_range[-1], 50)
+    for n, col in zip(naca_range, colors):
+        cd = []
+        for r in re_range:
+            dataf = text_to_df("naca%s.cl0.Re%dk.pol" % (n, r))
+            cd.append(dataf["CD"])
+        if True in [c.empty for c in cd]:
+            i = [c.empty for c in cd].index(True)
+            cd[i] = (cd[i-1] + cd[i+1])/2
+        ax.plot(re_range, cd, "o", c=col)
+        w = return_fit(res, float(n))
+        ax.plot(res, w, c=col, label="NACA %s" % n)
+    ax.legend()
+    ax.set_xlabel("$Re$")
+    ax.set_ylabel("$c_{dp}$")
     ax.grid()
     return fig, ax
 
 if __name__ == "__main__":
-    Re = range(200, 750, 50)
+    Re = range(200, 950, 50)
     NACA = ["0005", "0008", "0009", "0010", "0015", "0020"]
     X, Y = fit_setup(NACA, Re) # call fit(X, Y, 4, "SMA") to get fit
+    F, A = plot_fits(NACA, Re)
+    F.savefig("taildragpolar.pdf")
