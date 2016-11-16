@@ -31,7 +31,7 @@ def fit_setup(Re_range):
     CD = []
     RE = []
     for r in Re_range:
-        dataf = text_to_df("jh01.ncrit09.Re%dk.pol" % r)
+        dataf = text_to_df("jho1.ncrit09.Re%dk.pol" % r)
         CL.append(dataf["CL"])
         CD.append(dataf["CD"])
         RE.append([r*1000.0]*len(dataf["CL"]))
@@ -63,7 +63,7 @@ def plot_fits(re):
     fig, ax = plt.subplots()
     cls = np.linspace(0.2, 1.3, 20)
     for r, col in zip(re, colors):
-        dataf = text_to_df("jh01.ncrit09.Re%dk.pol" % r)
+        dataf = text_to_df("jho1.ncrit09.Re%dk.pol" % r)
         ax.plot(dataf["CL"], dataf["CD"], "o", c=col)
         cd = return_fit(cls, r*1000.)
         ax.plot(cls, cd, c=col, label="Re = %dk" % r)
@@ -77,4 +77,4 @@ if __name__ == "__main__":
     Re = range(200, 750, 50)
     X, Y = fit_setup(Re) # call fit(X, Y, 4, "SMA") to get fit
     F, A = plot_fits([300, 350, 400, 450, 500])
-    F.savefig("jh01polarfit1.pdf")
+    F.savefig("jho1polarfit1.pdf")

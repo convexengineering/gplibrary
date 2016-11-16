@@ -3,7 +3,7 @@ from gpkit import Model, Variable
 
 class VerticalTail(Model):
     "vertical tail model"
-    def __init__(self, lam=0.9, **kwargs):
+    def __init__(self, lam=0.7, **kwargs):
 
         W = Variable("W", "lbf", "one vertical tail weight")
         Sv = Variable("S", "ft**2", "total vertical tail surface area")
