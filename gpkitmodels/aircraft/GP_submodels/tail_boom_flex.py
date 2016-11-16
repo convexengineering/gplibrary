@@ -16,7 +16,7 @@ class TailBoomFlexibility(Model):
 
         constraints = [
             Fne >= (1 + htail["m_h"]*0.5*state["V_{NE}"]**2*state["\\rho_{sl}"]
-                    * htail["S"]*tailboom["l"]**2/tailboom["E"]
+                    * htail["S"]*htail["l_h"]**2/tailboom["E"]
                     / tailboom["I_0"]*tailboom["(1-k/2)"]),
             sph1*(wing["m_w"]*Fne/htail["m_h"]/htail["V_h"]) + deda <= 1,
             sph2 <= htail["V_h"]*htail["(C_{L_h})_{min}"]/wing["C_{L_{max}}"],
