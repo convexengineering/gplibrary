@@ -82,28 +82,30 @@ if __name__ == "__main__":
     for av in [80, 90, 95]:
         Wind = []
         for l in np.arange(0, 70, 1):
-            Wind.append(get_windspeed(l, av, 16000, 72))
+            Wind.append(get_windspeed(l, av, 15000, 355))
         Ax.plot(Wind, np.arange(0, 70, 1))
 
     Ax.set_ylabel("Latitude [deg]")
     Ax.set_xlabel("Wind speed [m/s]")
     Ax.set_ylim([0, 70])
     Ax.grid()
+    Ax.set_title("Altitude = 15000ft, Dec")
     Ax.legend(["%d Percentile Winds" % b for b in [80, 90, 95]], loc=2,
               fontsize=15)
-    Fig.savefig("latvswindh16.pdf", bbox_inches="tight")
+    Fig.savefig("latvswindh15.pdf", bbox_inches="tight")
 
     Fig, Ax = plt.subplots()
     for av in [80, 90, 95]:
         Wind = []
         for l in np.arange(0, 70, 1):
-            Wind.append(get_windspeed(l, av, 50000, 72))
+            Wind.append(get_windspeed(l, av, 50000, 355))
         Ax.plot(Wind, np.arange(0, 70, 1))
 
     Ax.set_ylabel("Latitude [deg]")
     Ax.set_xlabel("Wind speed [m/s]")
     Ax.set_ylim([0, 70])
     Ax.grid()
+    Ax.set_title("Altitude = 50000ft, Dec")
     Ax.legend(["%d Percentile Winds" % b for b in [80, 90, 95]], loc=2,
               fontsize=15)
     Fig.savefig("latvswindh50.pdf", bbox_inches="tight")
@@ -111,7 +113,7 @@ if __name__ == "__main__":
     Fig, Ax = plt.subplots()
     Alt = range(1000, 80000, 1000)
     for av in [80, 90, 95]:
-        Wind = get_windspeed(45, av, Alt, 72)
+        Wind = get_windspeed(45, av, Alt, 355)
         Ax.plot(Wind, Alt)
     Ax.set_ylabel("Altitude [ft]")
     Ax.set_xlabel("Wind speed [m/s]")
@@ -123,7 +125,7 @@ if __name__ == "__main__":
 
     Fig, Ax = plt.subplots()
     for av in [80, 90, 95]:
-        Wind = get_windspeed(30, av, Alt, 72)
+        Wind = get_windspeed(30, av, Alt, 355)
         Ax.plot(Wind, Alt)
     Ax.set_ylabel("Altitude [ft]")
     Ax.set_xlabel("Wind speed [m/s]")
