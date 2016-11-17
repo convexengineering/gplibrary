@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size':19})
 
-def get_windspeed(latitude, perc, altitude, day, path="windspeeds/bymonth/"):
+def get_windspeed(latitude, perc, altitude, day, path="/Users/mjburton11/MIT/GPKIT/gpkit-models/gpkitmodels/environment/windspeeds/bymonth/"):
     """
     Method to return windspeeds for different latitudes
     altitudes/percentiles
