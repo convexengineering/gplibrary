@@ -3,6 +3,8 @@ from numpy import sqrt
 
 def get_airvars(altitude):
     """
+    based off of : http://www-mdp.eng.cam.ac.uk/web/library/enginfo/aerothermal_dvd_only/aero/atmos/atmos.html
+
     inputs
     ------
     altitude: atmosphereic altitude ft
