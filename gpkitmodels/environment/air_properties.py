@@ -1,6 +1,6 @@
 " air properties function of altitude "
 
-def get_density(altitude):
+def get_airvars(altitude):
     """
     inputs
     ------
