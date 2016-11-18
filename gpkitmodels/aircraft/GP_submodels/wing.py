@@ -4,16 +4,17 @@ from gpkit import Variable, Model, vectorize
 from wing_interior import WingInterior
 from wing_skin import WingSkin
 from capspar import CapSpar
+from tube_spar import TubeSpar
 from constant_taper_chord import c_bar
 
 class Wing(Model):
     "The thing that creates the lift"
-    def __init__(self, N=5, lam=0.5, **kwargs):
+    def __init__(self, N=5, lam=0.5, spar="CapSpar", **kwargs):
 
         W = Variable("W", "lbf", "weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
         S = Variable("S", "ft^2", "surface area")
-        A = Variable("A", "-", "aspect ratio")
+        AR = Variable("AR", "-", "aspect ratio")
         b = Variable("b", "ft", "wing span")
         tau = Variable("\\tau", 0.115, "-", "airfoil thickness ratio")
         CLmax = Variable("C_{L_{max}}", 1.39, "-", "maximum CL of JHO1")
@@ -31,7 +32,7 @@ class Wing(Model):
 
         self.flight_model = WingAero
 
-        constraints = [b**2 == S*A,
+        constraints = [b**2 == S*AR,
                        tau == tau,
                        CLmax == CLmax,
                        CM == CM,
@@ -41,10 +42,13 @@ class Wing(Model):
                        croot == S/b*cb[0],
                        cmac == S/b]
 
-        self.capspar = CapSpar(b, cave, tau, N)
+        if spar == "CapSpar":
+            self.spar = CapSpar(b, cave, tau, N)
+        elif spar == "TubeSpar":
+            self.spar = TubeSpar(b, cave, tau, N)
         self.wingskin = WingSkin(S, croot, b)
         self.winginterior = WingInterior(cave, b, N)
-        self.components = [self.capspar, self.wingskin, self.winginterior]
+        self.components = [self.spar, self.wingskin, self.winginterior]
         self.loading = WingLoading
 
         constraints.extend([W/mfac >= sum(c["W"] for c in self.components)])
@@ -57,7 +61,7 @@ class WingLoading(Model):
     def __init__(self, wing, Wcent, **kwargs):
 
         skinloading = wing.wingskin.loading(wing.wingskin)
-        caploading = wing.capspar.loading(wing.capspar, Wcent)
+        caploading = wing.spar.loading(wing.spar, Wcent)
 
         Model.__init__(self, None, [skinloading, caploading], **kwargs)
 
@@ -72,7 +76,7 @@ class WingAero(Model):
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
 
         constraints = [
-            Cd >= cdp + CL**2/np.pi/static["A"]/e,
+            Cd >= cdp + CL**2/np.pi/static["AR"]/e,
             cdp**3.72 >= (0.0247*CL**2.49*Re**-1.11
                           + 2.03e-7*CL**12.7*Re**-0.338
                           + 6.35e10*CL**-0.243*Re**-3.43
