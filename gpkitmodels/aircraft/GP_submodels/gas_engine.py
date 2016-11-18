@@ -76,13 +76,7 @@ class EnginePerf(Model):
 
         constraints.extend([Pshaftmax/static["P_{sl-max}"] == Leng,
                             Pshaftmax >= Ptotal,
+                            Ptotal >= Pshaft + Pavn/eta_alternator,
                             rpm <= rpm_max])
-
-        if state.onStation:
-            constraints.extend([
-                Ptotal >= Pshaft + (Pavn + Ppay)/eta_alternator])
-        else:
-            constraints.extend([Ptotal >= Pshaft + Pavn/eta_alternator])
-
 
         Model.__init__(self, None, constraints, **kwargs)
