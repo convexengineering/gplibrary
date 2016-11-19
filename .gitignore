@@ -4,6 +4,11 @@
 # MOSEK CLI folder
 gpkit_tmp/
 
+# gpkit markdown generated files
+*.generated.tex
+*.md.py
+*.md.tex.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

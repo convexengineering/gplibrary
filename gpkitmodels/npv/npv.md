@@ -78,7 +78,8 @@ $$ \text{C} \leq\text{C}_r \Delta t $$
         return cls().solve()
 
 if __name__ == "__main__":
-    SOL = NPV.test()
+    M = NPV()
+    SOL = M.solve()
     with open("vartable.generated.tex", "w") as f:
         f.write("\\begin{tabbing}\n  XXXXXXXXXX \\= \\kill\n")
         for var in M.varkeys:
