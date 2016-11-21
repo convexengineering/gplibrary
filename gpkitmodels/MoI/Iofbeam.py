@@ -12,16 +12,20 @@ sweep_ro = False
 
 plot = False
 
+# Creating the model for the moment of inertia of a cylindrical cross-section
+# Note: sweeps were created to check constraint tightness
+
 class Beam(Model):
     def __init__(self):
         I     = Variable("I","m^4","Moment of inertia")
         A     = Variable("A", "m^2","Cross-sectional area")
         ro    = Variable("r_o" ,'m', 'Outer radius')
         romax = Variable('r_o_{max}','m', 'Maximum outer radius')
-        
+
         constraints = [TCS([4*I**2/(A**2*ro**2) + A/pi <= ro**2]),
                         ro <= romax]
 
+        # Minimizing cross-sectional area => min(weight)
         objective = A
 
         Model.__init__(self,objective,constraints)
