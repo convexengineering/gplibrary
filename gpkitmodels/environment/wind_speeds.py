@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size':19})
 
-def get_windspeed(latitude, perc, altitude, day, path="/Users/mjburton11/MIT/GPKIT/gpkit-models/gpkitmodels/environment/windspeeds/bymonth/"):
+def get_windspeed(latitude, perc, altitude, day,
+                  path="/Users/mjburton11/MIT/GPKIT/gpkit-models/gpkitmodels/environment/windspeeds/bymonth/"):
     """
     Method to return windspeeds for different latitudes
     altitudes/percentiles
@@ -79,78 +80,57 @@ def interpolate(xs, ys, x):
 if __name__ == "__main__":
 
     Fig, Ax = plt.subplots()
-    for av in [80, 90, 95]:
-        Wind = []
-        for l in np.arange(0, 70, 1):
-            Wind.append(get_windspeed(l, av, 15000, 355))
-        Ax.plot(Wind, np.arange(0, 70, 1))
-
+    Colors = ["b", "g", "r"]
+    for al, c in zip([15000, 50000, 60000], Colors):
+        Wind85 = [get_windspeed(l, 85, al, 355) for l in np.arange(70)]
+        Wind90 = [get_windspeed(l, 90, al, 355) for l in np.arange(70)]
+        Wind95 = [get_windspeed(l, 95, al, 355) for l in np.arange(70)]
+        Ax.fill_betweenx(np.arange(70), Wind85, Wind95, alpha=0.5, facecolor=c)
+        Ax.plot(Wind90, np.arange(70), c, label="Altitude=%d" % al)
     Ax.set_ylabel("Latitude [deg]")
     Ax.set_xlabel("Wind speed [m/s]")
     Ax.set_ylim([0, 70])
     Ax.grid()
-    Ax.set_title("Altitude = 15000ft, Dec")
-    Ax.legend(["%d Percentile Winds" % b for b in [80, 90, 95]], loc=2,
-              fontsize=15)
-    Fig.savefig("latvswindh15.pdf", bbox_inches="tight")
-
-    Fig, Ax = plt.subplots()
-    for av in [80, 90, 95]:
-        Wind = []
-        for l in np.arange(0, 70, 1):
-            Wind.append(get_windspeed(l, av, 50000, 355))
-        Ax.plot(Wind, np.arange(0, 70, 1))
-
-    Ax.set_ylabel("Latitude [deg]")
-    Ax.set_xlabel("Wind speed [m/s]")
-    Ax.set_ylim([0, 70])
-    Ax.grid()
-    Ax.set_title("Altitude = 50000ft, Dec")
-    Ax.legend(["%d Percentile Winds" % b for b in [80, 90, 95]], loc=2,
-              fontsize=15)
-    Fig.savefig("latvswindh50.pdf", bbox_inches="tight")
+    Ax.legend(loc=2, fontsize=15)
+    Ax.set_title("85%-95% Wind Speeds in Dec")
+    Fig.savefig("latvswind.pdf", bbox_inches="tight")
 
     Fig, Ax = plt.subplots()
     Alt = range(1000, 80000, 1000)
-    for av in [80, 90, 95]:
-        Wind = get_windspeed(45, av, Alt, 355)
-        Ax.plot(Wind, Alt)
+    for l, c in zip([30, 35, 45], Colors):
+        Wind85 = get_windspeed(l, 85, Alt, 355)
+        Wind90 = get_windspeed(l, 90, Alt, 355)
+        Wind95 = get_windspeed(l, 95, Alt, 355)
+        Ax.fill_betweenx(Alt, Wind85, Wind95, alpha=0.5, facecolor=c)
+        Ax.plot(Wind90, Alt, c, label="Latitude=%d" % l)
     Ax.set_ylabel("Altitude [ft]")
     Ax.set_xlabel("Wind speed [m/s]")
-    Ax.set_ylim([0, 100000])
+    Ax.set_ylim([0, 80000])
     Ax.grid()
-    Ax.legend(["%d Percentile Winds" % b for b in [80, 90, 95]], loc=1,
-              fontsize=15)
-    Fig.savefig("altvswindl45.pdf", bbox_inches="tight")
-
-    Fig, Ax = plt.subplots()
-    for av in [80, 90, 95]:
-        Wind = get_windspeed(30, av, Alt, 355)
-        Ax.plot(Wind, Alt)
-    Ax.set_ylabel("Altitude [ft]")
-    Ax.set_xlabel("Wind speed [m/s]")
-    Ax.set_ylim([0, 100000])
-    Ax.grid()
-    Ax.legend(["%d Percentile Winds" % b for b in [80, 90, 95]], loc=1,
-              fontsize=15)
-    Fig.savefig("altvswindl30.pdf", bbox_inches="tight")
+    Ax.legend(loc=1, fontsize=15)
+    Ax.set_title("85%-95% Wind Speeds in Dec")
+    Fig.savefig("altvswind.pdf", bbox_inches="tight")
 
     Fig, Ax = plt.subplots()
     Mos = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep",
-           "oct", "nov", "dec"]
+           "oct", "nov", "dec", "jan"]
     Dayinmo = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     Moday = [sum(Dayinmo[:i+1]) for i in range(len(Dayinmo))]
     Mid = [(Moday[i]+Moday[i+1])/2 for i in range(len(Moday)-1)]
-    for av in [80, 90, 95]:
-        Wind = []
-        for d in Mid:
-            Wind.append(get_windspeed(30, av, 15000, d))
-        Ax.plot(range(12), Wind)
-    Ax.set_xticks(range(12))
-    Ax.set_xticklabels(Mos)
+    for al, c in zip([15000, 50000, 60000], Colors):
+        Wind85 = [get_windspeed(45, 85, al, d) for d in Mid]
+        Wind90 = [get_windspeed(45, 90, al, d) for d in Mid]
+        Wind95 = [get_windspeed(45, 95, al, d) for d in Mid]
+        Ax.fill_between(range(13), Wind85 + [Wind85[0]], Wind95 + [Wind95[0]],
+                        alpha=0.5, facecolor=c)
+        Ax.plot(range(13), Wind90 + [Wind90[0]], c, label="Altitude=%d" % al)
+    Ax.set_xticks(np.arange(12))
+    Ax.set_xticks(np.arange(12)+0.5, minor=True)
+    Ax.set_xticklabels(Mos, minor=True)
+    Ax.set_xticklabels([])
     Ax.set_ylabel("Wind speed [m/s]")
     Ax.set_ylim([0, 50])
     Ax.grid()
-    Ax.legend(["%d Percentile Winds" % b for b in [80, 90, 95]], loc=1,
-              fontsize=15)
+    Ax.legend(loc=1, fontsize=15)
+    Ax.set_title("85%-95% Wind Speeds in Dec")
     Fig.savefig("windvsmonth.pdf", bbox_inches="tight")

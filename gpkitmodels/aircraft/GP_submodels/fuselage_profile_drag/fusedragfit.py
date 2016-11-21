@@ -26,7 +26,7 @@ def fit_setup(filename):
     return x, y
 
 def return_fit(u_1, u_2, u_3):
-    "fit using SMA, K = 4, max RMS = 0.479"
+    "fit using SMA, K = 4, RMS = 0.0479"
     w = (
         0.00243049 * (u_1)**0.033607 * (u_2)**1.21682 * (u_3)**0.306251
         + 0.00255095 * (u_1)**-0.0316887 * (u_2)**-0.585489 * (u_3)**1.15394
