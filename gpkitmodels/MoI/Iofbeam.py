@@ -1,7 +1,5 @@
 from numpy import pi, cos, tan
-import numpy as np
 from gpkit import Variable, Model, units
-from gpkit.tools import te_exp_minus1
 from gpkit.constraints.tight import TightConstraintSet as TCS
 import matplotlib.pyplot as plt
 
