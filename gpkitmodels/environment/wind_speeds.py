@@ -132,5 +132,5 @@ if __name__ == "__main__":
     Ax.set_ylim([0, 50])
     Ax.grid()
     Ax.legend(loc=1, fontsize=15)
-    Ax.set_title("85%-95% Wind Speeds in Dec")
+    Ax.set_title("85%-95% Wind Speeds at 45 deg Lat")
     Fig.savefig("windvsmonth.pdf", bbox_inches="tight")
