@@ -16,7 +16,7 @@ class Fuselage(Model):
         W = Variable("W", "lbf", "Fuselage weight")
         mfac = Variable("m_{fac}", 2.1, "-", "Fuselage weight margin factor")
         hengine = Variable("h_{engine}", 6, "in", "engine height")
-        phi = Variable("\\phi", 6, "-", "fuselage fineness ratio")
+        phi = Variable("\\phi", 12, "-", "fuselage fineness ratio")
 
         self.fueltank = FuelTank(Wfueltot)
         self.skin = FuselageSkin(S, d, l)
@@ -25,7 +25,7 @@ class Fuselage(Model):
         self.loading = FuselageLoading
 
         constraints = [
-            phi == l/d,
+            phi == l/(d/2),
             S >= np.pi*d*l + np.pi*d**2,
             np.pi*(d/2)**2*l >= self.fueltank["\\mathcal{V}"] + Volavn,
             d >= hengine,
@@ -38,9 +38,10 @@ class FuselageLoading(Model):
     "fuselage loading cases"
     def __init__(self, fuselage, Wcent):
 
-        skinloading = fuselage.skin.loading(fuselage.skin, Wcent)
+        loading = [fuselage.skin.loading(fuselage.skin, Wcent)]
+        loading.append(fuselage.skin.landing(fuselage.skin, Wcent))
 
-        Model.__init__(self, None, skinloading)
+        Model.__init__(self, None, loading)
 
 class FuselageAero(Model):
     "fuselage drag model"
