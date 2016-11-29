@@ -28,6 +28,7 @@ class HorizontalTail(Model):
                            "horizontal tail taper ratio factor")
         CLhtmax = Variable("C_{L_{max}}", "-", "maximum CL of horizontal tail")
         mfac = Variable("m_{fac}", 1.1, "-", "horizontal tail margin factor")
+        tau = Variable("\\tau", 0.08, "-", "horizontal tail thickness ratio")
 
         self.flight_model = HorizontalTailAero
 
@@ -41,6 +42,7 @@ class HorizontalTail(Model):
             CLhmin == CLhmin,
             CLhtmax == CLhtmax,
             Vh == Vh,
+            tau == tau,
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
@@ -49,13 +51,18 @@ class HorizontalTailAero(Model):
     "horizontal tail aero model"
     def __init__(self, static, state, **kwargs):
 
-        Cf = Variable("C_f", "-", "fuselage skin friction coefficient")
-        Re = Variable("Re", "-", "fuselage reynolds number")
+        Re = Variable("Re", "-", "horizontal tail reynolds number")
+        Cd = Variable("C_d", "-", "horizontal tail drag coefficient")
 
         constraints = [
             Re == (state["V"]*state["\\rho"]*static["S"]/static["b_h"]
                    / state["\\mu"]),
-            Cf >= 0.455/Re**0.3,
+            Cd**70.5599 >= (7.42688e-90*(Re/1000)**-33.0637
+                            * (static["\\tau"]*100)**18.0419
+                            + 5.02826e-163*(Re/1000)**-18.7959
+                            * (static["\\tau"]*100)**53.1879
+                            + 4.22901e-77*(Re/1000)**-41.1704
+                            * (static["\\tau"]*100)**28.4609)
             ]
 
         Model.__init__(self, None, constraints, **kwargs)
