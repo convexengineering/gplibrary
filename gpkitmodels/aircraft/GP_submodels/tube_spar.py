@@ -1,6 +1,6 @@
 " tube spar for wing "
 from numpy import pi
-from gpkit import Variable, Model, vectorize
+from gpkit import Variable, Model, Vectorize
 from chord_spar_loading import ChordSparL
 
 class TubeSpar(Model):
@@ -11,7 +11,7 @@ class TubeSpar(Model):
         rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CF")
 
-        with vectorize(self.N-1):
+        with Vectorize(self.N-1):
             d = Variable("d", "in", "spar diameter")
             I = Variable("I", "m^4", "spar x moment of inertia")
             Sy = Variable("S_y", "m**3", "section modulous")

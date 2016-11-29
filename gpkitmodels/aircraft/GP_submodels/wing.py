@@ -1,6 +1,6 @@
 " wing.py "
 import numpy as np
-from gpkit import Variable, Model, vectorize
+from gpkit import Variable, Model, Vectorize
 from wing_interior import WingInterior
 from wing_skin import WingSkin
 from capspar import CapSpar
@@ -24,10 +24,12 @@ class Wing(Model):
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
         cb = c_bar(lam, N)
-        with vectorize(N):
+        with Vectorize(N):
             cbar = Variable("\\bar{c}", cb, "-",
                             "normalized chord at mid element")
-        with vectorize(N-1):
+        with Vectorize(N-1):
+            cbave = Variable("\\bar{c}_{ave}", (cb[1:]+cb[:-1])/2, "-",
+                             "normalized mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
 
         self.flight_model = WingAero
@@ -38,7 +40,7 @@ class Wing(Model):
                        CM == CM,
                        mw == mw,
                        cbar == cbar,
-                       cave == (cb[1:] + cb[:-1])/2*S/b,
+                       cave == cbave*S/b,
                        croot == S/b*cb[0],
                        cmac == S/b]
 

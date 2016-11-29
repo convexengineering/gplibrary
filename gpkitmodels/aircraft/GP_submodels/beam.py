@@ -1,15 +1,15 @@
 " discretized beam model "
-from gpkit import Model, Variable, vectorize
+from gpkit import Model, Variable, Vectorize
 
 class Beam(Model):
     "discretized beam bending model"
     def __init__(self, N, q, **kwargs):
 
-        with vectorize(N-1):
+        with Vectorize(N-1):
             EIbar = Variable("\\bar{EI}", "-",
                              "normalized YM and moment of inertia")
 
-        with vectorize(N):
+        with Vectorize(N):
             qbar = Variable("\\bar{q}", q, "-", "normalized loading")
             Sbar = Variable("\\bar{S}", "-", "normalized shear")
             Mbar = Variable("\\bar{M}", "-", "normalized moment")

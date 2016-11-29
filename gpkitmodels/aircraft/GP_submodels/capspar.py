@@ -1,5 +1,5 @@
 " cap spar "
-from gpkit import Model, Variable, vectorize
+from gpkit import Model, Variable, Vectorize
 from chord_spar_loading import ChordSparL
 
 class CapSpar(Model):
@@ -11,7 +11,7 @@ class CapSpar(Model):
         rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
 
-        with vectorize(self.N-1):
+        with Vectorize(self.N-1):
             t = Variable("t", "in", "spar cap thickness")
             hin = Variable("h_{in}", "in", "inner spar height")
             w = Variable("w", "in", "spar width")
