@@ -74,7 +74,7 @@ class VerticalBoomTorsion(Model):
 
         constraints = [
             T >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S"]
-                  * vtail["C_{L_{max}}"]*vtail["b_v"]),
+                  * vtail["C_{L_{max}}"]*vtail["b"]),
             taucfrp >= T*tailboom["d_0"]/2/tailboom["J"]
             ]
 

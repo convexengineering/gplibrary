@@ -1,6 +1,7 @@
 " horizontal tail "
 import numpy as np
 from gpkit import Model, Variable
+from tail_aero import TailAero
 
 class HorizontalTail(Model):
     "horizontal tail model"
@@ -14,7 +15,7 @@ class HorizontalTail(Model):
                            "Density of formular 250")
         rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
                            "horizontal tail skin density")
-        bh = Variable("b_h", "ft", "horizontal tail span")
+        bh = Variable("b", "ft", "horizontal tail span")
         W = Variable("W", "lbf", "horizontal tail weight")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
         g = Variable("g", 9.81, "m/s^2", "Gravitational acceleration")
@@ -30,7 +31,7 @@ class HorizontalTail(Model):
         mfac = Variable("m_{fac}", 1.1, "-", "horizontal tail margin factor")
         tau = Variable("\\tau", 0.08, "-", "horizontal tail thickness ratio")
 
-        self.flight_model = HorizontalTailAero
+        self.flight_model = TailAero
 
         constraints = [
             bh**2 == ARh*Sh,
@@ -43,26 +44,6 @@ class HorizontalTail(Model):
             CLhtmax == CLhtmax,
             Vh == Vh,
             tau == tau,
-            ]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
-class HorizontalTailAero(Model):
-    "horizontal tail aero model"
-    def __init__(self, static, state, **kwargs):
-
-        Re = Variable("Re", "-", "horizontal tail reynolds number")
-        Cd = Variable("C_d", "-", "horizontal tail drag coefficient")
-
-        constraints = [
-            Re == (state["V"]*state["\\rho"]*static["S"]/static["b_h"]
-                   / state["\\mu"]),
-            Cd**70.5599 >= (7.42688e-90*(Re/1000)**-33.0637
-                            * (static["\\tau"]*100)**18.0419
-                            + 5.02826e-163*(Re/1000)**-18.7959
-                            * (static["\\tau"]*100)**53.1879
-                            + 4.22901e-77*(Re/1000)**-41.1704
-                            * (static["\\tau"]*100)**28.4609)
             ]
 
         Model.__init__(self, None, constraints, **kwargs)

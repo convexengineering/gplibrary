@@ -1,5 +1,6 @@
 " vertical tail "
 from gpkit import Model, Variable
+from tail_aero import TailAero
 
 class VerticalTail(Model):
     "vertical tail model"
@@ -9,7 +10,7 @@ class VerticalTail(Model):
         Sv = Variable("S", "ft**2", "total vertical tail surface area")
         Vv = Variable("V_v", 0.025, "-", "vertical tail volume coefficient")
         ARv = Variable("AR_v", "-", "vertical tail aspect ratio")
-        bv = Variable("b_v", "ft", "one vertical tail span")
+        bv = Variable("b", "ft", "one vertical tail span")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
                            "Density of formular 250")
         rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
@@ -25,8 +26,9 @@ class VerticalTail(Model):
         CLvtmax = Variable("C_{L_{max}}", 1.1, "-",
                            "maximum CL of vertical tail")
         mfac = Variable("m_{fac}", 1.1, "-", "vertical tail margin factor")
+        tau = Variable("\\tau", 0.08, "-", "vertical tail thickness ratio")
 
-        self.flight_model = VerticalTailAero
+        self.flight_model = TailAero
 
         constraints = [Vv == Vv,
                        lv == lv,
@@ -35,21 +37,7 @@ class VerticalTail(Model):
                        ctv == 2*Sv/bv*lamvfac,
                        crv == ctv/lam,
                        CLvtmax == CLvtmax,
+                       tau == tau
                       ]
-
-        Model.__init__(self, None, constraints, **kwargs)
-
-class VerticalTailAero(Model):
-    "horizontal tail aero model"
-    def __init__(self, static, state, **kwargs):
-
-        Cf = Variable("C_f", "-", "fuselage skin friction coefficient")
-        Re = Variable("Re", "-", "fuselage reynolds number")
-
-        constraints = [
-            Re == (state["V"]*state["\\rho"]*static["S"]/static["b_v"]
-                   / state["\\mu"]),
-            Cf >= 0.455/Re**0.3,
-            ]
 
         Model.__init__(self, None, constraints, **kwargs)
