@@ -11,7 +11,7 @@ class TailBoom(Model):
         k = Variable("k", 0.8, "-", "tail boom inertia value")
         kfac = Variable("(1-k/2)", 1-k.value/2, "-", "(1-k/2)")
         I0 = Variable("I_0", "m^4", "tail boom moment of inertia")
-        d0 = Variable("d_0", "ft", "tail boom diameter")
+        d0 = Variable("d_0", "in", "tail boom diameter")
         t0 = Variable("t_0", "mm", "tail boom thickness")
         tmin = Variable("t_{min}", 0.25, "mm", "minimum tail boom thickness")
         rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
@@ -86,7 +86,7 @@ class VerticalBoomBending(Model):
 
         F = Variable("F", "N", "vertical tail force")
         th = Variable("\\theta", "-", "tail boom deflection angle")
-        thmax = Variable("\\theta_{max}", 0.3, "-",
+        thmax = Variable("\\theta_{max}", 0.1, "-",
                          "max tail boom deflection angle")
 
         constraints = [
@@ -105,7 +105,7 @@ class HorizontalBoomBending(Model):
 
         F = Variable("F", "N", "horizontal tail force")
         th = Variable("\\theta", "-", "tail boom deflection angle")
-        thmax = Variable("\\theta_{max}", 0.3, "-",
+        thmax = Variable("\\theta_{max}", 0.1, "-",
                          "max tail boom deflection angle")
 
         constraints = [
