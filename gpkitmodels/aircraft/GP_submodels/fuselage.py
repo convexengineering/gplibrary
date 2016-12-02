@@ -11,9 +11,6 @@ class Fuselage(Model):
         R = Variable("R", "ft", "fuselage radius")
         l = Variable("l", "ft", "fuselage length")
         S = Variable("S", "ft^2", "fuselage cross sectional area")
-        Volavn = Variable("\\mathcal{V}_{avn}", 0.125, "ft^3",
-                          "avionics volume")
-        Volpay = Variable("\\mathcal{V}_{pay}", 1.0, "ft^3", "payload volume")
         W = Variable("W", "lbf", "Fuselage weight")
         mfac = Variable("m_{fac}", 2.1, "-", "Fuselage weight margin factor")
         lbody = Variable("l_{body}", "ft", "center body length")
@@ -25,9 +22,6 @@ class Fuselage(Model):
         Snose = Variable("S_{nose}", "ft**2", "wetted surface area of nose")
         Sbulk = Variable("S_{bulk}", "ft**2", "wetted surface area of bulk")
         Volbody = Variable("\\mathcal{V}_{body}", "ft**3", "volume of body")
-        Volnose = Variable("\\mathcal{V}_{nose}", "ft**3", "volume of nose")
-        Volbulk = Variable("\\mathcal{V}_{bulk}", "ft**3", "volume of bulk")
-        Voleng = Variable("\\mathcal{V}_engine", 0.5, "ft**3", "fuslage volume")
 
         self.fueltank = FuelTank(Wfueltot)
         self.skin = FuselageSkin(Swet, R, lbody)
@@ -35,20 +29,15 @@ class Fuselage(Model):
 
         constraints = [
             kbody == lbody/R,
-            knose == knose,
-            kbulk == kbulk,
             Swet >= Sbody + Snose + Sbulk,
             Sbody >= 2*np.pi*R*lbody,
             Snose**(8./5.) >= (
                 (2*np.pi*R**2)**(8./5.)*(1./3. + 2./3.*(knose)**(8./5.))),
             Sbulk >= R**2*(0.012322*kbulk**2 + 1.524925*kbulk + 0.502498),
             Volbody <= np.pi*R**2*lbody,
-            Volnose <= 4./6.*np.pi*knose*R**3,
-            # Volbulk >= R**2*(0.060402*kbulk**2 + 3.44103*kbulk + 2.5531569),
-            Volnose >= Volpay,
             l <= 3*R*(kbody*knose*kbulk)**(1./3),
             S >= np.pi*R**2,
-            Volbody >= self.fueltank["\\mathcal{V}"] + Volavn,
+            Volbody >= self.fueltank["\\mathcal{V}"],
             W/mfac >= self.fueltank["W"] + self.skin["W"],
             ]
 
