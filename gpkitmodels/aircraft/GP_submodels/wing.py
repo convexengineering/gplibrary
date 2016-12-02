@@ -65,13 +65,13 @@ class WingLoading(Model):
     def __init__(self, wing, Wcent, **kwargs):
 
         skinloading = wing.wingskin.loading()
-        caploading = wing.spar.loading(wing.spar, Wcent)
+        caploading = wing.spar.loading(Wcent)
 
         Model.__init__(self, None, [skinloading, caploading], **kwargs)
 
 class WingAero(Model):
     "wing aerodynamic model with profile and induced drag"
-    def __init__(self, static, state, **kwargs):
+    def setup(self, static, state):
         "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
@@ -88,5 +88,5 @@ class WingAero(Model):
             Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
 

@@ -46,16 +46,16 @@ class Fuselage(Model):
 
 class FuselageLoading(Model):
     "fuselage loading cases"
-    def __init__(self, fuselage, Wcent):
+    def setup(self, fuselage, Wcent):
 
         loading = [fuselage.skin.loading(Wcent)]
         loading.append(fuselage.skin.landing(Wcent))
 
-        Model.__init__(self, None, loading)
+        return loading
 
 class FuselageAero(Model):
     "fuselage drag model"
-    def __init__(self, static, state, **kwargs):
+    def setup(self, static, state):
 
         Cf = Variable("C_f", "-", "fuselage skin friction coefficient")
         Re = Variable("Re", "-", "fuselage reynolds number")
@@ -79,5 +79,5 @@ class FuselageAero(Model):
                 * static["k_{nose}"]**-0.209136 * static["k_{tail}"]**-0.156166)
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
 
