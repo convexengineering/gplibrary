@@ -8,31 +8,45 @@ class Fuselage(Model):
     "The thing that carries the fuel, engine, and payload"
     def setup(self, Wfueltot):
 
-        d = Variable("d", "ft", "fuselage diameter")
+        R = Variable("R", "ft", "fuselage radius")
         l = Variable("l", "ft", "fuselage length")
         S = Variable("S", "ft^2", "fuselage cross sectional area")
         Volavn = Variable("\\mathcal{V}_{avn}", 0.125, "ft^3",
-                          "Avionics volume")
+                          "avionics volume")
+        Volpay = Variable("\\mathcal{V}_{pay}", 1.0, "ft^3", "payload volume")
         W = Variable("W", "lbf", "Fuselage weight")
         mfac = Variable("m_{fac}", 2.1, "-", "Fuselage weight margin factor")
-        hengine = Variable("h_{engine}", 12, "in", "engine height")
         kbody = Variable("k_{body}", "-", "fuselage body fineness ratio")
-        knose = Variable("k_{nose}", 2, "-", "fuselage nose finess ratio")
-        ktail = Variable("k_{tail}", 4, "-", "fuselage tail finess ratio")
+        knose = Variable("k_{nose}", "-", "fuselage nose finess ratio")
+        kbulk = Variable("k_{bulk}", "-", "fuselage bulk finess ratio")
         Swet = Variable("S_{wet}", "ft**2", "fuselage wetted area")
+        Sbody = Variable("s_{body}", "ft**2", "wetted surface area of body")
+        Snose = Variable("S_{nose}", "ft**2", "wetted surface area of nose")
+        Sbulk = Variable("S_{bulk}", "ft**2", "wetted surface area of bulk")
+        Volbody = Variable("\\mathcal{V}_{body}", "ft**3", "volume of body")
+        Volnose = Variable("\\mathcal{V}_{nose}", "ft**3", "volume of nose")
+        Volbulk = Variable("\\mathcal{V}_{bulk}", "ft**3", "volume of bulk")
+        Voleng = Variable("\\mathcal{V}_engine", 0.5, "ft**3", "fuslage volume")
 
         self.fueltank = FuelTank(Wfueltot)
-        self.skin = FuselageSkin(Swet, d, l)
+        self.skin = FuselageSkin(Swet, R, l)
         self.components = [self.fueltank, self.skin]
 
         constraints = [
-            kbody == l/(d/2),
+            kbody == l/R,
             knose == knose,
-            ktail == ktail,
-            Swet >= np.pi*d*l*1.5,
-            S >= np.pi*(d/2)**2,
-            np.pi*(d/2)**2*l >= self.fueltank["\\mathcal{V}"] + Volavn,
-            d >= hengine,
+            kbulk == kbulk,
+            Swet >= Sbody + Snose + Sbulk,
+            Sbody >= 2*np.pi*R*l,
+            Snose**(8./5.) >= (
+                (2*np.pi*R**2)**(8./5.)*(1./3. + 2./3.*(knose)**(8./5.))),
+            Sbulk >= R**2*(0.012322*kbulk**2 + 1.524925*kbulk + 0.502498),
+            Volbody <= np.pi*R**2*l,
+            Volnose <= 4./6.*np.pi*knose*R**3,
+            # Volbulk >= R**2*(0.060402*kbulk**2 + 3.44103*kbulk + 2.5531569),
+            Volnose >= Volpay,
+            S >= np.pi*R**2,
+            Volbody >= self.fueltank["\\mathcal{V}"] + Volavn,
             W/mfac >= self.fueltank["W"] + self.skin["W"],
             ]
 
@@ -70,13 +84,13 @@ class FuselageAero(Model):
             Cfref == 0.455/Reref**0.3,
             Cd**0.996232 >= Cf/Cfref*(
                 0.00243049*static["k_{body}"]**0.033607
-                * static["k_{nose}"]**1.21682 * static["k_{tail}"]**0.306251
+                * static["k_{nose}"]**1.21682 * static["k_{bulk}"]**0.306251
                 + 0.00255095*static["k_{body}"]**-0.0316887
-                * static["k_{nose}"]**-0.585489 * static["k_{tail}"]**1.15394
+                * static["k_{nose}"]**-0.585489 * static["k_{bulk}"]**1.15394
                 + 0.0436011 * static["k_{body}"]**0.0545722
-                * static["k_{nose}"]**0.258228 * static["k_{tail}"]**-1.42664
+                * static["k_{nose}"]**0.258228 * static["k_{bulk}"]**-1.42664
                 + 0.00970479 * static["k_{body}"]**0.8661
-                * static["k_{nose}"]**-0.209136 * static["k_{tail}"]**-0.156166)
+                * static["k_{nose}"]**-0.209136 * static["k_{bulk}"]**-0.156166)
             ]
 
         return constraints

@@ -15,6 +15,8 @@ class Engine(Model):
                              "Installed/Total DF70 engine weight")
             Pslmax = Variable("P_{sl-max}", 5.17, "hp",
                               "Max shaft power at sea level")
+            h = Variable("h", 12, "in", "engine height")
+
             constraints = [W/mfac >= Wdf70,
                            Pslmax == Pslmax]
 

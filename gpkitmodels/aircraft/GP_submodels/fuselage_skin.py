@@ -4,7 +4,7 @@ from gpkit import Model, Variable
 
 class FuselageSkin(Model):
     "fuselage skin model"
-    def setup(self, S, d, l):
+    def setup(self, S, R, l):
 
         W = Variable("W", "lbf", "fuselage skin weight")
         m = Variable("m", "kg", "fuselage skin mass")
@@ -20,8 +20,8 @@ class FuselageSkin(Model):
         constraints = [m >= S*rhokevlar*t,
                        W >= m*g,
                        t >= tmin,
-                       I <= np.pi*(d/2)**3*t,
-                       Ig >= m*(2*d**2 + 2*d*t + t**2),
+                       I <= np.pi*R**3*t,
+                       Ig >= m*(4*R**2 + 4*R*t + t**2),
                        l == l,
                        E == E]
 
@@ -46,7 +46,7 @@ class FuselageSkinL(Model):
 
         constraints = [
             Mh >= Nmax*Wcent/4*static["l"],
-            sigmakevlar >= Mh*static["d"]/2/static["I"],
+            sigmakevlar >= Mh*static["R"]/static["I"],
             q >= Wcent*Nmax/static["l"],
             kappa*static["l"]/2 >= q*(static["l"]/2)**4/(8*static["E"]
                                                          * static["I"])
@@ -71,7 +71,7 @@ class FuselageLanding(Model):
                        a >= F/static["m"],
                        omegadot >= a/(static["l"]/2),
                        Mg >= static["I_G"]*omegadot,
-                       sigmakevlar >= Mg*(static["d"]/2)/static["I"]
+                       sigmakevlar >= Mg*static["R"]/static["I"]
                       ]
 
         return constraints
