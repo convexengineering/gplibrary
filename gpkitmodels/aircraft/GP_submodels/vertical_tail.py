@@ -8,7 +8,7 @@ class VerticalTail(Model):
 
         W = Variable("W", "lbf", "one vertical tail weight")
         Sv = Variable("S", "ft**2", "total vertical tail surface area")
-        Vv = Variable("V_v", 0.025, "-", "vertical tail volume coefficient")
+        Vv = Variable("V_v", 0.05, "-", "vertical tail volume coefficient")
         ARv = Variable("AR_v", "-", "vertical tail aspect ratio")
         bv = Variable("b", "ft", "one vertical tail span")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",

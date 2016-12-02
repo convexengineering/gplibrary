@@ -8,7 +8,7 @@ class TailBoomFlexibility(Model):
 
         Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
         deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
-        SMcorr = Variable("SM_{corr}", 0.35, "-", "corrected static margin")
+        SMcorr = Variable("SM_{corr}", 0.55, "-", "corrected static margin")
 
         # signomial helper variables
         sph1 = Variable("sph1", "-", "first term involving $V_h$")
