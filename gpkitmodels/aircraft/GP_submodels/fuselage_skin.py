@@ -15,6 +15,7 @@ class FuselageSkin(Model):
         tmin = Variable("t_{min}", 0.03, "in", "minimum skin thickness")
         I = Variable("I", "m**4", "wing skin moment of inertia")
         Ig = Variable("I_G", "kg*m**2", "mass moment of inertia")
+        E = Variable("E", 30, "GPa", "Young's Modulus of Kevlar")
 
         self.loading = FuselageSkinL
         self.landing = FuselageLanding
@@ -23,8 +24,9 @@ class FuselageSkin(Model):
                        W >= m*g,
                        t >= tmin,
                        I <= np.pi*(d/2)**3*t,
-                       Ig >= m*d**2/8,
-                       l == l]
+                       Ig >= m*(2*d**2 + 2*d*t + t**2),
+                       l == l,
+                       E == E]
 
         Model.__init__(self, None, constraints)
 
@@ -36,9 +38,16 @@ class FuselageSkinL(Model):
         Nmax = Variable("N_{max}", 5, "-", "max loading")
         sigmakevlar = Variable("\\sigma_{Kevlar}", 190, "MPa",
                                "stress strength of Kevlar")
+        q = Variable("q", "N/m", "distributed load")
+        kappa = Variable("\\kappa", 0.05, "-", "maximum tip deflection ratio")
 
-        constraints = [Mh >= Nmax*Wcent/4*static["l"],
-                       sigmakevlar >= Mh*static["d"]/2/static["I"]]
+        constraints = [
+            Mh >= Nmax*Wcent/4*static["l"],
+            sigmakevlar >= Mh*static["d"]/2/static["I"],
+            q >= Wcent*Nmax/static["l"],
+            kappa*static["l"]/2 >= q*(static["l"]/2)**4/(8*static["E"]
+                                                         * static["I"])
+            ]
 
         Model.__init__(self, None, constraints)
 
