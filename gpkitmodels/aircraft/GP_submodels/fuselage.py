@@ -16,11 +16,12 @@ class Fuselage(Model):
         Volpay = Variable("\\mathcal{V}_{pay}", 1.0, "ft^3", "payload volume")
         W = Variable("W", "lbf", "Fuselage weight")
         mfac = Variable("m_{fac}", 2.1, "-", "Fuselage weight margin factor")
+        lbody = Variable("l_{body}", "ft", "center body length")
         kbody = Variable("k_{body}", "-", "fuselage body fineness ratio")
         knose = Variable("k_{nose}", "-", "fuselage nose finess ratio")
         kbulk = Variable("k_{bulk}", "-", "fuselage bulk finess ratio")
         Swet = Variable("S_{wet}", "ft**2", "fuselage wetted area")
-        Sbody = Variable("s_{body}", "ft**2", "wetted surface area of body")
+        Sbody = Variable("S_{body}", "ft**2", "wetted surface area of body")
         Snose = Variable("S_{nose}", "ft**2", "wetted surface area of nose")
         Sbulk = Variable("S_{bulk}", "ft**2", "wetted surface area of bulk")
         Volbody = Variable("\\mathcal{V}_{body}", "ft**3", "volume of body")
@@ -29,22 +30,23 @@ class Fuselage(Model):
         Voleng = Variable("\\mathcal{V}_engine", 0.5, "ft**3", "fuslage volume")
 
         self.fueltank = FuelTank(Wfueltot)
-        self.skin = FuselageSkin(Swet, R, l)
+        self.skin = FuselageSkin(Swet, R, lbody)
         self.components = [self.fueltank, self.skin]
 
         constraints = [
-            kbody == l/R,
+            kbody == lbody/R,
             knose == knose,
             kbulk == kbulk,
             Swet >= Sbody + Snose + Sbulk,
-            Sbody >= 2*np.pi*R*l,
+            Sbody >= 2*np.pi*R*lbody,
             Snose**(8./5.) >= (
                 (2*np.pi*R**2)**(8./5.)*(1./3. + 2./3.*(knose)**(8./5.))),
             Sbulk >= R**2*(0.012322*kbulk**2 + 1.524925*kbulk + 0.502498),
-            Volbody <= np.pi*R**2*l,
+            Volbody <= np.pi*R**2*lbody,
             Volnose <= 4./6.*np.pi*knose*R**3,
             # Volbulk >= R**2*(0.060402*kbulk**2 + 3.44103*kbulk + 2.5531569),
             Volnose >= Volpay,
+            l <= 3*R*(kbody*knose*kbulk)**(1./3),
             S >= np.pi*R**2,
             Volbody >= self.fueltank["\\mathcal{V}"] + Volavn,
             W/mfac >= self.fueltank["W"] + self.skin["W"],

@@ -45,10 +45,10 @@ class FuselageSkinL(Model):
         kappa = Variable("\\kappa", 0.05, "-", "maximum tip deflection ratio")
 
         constraints = [
-            Mh >= Nmax*Wcent/4*static["l"],
+            Mh >= Nmax*Wcent/4*static["l_{body}"],
             sigmakevlar >= Mh*static["R"]/static["I"],
-            q >= Wcent*Nmax/static["l"],
-            kappa*static["l"]/2 >= q*(static["l"]/2)**4/(8*static["E"]
+            q >= Wcent*Nmax/static["l_{body}"],
+            kappa*static["l_{body}"]/2 >= q*(static["l_{body}"]/2)**4/(8*static["E"]
                                                          * static["I"])
             ]
 
@@ -69,7 +69,7 @@ class FuselageLanding(Model):
 
         constraints = [F >= Wcent*Nmax,
                        a >= F/static["m"],
-                       omegadot >= a/(static["l"]/2),
+                       omegadot >= a/(static["l_{body}"]/2),
                        Mg >= static["I_G"]*omegadot,
                        sigmakevlar >= Mg*static["R"]/static["I"]
                       ]
