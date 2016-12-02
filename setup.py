@@ -5,7 +5,7 @@ from distutils.core import setup
 
 LONG_DESCRIPTION = """
 GPkit Models is a library of geometric programming and signomial programming
-models that can be manipulated and solved using 
+models that can be manipulated and solved using
 `GPkit <https://github.com/hoburg/gpkit/>`_.
 
 `Documentation <http://gpkit.rtfd.org/>`_
@@ -45,7 +45,7 @@ setup(
     install_requires=["numpy", "scipy", "pint"],
     version="0.0.0.0",
     packages=["gpkitmodels", "gpkitmodels.aircraft", "gpkitmodels.manufacturing",
-              "gpkitmodels.npv", "gpkitmodels.1682"],
+              "gpkitmodels.npv"],
     package_data={},
     license=LICENSE,
     long_description=LONG_DESCRIPTION,
