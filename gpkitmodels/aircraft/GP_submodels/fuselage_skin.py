@@ -4,7 +4,7 @@ from gpkit import Model, Variable
 
 class FuselageSkin(Model):
     "fuselage skin model"
-    def __init__(self, S, d, l):
+    def setup(self, S, d, l):
 
         W = Variable("W", "lbf", "fuselage skin weight")
         m = Variable("m", "kg", "fuselage skin mass")
@@ -17,9 +17,6 @@ class FuselageSkin(Model):
         Ig = Variable("I_G", "kg*m**2", "mass moment of inertia")
         E = Variable("E", 30, "GPa", "Young's Modulus of Kevlar")
 
-        self.loading = FuselageSkinL
-        self.landing = FuselageLanding
-
         constraints = [m >= S*rhokevlar*t,
                        W >= m*g,
                        t >= tmin,
@@ -28,11 +25,17 @@ class FuselageSkin(Model):
                        l == l,
                        E == E]
 
-        Model.__init__(self, None, constraints)
+        return constraints
+
+    def loading(self, Wcent):
+        return FuselageSkinL(self, Wcent)
+
+    def landing(self, Wcent):
+        return FuselageLanding(self, Wcent)
 
 class FuselageSkinL(Model):
     "fuselage skin loading"
-    def __init__(self, static, Wcent):
+    def setup(self, static, Wcent):
 
         Mh = Variable("M_h", "N*m", "horizontal axis center fuselage moment")
         Nmax = Variable("N_{max}", 5, "-", "max loading")
@@ -49,11 +52,11 @@ class FuselageSkinL(Model):
                                                          * static["I"])
             ]
 
-        Model.__init__(self, None, constraints)
+        return constraints
 
 class FuselageLanding(Model):
     "fuselage loading case"
-    def __init__(self, static, Wcent):
+    def setup(self, static, Wcent):
 
         F = Variable("F", "lbf", "maximum landing force")
         Nmax = Variable("N_{max}", 5, "-", "maximum landing load factor")
@@ -71,4 +74,4 @@ class FuselageLanding(Model):
                        sigmakevlar >= Mg*(static["d"]/2)/static["I"]
                       ]
 
-        Model.__init__(self, None, constraints)
+        return constraints

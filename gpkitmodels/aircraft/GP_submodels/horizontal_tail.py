@@ -5,7 +5,7 @@ from tail_aero import TailAero
 
 class HorizontalTail(Model):
     "horizontal tail model"
-    def __init__(self, lam=0.8, **kwargs):
+    def setup(self, lam=0.8):
         Sh = Variable("S", "ft**2", "horizontal tail area")
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
         ARh = Variable("AR_h", "-", "horizontal tail aspect ratio")
@@ -31,8 +31,6 @@ class HorizontalTail(Model):
         mfac = Variable("m_{fac}", 1.1, "-", "horizontal tail margin factor")
         tau = Variable("\\tau", 0.08, "-", "horizontal tail thickness ratio")
 
-        self.flight_model = TailAero
-
         constraints = [
             bh**2 == ARh*Sh,
             mh*(1+2/ARh) <= 2*np.pi,
@@ -46,4 +44,7 @@ class HorizontalTail(Model):
             tau == tau,
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
+
+    def flight_model(self, state):
+        return TailAero(self, state)

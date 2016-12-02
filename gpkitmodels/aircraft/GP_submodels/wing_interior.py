@@ -3,7 +3,7 @@ from gpkit import Model, Variable
 
 class WingInterior(Model):
     "wing interior model"
-    def __init__(self, cave, b, N, **kwargs):
+    def setup(self, cave, b, N):
 
         W = Variable("W", "lbf", "interior mass of wing")
         rhofoam = Variable("\\rho_{foam}", 0.036, "g/cm^3", "foam density")
@@ -13,4 +13,4 @@ class WingInterior(Model):
 
         constraints = [W >= 2*(g*rhofoam*Abar*cave**2*(b/2)/(N-1)).sum()]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints

@@ -6,7 +6,7 @@ from fuselage_skin import FuselageSkin
 
 class Fuselage(Model):
     "The thing that carries the fuel, engine, and payload"
-    def __init__(self, Wfueltot, **kwargs):
+    def setup(self, Wfueltot):
 
         d = Variable("d", "ft", "fuselage diameter")
         l = Variable("l", "ft", "fuselage length")
@@ -24,8 +24,6 @@ class Fuselage(Model):
         self.fueltank = FuelTank(Wfueltot)
         self.skin = FuselageSkin(Swet, d, l)
         self.components = [self.fueltank, self.skin]
-        self.flight_model = FuselageAero
-        self.loading = FuselageLoading
 
         constraints = [
             kbody == l/(d/2),
@@ -38,14 +36,20 @@ class Fuselage(Model):
             W/mfac >= self.fueltank["W"] + self.skin["W"],
             ]
 
-        Model.__init__(self, None, [self.components, constraints], **kwargs)
+        return self.components, constraints
+
+    def loading(self, Wcent):
+        return FuselageLoading(self, Wcent)
+
+    def flight_model(self, state):
+        return FuselageAero(self, state)
 
 class FuselageLoading(Model):
     "fuselage loading cases"
     def __init__(self, fuselage, Wcent):
 
-        loading = [fuselage.skin.loading(fuselage.skin, Wcent)]
-        loading.append(fuselage.skin.landing(fuselage.skin, Wcent))
+        loading = [fuselage.skin.loading(Wcent)]
+        loading.append(fuselage.skin.landing(Wcent))
 
         Model.__init__(self, None, loading)
 

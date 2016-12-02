@@ -4,7 +4,7 @@ from chord_spar_loading import ChordSparL
 
 class CapSpar(Model):
     "cap spar model"
-    def __init__(self, b, cave, tau, N=5, **kwargs):
+    def setup(self, b, cave, tau, N=5):
         self.N = N
 
         # phyiscal properties
@@ -23,8 +23,6 @@ class CapSpar(Model):
         w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
-        self.loading = ChordSparL
-
         constraints = [I <= 2*w*t*(hin/2)**2,
                        dm >= rhocfrp*w*t*b/(self.N-1),
                        W >= 2*dm.sum()*g,
@@ -34,5 +32,8 @@ class CapSpar(Model):
                        E == E,
                       ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
+
+    def loading(self, Wcent):
+        return ChordSparL(self, Wcent)
 

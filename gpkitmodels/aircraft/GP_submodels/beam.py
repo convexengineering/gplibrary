@@ -3,7 +3,7 @@ from gpkit import Model, Variable, Vectorize
 
 class Beam(Model):
     "discretized beam bending model"
-    def __init__(self, N, q, **kwargs):
+    def setup(self, N, q):
 
         with Vectorize(N-1):
             EIbar = Variable("\\bar{EI}", "-",
@@ -36,4 +36,4 @@ class Beam(Model):
             1 == (N-1)*dx,
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints

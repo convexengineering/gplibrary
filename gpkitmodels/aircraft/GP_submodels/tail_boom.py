@@ -4,7 +4,7 @@ from gpkit import Variable, Model
 
 class TailBoom(Model):
     "tail boom model"
-    def __init__(self, **kwargs):
+    def setup(self):
 
         l = Variable("l", "ft", "tail boom length")
         E = Variable("E", 150e9, "N/m^2", "young's modulus carbon fiber")
@@ -21,11 +21,6 @@ class TailBoom(Model):
         S = Variable("S", "ft**2", "tail boom surface area")
         mfac = Variable("m_{fac}", 1.0, "-", "tail boom margin factor")
 
-        self.flight_model = TailBoomAero
-        self.horizontalbending = HorizontalBoomBending
-        self.verticalbending = VerticalBoomBending
-        self.verticaltorsion = VerticalBoomTorsion
-
         constraints = [
             I0 <= np.pi*t0*d0**3/8.0,
             W/mfac >= np.pi*g*rhocfrp*d0*l*t0*kfac,
@@ -36,11 +31,23 @@ class TailBoom(Model):
             E == E
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
+
+    def flight_model(self, state):
+        return TailBoomAero(self, state)
+
+    def horizontalbending(self, htail, state):
+        return HorizontalBoomBending(self, htail, state)
+
+    def verticalbending(self, vtail, state):
+        return VerticalBoomBending(self, vtail, state)
+
+    def verticaltorsion(self, vtail, state):
+        return VerticalBoomTorsion(self, vtail, state)
 
 class TailBoomAero(Model):
     "horizontal tail aero model"
-    def __init__(self, static, state, **kwargs):
+    def setup(self, static, state):
 
         Cf = Variable("C_f", "-", "fuselage skin friction coefficient")
         Re = Variable("Re", "-", "fuselage reynolds number")
@@ -50,11 +57,11 @@ class TailBoomAero(Model):
             Cf >= 0.455/Re**0.3,
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
 
 class TailBoomState(Model):
     "tail boom design state"
-    def __init__(self, **kwargs):
+    def setup(self):
 
         rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
                          "air density at sea level")
@@ -63,11 +70,11 @@ class TailBoomState(Model):
         constraints = [rhosl == rhosl,
                        Vne == Vne]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
 
 class VerticalBoomTorsion(Model):
     "tail boom torison case"
-    def __init__(self, tailboom, vtail, state, **kwargs):
+    def setup(self, tailboom, vtail, state):
 
         T = Variable("T", "N*m", "vertical tail moment")
         taucfrp = Variable("\\tau_{CFRP}", 210, "MPa", "torsional stress limit")
@@ -78,11 +85,11 @@ class VerticalBoomTorsion(Model):
             taucfrp >= T*tailboom["d_0"]/2/tailboom["J"]
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
 
 class VerticalBoomBending(Model):
     "tail boom bending loading case"
-    def __init__(self, tailboom, vtail, state, **kwargs):
+    def setup(self, tailboom, vtail, state):
 
         F = Variable("F", "N", "vertical tail force")
         th = Variable("\\theta", "-", "tail boom deflection angle")
@@ -97,11 +104,11 @@ class VerticalBoomBending(Model):
             th <= thmax,
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
 
 class HorizontalBoomBending(Model):
     "tail boom bending loading case"
-    def __init__(self, tailboom, htail, state, **kwargs):
+    def setup(self, tailboom, htail, state):
 
         F = Variable("F", "N", "horizontal tail force")
         th = Variable("\\theta", "-", "tail boom deflection angle")
@@ -116,4 +123,4 @@ class HorizontalBoomBending(Model):
             th <= thmax,
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints

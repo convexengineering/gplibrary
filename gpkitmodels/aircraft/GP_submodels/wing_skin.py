@@ -3,7 +3,7 @@ from gpkit import Model, Variable
 
 class WingSkin(Model):
     "wing skin model"
-    def __init__(self, S, croot, b, **kwargs):
+    def setup(self, S, croot, b):
 
         rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
         W = Variable("W", "lbf", "wing skin weight")
@@ -14,19 +14,20 @@ class WingSkin(Model):
         Jtbar = Variable("\\bar{J/t}", 0.01114, "1/mm",
                          "torsional moment of inertia")
 
-        self.loading = WingSkinL
-
         constraints = [W >= rhocfrp*S*2*t*g,
                        t >= tmin,
                        Jtbar == Jtbar,
                        b == b,
                        croot == croot]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
+
+    def loading(self):
+        return WingSkinL(self)
 
 class WingSkinL(Model):
     "wing skin loading model for torsional loads in skin"
-    def __init__(self, static, **kwargs):
+    def setup(self, static):
 
         taucfrp = Variable("\\tau_{CFRP}", 570, "MPa", "torsional stress limit")
         Cmw = Variable("C_{m_w}", 0.121, "-", "negative wing moment coefficent")
@@ -38,4 +39,4 @@ class WingSkinL(Model):
             taucfrp >= (1/static["\\bar{J/t}"]/(static["c_{root}"])**2
                         / static["t"]*Cmw*static["S"]*rhosl*Vne**2)]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints

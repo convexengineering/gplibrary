@@ -5,7 +5,7 @@ from beam import Beam
 
 class ChordSparL(Model):
     "spar loading model"
-    def __init__(self, static, Wcent, **kwargs):
+    def setup(self, static, Wcent):
 
         Nmax = Variable("N_{max}", 5, "-", "max loading")
         cbar = c_bar(0.5, static.N)
@@ -25,4 +25,4 @@ class ChordSparL(Model):
             beam["\\bar{\\delta}"][-1] <= kappa,
             ]
 
-        Model.__init__(self, None, [beam, constraints], **kwargs)
+        return beam, constraints

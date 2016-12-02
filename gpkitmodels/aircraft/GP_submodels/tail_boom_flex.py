@@ -4,7 +4,7 @@ from gpkit import Model, Variable
 
 class TailBoomFlexibility(Model):
     "tail boom flexibility model"
-    def __init__(self, htail, tailboom, wing, state, **kwargs):
+    def setup(self, htail, tailboom, wing, state):
 
         Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
         deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
@@ -24,4 +24,4 @@ class TailBoomFlexibility(Model):
                 SMcorr + wing["C_M"]/wing["C_{L_{max}}"]),
             deda >= wing["m_w"]*wing["S"]/wing["b"]/4/np.pi/htail["l_h"]]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints

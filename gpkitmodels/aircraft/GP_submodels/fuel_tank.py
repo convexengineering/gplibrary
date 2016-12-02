@@ -6,7 +6,7 @@ class FuelTank(Model):
     Returns the weight of the fuel tank.  Assumes a cylinder shape with some
     fineness ratio
     """
-    def __init__(self, Wfueltot, **kwargs):
+    def setup(self, Wfueltot):
 
         W = Variable("W", "lbf", "fuel tank weight")
         f = Variable("f", 0.03, "-", "fraction fuel tank weight to fuel weight")
@@ -19,4 +19,4 @@ class FuelTank(Model):
                        Vol/mfac >= Wfueltot/rhofuel,
                       ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints

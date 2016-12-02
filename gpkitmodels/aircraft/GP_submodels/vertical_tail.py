@@ -4,7 +4,7 @@ from tail_aero import TailAero
 
 class VerticalTail(Model):
     "vertical tail model"
-    def __init__(self, lam=0.7, **kwargs):
+    def setup(self, lam=0.7):
 
         W = Variable("W", "lbf", "one vertical tail weight")
         Sv = Variable("S", "ft**2", "total vertical tail surface area")
@@ -28,8 +28,6 @@ class VerticalTail(Model):
         mfac = Variable("m_{fac}", 1.1, "-", "vertical tail margin factor")
         tau = Variable("\\tau", 0.08, "-", "vertical tail thickness ratio")
 
-        self.flight_model = TailAero
-
         constraints = [Vv == Vv,
                        lv == lv,
                        bv**2 == ARv*Sv,
@@ -40,4 +38,7 @@ class VerticalTail(Model):
                        tau == tau
                       ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
+
+    def flight_model(self, state):
+        return TailAero(self, state)

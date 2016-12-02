@@ -5,7 +5,7 @@ from gpkit.constraints.tight import TightConstraintSet as TCS
 
 class BreguetEndurance(Model):
     "breguet endurance model"
-    def __init__(self, perf, **kwargs):
+    def setup(self, perf):
         z_bre = Variable("z_{bre}", "-", "Breguet coefficient")
         t = Variable("t", "days", "Time per flight segment")
         f_fueloil = Variable("f_{(fuel/oil)}", 0.98, "-", "Fuel-oil fraction")
@@ -19,4 +19,4 @@ class BreguetEndurance(Model):
             perf["W_{start}"] >= perf["W_{end}"] + Wfuel
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints

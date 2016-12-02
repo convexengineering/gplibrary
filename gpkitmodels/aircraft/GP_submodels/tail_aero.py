@@ -3,7 +3,7 @@ from gpkit import Variable, Model
 
 class TailAero(Model):
     "horizontal tail aero model"
-    def __init__(self, static, state, **kwargs):
+    def setup(self, static, state):
 
         name = get_lowername(static.__class__.__name__)
         Re = Variable("Re", "-", "%s reynolds number" % name)
@@ -20,7 +20,7 @@ class TailAero(Model):
                             * (static["\\tau"]*100)**28.4609)
             ]
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints
 
 def get_lowername(classname):
     start = [c for c in classname if c.isupper()]

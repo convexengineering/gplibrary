@@ -3,7 +3,7 @@ from gpkit import Model, Variable, units
 
 class Engine(Model):
     "engine model"
-    def __init__(self, DF70=False, **kwargs):
+    def setup(self, DF70=False):
 
         self.DF70 = DF70
 
@@ -30,19 +30,19 @@ class Engine(Model):
                 Weng/Wengref >= 0.5538*(Pslmax/Pref)**1.075,
                 W/mfac >= 2.572*Weng**0.922*units("lbf")**0.078]
 
-        self.flight_model = EnginePerf
+        return constraints
 
-        Model.__init__(self, None, constraints, **kwargs)
+    def flight_model(self, state):
+        return EnginePerf(self, state)
 
 class EnginePerf(Model):
     "engine performance model"
-    def __init__(self, static, state, **kwargs):
+    def setup(self, static, state):
 
         Pshaft = Variable("P_{shaft}", "hp", "Shaft power")
         bsfc = Variable("BSFC", "lb/hr/hp", "Brake specific fuel consumption")
         rpm = Variable("RPM", "rpm", "Engine operating RPM")
         Pavn = Variable("P_{avn}", 40, "watts", "Avionics power")
-        Ppay = Variable("P_{pay}", 10, "watts", "Payload power")
         Ptotal = Variable("P_{total}", "hp", "Total power, avionics included")
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
                                   "alternator efficiency")
@@ -79,4 +79,4 @@ class EnginePerf(Model):
                             Ptotal >= Pshaft + Pavn/eta_alternator,
                             rpm <= rpm_max])
 
-        Model.__init__(self, None, constraints, **kwargs)
+        return constraints

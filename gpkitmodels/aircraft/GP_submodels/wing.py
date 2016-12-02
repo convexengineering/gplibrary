@@ -9,7 +9,7 @@ from constant_taper_chord import c_bar
 
 class Wing(Model):
     "The thing that creates the lift"
-    def __init__(self, N=5, lam=0.5, spar="CapSpar", **kwargs):
+    def setup(self, N=5, lam=0.5, spar="CapSpar"):
 
         W = Variable("W", "lbf", "weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
@@ -32,8 +32,6 @@ class Wing(Model):
                              "normalized mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
 
-        self.flight_model = WingAero
-
         constraints = [b**2 == S*AR,
                        tau == tau,
                        CLmax == CLmax,
@@ -51,18 +49,22 @@ class Wing(Model):
         self.wingskin = WingSkin(S, croot, b)
         self.winginterior = WingInterior(cave, b, N)
         self.components = [self.spar, self.wingskin, self.winginterior]
-        self.loading = WingLoading
 
         constraints.extend([W/mfac >= sum(c["W"] for c in self.components)])
 
-        Model.__init__(self, None, [self.components, constraints],
-                       **kwargs)
+        return self.components, constraints
+
+    def flight_model(self, state):
+        return WingAero(self, state)
+
+    def loading(self, Wcent):
+        return WingLoading(self, Wcent)
 
 class WingLoading(Model):
     "wing loading cases"
     def __init__(self, wing, Wcent, **kwargs):
 
-        skinloading = wing.wingskin.loading(wing.wingskin)
+        skinloading = wing.wingskin.loading()
         caploading = wing.spar.loading(wing.spar, Wcent)
 
         Model.__init__(self, None, [skinloading, caploading], **kwargs)
