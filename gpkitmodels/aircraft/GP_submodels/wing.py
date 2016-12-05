@@ -9,7 +9,7 @@ from constant_taper_chord import c_bar
 
 class Wing(Model):
     "The thing that creates the lift"
-    def setup(self, N=5, lam=0.5, spar="CapSpar"):
+    def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
 
         W = Variable("W", "lbf", "weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
@@ -47,8 +47,11 @@ class Wing(Model):
         elif spar == "TubeSpar":
             self.spar = TubeSpar(b, cave, tau, N)
         self.wingskin = WingSkin(S, croot, b)
-        self.winginterior = WingInterior(cave, b, N)
-        self.components = [self.spar, self.wingskin, self.winginterior]
+        self.components = [self.spar, self.wingskin]
+
+        if not hollow:
+            self.winginterior = WingInterior(cave, b, N)
+            self.components.extend([self.winginterior])
 
         constraints.extend([W/mfac >= sum(c["W"] for c in self.components)])
 
