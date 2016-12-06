@@ -23,6 +23,7 @@ class Wing(Model):
                       "assumed span wise effectiveness")
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
+        lamw = Variable("\\lambda", lam, "-", "taper ratio")
         cb = c_bar(lam, N)
         with Vectorize(N):
             cbar = Variable("\\bar{c}", cb, "-",
@@ -33,11 +34,7 @@ class Wing(Model):
             cave = Variable("c_{ave}", "ft", "mid section chord")
 
         constraints = [b**2 == S*AR,
-                       tau == tau,
-                       CLmax == CLmax,
-                       CM == CM,
-                       mw == mw,
-                       cbar == cbar,
+                       lamw == lamw,
                        cave == cbave*S/b,
                        croot == S/b*cb[0],
                        cmac == S/b]
@@ -65,12 +62,12 @@ class Wing(Model):
 
 class WingLoading(Model):
     "wing loading cases"
-    def __init__(self, wing, Wcent, **kwargs):
+    def setup(self, wing, Wcent, **kwargs):
 
         skinloading = wing.wingskin.loading()
         caploading = wing.spar.loading(Wcent)
 
-        Model.__init__(self, None, [skinloading, caploading], **kwargs)
+        return skinloading, caploading
 
 class WingAero(Model):
     "wing aerodynamic model with profile and induced drag"

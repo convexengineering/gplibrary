@@ -16,7 +16,6 @@ class WingSkin(Model):
 
         constraints = [W >= rhocfrp*S*2*t*g,
                        t >= tmin,
-                       Jtbar == Jtbar,
                        b == b,
                        croot == croot]
 

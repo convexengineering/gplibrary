@@ -29,7 +29,6 @@ class CapSpar(Model):
                        w <= w_lim*cave,
                        cave*tau >= hin + 2*t,
                        Sy*(hin + t) <= I,
-                       E == E,
                       ]
 
         return constraints
