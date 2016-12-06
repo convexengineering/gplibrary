@@ -14,9 +14,12 @@ class Fuselage(Model):
         W = Variable("W", "lbf", "Fuselage weight")
         mfac = Variable("m_{fac}", 2.1, "-", "Fuselage weight margin factor")
         lbody = Variable("l_{body}", "ft", "center body length")
-        kbody = Variable("k_{body}", "-", "fuselage body fineness ratio")
-        knose = Variable("k_{nose}", "-", "fuselage nose finess ratio")
-        kbulk = Variable("k_{bulk}", "-", "fuselage bulk finess ratio")
+        kbody = Variable("k_{body}", "-",
+                         "fuselage body length to radius ratio")
+        knose = Variable("k_{nose}", "-",
+                         "fuselage nose length to radius ratio")
+        kbulk = Variable("k_{bulk}", "-",
+                         "fuselage bulk length to radius ratio")
         Swet = Variable("S_{wet}", "ft**2", "fuselage wetted area")
         Sbody = Variable("S_{body}", "ft**2", "wetted surface area of body")
         Snose = Variable("S_{nose}", "ft**2", "wetted surface area of nose")

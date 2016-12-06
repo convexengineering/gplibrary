@@ -25,6 +25,7 @@ class HorizontalTail(Model):
         mh = Variable("m_h", "-", "horizontal tail span effectiveness")
         cth = Variable("c_{t_h}", "ft", "horizontal tail tip chord")
         crh = Variable("c_{r_h}", "ft", "horizontal tail root chord")
+        lamh = Variable("\\lambda", lam, "-", "horizontal tail taper ratio")
         lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", lam/(lam+1), "-",
                            "horizontal tail taper ratio factor")
         CLhtmax = Variable("C_{L_{max}}", "-", "maximum CL of horizontal tail")
@@ -37,11 +38,7 @@ class HorizontalTail(Model):
             W/mfac >= g*rhoskin*Sh + rhofoam*Sh**2/bh*Abar,
             cth == 2*Sh/bh*lamhfac,
             crh == cth/lam,
-            lh == lh,
-            CLhmin == CLhmin,
-            CLhtmax == CLhtmax,
-            Vh == Vh,
-            tau == tau,
+            lamh == lamh
             ]
 
         return constraints

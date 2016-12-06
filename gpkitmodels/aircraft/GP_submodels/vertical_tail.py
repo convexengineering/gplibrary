@@ -21,6 +21,7 @@ class VerticalTail(Model):
         lv = Variable("l_v", "ft", "horizontal tail moment arm")
         ctv = Variable("c_{t_v}", "ft", "vertical tail tip chord")
         crv = Variable("c_{r_v}", "ft", "vertical tail root chord")
+        lamv = Variable("\\lambda", lam, "-", "vertical tail taper ratio")
         lamvfac = Variable("\\lambda_v/(\\lambda_v+1)", lam/(lam+1), "-",
                            "vertical tail taper ratio factor")
         CLvtmax = Variable("C_{L_{max}}", 1.1, "-",
@@ -28,14 +29,11 @@ class VerticalTail(Model):
         mfac = Variable("m_{fac}", 1.1, "-", "vertical tail margin factor")
         tau = Variable("\\tau", 0.08, "-", "vertical tail thickness ratio")
 
-        constraints = [Vv == Vv,
-                       lv == lv,
-                       bv**2 == ARv*Sv,
+        constraints = [bv**2 == ARv*Sv,
                        W/mfac >= rhofoam*Sv**2/bv*Abar + g*rhoskin*Sv,
                        ctv == 2*Sv/bv*lamvfac,
                        crv == ctv/lam,
-                       CLvtmax == CLvtmax,
-                       tau == tau
+                       lamv == lamv
                       ]
 
         return constraints

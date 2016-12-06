@@ -23,7 +23,7 @@ class Wing(Model):
                       "assumed span wise effectiveness")
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
-        lamw = Variable("\\lambda", lam, "-", "taper ratio")
+        lamw = Variable("\\lambda", lam, "-", "wing taper ratio")
         cb = c_bar(lam, N)
         with Vectorize(N):
             cbar = Variable("\\bar{c}", cb, "-",
