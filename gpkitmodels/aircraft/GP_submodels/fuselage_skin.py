@@ -48,8 +48,8 @@ class FuselageSkinL(Model):
             Mh >= Nmax*Wcent/4*static["l_{body}"],
             sigmakevlar >= Mh*static["R"]/static["I"],
             q >= Wcent*Nmax/static["l_{body}"],
-            kappa*static["l_{body}"]/2 >= q*(static["l_{body}"]/2)**4/(8*static["E"]
-                                                         * static["I"])
+            kappa*static["l_{body}"]/2 >= (
+                q*(static["l_{body}"]/2)**4/(8*static["E"]*static["I"]))
             ]
 
         return constraints
