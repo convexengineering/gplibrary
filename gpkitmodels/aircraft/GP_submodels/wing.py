@@ -35,6 +35,7 @@ class Wing(Model):
 
         constraints = [b**2 == S*AR,
                        lamw == lamw,
+                       cbar == cbar,
                        cave == cbave*S/b,
                        croot == S/b*cb[0],
                        cmac == S/b]
