@@ -1,6 +1,7 @@
 " cap spar "
 from gpkit import Model, Variable, Vectorize
 from chord_spar_loading import ChordSparL
+from gustloading import GustL
 
 class CapSpar(Model):
     "cap spar model"
@@ -35,4 +36,7 @@ class CapSpar(Model):
 
     def loading(self, Wcent):
         return ChordSparL(self, Wcent)
+
+    def gustloading(self, Wcent, Wwing, V, CL):
+        return GustL(self, Wcent, Wwing, V, CL)
 

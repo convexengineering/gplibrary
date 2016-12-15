@@ -3,14 +3,13 @@ from gpkit import Model, Variable, Vectorize
 
 class Beam(Model):
     "discretized beam bending model"
-    def setup(self, N, q):
+    def setup(self, N, qbar):
 
         with Vectorize(N-1):
             EIbar = Variable("\\bar{EI}", "-",
                              "normalized YM and moment of inertia")
 
         with Vectorize(N):
-            qbar = Variable("\\bar{q}", q, "-", "normalized loading")
             Sbar = Variable("\\bar{S}", "-", "normalized shear")
             Mbar = Variable("\\bar{M}", "-", "normalized moment")
             th = Variable("\\theta", "-", "deflection slope")

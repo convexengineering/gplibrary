@@ -24,7 +24,7 @@ class Wing(Model):
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
         lamw = Variable("\\lambda", lam, "-", "wing taper ratio")
-        cb = c_bar(lam, N)
+        cb, _ = c_bar(lam, N)
         with Vectorize(N):
             cbar = Variable("\\bar{c}", cb, "-",
                             "normalized chord at mid element")
@@ -58,17 +58,19 @@ class Wing(Model):
     def flight_model(self, state):
         return WingAero(self, state)
 
-    def loading(self, Wcent):
-        return WingLoading(self, Wcent)
+    def loading(self, Wcent, Wwing=None, V=None, CL=None):
+        return WingLoading(self, Wcent, Wwing, V, CL)
 
 class WingLoading(Model):
     "wing loading cases"
-    def setup(self, wing, Wcent, **kwargs):
+    def setup(self, wing, Wcent, Wwing=None, V=None, CL=None):
 
-        skinloading = wing.wingskin.loading()
-        caploading = wing.spar.loading(Wcent)
+        loading = [wing.wingskin.loading()]
+        loading.append(wing.spar.loading(Wcent))
+        if Wwing:
+            loading.append(wing.spar.gustloading(Wcent, Wwing, V, CL))
 
-        return skinloading, caploading
+        return loading
 
 class WingAero(Model):
     "wing aerodynamic model with profile and induced drag"
