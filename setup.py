@@ -45,7 +45,7 @@ setup(
     install_requires=["numpy", "scipy", "pint"],
     version="0.0.0.0",
     packages=["gpkitmodels", "gpkitmodels.aircraft", "gpkitmodels.manufacturing",
-              "gpkitmodels.npv"],
+              "gpkitmodels.npv", "gpkitmodels.aircraft.GP_submodels"],
     package_data={},
     license=LICENSE,
     long_description=LONG_DESCRIPTION,
