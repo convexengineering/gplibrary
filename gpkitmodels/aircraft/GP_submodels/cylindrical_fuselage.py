@@ -1,4 +1,4 @@
-" fuselage.py "
+" cylindrical fuselage.py "
 import numpy as np
 from gpkit import Variable, Model
 from fuel_tank import FuelTank
