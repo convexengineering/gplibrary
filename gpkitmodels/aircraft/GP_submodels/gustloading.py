@@ -18,19 +18,20 @@ class GustL(Model):
             Mr = Variable("M_r", "N*m", "wing section root moment")
 
         vgust = Variable("V_{gust}", 10, "m/s", "gust velocity")
-        agust = Variable("\\alpha_{gust}", "-", "gust angle of attack")
 
         with Vectorize(static.N):
+            agust = Variable("\\alpha_{gust}", "-", "gust angle of attack")
             qbar = Variable("\\bar{q}", "-", "normalized loading")
-            cosminus1 = Variable("1-cos(\\eta)", (1-np.cos(eta)/2)**2, "-",
-                                 "1 minus cosine factor")
+            cosminus1 = Variable("1-cos(\\eta)",
+                                 np.hstack([1e-10, 1-np.cos(eta[1:]*pi/2)]),
+                                 "-", "1 minus cosine factor")
 
         beam = Beam(static.N, qbar)
 
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.055
-            agust == 0.874071*(vgust/V)**0.958316,
-            qbar >= 2*pi/CL*(1+Wcent/Wwing)*cosminus1*agust,
+            agust == 0.874071*(cosminus1*vgust/V)**0.958316,
+            qbar >= 2*pi/CL*(1+Wcent/Wwing)*agust,
             # dimensionalize moment of inertia and young's modulus
             beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
                                   / Wwing/static["b"]**2),
