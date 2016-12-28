@@ -29,8 +29,8 @@ class GustL(Model):
         beam = Beam(static.N, qbar)
 
         constraints = [
-            # fit for arctan from 0 to 1, RMS = 0.055
-            agust == 0.874071*(cosminus1*vgust/V)**0.958316,
+            # fit for arctan from 0 to 1, RMS = 0.044
+            agust == 0.855922*(cosminus1*vgust/V)**0.934041,
             qbar >= 2*pi/CL*(1+Wcent/Wwing)*agust,
             # dimensionalize moment of inertia and young's modulus
             beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
