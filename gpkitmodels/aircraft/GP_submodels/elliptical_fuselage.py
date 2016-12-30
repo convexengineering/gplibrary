@@ -26,7 +26,7 @@ class Fuselage(Model):
         constraints = [
             f == l/R/2,
             k >= 1 + 60/f**3 + f/400,
-            (3/np.pi*S)**1.6075 >= (4*l*R)**1.6075 + (2*R)**(2*1.6075),
+            3*(S/np.pi)**1.6075 >= 2*(l*R*2)**1.6075 + (2*R)**(2*1.6075),
             Vol <= 4*np.pi/3*(l/2)*R**2,
             Vol >= Wfueltot/rhofuel,
             W/mfac >= S*rhocfrp*t*g,
