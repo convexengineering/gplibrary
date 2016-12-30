@@ -21,15 +21,15 @@ class Engine(Model):
                            Pslmax == Pslmax]
 
         else:
-            Pref = Variable("P_{ref}", 2.295, "hp", "Reference shaft power")
-            Wengref = Variable("W_{eng-ref}", 4.4107, "lbf",
+            Pref = Variable("P_{ref}", 10.0, "hp", "Reference shaft power")
+            Wengref = Variable("W_{eng-ref}", 10.0, "lbf",
                                "Reference engine weight")
             Weng = Variable("W_{eng}", "lbf", "engine weight")
             Pslmax = Variable("P_{sl-max}", "hp",
                               "Max shaft power at sea level")
 
             constraints = [
-                Weng/Wengref >= 0.5538*(Pslmax/Pref)**1.075,
+                Weng/Wengref >= 1.27847*(Pslmax/Pref)**0.772392,
                 W/mfac >= 2.572*Weng**0.922*units("lbf")**0.078]
 
         return constraints
