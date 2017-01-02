@@ -61,9 +61,10 @@ class EnginePerf(Model):
                                 "Minimum BSFC")
 
             constraints = [
-                (bsfc/mfac/bsfc_min)**35.7 >=
-                (2.29*(rpm/rpm_max)**8.02 + 0.00114*(rpm/rpm_max)**-38.3),
-                (Ptotal/Pshaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.294
+                (bsfc/mfac/bsfc_min)**36.2209 >= (
+                    2.31541*(rpm/rpm_max)**8.06517
+                    + 0.00103364*(rpm/rpm_max)**-38.8545),
+                (Ptotal/Pshaftmax)**0.1 == 0.999495*(rpm/rpm_max)**0.294421
                 ]
         else:
             bsfc_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr",
