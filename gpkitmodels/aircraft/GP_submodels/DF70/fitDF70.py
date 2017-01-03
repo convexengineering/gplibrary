@@ -77,7 +77,7 @@ m, c = np.linalg.lstsq(A, y)[0]
 print "Equation: y = %.4gx + %.4f" % (m, c)
 fig, ax = plt.subplots()
 ax.plot(x, y, 'o', label='Original data', markerfacecolor="None")
-ax.plot(x, m*x + c, 'r', label='Fitted line')
+ax.plot(x, m*x + c, label='Fitted line')
 ax.legend()
 ax.grid()
 fig.savefig("lapseline.pdf")

@@ -71,7 +71,7 @@ def plot_fits(naca_range, re_range):
         if True in [c.empty for c in cd]:
             i = [c.empty for c in cd].index(True)
             cd[i] = (cd[i-1] + cd[i+1])/2
-        ax.plot(re_range, cd, "o", c=col)
+        ax.plot(re_range, cd, "o", c=col, markerfacecolor="None")
         w = return_fit(res, float(n))
         ax.plot(res, w, c=col, label="NACA %s" % n)
     ax.legend()
