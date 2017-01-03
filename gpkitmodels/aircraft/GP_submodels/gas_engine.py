@@ -48,8 +48,11 @@ class EnginePerf(Model):
         Ptotal = Variable("P_{total}", "hp", "Total power, avionics included")
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
                                   "alternator efficiency")
-        lfac = [1 - 0.906**(1/0.15)*(v.value/hr.value)**0.92
-                for v, hr in zip(state["h"], state["h_{ref}"])]
+        href = Variable("h_{ref}", 1, "ft", "reference altitude")
+        # lfac = [1 - 0.906**(1/0.15)*(v.value/hr.value)**0.92
+        #         for v, hr in zip(state["h"], state["h_{ref}"])]
+        lfac = [-3.1802e-05*(v.value/hr.value) + 0.9730
+                for v, hr in zip(state["h"], href)]
         Leng = Variable("L_{eng}", lfac, "-", "shaft power loss factor")
         Pshaftmax = Variable("P_{shaft-max}",
                              "hp", "Max shaft power at altitude")

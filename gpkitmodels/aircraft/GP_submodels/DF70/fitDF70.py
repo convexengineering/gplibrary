@@ -18,6 +18,7 @@ Type = 'SMA'
 K = 2
 
 cstrt, rmserror = fit(x,y,K,Type)
+print "RMS error = %.4f" % rmserror
 yfit = cstrt.evaluate(x)
 
 fig, ax = plt.subplots()
@@ -39,7 +40,8 @@ y = np.array(log(P/P_max))
 x = np.array(log(RPM/RPM_max))
 Type = 'SMA'
 K = 1
-cstrt, rms_error = fit(x,y,K,Type)
+cstrt, rmserror = fit(x,y,K,Type)
+print "RMS error = %.4f" % rmserror
 yfit = cstrt.evaluate(x)
 
 fig, ax = plt.subplots()
@@ -63,25 +65,19 @@ fig.savefig("rpmtopowerfit.pdf")
 # K = 1
 # cstrt, rms_error = fit(logRPM,logQ,K,Type)
 
-#h = np.delete(h,[0])
-#P = np.delete(P,[0])
+# fit lapse rate
+df = pd.read_csv("DF35_maxPvh.csv")
+u = df["ft"]
+w = df["kW"]/max(df["kW"])
+x = np.array(u)
+y = np.array(w)
 
-# Fitting Power vs. RPM
-# P = df['kW']
-# P_MSL = np.amax(df['kW'])
-# Pnorm = P/P_MSL
-# L = 1-Pnorm
-
-# the variables you input into fit() can't have negatives here or Inf or -Inf
-# logL = log(L)
-# logh = log(h)
-
-
-
-# plt.xlabel('log(h)')
-# plt.ylabel('log(1-Pnorm)')
-# #plt.show()
-
-#cstrt, rms_error = fit(logh[1:-1],logL[1:-1],K,Type)
-
-
+A = np.vstack([x, np.ones(len(x))]).T
+m, c = np.linalg.lstsq(A, y)[0]
+print "Equation: y = %.4gx + %.4f" % (m, c)
+fig, ax = plt.subplots()
+ax.plot(x, y, 'o', label='Original data', markerfacecolor="None")
+ax.plot(x, m*x + c, 'r', label='Fitted line')
+ax.legend()
+ax.grid()
+fig.savefig("lapseline.pdf")
