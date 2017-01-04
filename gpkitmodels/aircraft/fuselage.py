@@ -290,7 +290,7 @@ class Fuselage(Model):
                                       + 2*(wcargofl + wpassfl)*lfloor*Wppfloor,
 
                             Wtail >= vtail['W_{vtail}'] + htail['W_{htail}'] + Wcone,
-                            Wshell >= Wskin*(1 + fstring + fframe + ffadd),# + Whbend,
+                            Wshell >= Wskin*(1 + fstring + fframe + ffadd) + Whbend,
 
                             SignomialEquality(xtail, lnose + lshell + .5*lcone), #Temporarily
                             hfuse    == Rfuse,
@@ -316,21 +316,26 @@ class Fuselage(Model):
                             A2      >=  Nland*(Wpay+Wshell+Wwindow+Winsul+Wfloor+Wseat)/(2*lshell*hfuse*sigMh), # Landing loads constant A2
                             A1      >= (Nland*Wtail + rMh*htail['L_{h_{max}}'])/(hfuse*sigMh),                                # Aero loads constant A1
                             A0      == (Ihshell/(rE*hfuse**2)),                                                # Shell inertia constant A0
-                            SignomialEquality(Ahbendf, A2*(xshell2-wingbox['x_f'])**2 + A1*(xtail-wingbox['x_f']) - A0), #[SP]                           # Bending area forward of wingbox
-                            SignomialEquality(Ahbendb, A2*(xshell2-wingbox['x_b'])**2 + A1*(xtail-wingbox['x_b']) - A0), #[SP]                           # Bending area behind wingbox
+                            Ahbendf >= A2*(xshell2-wingbox['x_f'])**2 + A1*(xtail-wingbox['x_f']) - A0, #[SP]                           # Bending area forward of wingbox
 
-                            SignomialEquality(Vhbendf, A2/3*((xshell2-wingbox['x_f'])**3 - (xshell2-xhbend)**3) \
+                            Ahbendf >= 1*10**-30*units['m^2'],
+
+                            Ahbendb >= A2*(xshell2-wingbox['x_b'])**2 + A1*(xtail-wingbox['x_b']) - A0, #[SP]                           # Bending area behind wingbox
+
+                            Vhbendf >= A2/3*((xshell2-wingbox['x_f'])**3 - (xshell2-xhbend)**3) \
                                             + A1/2*((xtail-wingbox['x_f'])**2 - (xtail - xhbend)**2) \
-                                            + A0*(xhbend-wingbox['x_f'])), #[SP]
+                                            + A0*(xhbend-wingbox['x_f']), #[SP]
+
+                            Vhbendf >= 1*10**-30*units['m^3'], #Temporary
 
                             Vhbendb >= A2/3*((xshell2-wingbox['x_b'])**3 - (xshell2-xhbend)**3) \
                                             + A1/2*((xtail-wingbox['x_b'])**2 - (xtail - xhbend)**2) \
                                             + A0*(xhbend-wingbox['x_b']), #[SP]
-                            Vhbend <= 1*units('m^3'),
+                            
                             Vhbendc >= .5*(Ahbendf + Ahbendb)*wingbox['c_0']*wingbox['\\bar_w'],
                             Vhbend >= Vhbendc + Vhbendf + Vhbendb,
                             Whbend  >= g*rhobend*Vhbend,
-                            Whbend  <= 35000*units('N'),
+                            
 
 
                             # Temporary wing variable substitutions
@@ -457,7 +462,8 @@ class Fuselage(Model):
                 elif version == 'NextGen':
                     constraints = [constraints,
                                 Mpassfl == Ppassfl*wpassfl/4.,
-                                TCS([Ahold <= (2./3)*2*wcargofl*hhold + hhold**3/(2*2*wcargofl)], reltol=1E-5),
+                                #TCS([Ahold <= (2./3)*2*wpassfl*hhold + hhold**3/(2*2*wpassfl)], reltol=1E-5),
+                                Ahold <= wcargofl*2*hhold,
                                 ]
                 else:
                     raise NotImplementedError
@@ -794,6 +800,8 @@ class FlightState(Atmosphere):
            # Minf == Vinf / a
             ])
 
+        #Constraint(Vinf, Vinf, '==')
+
         #build the model
         Model.__init__(self, None, [atm + constraints], **kwargs)
 
@@ -942,7 +950,7 @@ class CommericalAircraft(Model):
 
         constraints = ConstraintSet([submodels])
 
-        objective = fusep['D_{fuse}'] + 0.5*fuse['W_{fuse}']# + fuse['W_{hbend}']
+        objective = fusep['D_{fuse}'] + 0.5*fuse['W_{fuse}']
 
         lc = LinkedConstraintSet(constraints)
 
@@ -968,7 +976,7 @@ class CommericalAircraft(Model):
         return m
 
     # pylint: disable=too-many-locals
-    def determine_unbounded_variables(self, model, solver=None, verbosity=0,
+    def determine_unbounded_variables(self, model, solver='mosek', verbosity=0,
                                       eps=1e-30, lower=None, upper=None, **kwargs):
         "Returns labeled dictionary of unbounded variables."
         m = self.bound_all_variables(model, eps, lower, upper)
@@ -1001,8 +1009,8 @@ if __name__ == '__main__':
     #sol, solhold = Fuse.determine_unbounded_variables(Fuse, verbosity = 4, iteration_limit = 100)
     CA = CommericalAircraft(fuselage_type = 'narrowbody', version = 'NextGen')
 
-    sol, solhold = CA.determine_unbounded_variables(CA, verbosity = 4, iteration_limit = 100)
-    #solold = CA.localsolve()
+    #sol, solhold = CA.determine_unbounded_variables(CA, verbosity = 4, iteration_limit = 100)
+    solhold = CA.localsolve(solver='mosek', verbosity = 1)
     print(solhold.table())
 
 
