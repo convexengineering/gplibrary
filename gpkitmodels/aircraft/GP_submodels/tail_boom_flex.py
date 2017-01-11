@@ -1,6 +1,6 @@
 " tail boom flexibility "
 import numpy as np
-from gpkit import Model, Variable
+from gpkit import Model, Variable, SignomialsEnabled
 
 class TailBoomFlexibility(Model):
     "tail boom flexibility model"
@@ -20,8 +20,11 @@ class TailBoomFlexibility(Model):
                     / tailboom["I_0"]*tailboom["(1-k/2)"]),
             sph1*(wing["m_w"]*Fne/htail["m_h"]/htail["V_h"]) + deda <= 1,
             sph2 <= htail["V_h"]*htail["(C_{L_h})_{min}"]/wing["C_{L_{max}}"],
-            (sph1 + sph2).mono_lower_bound({"sph1": .48, "sph2": .52}) >= (
-                SMcorr + wing["C_M"]/wing["C_{L_{max}}"]),
+            # (sph1 + sph2).mono_lower_bound({"sph1": .48, "sph2": .52}) >= (
+            #     SMcorr + wing["C_M"]/wing["C_{L_{max}}"]),
             deda >= wing["m_w"]*wing["S"]/wing["b"]/4/np.pi/htail["l_h"]]
+
+        with SignomialsEnabled():
+            constraints.extend([sph1 + sph2 >= SMcorr + wing["C_M"]/wing["C_{L_{max}}"]])
 
         return constraints

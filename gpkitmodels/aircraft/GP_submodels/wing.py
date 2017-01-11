@@ -1,6 +1,6 @@
 " wing.py "
 import numpy as np
-from gpkit import Variable, Model, Vectorize
+from gpkit import Variable, Model, Vectorize, SignomialsEnabled
 from wing_interior import WingInterior
 from wing_skin import WingSkin
 from capspar import CapSpar
@@ -19,7 +19,9 @@ class Wing(Model):
         tau = Variable("\\tau", 0.115, "-", "airfoil thickness ratio")
         CLmax = Variable("C_{L_{max}}", 1.39, "-", "maximum CL of JHO1")
         CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
-        mw = Variable("m_w", 2.0*np.pi/(1+2.0/23), "-",
+        # mw = Variable("m_w", 2.0*np.pi/(1+2.0/23), "-",
+        #               "assumed span wise effectiveness")
+        mw = Variable("m_w", "-",
                       "assumed span wise effectiveness")
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
@@ -39,6 +41,9 @@ class Wing(Model):
                        cave == cbave*S/b,
                        croot == S/b*cb[0],
                        cmac == S/b]
+        with SignomialsEnabled():
+            constraints.extend([mw*(1+2.0/AR) >= 2.0*np.pi])
+
 
         if spar == "CapSpar":
             self.spar = CapSpar(b, cave, tau, N)
