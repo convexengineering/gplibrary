@@ -7,6 +7,30 @@ plt.rcParams.update({'font.size':19})
 
 np.random.seed(0)
 
+# Fitting BSFC vs. Power
+df = pd.read_csv('Dataset_BSFC_kgKwh.csv')
+u = df['Power']
+w = df['BSFC']/min(df["BSFC"])
+x = np.array(log(u))
+y = np.array(log(w))
+Type = 'SMA'
+K = 2
+
+cstrt, rmserror = fit(x, y, K, Type)
+print "RMS error = %.4f" % rmserror
+yfit = cstrt.evaluate(x)
+
+fig, ax = plt.subplots()
+ax.plot(u, w*min(df["BSFC"]), "o", markerfacecolor="None")
+ax.plot(u, np.exp(yfit)*min(df["BSFC"]))
+ax.set_xlabel("Percent Power")
+ax.set_ylabel("$BSFC$ [lb/hp/hr]")
+ax.legend(["Manufacture Data", "GP approximation"])
+ax.set_xlim([0, 1])
+ax.set_ylim([0, 1])
+ax.grid()
+fig.savefig("powertobsfcfit.pdf", bbox_inches="tight")
+
 # Fitting BSFC vs. RPM
 df = pd.read_csv('Dataset_BSFC_kgKwh.csv')
 RPM = df['RPM']

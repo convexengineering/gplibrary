@@ -43,15 +43,14 @@ class EnginePerf(Model):
 
         Pshaft = Variable("P_{shaft}", "hp", "Shaft power")
         bsfc = Variable("BSFC", "lb/hr/hp", "Brake specific fuel consumption")
-        rpm = Variable("RPM", "rpm", "Engine operating RPM")
         Pavn = Variable("P_{avn}", 40, "watts", "Avionics power")
         Ptotal = Variable("P_{total}", "hp", "Total power, avionics included")
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
                                   "alternator efficiency")
-        href = Variable("h_{ref}", 1, "ft", "reference altitude")
+        href = Variable("h_{ref}", 1000, "ft", "reference altitude")
         # lfac = [1 - 0.906**(1/0.15)*(v.value/hr.value)**0.92
         #         for v, hr in zip(state["h"], state["h_{ref}"])]
-        lfac = [-3.1802e-05*(v.value/hr.value) + 0.9730
+        lfac = [-0.035*(v.value/hr.value) + 1.0
                 for v, hr in zip(state["h"], href)]
         Leng = Variable("L_{eng}", lfac, "-", "shaft power loss factor")
         Pshaftmax = Variable("P_{shaft-max}",
@@ -59,6 +58,7 @@ class EnginePerf(Model):
         mfac = Variable("m_{fac}", 1.0, "-", "BSFC margin factor")
 
         if static.DF70:
+            rpm = Variable("RPM", "rpm", "Engine operating RPM")
             rpm_max = Variable("RPM_{max}", 7698, "rpm", "Maximum RPM")
             bsfc_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr",
                                 "Minimum BSFC")
@@ -67,22 +67,22 @@ class EnginePerf(Model):
                 (bsfc/mfac/bsfc_min)**36.2209 >= (
                     2.31541*(rpm/rpm_max)**8.06517
                     + 0.00103364*(rpm/rpm_max)**-38.8545),
-                (Ptotal/Pshaftmax)**0.1 == 0.999495*(rpm/rpm_max)**0.294421
+                (Ptotal/Pshaftmax)**0.1 == 0.999495*(rpm/rpm_max)**0.294421,
+                rpm <= rpm_max
                 ]
         else:
-            bsfc_min = Variable("BSFC_{min}", 0.32, "kg/kW/hr",
+            bsfc_min = Variable("BSFC_{min}", 0.316, "kg/kW/hr",
                                 "Minimum BSFC")
-            rpm_max = Variable("RPM_{max}", 9000, "rpm", "Maximum RPM")
 
             constraints = [
-                (bsfc/mfac/bsfc_min)**0.129 >=
-                (0.972*(rpm/rpm_max)**-0.141 + 0.0268*(rpm/rpm_max)**9.62),
-                (Ptotal/Pshaftmax)**0.1 == 0.999*(rpm/rpm_max)**0.292
+                (bsfc/mfac/bsfc_min)**35.7041 >= (
+                    2.24902 * (Ptotal/Pshaftmax)**2.72257
+                    + 0.00124367 * (Ptotal/Pshaftmax)**-13.0099),
                 ]
 
         constraints.extend([Pshaftmax/static["P_{sl-max}"] == Leng,
                             Pshaftmax >= Ptotal,
-                            Ptotal >= Pshaft + Pavn/eta_alternator,
-                            rpm <= rpm_max])
+                            Ptotal >= Pshaft + Pavn/eta_alternator
+                           ])
 
         return constraints
