@@ -3,6 +3,7 @@ import numpy as np
 from numpy import logspace, log, log10
 import matplotlib.pyplot as plt
 from gpfit.fit import fit
+plt.rcParams.update({'font.size':19})
 
 np.random.seed(0)
 
@@ -28,7 +29,7 @@ ax.set_xlabel("$RPM$")
 ax.set_ylabel("$BSFC$ [lb/hp/hr]")
 ax.legend(["Manufacture Data", "GP approximation"])
 ax.grid()
-fig.savefig("rpmtobsfcfit.pdf")
+fig.savefig("rpmtobsfcfit.pdf", bbox_inches="tight")
 
 # Fitting Power vs. RPM
 df = pd.read_csv('Dataset_Power_Kw.csv')
@@ -51,7 +52,7 @@ ax.set_xlabel("$RPM$")
 ax.set_ylabel("Shaft Power [kW]")
 ax.legend(["Manufacture Data", "GP approximation"])
 ax.grid()
-fig.savefig("rpmtopowerfit.pdf")
+fig.savefig("rpmtopowerfit.pdf", bbox_inches="tight")
 
 # Fitting Torque vs. RPM
 # df = pd.read_csv('Dataset_Torque_Nm.csv')
@@ -76,8 +77,10 @@ A = np.vstack([x, np.ones(len(x))]).T
 m, c = np.linalg.lstsq(A, y)[0]
 print "Equation: y = %.4gx + %.4f" % (m, c)
 fig, ax = plt.subplots()
-ax.plot(x, y, 'o', label='Original data', markerfacecolor="None")
-ax.plot(x, m*x + c, label='Fitted line')
+ax.plot(x, y, 'o', label='RCV Engine Data', markerfacecolor="None")
+ax.plot(x, m*x + c, label='Fitted Line')
+ax.set_ylabel("Engine Lapse Rate")
+ax.set_xlabel("Altitude [ft]")
 ax.legend()
 ax.grid()
-fig.savefig("lapseline.pdf")
+fig.savefig("lapseline.pdf", bbox_inches="tight")

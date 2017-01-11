@@ -25,7 +25,7 @@ class CapSpar(Model):
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
         constraints = [I <= 2*w*t*(hin/2)**2,
-                       dm >= rhocfrp*w*t*b/(self.N-1),
+                       dm >= rhocfrp*w*t*b/2/(self.N-1),
                        W >= 2*dm.sum()*g,
                        w <= w_lim*cave,
                        cave*tau >= hin + 2*t,
