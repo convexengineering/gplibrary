@@ -8,6 +8,7 @@ import numpy as np
 class GustL(Model):
     "spar loading model"
     def setup(self, static, Wcent, Wwing, V, CL):
+    # def setup(self, static, Wcent, rho, V, S):
 
         Nmax = Variable("N_{max}", 5, "-", "max loading")
         cbar, eta = c_bar(0.5, static.N)
@@ -31,11 +32,11 @@ class GustL(Model):
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
             agust == 0.855922*(cosminus1*vgust/V)**0.934041,
-            qbar >= 2*pi/CL*(1+Wcent/Wwing)*agust,
+            qbar >= cbar*(1 + 2*pi*agust/CL*(1+Wwing/Wcent)),
             # dimensionalize moment of inertia and young's modulus
             beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
-                                  / Wwing/static["b"]**2),
-            Mr == (beam["\\bar{M}"][:-1]*Wwing*Nmax*static["b"]/4),
+                                  / Wcent/static["b"]**2),
+            Mr == (beam["\\bar{M}"][:-1]*Wcent*Nmax*static["b"]/4),
             sigmacfrp >= Mr/static["S_y"],
             beam["\\bar{\\delta}"][-1] <= kappa,
             ]
