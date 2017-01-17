@@ -3,13 +3,20 @@ import numpy as np
 from numpy import logspace, log, log10
 import matplotlib.pyplot as plt
 from gpfit.fit import fit
+from scipy import interpolate
 plt.rcParams.update({'font.size':19})
 
 np.random.seed(0)
 
 # Fitting BSFC vs. Power
+df = pd.read_csv('Dataset_Power_Kw.csv')
+p = df['P']
+rpm = df["RPM"]
+f = interpolate.interp1d(rpm, p)
 df = pd.read_csv('Dataset_BSFC_kgKwh.csv')
-u = df['Power']
+df = df[(df["RPM"] > min(rpm)) & (df["RPM"] < max(rpm))]
+rpmnew = df["RPM"]
+u = f(rpmnew)/max(p)
 w = df['BSFC']/min(df["BSFC"])
 x = np.array(log(u))
 y = np.array(log(w))
@@ -25,7 +32,7 @@ ax.plot(u, w*min(df["BSFC"]), "o", markerfacecolor="None")
 ax.plot(u, np.exp(yfit)*min(df["BSFC"]))
 ax.set_xlabel("Percent Power")
 ax.set_ylabel("$BSFC$ [lb/hp/hr]")
-ax.legend(["Manufacture Data", "GP approximation"])
+ax.legend(["Manufacture Data", "GP approximation"], fontsize=15)
 ax.set_xlim([0, 1])
 ax.set_ylim([0, 1])
 ax.grid()

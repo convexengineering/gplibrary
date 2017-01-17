@@ -75,9 +75,9 @@ class EnginePerf(Model):
                                 "Minimum BSFC")
 
             constraints = [
-                (bsfc/mfac/bsfc_min)**35.7041 >= (
-                    2.24902 * (Ptotal/Pshaftmax)**2.72257
-                    + 0.00124367 * (Ptotal/Pshaftmax)**-13.0099),
+                (bsfc/mfac/bsfc_min)**18.5563 >= (
+                    0.00866321 * (Ptotal/Pshaftmax)**-7.70161
+                    + 1.38628 * (Ptotal/Pshaftmax)**1.12922),
                 ]
 
         constraints.extend([Pshaftmax/static["P_{sl-max}"] == Leng,

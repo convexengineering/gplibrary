@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size':15})
 
 def text_to_df(filename):
     "parse XFOIL polars and concatente data in DataFrame"
@@ -64,12 +65,12 @@ def plot_fits(re):
     cls = np.linspace(0.2, 1.3, 20)
     for r, col in zip(re, colors):
         dataf = text_to_df("jho1.ncrit09.Re%dk.pol" % r)
-        ax.plot(dataf["CL"], dataf["CD"], "o", c=col)
+        ax.plot(dataf["CL"], dataf["CD"], "o", markeredgecolor=col, markerfacecolor="none")
         cd = return_fit(cls, r*1000.)
         ax.plot(cls, cd, c=col, label="Re = %dk" % r)
-    ax.legend(loc=2)
+    ax.legend(loc=2, fontsize=15)
     ax.set_xlabel("$C_L$")
-    ax.set_ylabel("$C_D$")
+    ax.set_ylabel("$c_{d_p}$")
     ax.grid()
     return fig, ax
 
@@ -77,4 +78,4 @@ if __name__ == "__main__":
     Re = range(200, 750, 50)
     X, Y = fit_setup(Re) # call fit(X, Y, 4, "SMA") to get fit
     F, A = plot_fits([300, 350, 400, 450, 500])
-    F.savefig("jho1polarfit1.pdf")
+    F.savefig("jho1polarfit1.pdf", bbox_inches="tight")
