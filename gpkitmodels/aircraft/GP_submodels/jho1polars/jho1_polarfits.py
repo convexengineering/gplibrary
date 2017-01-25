@@ -62,20 +62,23 @@ def plot_fits(re):
     colors = ["k", "m", "b", "g", "y"]
     assert len(re) == len(colors)
     fig, ax = plt.subplots()
+    fig1, ax1 = plt.subplots()
     cls = np.linspace(0.2, 1.3, 20)
     for r, col in zip(re, colors):
         dataf = text_to_df("jho1.ncrit09.Re%dk.pol" % r)
         ax.plot(dataf["CL"], dataf["CD"], "o", markeredgecolor=col, markerfacecolor="none")
         cd = return_fit(cls, r*1000.)
         ax.plot(cls, cd, c=col, label="Re = %dk" % r)
+        ax1.plot(cls, cls**1.5/cd)
     ax.legend(loc=2, fontsize=15)
     ax.set_xlabel("$C_L$")
     ax.set_ylabel("$c_{d_p}$")
     ax.grid()
-    return fig, ax
+    return fig, ax, fig1
 
 if __name__ == "__main__":
     Re = range(200, 750, 50)
     X, Y = fit_setup(Re) # call fit(X, Y, 4, "SMA") to get fit
-    F, A = plot_fits([300, 350, 400, 450, 500])
+    F, A, F1 = plot_fits([300, 350, 400, 450, 500])
     F.savefig("jho1polarfit1.pdf", bbox_inches="tight")
+    F1.savefig("jho1cl32cd.pdf", bbox_inches="tight")

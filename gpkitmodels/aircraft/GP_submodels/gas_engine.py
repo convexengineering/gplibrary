@@ -42,7 +42,7 @@ class EnginePerf(Model):
     def setup(self, static, state):
 
         Pshaft = Variable("P_{shaft}", "hp", "Shaft power")
-        bsfc = Variable("BSFC", "lb/hr/hp", "Brake specific fuel consumption")
+        bsfc = Variable("BSFC", "kg/kW/hr", "Brake specific fuel consumption")
         Pavn = Variable("P_{avn}", 40, "watts", "Avionics power")
         Ptotal = Variable("P_{total}", "hp", "Total power, avionics included")
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",

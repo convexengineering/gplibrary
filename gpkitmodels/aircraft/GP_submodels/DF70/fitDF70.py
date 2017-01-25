@@ -28,10 +28,10 @@ print "RMS error = %.4f" % rmserror
 yfit = cstrt.evaluate(x)
 
 fig, ax = plt.subplots()
-ax.plot(u, w*min(df["BSFC"]), "o", markerfacecolor="None")
-ax.plot(u, np.exp(yfit)*min(df["BSFC"]))
+ax.plot(u, w*min(df["BSFC"]), "o", mfc="None", ms=7, mew=1.5)
+ax.plot(u, np.exp(yfit)*min(df["BSFC"]), linewidth=2)
 ax.set_xlabel("Percent Power")
-ax.set_ylabel("$BSFC$ [lb/hp/hr]")
+ax.set_ylabel("$BSFC$ [kg/kW/hr]")
 ax.legend(["Manufacture Data", "GP approximation"], fontsize=15)
 ax.set_xlim([0, 1])
 ax.set_ylim([0, 1])
