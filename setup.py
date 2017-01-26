@@ -2,6 +2,7 @@
 from __future__ import print_function
 import sys
 from distutils.core import setup
+from setuptools import find_packages
 
 LONG_DESCRIPTION = """
 GPkit Models is a library of geometric programming and signomial programming
@@ -44,8 +45,7 @@ setup(
     url="https://www.github.com/hoburg/gpkit-models",
     install_requires=["numpy", "scipy", "pint"],
     version="0.0.0.0",
-    packages=["gpkitmodels", "gpkitmodels.aircraft", "gpkitmodels.manufacturing",
-              "gpkitmodels.npv", "gpkitmodels.aircraft.GP_submodels"],
+    packages=find_packages(),
     package_data={},
     license=LICENSE,
     long_description=LONG_DESCRIPTION,
