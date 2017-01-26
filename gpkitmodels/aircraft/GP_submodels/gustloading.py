@@ -10,9 +10,9 @@ class GustL(Model):
     def setup(self, static, Wcent, Wwing, V, CL):
     # def setup(self, static, Wcent, rho, V, S):
 
-        Nmax = Variable("N_{max}", 5, "-", "max loading")
+        Nmax = Variable("N_{max}", 2, "-", "max loading")
         cbar, eta = c_bar(0.5, static.N)
-        sigmacfrp = Variable("\\sigma_{CFRP}", 475e6, "Pa", "CFRP max stress")
+        sigmacfrp = Variable("\\sigma_{CFRP}", 570e6, "Pa", "CFRP max stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
 
         with Vectorize(static.N-1):

@@ -9,7 +9,7 @@ class CapSpar(Model):
         self.N = N
 
         # phyiscal properties
-        rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
+        rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
 
         with Vectorize(self.N-1):

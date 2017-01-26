@@ -13,7 +13,7 @@ class VerticalTail(Model):
         bv = Variable("b", "ft", "one vertical tail span")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
                            "Density of formular 250")
-        rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
+        rhoskin = Variable("\\rho_{skin}", 0.049, "g/cm**2",
                            "vertical tail skin density")
         Abar = Variable("\\bar{A}_{NACA0008}", 0.0548, "-",
                         "cross sectional area of NACA 0008")

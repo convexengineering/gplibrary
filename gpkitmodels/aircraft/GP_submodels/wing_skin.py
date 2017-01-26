@@ -5,7 +5,7 @@ class WingSkin(Model):
     "wing skin model"
     def setup(self, S, croot, b):
 
-        rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
+        rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         W = Variable("W", "lbf", "wing skin weight")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
         t = Variable("t", "in", "wing skin thickness")

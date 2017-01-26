@@ -13,7 +13,7 @@ class HorizontalTail(Model):
                         "cross sectional area of NACA 0008")
         rhofoam = Variable("\\rho_{foam}", 1.5, "lbf/ft^3",
                            "Density of formular 250")
-        rhoskin = Variable("\\rho_{skin}", 0.1, "g/cm**2",
+        rhoskin = Variable("\\rho_{skin}", 0.049, "g/cm**2",
                            "horizontal tail skin density")
         bh = Variable("b", "ft", "horizontal tail span")
         W = Variable("W", "lbf", "horizontal tail weight")

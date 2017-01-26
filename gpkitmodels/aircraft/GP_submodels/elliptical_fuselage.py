@@ -18,7 +18,7 @@ class Fuselage(Model):
         Vol = Variable("\\mathcal{V}", "ft**3", "fuselae volume")
         rhofuel = Variable("\\rho_{fuel}", 6.01, "lbf/gallon",
                            "density of 100LL")
-        rhocfrp = Variable("\\rho_{CFRP}", 1.4, "g/cm^3", "density of CFRP")
+        rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         t = Variable("t", 0.024, "in",
                      "minimum gague fuselage skin thickness")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")

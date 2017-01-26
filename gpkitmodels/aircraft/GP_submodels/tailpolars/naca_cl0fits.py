@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size':15})
 
 def text_to_df(filename):
     "parse XFOIL polars and concatente data in DataFrame"
@@ -71,10 +72,10 @@ def plot_fits(naca_range, re_range):
         if True in [c.empty for c in cd]:
             i = [c.empty for c in cd].index(True)
             cd[i] = (cd[i-1] + cd[i+1])/2
-        ax.plot(re_range, cd, "o", c=col, markerfacecolor="None")
+        ax.plot(re_range, cd, "o", mec=col, mfc="None", mew=1.5)
         w = return_fit(res, float(n))
-        ax.plot(res, w, c=col, label="NACA %s" % n)
-    ax.legend()
+        ax.plot(res, w, c=col, label="NACA %s" % n, lw=2)
+    ax.legend(fontsize=15)
     ax.set_xlabel("$Re$")
     ax.set_ylabel("$c_{dp}$")
     ax.grid()
@@ -85,4 +86,4 @@ if __name__ == "__main__":
     NACA = ["0005", "0008", "0009", "0010", "0015", "0020"]
     X, Y = fit_setup(NACA, Re) # call fit(X, Y, 4, "SMA") to get fit
     F, A = plot_fits(NACA, Re)
-    F.savefig("taildragpolar.pdf")
+    F.savefig("taildragpolar.pdf", bbox_inches="tight")
