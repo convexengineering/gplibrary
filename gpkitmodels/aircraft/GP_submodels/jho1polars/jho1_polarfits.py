@@ -66,9 +66,9 @@ def plot_fits(re):
     cls = np.linspace(0.2, 1.3, 20)
     for r, col in zip(re, colors):
         dataf = text_to_df("jho1.ncrit09.Re%dk.pol" % r)
-        ax.plot(dataf["CL"], dataf["CD"], "o", markeredgecolor=col, markerfacecolor="none")
+        ax.plot(dataf["CL"], dataf["CD"], "o", mec=col, mfc="none", mew=1.5)
         cd = return_fit(cls, r*1000.)
-        ax.plot(cls, cd, c=col, label="Re = %dk" % r)
+        ax.plot(cls, cd, c=col, label="Re = %dk" % r, lw=2)
         ax1.plot(cls, cls**1.5/cd)
     ax.legend(loc=2, fontsize=15)
     ax.set_xlabel("$C_L$")
