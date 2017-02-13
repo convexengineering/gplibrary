@@ -9,6 +9,7 @@ class Engine(Model):
 
         W = Variable("W", "lbf", "Installed/Total engine weight")
         mfac = Variable("m_{fac}", 1.0, "-", "Engine weight margin factor")
+        bsfc_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr", "Minimum BSFC")
 
         if DF70:
             Wdf70 = Variable("W_{DF70}", 7.1, "lbf",
@@ -60,22 +61,18 @@ class EnginePerf(Model):
         if static.DF70:
             rpm = Variable("RPM", "rpm", "Engine operating RPM")
             rpm_max = Variable("RPM_{max}", 7698, "rpm", "Maximum RPM")
-            bsfc_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr",
-                                "Minimum BSFC")
 
             constraints = [
-                (bsfc/mfac/bsfc_min)**36.2209 >= (
+                (bsfc/mfac/static["BSFC_{min}"])**36.2209 >= (
                     2.31541*(rpm/rpm_max)**8.06517
                     + 0.00103364*(rpm/rpm_max)**-38.8545),
                 (Ptotal/Pshaftmax)**0.1 == 0.999495*(rpm/rpm_max)**0.294421,
                 rpm <= rpm_max
                 ]
         else:
-            bsfc_min = Variable("BSFC_{min}", 0.316, "kg/kW/hr",
-                                "Minimum BSFC")
 
             constraints = [
-                (bsfc/mfac/bsfc_min)**18.5563 >= (
+                (bsfc/mfac/static["BSFC_{min}"])**18.5563 >= (
                     0.00866321 * (Ptotal/Pshaftmax)**-7.70161
                     + 1.38628 * (Ptotal/Pshaftmax)**1.12922),
                 ]

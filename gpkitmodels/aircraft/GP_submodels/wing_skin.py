@@ -10,7 +10,7 @@ class WingSkin(Model):
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
         t = Variable("t", "in", "wing skin thickness")
         tmin = Variable("t_{min}", 0.012, "in",
-                        "minimum gague wing skin thickness")
+                        "minimum gauge wing skin thickness")
         Jtbar = Variable("\\bar{J/t}", 0.01114, "1/mm",
                          "torsional moment of inertia")
 

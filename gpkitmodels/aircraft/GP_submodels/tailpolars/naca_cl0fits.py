@@ -76,6 +76,9 @@ def plot_fits(naca_range, re_range):
         w = return_fit(res, float(n))
         ax.plot(res, w, c=col, label="NACA %s" % n, lw=2)
     ax.legend(fontsize=15)
+    labels = ["k" + item.get_text() for item in ax.get_xticklabels()]
+    labels = ["%dk" % l for l in np.linspace(200, 900, len(labels))]
+    ax.set_xticklabels(labels)
     ax.set_xlabel("$Re$")
     ax.set_ylabel("$c_{dp}$")
     ax.grid()
