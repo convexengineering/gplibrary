@@ -11,7 +11,7 @@ class BreguetRange(Model):
     -----------
     Fuel burn varies linearily with thrust and is independent of velocity.
     """
-    def setup(self):
+    def __init__(self, **kwargs):
 
         # Fixed Parameters
         LD_max = Variable('\\left(\\frac{L}{D}\\right)_{max}', 15, '-',
@@ -49,12 +49,13 @@ class BreguetRange(Model):
                        # Taylor series expansion of exp(z_bre) - 1
                        W_fuel/W_e >= te_exp_minus1(z_bre, nterm=3)
                       ]
-        return objective, constraints
+
+        Model.__init__(self, objective, constraints, **kwargs)
 
     @classmethod
     def test(cls):
         sol = cls().solve()
-        assert sol['sensitivities']['variables']['TSFC'] >= 0
+        assert sol['sensitivities']['constants']['TSFC'] >= 0
 
 if __name__ == '__main__':
     BreguetRange.test()
