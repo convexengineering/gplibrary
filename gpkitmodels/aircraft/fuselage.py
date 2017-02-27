@@ -23,7 +23,7 @@ class Fuselage(CostedConstraintSet):
         Mfloor   = Variable('M_{floor}', 'N*m',
                             'Max bending moment in floor beams')
         Nland    = Variable('N_{land}', '-', 'Emergency landing load factor')
-        Pfloor   = Variable('P_{floor}', 'N', 'Distributed floor load')
+        Pfloor   = Variable('P_{floor}',2,'psi', 'Distributed floor load')
         Qv       = Variable('Q_v', 'N*m', 'Torsion moment imparted by tail')
         R        = Variable('R', 287, 'J/(kg*K)', 'Universal gas constant')
         Rfuse    = Variable('R_{fuse}', 'm', 'Fuselage radius')
@@ -111,7 +111,6 @@ class Fuselage(CostedConstraintSet):
         rho      = Variable('\\rho', 'kg/m^3', 'Air density (cruise)')
         rhobend  = Variable('\\rho_{bend}', 'kg/m^3', 'Stringer density')
         rhocabin = Variable('\\rho_{cabin}', 'kg/m^3', 'Air density in cabin')
-        rhocargo = Variable('\\rho_{cargo}', 'kg/m^3', 'Cargo density')
         rhocone  = Variable('\\rho_{cone}', 'kg/m^3',
                             'Cone material density')
         rhofloor = Variable('\\rho_{floor}', 'kg/m^3',
