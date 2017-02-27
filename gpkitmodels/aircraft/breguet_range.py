@@ -1,60 +1,91 @@
 """Breguet range model"""
-from gpkit import Variable, Model
+from gpkit import Variable, VectorVariable, Model, units, SignomialEquality, SignomialsEnabled
+from gpkit.constraints.tight import TightConstraintSet as TCS
 from gpkit.tools import te_exp_minus1
-
+import numpy as np
 
 class BreguetRange(Model):
-
-    """Breguet Range Model
+    """
+    Breguet Range Model
 
     Assumptions
     -----------
     Fuel burn varies linearily with thrust and is independent of velocity.
     """
-    def setup(self):
+    def __init__(self, **kwargs):
+        #Variable definitions
+        TSFC = Variable('TSFC', '1/hr', 'Thrust Specific Fuel Consumtion')
 
-        # Fixed Parameters
-        LD_max = Variable('\\left(\\frac{L}{D}\\right)_{max}', 15, '-',
-                          'Maximum lift-to-drag ratio')
-        MTOW   = Variable('MTOW', 10000, 'lbf', 'Max takeoff weight')
-        TSFC   = Variable('TSFC', 0.307, 'lb/lbf/hr',
-                          'Thrust specific fuel consumption')
-        V_max  = Variable('V_{max}', 420, 'knots', 'Maximum velocity')
-        W_e    = Variable('W_{e}', 7000, 'lbf', 'Operating empty weight')
+        #breguet range parameter
+        z_bre = Variable('z_bre', '-', 'Breguet Range Parameter')
 
-        # Constants
-        g      = Variable('g', 9.81, 'm/s^2', 'Gravitational acceleration')
+        #aero
+        Cl = Variable('Cl', '-', 'Segment Lift Coefficient')
+        D = Variable('D', 'N', 'Drag')
+        Cd0 = Variable('Cd0', '-', 'Profile Drag Coefficient')
+        K = Variable('K', '-', 'Parametric Drag Model Parameter')
+        S = Variable('S', 'm^2', 'Wing Planform Area')
 
-        # Free Variables
-        LD     = Variable('\\frac{L}{D}', '-', 'Lift-to-drag ratio')
-        R      = Variable('R', 'nautical_miles', 'Range')
-        V      = Variable('V', 'knots', 'Velocity')
-        W_fuel = Variable('W_{fuel}', 'lbf', 'Fuel weight')
-        W_init = Variable('W_{init}', 'lbf', 'Initial gross weight')
-        z_bre  = Variable('z_{bre}', '-', 'Breguet parameter')
+        #weights
+        W_fuel = Variable('W_fuel', 'N', 'Segment Fuel Weight')
+        W_end = Variable('W_end', 'N', 'Segment End Weight')
+        W_avg = Variable('W_avg', 'N', 'Average Segment Weight')
+        W_start = Variable('W_start', 'N', 'Segment Start Weight')
 
-        # Model
-        objective = 1/R  # Maximize range
+        #atmosphere
+        rho = Variable('rho', 'kg/m^3', 'Air Density')
 
-        constraints = [# Aircraft and fuel weight
-                       W_init >= W_e + W_fuel,
+        #speed
+        V = Variable('V', 'kts', 'Cruise Airspeed')
+        
+        #Range
+        Range = Variable('Range', 'mi', 'Required Segment Range')
 
-                       # Performance constraints
-                       W_init <= MTOW,
-                       LD <= LD_max,
-                       V <= V_max,
+        #flight time
+        t = Variable('t', 'hr', 'Segment Flight Time')
+        
+        constraints = []
 
-                       # Breguet range
-                       R <= z_bre*LD*V/(TSFC*g),
-                       # Taylor series expansion of exp(z_bre) - 1
-                       W_fuel/W_e >= te_exp_minus1(z_bre, nterm=3)
-                      ]
-        return objective, constraints
+        #write out all required constraints
+        constraints.extend([
+            #Breguet Range parameter constraints
+            TCS([W_fuel/W_end >= te_exp_minus1(z_bre,3)]),
+            TCS([z_bre >= TSFC * t * D/ W_end]),
 
-    @classmethod
-    def test(cls):
-        sol = cls().solve()
-        assert sol['sensitivities']['variables']['TSFC'] >= 0
+            #constraint on the lift coefficient, assumes steady level flight
+            W_avg == .5 * Cl * S * rho * V**2,
+
+            #drag constraint
+            TCS([D >= (.5*S*rho*V**2)*(Cd0 + K * Cl**2)]),
+
+            #constrain the starting weight such that the aircraft is only losing weight due to fuel burn
+            TCS([W_start >= W_end + W_fuel]),
+
+            #average weight is the geometric mean of the start and end weights
+            W_avg == (W_start * W_end)**.5,
+
+            #constraint on the segment time
+            t * V == Range,
+            ])
+
+        substitutions = []
+
+        #build the model
+        Model.__init__(self, W_fuel, constraints, substitutions)
 
 if __name__ == '__main__':
-    BreguetRange.test()
+       m = BreguetRange()
+
+       m.substitutions.update({
+            'S': 125,                 #approx a B737 wing area
+            'Range': 1000,            #1,000 mile required range
+            'W_end': 40000*9.81,      #approx empty weight of B737 in N
+            'V': 420,                 #set the cruise speed
+            'rho': .31,               #air density at 12,000m (~40,000')
+            'Cd0': .02,               #setting profile drag coefficient
+            'K': .015,                #setting parametric drag model coefficient
+            'TSFC': 0.5,              #setting segment TSFC
+            'W_limit': 100000*9.81,
+        })
+
+       sol = m.solve()
