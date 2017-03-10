@@ -79,7 +79,16 @@ test_reports_nounits/
 # OSX
 .DS_Store
 
-# Latex
+# latex
 *.aux
 *.log
 *.synctex.gz
+
+# md files support files
+*.generated.tex
+*.tex.md
+*.md.py
+*.sh
+
+# xfoil polars
+*.pol
