@@ -85,9 +85,5 @@ test_reports_nounits/
 *.md.py
 *.sh
 
-# generated graphs
-*.pdf
-*.png
-
 # xfoil polars
 *.pol
