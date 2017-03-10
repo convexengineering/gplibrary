@@ -1,7 +1,7 @@
 " cap spar "
 from gpkit import Model, Variable, Vectorize
 from constant_taper_chord import c_bar
-from beam import Beam
+from gpkitmodels.GP.beam.beam import Beam
 
 class ChordSparL(Model):
     "spar loading model"
@@ -9,7 +9,7 @@ class ChordSparL(Model):
 
         Nmax = Variable("N_{max}", 5, "-", "max loading")
         cbar, _ = c_bar(0.5, static.N)
-        sigmacfrp = Variable("\\sigma_{CFRP}", 470e6, "Pa", "CFRP max stress")
+        sigmacfrp = Variable("\\sigma_{CFRP}", 1700e6, "Pa", "CFRP max stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
 
         with Vectorize(static.N-1):

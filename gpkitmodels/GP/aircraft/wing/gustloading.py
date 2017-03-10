@@ -1,7 +1,7 @@
 " spar loading for gust case "
 from gpkit import Model, Variable, Vectorize
 from constant_taper_chord import c_bar
-from beam import Beam
+from gpkitmodels.GP.beam.beam import Beam
 from numpy import pi
 import numpy as np
 
@@ -10,7 +10,7 @@ class GustL(Model):
     def setup(self, static, Wcent, Wwing, V, CL):
     # def setup(self, static, Wcent, rho, V, S):
 
-        Nmax = Variable("N_{max}", 2, "-", "max loading")
+        Nmax = Variable("N_{max}", 2, "-", "load safety factor")
         cbar, eta = c_bar(0.5, static.N)
         sigmacfrp = Variable("\\sigma_{CFRP}", 570e6, "Pa", "CFRP max stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")

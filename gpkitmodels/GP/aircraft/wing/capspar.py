@@ -5,7 +5,7 @@ from gustloading import GustL
 
 class CapSpar(Model):
     "cap spar model"
-    def setup(self, b, cave, tau, N=5):
+    def setup(self, b, cave, tau, N=5, **kwargs):
         self.N = N
 
         # phyiscal properties
@@ -13,18 +13,19 @@ class CapSpar(Model):
         E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
 
         with Vectorize(self.N-1):
-            t = Variable("t", "in", "spar cap thickness")
             hin = Variable("h_{in}", "in", "inner spar height")
-            w = Variable("w", "in", "spar width")
             I = Variable("I", "m^4", "spar x moment of inertia")
             Sy = Variable("S_y", "m**3", "section modulus")
             dm = Variable("dm", "kg", "segment spar mass")
+            w = Variable("w", "in", "spar width")
+            t = Variable("t", "in", "spar cap thickness")
 
         W = Variable("W", "lbf", "spar weight")
         w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
+        mfac = Variable("m_{fac}", 0.97, "-", "curvature knockdown factor")
 
-        constraints = [I <= 2*w*t*(hin/2)**2,
+        constraints = [I/mfac <= 2*w*t*(hin/2)**2,
                        dm >= rhocfrp*w*t*b/2/(self.N-1),
                        W >= 2*dm.sum()*g,
                        w <= w_lim*cave,

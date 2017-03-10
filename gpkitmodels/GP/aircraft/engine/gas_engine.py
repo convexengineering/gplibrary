@@ -9,7 +9,7 @@ class Engine(Model):
 
         W = Variable("W", "lbf", "Installed/Total engine weight")
         mfac = Variable("m_{fac}", 1.0, "-", "Engine weight margin factor")
-        bsfc_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr", "Minimum BSFC")
+        bsfc_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr", "minimum BSFC")
 
         if DF70:
             Wdf70 = Variable("W_{DF70}", 7.1, "lbf",
