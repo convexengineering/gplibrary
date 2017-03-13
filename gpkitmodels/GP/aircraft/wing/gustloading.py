@@ -12,7 +12,7 @@ class GustL(Model):
 
         Nmax = Variable("N_{max}", 2, "-", "load safety factor")
         cbar, eta = c_bar(0.5, static.N)
-        sigmacfrp = Variable("\\sigma_{CFRP}", 570e6, "Pa", "CFRP max stress")
+        sigmacfrp = Variable("\\sigma_{CFRP}", 1700e6, "Pa", "CFRP max stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
 
         with Vectorize(static.N-1):
