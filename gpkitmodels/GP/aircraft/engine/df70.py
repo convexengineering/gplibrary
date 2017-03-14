@@ -1,32 +1,28 @@
 " engine_model.py "
 from gpkit import Model, Variable, units
 
-class Engine(Model):
+class DF70(Model):
     "engine model"
-    def setup(self, DF70=False):
-
-        self.DF70 = DF70
+    def setup(self):
 
         W = Variable("W", "lbf", "Installed/Total engine weight")
         mfac = Variable("m_{fac}", 1.0, "-", "Engine weight margin factor")
         bsfc_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr", "minimum BSFC")
-        Pref = Variable("P_{ref}", 10.0, "hp", "Reference shaft power")
-        Wengref = Variable("W_{eng-ref}", 10.0, "lbf",
-                           "Reference engine weight")
-        Weng = Variable("W_{eng}", "lbf", "engine weight")
-        Pslmax = Variable("P_{sl-max}", "hp",
+        Wdf70 = Variable("W_{DF70}", 7.1, "lbf",
+                         "Installed/Total DF70 engine weight")
+        Pslmax = Variable("P_{sl-max}", 5.17, "hp",
                           "Max shaft power at sea level")
+        h = Variable("h", 12, "in", "engine height")
 
-        constraints = [
-            Weng/Wengref >= 1.27847*(Pslmax/Pref)**0.772392,
-            W/mfac >= 2.572*Weng**0.922*units("lbf")**0.078]
+        constraints = [W/mfac >= Wdf70,
+                       Pslmax == Pslmax]
 
         return constraints
 
     def flight_model(self, state):
-        return EnginePerf(self, state)
+        return DF70Perf(self, state)
 
-class EnginePerf(Model):
+class DF70Perf(Model):
     "engine performance model"
     def setup(self, static, state):
 
@@ -43,10 +39,15 @@ class EnginePerf(Model):
         Pshaftmax = Variable("P_{shaft-max}",
                              "hp", "Max shaft power at altitude")
         mfac = Variable("m_{fac}", 1.0, "-", "BSFC margin factor")
+        rpm = Variable("RPM", "rpm", "Engine operating RPM")
+        rpm_max = Variable("RPM_{max}", 7698, "rpm", "Maximum RPM")
+
         constraints = [
-            (bsfc/mfac/static["BSFC_{min}"])**18.5563 >= (
-                0.00866321 * (Ptotal/Pshaftmax)**-7.70161
-                + 1.38628 * (Ptotal/Pshaftmax)**1.12922),
+            (bsfc/mfac/static["BSFC_{min}"])**36.2209 >= (
+                2.31541*(rpm/rpm_max)**8.06517
+                + 0.00103364*(rpm/rpm_max)**-38.8545),
+            (Ptotal/Pshaftmax)**0.1 == 0.999495*(rpm/rpm_max)**0.294421,
+            rpm <= rpm_max,
             Pshaftmax/static["P_{sl-max}"] == Leng,
             Pshaftmax >= Ptotal,
             Ptotal >= Pshaft + Pavn/eta_alternator
