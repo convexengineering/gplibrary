@@ -78,7 +78,7 @@ class WingAero(Model):
         "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
-        e = Variable("e", 0.9, "-", "Oswald efficiency")
+        e = Variable("e", 0.9, "-", "span efficiency")
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
 
