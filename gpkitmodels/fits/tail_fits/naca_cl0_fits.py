@@ -46,7 +46,6 @@ def fit_setup(naca_range, re_range, M_range):
 
     u1 = np.hstack(re)
     u2 = np.hstack(tau)
-    print u2
     u3 = np.hstack(mach)
     w = np.hstack(cd)
     u1 = u1.astype(np.float)

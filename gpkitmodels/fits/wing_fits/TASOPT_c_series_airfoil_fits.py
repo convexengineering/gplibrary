@@ -48,9 +48,7 @@ def fit_setup(thick_range, re_range, M_range):
                         mach.append(m)
 
     u1 = np.hstack(re)
-    print u1
     u2 = np.hstack(tau)
-    print u2
     u3 = np.hstack(mach)
     u4 = np.hstack(cl)
     w = np.hstack(cd)
