@@ -151,6 +151,7 @@ class Sutherland(Model):
         m.solve()
 
 if __name__ == "__main__":
-    Troposphere.test()
+    sol = Troposphere.test()
+    print sol.table()
     Tropopause.test()
     Sutherland.test()
