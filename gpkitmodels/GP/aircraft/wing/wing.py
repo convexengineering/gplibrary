@@ -6,6 +6,10 @@ from wing_skin import WingSkin
 from capspar import CapSpar
 from tube_spar import TubeSpar
 from constant_taper_chord import c_bar
+from fit_constraintset import FitCS
+from gpkit.constraints.tight import Tight as TCS
+import pandas as pd
+import os
 
 class Wing(Model):
     "The thing that creates the lift"
@@ -82,13 +86,14 @@ class WingAero(Model):
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
 
+        path = os.path.abspath(__file__).replace(os.path.basename(__file__), "")
+        df = pd.read_csv(path + os.sep + "jho_fitdata.csv")
+
         constraints = [
             Cd >= cdp + CL**2/np.pi/static["AR"]/e,
-            cdp**3.72 >= (0.0247*CL**2.49*Re**-1.11
-                          + 2.03e-7*CL**12.7*Re**-0.338
-                          + 6.35e10*CL**-0.243*Re**-3.43
-                          + 6.49e-6*CL**-1.9*Re**-0.681),
             Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
+            # FitCS(dragfit, bounds={Re: [200000, 700000], CL: [0.2, 1.2]})
+            FitCS(df, cdp, [CL, Re])
             ]
 
         return constraints
