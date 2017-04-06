@@ -12,8 +12,12 @@ class FitCS(ConstraintSet):
                          range(1, d+1)]])[0].astype(float)
         B = np.array(df[["c%d" % k for k in range(1, K+1)]])[0].astype(float)
 
-        monos = B*NomialArray([(dvars**A[k*d:(k+1)*d]).prod() for k in
-                               range(K)])
+        if np.array(dvars).ndim > 1:
+            vvars = np.array(dvars).T
+        else:
+            vvars = np.array([dvars])
+        monos = [B*NomialArray([(dv**A[k*d:(k+1)*d]).prod() for k in
+                                range(K)]) for dv in vvars]
 
         if err_margin:
             maxerr = float(df["max_err"].iloc[0])
@@ -26,14 +30,17 @@ class FitCS(ConstraintSet):
             # constraint of the form 1 >= c1*u1^exp1*u2^exp2*w^(-alpha) + ....
             alpha = np.array(df[["a%d" % k for k in
                                  range(1, K+1)]])[0].astype(float)
-            lhs, rhs = 1, (monos/(ivar/mfac)**alpha).sum()
+            lhs = 1
+            rhs = NomialArray([(mono/(ivar/mfac)**alpha).sum() for mono
+                               in monos])
         elif ftype == "SMA":
             # constraint of the form w^alpha >= c1*u1^exp1 + c2*u2^exp2 +....
             alpha = float(df["a1"].iloc[0])
-            lhs, rhs = (ivar/mfac)**alpha, monos.sum()
+            lhs = (ivar/mfac)**alpha
+            rhs = NomialArray([mono.sum() for mono in monos])
         elif ftype == "MA":
             # constraint of the form w >= c1*u1^exp1, w >= c2*u2^exp2, ....
-            lhs, rhs = (ivar/mfac), monos
+            lhs, rhs = (ivar/mfac), NomialArray(monos)
 
         if K == 1:
             # when possible, return an equality constraint
@@ -46,39 +53,44 @@ class FitCS(ConstraintSet):
         if not nobounds:
             self.boundingvars = []
             for i, v in enumerate(dvars):
-                if "units" in v.descr:
-                    unt = v.descr["units"]
+                if hasattr(v, "__len__"):
+                    desv = v[0]
+                else:
+                    desv = v
+                if "units" in desv.descr:
+                    unt = desv.descr["units"]
                 else:
                     unt = "-"
-                low = Variable(v.descr["name"] + "_{low-bound}",
+                low = Variable(desv.descr["name"] + "_{low-bound}",
                                float(df["lb%d" % (i+1)].iloc[0]), unt,
-                               v.descr["label"] + " lower bound")
-                up = Variable(v.descr["name"] + "_{up-bound}",
+                               desv.descr["label"] + " lower bound")
+                up = Variable(desv.descr["name"] + "_{up-bound}",
                               float(df["ub%d" % (i+1)].iloc[0]), unt,
-                              v.descr["label"] + " upper bound")
+                              desv.descr["label"] + " upper bound")
 
-                self.boundingvars.extend([low, up])
+                self.boundingvars.extend(np.hstack([low, up]))
 
                 constraints.extend([v >= low,
                                     v <= up])
+            self.boundingvars = np.hstack(self.boundingvars)
 
         else:
             self.boundingvars = None
 
         ConstraintSet.__init__(self, constraints)
 
-    def process_result(self, result):
+    def process_result(self, result, TOL=1e-5):
         super(FitCS, self).process_result(result)
 
-        if self.boundingvars:
+        if not self.boundingvars is None:
             for var in self.boundingvars:
                 sen = result["sensitivities"]["constants"][var]
-                if hasattr(sen, "__len__"):
-                    sen = max(np.abs(sen.values()))
 
-                if sen > 0.01:
-                    msg = ("Sensitive to " + var.descr["label"] +
-                           " of value %.3f with a sensitivity of %.3f\n" %
+                if abs(sen) > TOL:
+                    msg = ("Variable %.100s could cause inaccurate result"
+                           " because sensitivity to " % var
+                           + var.descr["label"] + " of value %.3f is greater"
+                           " than 0, with a sensitivity of %.5f" %
                            (var.descr["value"], sen))
                     print "Warning: " + msg
 
