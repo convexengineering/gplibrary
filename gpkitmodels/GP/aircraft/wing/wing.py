@@ -6,7 +6,7 @@ from wing_skin import WingSkin
 from capspar import CapSpar
 from tube_spar import TubeSpar
 from constant_taper_chord import c_bar
-from fit_constraintset import FitCS
+from gpkitmodels.tools.fit_constraintset import FitCS
 from gpkit.constraints.tight import Tight as TCS
 import pandas as pd
 import os

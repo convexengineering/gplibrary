@@ -1,5 +1,8 @@
 " tail aerodynamics "
 from gpkit import Variable, Model
+import os
+from gpkitmodels.tools.fit_constraintset import FitCS
+import pandas as pd
 
 class TailAero(Model):
     "horizontal tail aero model"
@@ -9,15 +12,19 @@ class TailAero(Model):
         Re = Variable("Re", "-", "%s reynolds number" % name)
         Cd = Variable("C_d", "-", "%s drag coefficient" % name)
 
+        path = os.path.dirname(__file__)
+        df = pd.read_csv(path + os.sep + "tail_dragfit.csv")
+
         constraints = [
             Re == (state["V"]*state["\\rho"]*static["S"]/static["b"]
                    / state["\\mu"]),
-            Cd**70.5599 >= (7.42688e-90*(Re/1000)**-33.0637
-                            * (static["\\tau"]*100)**18.0419
-                            + 5.02826e-163*(Re/1000)**-18.7959
-                            * (static["\\tau"]*100)**53.1879
-                            + 4.22901e-77*(Re/1000)**-41.1704
-                            * (static["\\tau"]*100)**28.4609)
+            FitCS(df, Cd, [Re, static["\\tau"]])
+            # Cd**70.5599 >= (7.42688e-90*(Re/1000)**-33.0637
+            #                 * (static["\\tau"]*100)**18.0419
+            #                 + 5.02826e-163*(Re/1000)**-18.7959
+            #                 * (static["\\tau"]*100)**53.1879
+            #                 + 4.22901e-77*(Re/1000)**-41.1704
+            #                 * (static["\\tau"]*100)**28.4609)
             ]
 
         return constraints

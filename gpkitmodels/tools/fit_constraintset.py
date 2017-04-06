@@ -57,6 +57,8 @@ class FitCS(ConstraintSet):
                     desv = v[0]
                 else:
                     desv = v
+                if "value" in desv.descr:
+                    continue
                 if "units" in desv.descr:
                     unt = desv.descr["units"]
                 else:
