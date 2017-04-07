@@ -69,22 +69,25 @@ class FitCS(ConstraintSet):
             self.boundingvars = []
             for i, v in enumerate(dvars):
                 if hasattr(v, "__len__"):
-                    desv = v[0]
+                    desv = list(v[0].varkeys)[0].descr
                 else:
-                    desv = v
-                if "value" in desv.descr:
+                    desv = list(v.varkeys)[0].descr
+                    if "ref" in desv["name"]:
+                        desv = list(v.varkeys)[1].descr
+                if "value" in desv:
                     continue
-                if "units" in desv.descr:
-                    unt = desv.descr["units"]
+                if v.units:
+                    unt = v.units
+                elif "units" in desv:
+                    unt = desv["units"]
                 else:
                     unt = "-"
-                low = Variable(desv.descr["name"] + "_{low-bound}",
+                low = Variable(desv["name"] + "_{low-bound}",
                                float(df["lb%d" % (i+1)].iloc[0]), unt,
-                               desv.descr["label"] + " lower bound")
-                up = Variable(desv.descr["name"] + "_{up-bound}",
+                               desv["label"] + " lower bound")
+                up = Variable(desv["name"] + "_{up-bound}",
                               float(df["ub%d" % (i+1)].iloc[0]), unt,
-                              desv.descr["label"] + " upper bound")
-
+                              desv["label"] + " upper bound")
                 self.boundingvars.extend(np.hstack([low, up]))
 
                 constraints.extend([v >= low,
