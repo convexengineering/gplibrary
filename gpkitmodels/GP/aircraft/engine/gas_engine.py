@@ -1,11 +1,15 @@
 " engine_model.py "
 from gpkit import Model, Variable, units
+import os
+import pandas as pd
+from gpkitmodels.tools.fit_constraintset import FitCS
 
 class Engine(Model):
     "engine model"
     def setup(self, DF70=False):
 
         self.DF70 = DF70
+        print "made"
 
         W = Variable("W", "lbf", "Installed/Total engine weight")
         mfac = Variable("m_{fac}", 1.0, "-", "Engine weight margin factor")
@@ -17,8 +21,11 @@ class Engine(Model):
         Pslmax = Variable("P_{sl-max}", "hp",
                           "Max shaft power at sea level")
 
+        path = os.path.dirname(__file__)
+        df = pd.read_csv(path + os.sep + "power_lawfit.csv")
+
         constraints = [
-            Weng/Wengref >= 1.27847*(Pslmax/Pref)**0.772392,
+            FitCS(df, Weng/Wengref, [Pslmax/Pref]),
             W/mfac >= 2.572*Weng**0.922*units("lbf")**0.078]
 
         return constraints
