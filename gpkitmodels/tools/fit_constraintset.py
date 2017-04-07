@@ -12,8 +12,20 @@ class FitCS(ConstraintSet):
                          range(1, d+1)]])[0].astype(float)
         B = np.array(df[["c%d" % k for k in range(1, K+1)]])[0].astype(float)
 
-        if np.array(dvars).ndim > 1:
-            vvars = np.array(dvars).T
+        withvector = False
+        withvar = False
+        for dv in dvars:
+            if hasattr(dv, "__len__"):
+                withvector = True
+                N = len(dv)
+            else:
+                withvar = True
+        if withvector:
+            if withvar:
+                vvars = np.array([dv if isinstance(dv, NomialArray) else [dv]*N
+                                  for dv in dvars]).T
+            else:
+                vvars = np.array(dvars).T
         else:
             vvars = np.array([dvars])
         monos = [B*NomialArray([(dv**A[k*d:(k+1)*d]).prod() for k in
@@ -46,7 +58,10 @@ class FitCS(ConstraintSet):
             # when possible, return an equality constraint
             cstrt = (lhs == rhs)
         else:
-            cstrt = (lhs >= rhs)
+            if withvector:
+                cstrt = [(lh >= rh) for rh, lh in zip(rhs, lhs)]
+            else:
+                cstrt = (lhs >= rhs)
 
         constraints = [cstrt]
 
