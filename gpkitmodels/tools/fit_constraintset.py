@@ -1,5 +1,6 @@
 from gpkit import ConstraintSet
 from gpkit import Variable, NomialArray
+from gpkit.small_scripts import unitstr
 import numpy as np
 
 class FitCS(ConstraintSet):
@@ -56,7 +57,10 @@ class FitCS(ConstraintSet):
 
         if K == 1:
             # when possible, return an equality constraint
-            cstrt = (lhs == rhs)
+            if withvector:
+                cstrt = [(lh == rh) for rh, lh in zip(rhs, lhs)]
+            else:
+                cstrt = (lhs == rhs)
         else:
             if withvector:
                 cstrt = [(lh >= rh) for rh, lh in zip(rhs, lhs)]
@@ -69,25 +73,21 @@ class FitCS(ConstraintSet):
             self.boundingvars = []
             for i, v in enumerate(dvars):
                 if hasattr(v, "__len__"):
-                    desv = list(v[0].varkeys)[0].descr
-                else:
-                    desv = list(v.varkeys)[0].descr
-                    if "ref" in desv["name"]:
-                        desv = list(v.varkeys)[1].descr
-                if "value" in desv:
+                    v = v[0]
+                if np.all(["value" in vk.descr for vk in v.varkeys]):
                     continue
                 if v.units:
                     unt = v.units
-                elif "units" in desv:
-                    unt = desv["units"]
                 else:
                     unt = "-"
-                low = Variable(desv["name"] + "_{low-bound}",
+                name = "".join([vk.descr["name"] + "**%.2f" % v.exps[0][vk]
+                                for vk in v.varkeys])
+                low = Variable(name + "_{low-bound}",
                                float(df["lb%d" % (i+1)].iloc[0]), unt,
-                               desv["label"] + " lower bound")
-                up = Variable(desv["name"] + "_{up-bound}",
+                               name + " lower bound")
+                up = Variable(name + "_{up-bound}",
                               float(df["ub%d" % (i+1)].iloc[0]), unt,
-                              desv["label"] + " upper bound")
+                              name + " upper bound")
                 self.boundingvars.extend(np.hstack([low, up]))
 
                 constraints.extend([v >= low,
@@ -99,7 +99,7 @@ class FitCS(ConstraintSet):
 
         ConstraintSet.__init__(self, constraints)
 
-    def process_result(self, result, TOL=1e-5):
+    def process_result(self, result, TOL=1e-7):
         super(FitCS, self).process_result(result)
 
         if not self.boundingvars is None:

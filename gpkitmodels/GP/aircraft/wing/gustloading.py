@@ -2,8 +2,11 @@
 from gpkit import Model, Variable, Vectorize
 from constant_taper_chord import c_bar
 from gpkitmodels.GP.beam.beam import Beam
+from gpkitmodels.tools.fit_constraintset import FitCS
 from numpy import pi
 import numpy as np
+import pandas as pd
+import os
 
 class GustL(Model):
     "spar loading model"
@@ -28,10 +31,12 @@ class GustL(Model):
                                  "-", "1 minus cosine factor")
 
         beam = Beam(static.N, qbar)
+        path = os.path.abspath(__file__).replace(os.path.basename(__file__), "")
+        df = pd.read_csv(path + os.sep + "arctan_fit.csv")
 
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
-            agust == 0.905329*(cosminus1*vgust/V)**0.961857,
+            FitCS(df, agust, [cosminus1*vgust/V]),
             qbar >= cbar*(1 + 2*pi*agust/CL*(1+Wwing/Wcent)),
             # dimensionalize moment of inertia and young's modulus
             beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
