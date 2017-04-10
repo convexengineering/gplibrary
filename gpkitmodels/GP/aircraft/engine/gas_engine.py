@@ -9,7 +9,6 @@ class Engine(Model):
     def setup(self, DF70=False):
 
         self.DF70 = DF70
-        print "made"
 
         W = Variable("W", "lbf", "Installed/Total engine weight")
         mfac = Variable("m_{fac}", 1.0, "-", "Engine weight margin factor")
