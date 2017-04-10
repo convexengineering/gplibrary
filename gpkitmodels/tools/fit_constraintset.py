@@ -99,7 +99,7 @@ class FitCS(ConstraintSet):
 
         ConstraintSet.__init__(self, constraints)
 
-    def process_result(self, result, TOL=1e-7):
+    def process_result(self, result, TOL=1e-4):
         super(FitCS, self).process_result(result)
 
         if not self.boundingvars is None:
