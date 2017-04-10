@@ -50,10 +50,12 @@ class EnginePerf(Model):
         Pshaftmax = Variable("P_{shaft-max}",
                              "hp", "Max shaft power at altitude")
         mfac = Variable("m_{fac}", 1.0, "-", "BSFC margin factor")
+
+        path = os.path.dirname(__file__)
+        df = pd.read_csv(path + os.sep + "powerBSFCfit.csv")
+
         constraints = [
-            (bsfc/mfac/static["BSFC_{min}"])**18.5563 >= (
-                0.00866321 * (Ptotal/Pshaftmax)**-7.70161
-                + 1.38628 * (Ptotal/Pshaftmax)**1.12922),
+            FitCS(df, bsfc/mfac/static["BSFC_{min}"], [Ptotal/Pshaftmax]),
             Pshaftmax/static["P_{sl-max}"] == Leng,
             Pshaftmax >= Ptotal,
             Ptotal >= Pshaft + Pavn/eta_alternator
