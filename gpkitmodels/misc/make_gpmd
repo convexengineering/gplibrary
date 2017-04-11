@@ -1,0 +1,4 @@
+#!/bin/sh
+# Simple command to generate GPkit MarkDown reports
+python -c "from gpkit.tools import mdmake; exec mdmake('README.md')"
+pandoc $1.md.tex.md --template ../default.latex -o $1.pdf
