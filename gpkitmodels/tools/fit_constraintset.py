@@ -1,6 +1,7 @@
 from gpkit import ConstraintSet
 from gpkit import Variable, NomialArray
 from gpkit.small_scripts import unitstr
+from xfoilWrapper import blind_call
 import numpy as np
 
 class FitCS(ConstraintSet):
@@ -69,48 +70,78 @@ class FitCS(ConstraintSet):
 
         constraints = [cstrt]
 
-        if not nobounds:
-            self.boundingvars = []
-            for i, v in enumerate(dvars):
-                if hasattr(v, "__len__"):
-                    v = v[0]
-                if np.all(["value" in vk.descr for vk in v.varkeys]):
-                    continue
-                if v.units:
-                    unt = v.units
-                else:
-                    unt = "-"
-                name = "".join([vk.descr["name"] + "**%.2f" % v.exps[0][vk]
-                                for vk in v.varkeys])
-                low = Variable(name + "_{low-bound}",
-                               float(df["lb%d" % (i+1)].iloc[0]), unt,
-                               name + " lower bound")
-                up = Variable(name + "_{up-bound}",
-                              float(df["ub%d" % (i+1)].iloc[0]), unt,
-                              name + " upper bound")
-                self.boundingvars.extend(np.hstack([low, up]))
+        self.bounds = {}
 
-                constraints.extend([v >= low,
-                                    v <= up])
-            self.boundingvars = np.hstack(self.boundingvars)
+        for i, v in enumerate(dvars):
+            if not hasattr(v, "__len__"):
+                v = [v]
+            for vr in v:
+                self.bounds[vr] = [float(df["lb%d" % (i+1)].iloc[0]),
+                                   float(df["ub%d" % (i+1)].iloc[0])]
 
-        else:
-            self.boundingvars = None
+        # if not nobounds:
+        #     self.boundingvars = []
+        #     for i, v in enumerate(dvars):
+        #         if hasattr(v, "__len__"):
+        #             v = v[0]
+        #         if np.all(["value" in vk.descr for vk in v.varkeys]):
+        #             continue
+        #         if v.units:
+        #             unt = v.units
+        #         else:
+        #             unt = "-"
+        #         name = "".join([vk.descr["name"] + "**%.2f" % v.exps[0][vk]
+        #                         for vk in v.varkeys])
+        #         low = Variable(name + "_{low-bound}",
+        #                        float(df["lb%d" % (i+1)].iloc[0]), unt,
+        #                        name + " lower bound")
+        #         up = Variable(name + "_{up-bound}",
+        #                       float(df["ub%d" % (i+1)].iloc[0]), unt,
+        #                       name + " upper bound")
+        #         self.boundingvars.extend(np.hstack([low, up]))
+
+        #         constraints.extend([v >= low,
+        #                             v <= up])
+        #     self.boundingvars = np.hstack(self.boundingvars)
+
+        # else:
+        #     self.boundingvars = None
 
         ConstraintSet.__init__(self, constraints)
 
-    def process_result(self, result, TOL=1e-4):
+    def process_result(self, result, TOL=0.05):
         super(FitCS, self).process_result(result)
 
-        if not self.boundingvars is None:
-            for var in self.boundingvars:
-                sen = result["sensitivities"]["constants"][var]
+        for bd in self.bounds:
+            num = result(bd)
+            wrn = False
+            if num < self.bounds[bd][0]:
+                direct = "lower"
+                bnd = self.bounds[bd][0]
+                wrn = True
+            if num > self.bounds[bd][1]:
+                direct = "upper"
+                bnd = self.bounds[bd][1]
+                wrn = True
 
-                if abs(sen) > TOL:
-                    msg = ("Variable %.100s could cause inaccurate result"
-                           " because sensitivity to " % var
-                           + var.descr["label"] + " of value %.3f is greater"
-                           " than 0, with a sensitivity of %.5f" %
-                           (var.descr["value"], sen))
-                    print "Warning: " + msg
+            if wrn:
+                msg = ("Variable %.100s could cause inaccurate result"
+                       " because it exceeds " % bd
+                       + " %s bound. Solution is %.4f but"
+                       " bound is %.4f" %
+                       (direct, num, bnd))
+                print "Warning: " + msg
+
+
+        # if not self.boundingvars is None:
+        #     for var in self.boundingvars:
+        #         sen = result["sensitivities"]["constants"][var]
+
+        #         if abs(sen) > TOL:
+        #             msg = ("Variable %.100s could cause inaccurate result"
+        #                    " because sensitivity to " % var
+        #                    + var.descr["label"] + " of value %.3f is greater"
+        #                    " than 0, with a sensitivity of %.5f" %
+        #                    (var.descr["value"], sen))
+        #             print "Warning: " + msg
 
