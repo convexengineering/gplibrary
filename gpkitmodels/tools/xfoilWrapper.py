@@ -49,7 +49,7 @@ def blind_call(topline, cl, Re, M, max_iter = 100,
         return float(cd), float(cl), float(cm), stdout_val
 
 def single_cl(CL, Re = 1e7, M = 0.0, airfoil=[], pathname = "/home/ckarcher/Xfoil/bin/./xfoil",
-                    number_of_samples = 51, sampling_min=-10, sampling_max=20, fitting_fraction = 1.2):
+                    number_of_samples = 51, sampling_min=-10, sampling_max=20, fitting_fraction = 1.4):
 
     num_samples = number_of_samples
     sample_min=sampling_min
@@ -74,7 +74,7 @@ def single_cl(CL, Re = 1e7, M = 0.0, airfoil=[], pathname = "/home/ckarcher/Xfoi
     alpha_calcl = []
     cm_calcl = []
     for alpha in initial_list:
-        x = blind_call(topline, alpha, Re, M)
+        # x = blind_call(topline, alpha, Re, M)
         try:
             x = blind_call(topline, alpha, Re, M)
         except:
