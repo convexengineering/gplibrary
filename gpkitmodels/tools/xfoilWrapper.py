@@ -2,6 +2,8 @@ import subprocess
 import numpy as np
 import scipy.optimize as spo
 import math
+import sys
+from gpkit.tests.helpers import NullFile
 
 def blind_call(topline, cl, Re, M, max_iter = 100,
                pathname = "/usr/local/bin/xfoil"):
@@ -24,7 +26,7 @@ def blind_call(topline, cl, Re, M, max_iter = 100,
                      "a 2.0 \n" +
                      "cl %.4f \n" %(cl) +
                      '\n' +
-                     'q \n')
+                     'quit \n')
     stdout_val = proc.communicate()[0]
     proc.stdin.close()
 
