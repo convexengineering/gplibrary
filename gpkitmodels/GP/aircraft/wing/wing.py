@@ -82,6 +82,7 @@ class WingAero(Model):
         "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
+        CLstall = Variable("C_{L_{stall}}", 1.3, "-", "stall CL")
         e = Variable("e", 0.9, "-", "span efficiency")
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
@@ -92,8 +93,8 @@ class WingAero(Model):
         constraints = [
             Cd >= cdp + CL**2/np.pi/static["AR"]/e,
             Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
-            FitCS(df, cdp, [CL, Re], airfoil="jho1.dat")
-            # FitCS(df, cdp, [CL, Re])
+            FitCS(df, cdp, [CL, Re], airfoil="jho1.dat"),
+            CL <= CLstall
             ]
 
         return constraints

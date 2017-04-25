@@ -21,6 +21,7 @@ def blind_call(topline, cl, Re, M, max_iter = 100,
                      "%.2e \n" %(Re) +
                      "M \n" +
                      "%.2f \n" %(M) +
+                     "a 2.0 \n" +
                      "cl %.4f \n" %(cl) +
                      '\n' +
                      'q \n')

@@ -37,10 +37,15 @@ class FitCS(ConstraintSet):
         monos = [B*NomialArray([(dv**A[k*d:(k+1)*d]).prod() for k in
                                 range(K)]) for dv in self.dvars]
 
-        if err_margin:
+        if err_margin == "Max":
             maxerr = float(df["max_err"].iloc[0])
-            self.mfac = Variable("m_{fac-fit}", maxerr, "-",
+            self.mfac = Variable("m_{fac-fit}", 1 + maxerr, "-",
                                  "max error of " + ivar.descr["label"]
+                                 + " fit")
+        elif err_margin == "RMS":
+            rmserr = float(df["rms_err"].iloc[0])
+            self.mfac = Variable("m_{fac-fit}", 1 + rmserr, "-",
+                                 "RMS error of " + ivar.descr["label"]
                                  + " fit")
         else:
             self.mfac = Variable("m_{fac-fit}", 1.0, "-", "fit factor")
@@ -89,7 +94,7 @@ class FitCS(ConstraintSet):
 
         ConstraintSet.__init__(self, constraints)
 
-    def process_result(self, result, TOL=0.05):
+    def process_result(self, result, TOL=0.03):
         super(FitCS, self).process_result(result)
 
 
@@ -98,6 +103,12 @@ class FitCS(ConstraintSet):
 
             if self.airfoil:
                 runxfoil = True
+                if ".dat" in self.airfoil:
+                    topline = "load " + self.airfoil + " \n afl \n"
+                elif "naca" in self.airfoil:
+                    topline = self.airfoil + "\n"
+                else:
+                    print "Bad airfoil specified"
             else:
                 runxfoil = False
             bndwrn = True
@@ -107,7 +118,7 @@ class FitCS(ConstraintSet):
                 runxfoil = False
 
             if runxfoil:
-                topline = "load " + self.airfoil + " \n afl \n"
+                cl, re = 0.0, 0.0
                 for d in dvrs:
                     if "C_L" in str(d):
                         cl = result(d)
@@ -119,16 +130,19 @@ class FitCS(ConstraintSet):
                     x = blind_call(topline, cl, re, 0.0)
                     if "VISCAL:  Convergence failed" in x:
                         print "Convergence Warning: %s" % failmsg
+                        cd, cl = cdgp, 1.0
                     else:
                         cd, cl = x[0], x[1]
                 except:
                     print "Unable to start Xfoil: %s" % failmsg
                     cd, cl = cdgp, 1.0
 
-                err = abs(1 - cdgp/cd)
+                err = 1 - cdgp/cd
                 if err > TOL:
-                    msg = ("Drag error is greater than %.2f.  Xfoil cd=%.3f,"
-                           " GP sol cd=%.3f" % (err, cd, cdgp))
+                    msg = ("Drag error for %s is %.2f. Re=%.1f; CL=%.4f;"
+                           " Xfoil cd=%.6f, GP sol cd=%.6f" %
+                           (", ".join(d.descr["models"]), err, re, cl, cd,
+                            cdgp))
                     print "Warning: %s" % msg
                 else:
                     bndwrn = False
@@ -148,7 +162,7 @@ class FitCS(ConstraintSet):
 
                     if err > TOL:
                         msg = ("Variable %.100s could cause inaccurate result"
-                               " because it exceeds " % d
+                               " because it exceeds" % d
                                + " %s bound. Solution is %.4f but"
                                " bound is %.4f" %
                                (direct, num, bnd))
