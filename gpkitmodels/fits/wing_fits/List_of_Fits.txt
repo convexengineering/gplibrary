@@ -1,0 +1,49 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf470
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww13420\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 TAOSPT c series airfoils\
+Fit takes thickness, Mach, Reynolds number, and cl and computes a 2D drag coefficient\
+\
+Re range: 10000000-30000000\
+Mach range: 0.4 - 0.9\
+Thickness: 10%-14.5%\
+cl range: 0.3-0.7\
+\
+u_1 = Reynolds number (in thousands so 1000000 is 1000)\
+u_2 = thickness\
+u_3 = Mach number\
+u_4 = cl\
+\
+        cd = (191.003 * (u_1)**-0.219123 * (u_2)**3.95226 * (u_3)**19.2722 * (u_4)**1.15491\
+            + 0.046236 * (u_1)**-0.390044 * (u_2)**0.78635 * (u_3)**-0.340387 * (u_4)**0.953522\
+            + 2.72291e-12 * (u_1)**1.18241 * (u_2)**-1.75793 * (u_3)**0.10586 * (u_4)**-1.44159\
+            + 1.60657 * (u_1)**-0.551398 * (u_2)**1.29389 * (u_3)**3.0428 *(u_4)**1.78078)**(1/1.65625)\
+\
+RMS: 0.0517691407091\
+Fit type: SMA\
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\
+TAOSPT e series airfoils\
+Fit takes thickness, Mach, Reynolds number, and cl and computes a 2D drag coefficient\
+\
+Re range: 10000000-30000000\
+Mach range: 0.4 - 0.9\
+Thickness: 10%-14.5%\
+cl range: 0.3-0.7\
+\
+u_1 = Reynolds number (in thousands so 1000000 is 1000)\
+u_2 = thickness\
+u_3 = Mach number\
+u_4 = cl\
+\
+    cd = ( 1.7014e-11 * (u_1)**0.942226 * (u_2)**-4.05029 * (u_3)**0.205583 * (u_4)**-1.94518\
+            + 0.148908 * (u_1)**0.344814 * (u_2)**4.39028 * (u_3)**-0.654114 * (u_4)**-0.926675\
+            + 53.017 * (u_1)**-0.211987 * (u_2)**1.98351 * (u_3)**11.6093 * (u_4)**0.106299\
+            + 0.395635 * (u_1)**-0.120446 * (u_2)**0.240443 * (u_3)**0.0550723 *  (u_4)**0.278133)**(1/0.532414)\
+\
+RMS: 0.0331249520141\
+Fit type: SMA}
