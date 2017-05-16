@@ -23,8 +23,6 @@ class Wing(Model):
         tau = Variable("\\tau", 0.115, "-", "airfoil thickness ratio")
         CLmax = Variable("C_{L_{max}}", 1.39, "-", "maximum CL of JHO1")
         CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
-        mw = Variable("m_w", 2.0*np.pi/(1+2.0/23), "-",
-                      "assumed span wise effectiveness")
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
         lamw = Variable("\\lambda", lam, "-", "wing taper ratio")
@@ -38,8 +36,6 @@ class Wing(Model):
             cave = Variable("c_{ave}", "ft", "mid section chord")
 
         constraints = [b**2 == S*AR,
-                       lamw == lamw,
-                       cbar == cbar,
                        cave == cbave*S/b,
                        croot == S/b*cb[0],
                        cmac == S/b]
@@ -82,6 +78,7 @@ class WingAero(Model):
         "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
+        CLstall = Variable("C_{L_{stall}}", 1.3, "-", "stall CL")
         e = Variable("e", 0.9, "-", "span efficiency")
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
@@ -92,7 +89,9 @@ class WingAero(Model):
         constraints = [
             Cd >= cdp + CL**2/np.pi/static["AR"]/e,
             Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
-            FitCS(df, cdp, [CL, Re], nobounds=True)
+            # FitCS(df, cdp, [CL, Re], airfoil="jho1.dat"),
+            FitCS(df, cdp, [CL, Re]),
+            CL <= CLstall
             ]
 
         return constraints

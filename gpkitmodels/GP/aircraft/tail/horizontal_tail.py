@@ -28,7 +28,8 @@ class HorizontalTail(Model):
         lamh = Variable("\\lambda", lam, "-", "horizontal tail taper ratio")
         lamhfac = Variable("\\lambda_h/(\\lambda_h+1)", lam/(lam+1), "-",
                            "horizontal tail taper ratio factor")
-        CLhtmax = Variable("C_{L_{max}}", "-", "maximum CL of horizontal tail")
+        CLhtmax = Variable("C_{L_{max}}", 1.5, "-",
+                           "maximum CL of horizontal tail")
         mfac = Variable("m_{fac}", 1.1, "-", "horizontal tail margin factor")
         tau = Variable("\\tau", 0.08, "-", "horizontal tail thickness ratio")
 
