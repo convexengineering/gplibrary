@@ -16,5 +16,4 @@ def Wing(N=5, lam=0.5, spar="CapSpar", hollow=False):
 
     wing.append(constraints[0])
     wing.substitutions.update(constraints[0].substitutions)
-    wing.reset_varkeys()
     return wing
