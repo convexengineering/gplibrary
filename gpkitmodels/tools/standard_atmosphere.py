@@ -19,11 +19,11 @@ def stdatmo(h):
 		"kvisc":data_from_file[:,5]*ureg.m**2/ureg.s}#kinematic viscosity
 
 	#these functions all use SI units
-	interp_fcns = {"\rho":interp.interp1d(data_from_file["h"].magnitude,data_from_file["\rho"].magnitude),
-		"a":interp.interp1d(data_from_file["h"].magnitude,data_from_file["a"].magnitude),
-		"T":interp.interp1d(data_from_file["h"].magnitude,data_from_file["T"].magnitude),
-		"P":interp.interp1d(data_from_file["h"].magnitude,data_from_file["P"].magnitude),
-		"kvisc":interp.interp1d(data_from_file["h"].magnitude,data_from_file["kvisc"].magnitude)}
+	interp_fcns = {"\rho":interp.interp1d(data_from_file["h"].magnitude,data_from_file["\rho"].magnitude,kind='cubic'),
+		"a":interp.interp1d(data_from_file["h"].magnitude,data_from_file["a"].magnitude,kind='cubic'),
+		"T":interp.interp1d(data_from_file["h"].magnitude,data_from_file["T"].magnitude,kind='cubic'),
+		"P":interp.interp1d(data_from_file["h"].magnitude,data_from_file["P"].magnitude,kind='cubic'),
+		"kvisc":interp.interp1d(data_from_file["h"].magnitude,data_from_file["kvisc"].magnitude,kind='cubic')}
 
 	#otput is a dictionary
 	h_correctUnits = h.to(data_from_file["h"].units).magnitude
@@ -38,6 +38,6 @@ def stdatmo(h):
 
 if __name__=="__main__":
 	#Small test case
-	h = np.linspace(0,2000,2)*ureg.ft
+	h = np.linspace(0,40000,2)*ureg.ft
 	atmospheric_data = stdatmo(h)
 	print atmospheric_data["\rho"]
