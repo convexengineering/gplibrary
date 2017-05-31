@@ -1,7 +1,7 @@
 " tail aerodynamics "
 from gpkit import Variable, Model
 import os
-from gpkitmodels.tools.fit_constraintset import FitCS
+from gpfit.fit_constraintset import FitCS
 import pandas as pd
 
 class TailAero(Model):
@@ -13,14 +13,13 @@ class TailAero(Model):
         Cd = Variable("C_d", "-", "%s drag coefficient" % name)
 
         path = os.path.dirname(__file__)
-        df = pd.read_csv(path + os.sep + "tail_dragfit.csv")
+        fd = pd.read_csv(path + os.sep + "tail_dragfit.csv").to_dict(
+            orient="records")[0]
 
         constraints = [
             Re == (state["V"]*state["\\rho"]*static["S"]/static["b"]
                    / state["\\mu"]),
-            # FitCS(df, Cd, [Re, static["\\tau"]], airfoil="naca 0008",
-            #       err_margin="RMS")
-            FitCS(df, Cd, [Re, static["\\tau"]],
+            FitCS(fd, Cd, [Re, static["\\tau"]],
                   err_margin="RMS")
             ]
 
