@@ -2,7 +2,8 @@
 from gpkit import Model, Variable, Vectorize
 from constant_taper_chord import c_bar
 from gpkitmodels.GP.beam.beam import Beam
-from gpkitmodels.tools.fit_constraintset import FitCS
+# from gpkitmodels.tools.fit_constraintset import FitCS
+from gpfit.fit_constraintset import FitCS
 from numpy import pi
 import numpy as np
 import pandas as pd
@@ -32,7 +33,8 @@ class GustL(Model):
 
         beam = Beam(static.N, qbar)
         path = os.path.abspath(__file__).replace(os.path.basename(__file__), "")
-        df = pd.read_csv(path + os.sep + "arctan_fit.csv")
+        df = pd.read_csv(path + os.sep + "arctan_fit.csv").to_dict(
+            orient="records")[0]
 
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
