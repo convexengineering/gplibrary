@@ -2,7 +2,8 @@
 from gpkit import Model, Variable, units
 import os
 import pandas as pd
-from gpkitmodels.tools.fit_constraintset import FitCS
+# from gpkitmodels.tools.fit_constraintset import FitCS
+from gpfit.fit_constraintset import FitCS
 
 class Engine(Model):
     "engine model"
@@ -21,7 +22,8 @@ class Engine(Model):
                           "Max shaft power at sea level")
 
         path = os.path.dirname(__file__)
-        df = pd.read_csv(path + os.sep + "power_lawfit.csv")
+        df = pd.read_csv(path + os.sep + "power_lawfit.csv").to_dict(
+            orient="records")[0]
 
         constraints = [
             FitCS(df, Weng/Wengref, [Pslmax/Pref]),
@@ -51,7 +53,8 @@ class EnginePerf(Model):
         mfac = Variable("m_{fac}", 1.0, "-", "BSFC margin factor")
 
         path = os.path.dirname(__file__)
-        df = pd.read_csv(path + os.sep + "powerBSFCfit.csv")
+        df = pd.read_csv(path + os.sep + "powerBSFCfit.csv").to_dict(
+            orient="records")[0]
 
         constraints = [
             FitCS(df, bsfc/mfac/static["BSFC_{min}"], [Ptotal/Pshaftmax]),
