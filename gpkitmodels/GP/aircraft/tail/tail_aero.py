@@ -20,7 +20,7 @@ class TailAero(Model):
             Re == (state["V"]*state["\\rho"]*static["S"]/static["b"]
                    / state["\\mu"]),
             FitCS(fd, Cd, [Re, static["\\tau"]],
-                  err_margin="RMS")
+                  err_margin="RMS", airfoil="naca 0008")
             ]
 
         return constraints

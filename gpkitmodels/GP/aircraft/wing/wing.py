@@ -90,8 +90,8 @@ class WingAero(Model):
         constraints = [
             Cd >= cdp + CL**2/np.pi/static["AR"]/e,
             Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
-            # FitCS(df, cdp, [CL, Re], airfoil="jho1.dat"),
-            FitCS(fd, cdp, [CL, Re]),
+            FitCS(fd, cdp, [CL, Re], airfoil="jho1.dat"),
+            # FitCS(fd, cdp, [CL, Re]),
             CL <= CLstall
             ]
 
