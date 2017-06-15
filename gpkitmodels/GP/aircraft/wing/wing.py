@@ -6,7 +6,7 @@ from wing_skin import WingSkin
 from capspar import CapSpar
 from tube_spar import TubeSpar
 from constant_taper_chord import c_bar
-from gpfit.fit_constraintset import FitCS
+from gpfit.fit_constraintset import XfoilFit
 from gpkit.constraints.tight import Tight as TCS
 import pandas as pd
 import os
@@ -90,7 +90,7 @@ class WingAero(Model):
         constraints = [
             Cd >= cdp + CL**2/np.pi/static["AR"]/e,
             Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
-            FitCS(fd, cdp, [CL, Re], airfoil="jho1.dat"),
+            XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
             # FitCS(fd, cdp, [CL, Re]),
             CL <= CLstall
             ]

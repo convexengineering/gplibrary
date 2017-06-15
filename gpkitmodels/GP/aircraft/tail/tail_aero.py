@@ -1,7 +1,7 @@
 " tail aerodynamics "
 from gpkit import Variable, Model
 import os
-from gpfit.fit_constraintset import FitCS
+from gpfit.fit_constraintset import XfoilFit
 import pandas as pd
 
 class TailAero(Model):
@@ -19,8 +19,8 @@ class TailAero(Model):
         constraints = [
             Re == (state["V"]*state["\\rho"]*static["S"]/static["b"]
                    / state["\\mu"]),
-            FitCS(fd, Cd, [Re, static["\\tau"]],
-                  err_margin="RMS", airfoil="naca 0008")
+            XfoilFit(fd, Cd, [Re, static["\\tau"]],
+                     err_margin="RMS", airfoil="naca 0008")
             ]
 
         return constraints
