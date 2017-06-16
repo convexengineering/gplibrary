@@ -19,18 +19,24 @@ class CapSpar(Model):
             dm = Variable("dm", "kg", "segment spar mass")
             w = Variable("w", "in", "spar width")
             t = Variable("t", "in", "spar cap thickness")
+            tshear = Variable("t_{shear}", "in", "shear web thickness")
 
         W = Variable("W", "lbf", "spar weight")
         w_lim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
+        tshearmin = Variable("t_{shear-min}", 0.012, "in",
+                             "min shear web thickness")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
         mfac = Variable("m_{fac}", 0.97, "-", "curvature knockdown factor")
+        rhofoam = Variable("\\rho_{foam}", 0.036, "g/cm^3", "foam density")
 
         constraints = [I/mfac <= 2*w*t*(hin/2)**2,
-                       dm >= rhocfrp*w*t*b/2/(self.N-1),
+                       dm >= (rhocfrp*(w*t + 2*w*tshear + 2*hin*tshear)
+                              + rhofoam*w*hin)*b/2/(self.N-1),
                        W >= 2*dm.sum()*g,
                        w <= w_lim*cave,
                        cave*tau >= hin + 2*t,
                        Sy*(hin + t) <= I,
+                       tshear >= tshearmin
                       ]
 
         return constraints
