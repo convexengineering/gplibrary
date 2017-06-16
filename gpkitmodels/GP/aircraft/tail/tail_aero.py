@@ -19,8 +19,9 @@ class TailAero(Model):
         constraints = [
             Re == (state["V"]*state["\\rho"]*static["S"]/static["b"]
                    / state["\\mu"]),
-            XfoilFit(fd, Cd, [Re, static["\\tau"]],
-                     err_margin="RMS", airfoil="naca 0008")
+            # XfoilFit(fd, Cd, [Re, static["\\tau"]],
+            #          err_margin="RMS", airfoil="naca 0008")
+            XfoilFit(fd, Cd, [Re, static["\\tau"]], err_margin="RMS")
             ]
 
         return constraints
