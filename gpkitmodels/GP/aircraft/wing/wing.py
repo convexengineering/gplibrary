@@ -15,6 +15,8 @@ class Wing(Model):
     "The thing that creates the lift"
     def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
 
+        cb, eta, cbarmac, Sbar = c_bar(lam, N)
+
         W = Variable("W", "lbf", "weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
         S = Variable("S", "ft^2", "surface area")
@@ -26,19 +28,23 @@ class Wing(Model):
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
         lamw = Variable("\\lambda", lam, "-", "wing taper ratio")
-        cb, _ = c_bar(lam, N)
+        cbarmac = Variable("\\bar{c}_{MAC}", cbarmac, "-", "non-dim MAC")
+        Sbar = Variable("\\bar{S}", "-", "non-dim wing area")
         with Vectorize(N):
             cbar = Variable("\\bar{c}", cb, "-",
                             "normalized chord at mid element")
+            eta = Variable("\\eta", "-", "(2y/b)")
         with Vectorize(N-1):
             cbave = Variable("\\bar{c}_{ave}", (cb[1:]+cb[:-1])/2, "-",
                              "normalized mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
 
         constraints = [b**2 == S*AR,
-                       cave == cbave*S/b,
-                       croot == S/b*cb[0],
-                       cmac == S/b]
+                       S == Sbar*b/2*croot,
+                       cave == cbave*croot,
+                       cmac == croot*cbarmac,
+                       cbar == cbar,
+                       eta == eta]
 
         if spar == "CapSpar":
             self.spar = CapSpar(b, cave, tau, N)

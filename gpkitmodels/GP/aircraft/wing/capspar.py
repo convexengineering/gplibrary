@@ -7,7 +7,6 @@ class CapSpar(Model):
     "cap spar model"
     def setup(self, b, cave, tau, N=5, **kwargs):
         self.N = N
-        print "yayay"
 
         # phyiscal properties
         rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")

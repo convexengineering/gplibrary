@@ -15,7 +15,7 @@ class GustL(Model):
     # def setup(self, static, Wcent, rho, V, S):
 
         Nmax = Variable("N_{max}", 2, "-", "load safety factor")
-        cbar, eta = c_bar(0.5, static.N)
+        cbar, eta, _, _ = c_bar(0.5, static.N)
         sigmacfrp = Variable("\\sigma_{CFRP}", 1700e6, "Pa", "CFRP max stress")
         taucfrp = Variable("\\tau_{CFRP}", 450e6, "Pa", "CFRP fabric stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
