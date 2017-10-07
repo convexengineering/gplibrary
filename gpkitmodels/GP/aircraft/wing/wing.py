@@ -15,8 +15,6 @@ class Wing(Model):
     "The thing that creates the lift"
     def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
 
-        cb, eta, cbarmac, Sbar = c_bar(lam, N)
-
         W = Variable("W", "lbf", "weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
         S = Variable("S", "ft^2", "surface area")
