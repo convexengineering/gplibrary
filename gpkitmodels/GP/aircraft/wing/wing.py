@@ -26,7 +26,8 @@ class Wing(Model):
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
         lamw = Variable("\\lambda", lam, "-", "wing taper ratio")
-        cb, _ = c_bar(lam, N)
+        cb, _, cbarmac = c_bar(lam, N)
+        cbarmac = Variable("\\bar{c}_{MAC}", cbarmac, "-", "non-dim MAC")
         with Vectorize(N):
             cbar = Variable("\\bar{c}", cb, "-",
                             "normalized chord at mid element")
@@ -38,7 +39,7 @@ class Wing(Model):
         constraints = [b**2 == S*AR,
                        cave == cbave*S/b,
                        croot == S/b*cb[0],
-                       cmac == S/b]
+                       cmac == croot*cbarmac]
 
         if spar == "CapSpar":
             self.spar = CapSpar(b, cave, tau, N)
