@@ -15,6 +15,8 @@ class Wing(Model):
     "The thing that creates the lift"
     def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
 
+        cb, eta, cbarmac, Sbar = c_bar(lam, N)
+
         W = Variable("W", "lbf", "weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
         S = Variable("S", "ft^2", "surface area")
@@ -31,6 +33,7 @@ class Wing(Model):
         with Vectorize(N):
             cbar = Variable("\\bar{c}", cb, "-",
                             "normalized chord at mid element")
+            eta = Variable("\\eta", "-", "(2y/b)")
         with Vectorize(N-1):
             cbave = Variable("\\bar{c}_{ave}", (cb[1:]+cb[:-1])/2, "-",
                              "normalized mid section chord")
