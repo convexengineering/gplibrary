@@ -30,12 +30,12 @@ class CapSpar(Model):
         rhofoam = Variable("\\rho_{foam}", 0.036, "g/cm^3", "foam density")
 
         constraints = [I/mfac <= 2*w*t*(hin/2)**2,
-                       dm >= (rhocfrp*(w*t + 2*w*tshear + 2*hin*tshear)
+                       dm >= (rhocfrp*(2*w*t + 2*tshear*(w + hin + 2*t))
                               + rhofoam*w*hin)*b/2/(self.N-1),
                        W >= 2*dm.sum()*g,
                        w <= w_lim*cave,
                        cave*tau >= hin + 2*t,
-                       Sy*(hin + t) <= I,
+                       Sy*(hin/2 + t) <= I,
                        tshear >= tshearmin
                       ]
 
