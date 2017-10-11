@@ -17,6 +17,7 @@ Aerodynamic model
 -----------------
 
 The simple aircraft borrows a majority of its aerodynamic model from Prof. Warren Hoburg's thesis, with some minor adjustments to make the model a SP. The aircraft is assumed to be in steady-level flight so that thrust equals drag, and the lift equals the weight. We use the naive $W \leq L$ model below:
+
 \begin{equation}
     W_0 + W_w + 0.5 W_f <= \frac{1}{2} \rho S C_L V^2
 \end{equation}
@@ -98,42 +99,52 @@ We also calculate the lift-to-drag ratio of the aircraft as a variable of intere
 Fuel Volume Model
 -----------------
 
-The fuel volume model is the main difference between simpleWing and SimPleAC
+The fuel volume model is the main difference between simpleWing and SimPleAC, and introduces the only signomial constraints in the model. Firstly we define the required fuel volume using fuel density $\rho_f$. 
 
 \begin{equation}
-    V_f = \frac{W_f } {rho_f g}
+    V_f = \frac{W_f } {\rho_f g}
 \label{e:vf}
 \end{equation}
+
+We consider wing fuel tanks and fuselage fuel tanks. The fuselage fuel was defined in the Aerodynamic Model, where the fuel volume contributes to drag. 
 
 \begin{equation}
     V_{f_{wing}}^2 \leq 0.0009 \frac{S \tau^2}{AR}
 \label{e:vfwing}
 \end{equation}
 
-
+The signomial constraint is introduced here, where the available fuel volume is upper-bounded by the sum of the fuselage and wing fuel volumes. 
 
 \begin{equation}
     V_{f_{avail}} \leq V_{f_{wing}} + V_{f_{fuse}}
 \label{vfavail}
 \end{equation}
 
+We constrain the total fuel volume to be less than the available fuel volume. 
+
 \begin{equation}
     V_{f_{avail}} \geq V_{f}
 \label{e:vfineq}
 \end{equation}
 
-Weight Build-Up
+Wing Weight Build-Up
 ---------------
+
+The wing surface weight is a function of the planform area of the wing. 
 
 \begin{equation}
 W_{w_{surf}} \geq W_{w_{coeff2}} S
 \label{e:wwsurf}
 \end{equation}
 
+The wing structural weight is a complex posynomial expression that takes into account the load relief due to presence of fuel in the wings. 
+
 \begin{equation}
 W_{w_{strc}}^2 \geq \frac{W_{w_{coeff1}}^2}{\tau^2} (N_{ult}^2 AR ^ 3 ((W_0+\rho_fgV_{f_{fuse}}) W S))
 \label{e:wwstrc}
 \end{equation}
+
+The total wing weight is lower-bounded. 
 
 \begin{equation}
 W_w \geq W_{w_{surf}} + W_{w_{strc}}
@@ -151,8 +162,6 @@ We have tested a variety of potential objectives for the SimpPleAC model, some o
     \item $\frac{W_f}{T_{flight}}$: Product of the fuel weight and the inverse of the time of flight. 
     \item $W_{f} + c \times T_{flight}$: A linear combination of fuel weight and time of flight. This can simulate recurring costs (fuel and labor), and yield interesting results. 
 \end{itemize}
-
-\end{document}
 
 
 
