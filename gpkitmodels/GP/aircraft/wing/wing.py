@@ -1,13 +1,16 @@
 " wing.py "
+import os
 import numpy as np
 import pandas as pd
-import os
 from gpkit import Variable, Model, Vectorize
 from .wing_interior import WingInterior
 from .wing_skin import WingSkin
 from .capspar import CapSpar
 from .constant_taper_chord import c_bar
 from gpfit.fit_constraintset import XfoilFit
+
+#pylint: disable=invalid-name, attribute-defined-outside-init, unused-variable
+#pylint: disable=too-many-instance-attributes
 
 class Wing(Model):
     """
