@@ -16,17 +16,22 @@ class Wing(Model):
 
         W = Variable("W", "lbf", "wing weight")
 
+
         self.surf = AeroSurf(N=N, lam=lam, spar=spar, hollow=hollow)
+        self.spar = CapSpar(self.surf["b"], self.surf["c_{ave}"], self.surf["\\tau"], N)
+        self.wingskin = WingSkin(self.surf["S"], self.surf["c_{root}"], self.surf["b"])
+        self.components = [self.spar, self.wingskin]
 
-        constraints = [W == self.surf.topvar("W")]
+        if not hollow:
+            self.winginterior = WingInterior(self.surf["c_{ave}"], self.surf["b"], N)
+            self.components.extend([self.winginterior])
 
-        self.spar = self.surf.spar
-        self.wingskin = self.surf.wingskin
+        constraints = [W/self.surf.topvar("m_{fac}") >= sum(c["W"] for c in self.components)]
 
         self.flight_model = WingAero
         self.loading = WingLoading
 
-        return constraints, self.surf
+        return constraints, self.surf, self.components
 
 class AeroSurf(Model):
     "The thing that creates the lift"
@@ -59,20 +64,7 @@ class AeroSurf(Model):
                        croot == S/b*cb[0],
                        cmac == croot*cbarmac]
 
-        if spar == "CapSpar":
-            self.spar = CapSpar(b, cave, tau, N)
-        elif spar == "TubeSpar":
-            self.spar = TubeSpar(b, cave, tau, N)
-        self.wingskin = WingSkin(S, croot, b)
-        self.components = [self.spar, self.wingskin]
-
-        if not hollow:
-            self.winginterior = WingInterior(cave, b, N)
-            self.components.extend([self.winginterior])
-
-        constraints.extend([W/mfac >= sum(c["W"] for c in self.components)])
-
-        return self.components, constraints
+        return constraints
 
 class WingLoading(Model):
     "wing loading cases"
