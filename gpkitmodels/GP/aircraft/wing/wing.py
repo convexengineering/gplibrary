@@ -21,8 +21,8 @@ class Wing(Model):
 
         self.surf = AeroSurf(N=N, lam=lam, spar=spar, hollow=hollow)
         self.spar = CapSpar(N)
-        self.wingskin = WingSkin(self.surf["S"], self.surf["c_{root}"], self.surf["b"])
-        self.components = [self.spar, self.wingskin]
+        self.skin = WingSkin()
+        self.components = [self.spar, self.skin]
 
         if not hollow:
             self.winginterior = WingInterior(self.surf["c_{ave}"], self.surf["b"], N)
@@ -34,6 +34,8 @@ class Wing(Model):
             self.spar["w"] <= self.spar["w_{lim}"]*self.surf["c_{ave}"],
             self.surf["c_{ave}"]*self.surf["\\tau"] >= (
                 self.spar["h_{in}"] + 2*self.spar["t"]),
+            self.skin["W"] >= (self.skin["\\rho_{CFRP}"]*self.surf["S"]*2
+                               * self.skin["t"]*self.skin["g"]),
             ]
 
         self.flight_model = WingAero
@@ -76,7 +78,7 @@ class WingLoading(Model):
     "wing loading cases"
     def setup(self, wing, Wcent, Wwing=None, V=None, CL=None):
 
-        loading = [wing.wingskin.loading()]
+        loading = [wing.skin.loading(wing)]
         loading.append(wing.spar.loading(wing, Wcent))
         if Wwing:
             loading.append(wing.spar.gustloading(wing, Wcent, Wwing, V, CL))
