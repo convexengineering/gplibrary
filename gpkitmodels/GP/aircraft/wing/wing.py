@@ -1,17 +1,23 @@
 " wing.py "
 import numpy as np
-from gpkit import Variable, Model, Vectorize, SignomialsEnabled
-from wing_interior import WingInterior
-from wing_skin import WingSkin
-from capspar import CapSpar
-from tube_spar import TubeSpar
-from constant_taper_chord import c_bar
-from gpfit.fit_constraintset import XfoilFit
-from gpkit.constraints.tight import Tight as TCS
 import pandas as pd
 import os
+from gpkit import Variable, Model, Vectorize
+from .wing_interior import WingInterior
+from .wing_skin import WingSkin
+from .capspar import CapSpar
+from .constant_taper_chord import c_bar
+from gpfit.fit_constraintset import XfoilFit
 
 class Wing(Model):
+    """
+    Aicraft wing model for constant tapered wing
+    INPUTS
+    ------
+    N : int             number of sections
+    lam : float         taper ratio
+    hollow: boolean     True if wing is not hollow (filled with foam)
+    """
     def setup(self, N=5, lam=0.5, hollow=False):
 
         self.N = N
@@ -19,12 +25,12 @@ class Wing(Model):
         W = Variable("W", "lbf", "wing weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
 
-        cb, eta, cbarmac = c_bar(lam, N)
+        cb, eta, deta, cbarmac = c_bar(lam, N)
         subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta,
                    "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
-                   "\\bar{c}_{MAC}": cbarmac}
+                   "\\bar{c}_{MAC}": cbarmac, "d\\eta": deta}
 
-        self.surf = AeroSurf(N=N, lam=lam)
+        self.surf = AeroSurf(N)
         self.surf.substitutions.update(subdict)
         self.spar = CapSpar(N)
         self.skin = WingSkin()
@@ -33,7 +39,8 @@ class Wing(Model):
 
         constraints = [
             W/mfac >= sum(c["W"] for c in self.components),
-            self.spar["dm"] >= self.spar["(dm/dy)"]*self.surf["b"]/2/(N-1),
+            self.spar["dm"] >= (self.spar["(dm/dy)"]*self.surf["b"]/2
+                                * self.surf["d\\eta"]),
             self.spar["w"] <= self.spar["w_{lim}"]*self.surf["c_{ave}"],
             self.surf["c_{ave}"]*self.surf["\\tau"] >= (
                 self.spar["h_{in}"] + 2*self.spar["t"]),
@@ -48,7 +55,7 @@ class Wing(Model):
                 self.foam["W"] >= 2*(
                     self.foam["g"]*self.foam["\\rho"]
                     * self.foam["\\bar{A}_{jh01}"]*self.surf["c_{ave}"]**2
-                    * (self.surf["b"]/2)/(N-1)).sum()])
+                    * (self.surf["b"]/2)*self.surf["d\\eta"]).sum()])
 
         self.flight_model = WingAero
         self.loading = WingLoading
@@ -57,7 +64,7 @@ class Wing(Model):
 
 class AeroSurf(Model):
     "The thing that creates the lift"
-    def setup(self, N, lam):
+    def setup(self, N):
 
         S = Variable("S", "ft^2", "surface area")
         AR = Variable("AR", "-", "aspect ratio")
@@ -77,6 +84,7 @@ class AeroSurf(Model):
             cbave = Variable("\\bar{c}_{ave}", "-",
                              "normalized mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
+            deta = Variable("d\\eta", "-", "\\Detla (2y/b)")
 
         constraints = [b**2 == S*AR,
                        cave == cbave*S/b,
@@ -84,6 +92,7 @@ class AeroSurf(Model):
                        cmac == croot*cbarmac,
                        cbar == cbar,
                        eta == eta,
+                       deta == deta,
                        lamw == lamw]
 
         return constraints
