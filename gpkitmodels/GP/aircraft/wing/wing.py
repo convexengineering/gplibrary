@@ -56,7 +56,7 @@ class Wing(Model):
             self.components.extend([self.foam])
             constraints.extend([
                 self.foam["W"] >= 2*(
-                    self.foam["g"]*self.foam["\\rho"]
+                    self.foam["g"]*self.foam["\\rho_{foam}"]
                     * self.foam["\\bar{A}_{jh01}"]*self.surf["c_{ave}"]**2
                     * (self.surf["b"]/2)*self.surf["d\\eta"]).sum()])
 

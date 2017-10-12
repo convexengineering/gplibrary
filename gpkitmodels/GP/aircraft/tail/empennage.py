@@ -11,21 +11,21 @@ class Empennage(Model):
         mfac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "empennage weight")
 
-        self.horizontaltail = HorizontalTail()
+        self.htail = HorizontalTail()
         self.verticaltail = VerticalTail()
         self.tailboom = TailBoom()
-        self.components = [self.horizontaltail, self.verticaltail,
+        self.components = [self.htail, self.verticaltail,
                            self.tailboom]
 
         state = TailBoomState()
-        loading = [self.tailboom.horizontalbending(self.horizontaltail, state),
+        loading = [self.tailboom.horizontalbending(self.htail, state),
                    self.tailboom.verticalbending(self.verticaltail, state),
                    self.tailboom.verticaltorsion(self.verticaltail, state)]
 
         constraints = [
-            W/mfac >= (self.horizontaltail["W"] + self.verticaltail["W"]
+            W/mfac >= (self.htail.topvar("W") + self.verticaltail["W"]
                        + self.tailboom["W"]),
-            self.tailboom["l"] >= self.horizontaltail["l_h"],
+            self.tailboom["l"] >= self.htail["l_h"],
             self.tailboom["l"] >= self.verticaltail["l_v"],
             ]
 
