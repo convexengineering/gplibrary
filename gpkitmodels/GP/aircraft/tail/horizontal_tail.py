@@ -20,7 +20,7 @@ class HorizontalTail(Model):
         mfac = Variable("m_{fac}", 1.1, "-", "horizontal tail margin factor")
 
         cb, eta, deta, cbarmac = c_bar(lam, N)
-        subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta,
+        subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta, "AR": 5.0,
                    "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2, "\\tau": 0.08,
                    "\\bar{c}_{MAC}": cbarmac, "d\\eta": deta, "C_{L_{max}}": 1.5}
 

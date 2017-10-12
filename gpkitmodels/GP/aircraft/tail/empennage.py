@@ -12,21 +12,20 @@ class Empennage(Model):
         W = Variable("W", "lbf", "empennage weight")
 
         self.htail = HorizontalTail()
-        self.verticaltail = VerticalTail()
+        self.vtail = VerticalTail()
         self.tailboom = TailBoom()
-        self.components = [self.htail, self.verticaltail,
-                           self.tailboom]
+        self.components = [self.htail, self.vtail, self.tailboom]
 
         state = TailBoomState()
         loading = [self.tailboom.horizontalbending(self.htail, state),
-                   self.tailboom.verticalbending(self.verticaltail, state),
-                   self.tailboom.verticaltorsion(self.verticaltail, state)]
+                   self.tailboom.verticalbending(self.vtail, state),
+                   self.tailboom.verticaltorsion(self.vtail, state)]
 
         constraints = [
-            W/mfac >= (self.htail.topvar("W") + self.verticaltail["W"]
+            W/mfac >= (self.htail.topvar("W") + self.vtail.topvar("W")
                        + self.tailboom["W"]),
             self.tailboom["l"] >= self.htail["l_h"],
-            self.tailboom["l"] >= self.verticaltail["l_v"],
+            self.tailboom["l"] >= self.vtail["l_v"],
             ]
 
         return self.components, constraints, loading
