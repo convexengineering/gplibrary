@@ -24,9 +24,6 @@ class Wing(Model):
         self.skin = WingSkin()
         self.components = [self.spar, self.skin]
 
-        if not hollow:
-            self.winginterior = WingInterior(self.surf["c_{ave}"], self.surf["b"], N)
-            self.components.extend([self.winginterior])
 
         constraints = [
             W/mfac >= sum(c["W"] for c in self.components),
@@ -37,6 +34,15 @@ class Wing(Model):
             self.skin["W"] >= (self.skin["\\rho_{CFRP}"]*self.surf["S"]*2
                                * self.skin["t"]*self.skin["g"]),
             ]
+
+        if not hollow:
+            self.foam = WingInterior()
+            self.components.extend([self.foam])
+            constraints.extend([
+                self.foam["W"] >= 2*(
+                    self.foam["g"]*self.foam["\\rho"]
+                    * self.foam["\\bar{A}_{jh01}"]*self.surf["c_{ave}"]**2
+                    * (self.surf["b"]/2)/(N-1)).sum()])
 
         self.flight_model = WingAero
         self.loading = WingLoading
