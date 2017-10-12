@@ -5,18 +5,18 @@ from gustloading import GustL
 
 class CapSpar(Model):
     "cap spar model"
-    def setup(self, b, cave, tau, N=5, **kwargs):
-        self.N = N
+    def setup(self, N):
 
         # phyiscal properties
         rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
 
-        with Vectorize(self.N-1):
+        with Vectorize(N-1):
             hin = Variable("h_{in}", "in", "inner spar height")
             I = Variable("I", "m^4", "spar x moment of inertia")
             Sy = Variable("S_y", "m**3", "section modulus")
             dm = Variable("dm", "kg", "segment spar mass")
+            dmdy = Variable("(dm/dy)", "kg/m", "spar mass per length")
             w = Variable("w", "in", "spar width")
             t = Variable("t", "in", "spar cap thickness")
             tshear = Variable("t_{shear}", "in", "shear web thickness")
@@ -30,20 +30,14 @@ class CapSpar(Model):
         rhofoam = Variable("\\rho_{foam}", 0.036, "g/cm^3", "foam density")
 
         constraints = [I/mfac <= 2*w*t*(hin/2)**2,
-                       dm >= (rhocfrp*(2*w*t + 2*tshear*(w + hin + 2*t))
-                              + rhofoam*w*hin)*b/2/(self.N-1),
+                       dmdy >= (rhocfrp*(2*w*t + 2*tshear*(w + hin + 2*t))
+                                + rhofoam*w*hin),
                        W >= 2*dm.sum()*g,
-                       w <= w_lim*cave,
-                       cave*tau >= hin + 2*t,
                        Sy*(hin/2 + t) <= I,
                        tshear >= tshearmin
                       ]
 
+        self.loading = ChordSparL
+        self.gustloading = GustL
+
         return constraints
-
-    def loading(self, Wcent):
-        return ChordSparL(self, Wcent)
-
-    def gustloading(self, Wcent, Wwing, V, CL):
-        return GustL(self, Wcent, Wwing, V, CL)
-

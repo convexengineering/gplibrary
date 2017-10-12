@@ -14,11 +14,13 @@ import os
 class Wing(Model):
     def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
 
-        W = Variable("W", "lbf", "wing weight")
+        self.N = N
 
+        W = Variable("W", "lbf", "wing weight")
+        mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
 
         self.surf = AeroSurf(N=N, lam=lam, spar=spar, hollow=hollow)
-        self.spar = CapSpar(self.surf["b"], self.surf["c_{ave}"], self.surf["\\tau"], N)
+        self.spar = CapSpar(N)
         self.wingskin = WingSkin(self.surf["S"], self.surf["c_{root}"], self.surf["b"])
         self.components = [self.spar, self.wingskin]
 
@@ -26,7 +28,13 @@ class Wing(Model):
             self.winginterior = WingInterior(self.surf["c_{ave}"], self.surf["b"], N)
             self.components.extend([self.winginterior])
 
-        constraints = [W/self.surf.topvar("m_{fac}") >= sum(c["W"] for c in self.components)]
+        constraints = [
+            W/mfac >= sum(c["W"] for c in self.components),
+            self.spar["dm"] >= self.spar["(dm/dy)"]*self.surf["b"]/2/(N-1),
+            self.spar["w"] <= self.spar["w_{lim}"]*self.surf["c_{ave}"],
+            self.surf["c_{ave}"]*self.surf["\\tau"] >= (
+                self.spar["h_{in}"] + 2*self.spar["t"]),
+            ]
 
         self.flight_model = WingAero
         self.loading = WingLoading
@@ -37,8 +45,6 @@ class AeroSurf(Model):
     "The thing that creates the lift"
     def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
 
-        W = Variable("W", "lbf", "weight")
-        mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
         S = Variable("S", "ft^2", "surface area")
         AR = Variable("AR", "-", "aspect ratio")
         b = Variable("b", "ft", "wing span")
@@ -71,9 +77,9 @@ class WingLoading(Model):
     def setup(self, wing, Wcent, Wwing=None, V=None, CL=None):
 
         loading = [wing.wingskin.loading()]
-        loading.append(wing.spar.loading(Wcent))
+        loading.append(wing.spar.loading(wing, Wcent))
         if Wwing:
-            loading.append(wing.spar.gustloading(Wcent, Wwing, V, CL))
+            loading.append(wing.spar.gustloading(wing, Wcent, Wwing, V, CL))
 
         return loading
 
