@@ -12,14 +12,20 @@ import pandas as pd
 import os
 
 class Wing(Model):
-    def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
+    def setup(self, N=5, lam=0.5, hollow=False):
 
         self.N = N
 
         W = Variable("W", "lbf", "wing weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
 
-        self.surf = AeroSurf(N=N, lam=lam, spar=spar, hollow=hollow)
+        cb, eta, cbarmac = c_bar(lam, N)
+        subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta,
+                   "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
+                   "\\bar{c}_{MAC}": cbarmac}
+
+        self.surf = AeroSurf(N=N, lam=lam)
+        self.surf.substitutions.update(subdict)
         self.spar = CapSpar(N)
         self.skin = WingSkin()
         self.components = [self.spar, self.skin]
@@ -51,7 +57,7 @@ class Wing(Model):
 
 class AeroSurf(Model):
     "The thing that creates the lift"
-    def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
+    def setup(self, N, lam):
 
         S = Variable("S", "ft^2", "surface area")
         AR = Variable("AR", "-", "aspect ratio")
@@ -61,22 +67,24 @@ class AeroSurf(Model):
         CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
-        lamw = Variable("\\lambda", lam, "-", "wing taper ratio")
-        cb, _, cbarmac = c_bar(lam, N)
-        cbarmac = Variable("\\bar{c}_{MAC}", cbarmac, "-", "non-dim MAC")
+        lamw = Variable("\\lambda", "-", "wing taper ratio")
+        cbarmac = Variable("\\bar{c}_{MAC}", "-", "non-dim MAC")
         with Vectorize(N):
-            cbar = Variable("\\bar{c}", cb, "-",
+            cbar = Variable("\\bar{c}", "-",
                             "normalized chord at mid element")
             eta = Variable("\\eta", "-", "(2y/b)")
         with Vectorize(N-1):
-            cbave = Variable("\\bar{c}_{ave}", (cb[1:]+cb[:-1])/2, "-",
+            cbave = Variable("\\bar{c}_{ave}", "-",
                              "normalized mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
 
         constraints = [b**2 == S*AR,
                        cave == cbave*S/b,
-                       croot == S/b*cb[0],
-                       cmac == croot*cbarmac]
+                       croot == S/b*cbar[0],
+                       cmac == croot*cbarmac,
+                       cbar == cbar,
+                       eta == eta,
+                       lamw == lamw]
 
         return constraints
 
@@ -115,4 +123,3 @@ class WingAero(Model):
             ]
 
         return constraints
-
