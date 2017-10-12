@@ -45,7 +45,6 @@ class VerticalTail(Model):
                 * (self.surf["b"]/2)*self.surf["d\\eta"]).sum()
             ]
 
-        return constraints, self.surf, self.components
+        self.flight_model = TailAero
 
-    def flight_model(self, state):
-        return TailAero(self, state)
+        return constraints, self.surf, self.components
