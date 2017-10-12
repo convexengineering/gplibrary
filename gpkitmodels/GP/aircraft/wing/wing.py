@@ -12,6 +12,23 @@ import pandas as pd
 import os
 
 class Wing(Model):
+    def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
+
+        W = Variable("W", "lbf", "wing weight")
+
+        self.surf = AeroSurf(N=N, lam=lam, spar=spar, hollow=hollow)
+
+        constraints = [W == self.surf.topvar("W")]
+
+        self.spar = self.surf.spar
+        self.wingskin = self.surf.wingskin
+
+        self.flight_model = WingAero
+        self.loading = WingLoading
+
+        return constraints, self.surf
+
+class AeroSurf(Model):
     "The thing that creates the lift"
     def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
 
@@ -56,12 +73,6 @@ class Wing(Model):
         constraints.extend([W/mfac >= sum(c["W"] for c in self.components)])
 
         return self.components, constraints
-
-    def flight_model(self, state):
-        return WingAero(self, state)
-
-    def loading(self, Wcent, Wwing=None, V=None, CL=None):
-        return WingLoading(self, Wcent, Wwing, V, CL)
 
 class WingLoading(Model):
     "wing loading cases"
