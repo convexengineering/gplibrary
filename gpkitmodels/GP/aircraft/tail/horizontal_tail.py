@@ -17,6 +17,7 @@ class HorizontalTail(AeroSurf):
 
     def setup(self, N=3, lam=0.8):
         self.ascs = AeroSurf.setup(self, N, lam)
+        self.planform.substitutions.update({"AR": 5})
         self.skin.substitutions.update({"\\rho_{CFRP}": 0.049})
         self.foam.substitutions.update({"\\bar{A}_{jh01}": 0.0548,
                                         "\\rho_{foam}": 0.024})
