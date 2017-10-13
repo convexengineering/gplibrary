@@ -21,7 +21,7 @@ class Wing(Model):
     lam : float         taper ratio
     hollow: boolean     True if wing is not hollow (filled with foam)
     """
-    def setup(self, N=5, lam=0.5, hollow=False):
+    def setup(self, N=5, lam=0.5, spar=CapSpar, hollow=False):
 
         self.N = N
 
@@ -35,7 +35,7 @@ class Wing(Model):
 
         self.surf = AeroSurf(N)
         self.surf.substitutions.update(subdict)
-        self.spar = CapSpar(N, self.surf)
+        self.spar = spar(N, self.surf)
         self.skin = WingSkin(self.surf)
         self.components = [self.spar, self.skin]
 
