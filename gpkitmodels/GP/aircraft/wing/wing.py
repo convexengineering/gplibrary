@@ -36,14 +36,12 @@ class Wing(Model):
         self.surf = AeroSurf(N)
         self.surf.substitutions.update(subdict)
         self.spar = CapSpar(N, self.surf)
-        self.skin = WingSkin()
+        self.skin = WingSkin(self.surf)
         self.components = [self.spar, self.skin]
 
 
         constraints = [
             W/mfac >= sum(c["W"] for c in self.components),
-            self.skin["W"] >= (self.skin["\\rho_{CFRP}"]*self.surf["S"]*2
-                               * self.skin["t"]*self.skin["g"]),
             ]
 
         if not hollow:

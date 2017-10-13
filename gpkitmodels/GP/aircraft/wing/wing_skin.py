@@ -3,7 +3,7 @@ from gpkit import Model, Variable
 
 class WingSkin(Model):
     "wing skin model"
-    def setup(self):
+    def setup(self, surface):
 
         rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         W = Variable("W", "lbf", "wing skin weight")
@@ -13,7 +13,8 @@ class WingSkin(Model):
         Jtbar = Variable("\\bar{J/t}", 0.01114, "1/mm",
                          "torsional moment of inertia")
 
-        constraints = [t >= tmin]
+        constraints = [W >= rhocfrp*surface["S"]*2*t*g,
+                       t >= tmin]
 
         self.loading = WingSkinL
 

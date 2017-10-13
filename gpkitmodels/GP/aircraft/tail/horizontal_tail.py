@@ -31,7 +31,7 @@ class HorizontalTail(Model):
         self.surf = AeroSurf(N=N)
         self.surf.substitutions.update(subdict)
 
-        self.skin = WingSkin()
+        self.skin = WingSkin(self.surf)
         self.skin.substitutions.update({"\\rho_{CFRP}": 0.049})
         self.foam = WingInterior()
         self.foam.substitutions.update({"\\bar{A}_{jh01}": 0.0548})
@@ -42,8 +42,6 @@ class HorizontalTail(Model):
         constraints = [
             W/mfac >= sum([c["W"] for c in self.components]),
             mh*(1+2.0/self.surf["AR"]) <= 2*np.pi,
-            self.skin["W"] >= (self.skin["\\rho_{CFRP}"]*self.surf["S"]*2
-                               * self.skin["t"]*self.skin["g"]),
             self.foam["W"] >= 2*(
                 self.foam["g"]*self.foam["\\rho_{foam}"]
                 *self.foam["\\bar{A}_{jh01}"]*self.surf["c_{ave}"]**2
