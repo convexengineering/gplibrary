@@ -12,45 +12,7 @@ from gpfit.fit_constraintset import XfoilFit
 #pylint: disable=invalid-name, attribute-defined-outside-init, unused-variable
 #pylint: disable=too-many-instance-attributes, too-many-locals
 
-class Wing(Model):
-    """
-    Aicraft wing model for constant tapered wing
-    INPUTS
-    ------
-    N : int             number of sections
-    lam : float         taper ratio
-    hollow: boolean     True if wing is not hollow (filled with foam)
-    """
-    def setup(self, N=5, lam=0.5, spar=CapSpar, hollow=False):
-
-        self.N = N
-
-        W = Variable("W", "lbf", "wing weight")
-        mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
-
-        cb, eta, deta, cbarmac = c_bar(lam, N)
-        subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta,
-                   "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
-                   "\\bar{c}_{MAC}": cbarmac, "d\\eta": deta}
-
-        self.surf = AeroSurf(N)
-        self.surf.substitutions.update(subdict)
-        self.spar = spar(N, self.surf)
-        self.skin = WingSkin(self.surf)
-        self.components = [self.spar, self.skin]
-
-        if not hollow:
-            self.foam = WingInterior(self.surf)
-            self.components.extend([self.foam])
-
-        constraints = [W/mfac >= sum(c["W"] for c in self.components)]
-
-        self.flight_model = WingAero
-        self.loading = WingLoading
-
-        return constraints, self.surf, self.components
-
-class AeroSurf(Model):
+class Planform(Model):
     "The thing that creates the lift"
     def setup(self, N):
 
@@ -120,3 +82,46 @@ class WingAero(Model):
             ]
 
         return constraints
+
+class AeroSurf(Model):
+    """
+    Aicraft wing model for constant tapered wing
+    INPUTS
+    ------
+    N : int             number of sections
+    lam : float         taper ratio
+    hollow: boolean     True if wing is not hollow (filled with foam)
+    """
+
+    sparModel = CapSpar
+    fillModel = WingInterior
+    flight_model = WingAero
+    loading = WingLoading
+
+    def setup(self, N=5, lam=0.5):
+
+        self.N = N
+
+        W = Variable("W", "lbf", "wing weight")
+        mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
+
+        cb, eta, deta, cbarmac = c_bar(lam, N)
+        subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta,
+                   "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
+                   "\\bar{c}_{MAC}": cbarmac, "d\\eta": deta}
+
+        self.planform = Planform(N)
+        self.planform.substitutions.update(subdict)
+        self.skin = WingSkin(self.planform)
+        self.components = [self.skin]
+
+        if self.sparModel:
+            self.spar = self.sparModel(N, self.planform)
+            self.components.extend([self.spar])
+        if self.fillModel:
+            self.foam = self.fillModel(self.planform)
+            self.components.extend([self.foam])
+
+        constraints = [W/mfac >= sum(c["W"] for c in self.components)]
+
+        return constraints, self.planform, self.components
