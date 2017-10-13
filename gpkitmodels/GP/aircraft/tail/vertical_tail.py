@@ -29,19 +29,13 @@ class VerticalTail(Model):
 
         self.skin = WingSkin(self.surf)
         self.skin.substitutions.update({"\\rho_{CFRP}": 0.049})
-        self.foam = WingInterior()
+        self.foam = WingInterior(self.surf)
         self.foam.substitutions.update({"\\bar{A}_{jh01}": 0.0548})
         self.foam.substitutions.update({"\\rho_{foam}": 0.024})
 
         self.components = [self.skin, self.foam]
 
-        constraints = [
-            W/mfac >= sum([c["W"] for c in self.components]),
-            self.foam["W"] >= 2*(
-                self.foam["g"]*self.foam["\\rho_{foam}"]
-                *self.foam["\\bar{A}_{jh01}"]*self.surf["c_{ave}"]**2
-                * (self.surf["b"]/2)*self.surf["d\\eta"]).sum()
-            ]
+        constraints = [W/mfac >= sum([c["W"] for c in self.components])]
 
         self.flight_model = TailAero
 

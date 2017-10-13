@@ -10,7 +10,7 @@ from .constant_taper_chord import c_bar
 from gpfit.fit_constraintset import XfoilFit
 
 #pylint: disable=invalid-name, attribute-defined-outside-init, unused-variable
-#pylint: disable=too-many-instance-attributes
+#pylint: disable=too-many-instance-attributes, too-many-locals
 
 class Wing(Model):
     """
@@ -39,19 +39,11 @@ class Wing(Model):
         self.skin = WingSkin(self.surf)
         self.components = [self.spar, self.skin]
 
-
-        constraints = [
-            W/mfac >= sum(c["W"] for c in self.components),
-            ]
-
         if not hollow:
-            self.foam = WingInterior()
+            self.foam = WingInterior(self.surf)
             self.components.extend([self.foam])
-            constraints.extend([
-                self.foam["W"] >= 2*(
-                    self.foam["g"]*self.foam["\\rho_{foam}"]
-                    * self.foam["\\bar{A}_{jh01}"]*self.surf["c_{ave}"]**2
-                    * (self.surf["b"]/2)*self.surf["d\\eta"]).sum()])
+
+        constraints = [W/mfac >= sum(c["W"] for c in self.components)]
 
         self.flight_model = WingAero
         self.loading = WingLoading
