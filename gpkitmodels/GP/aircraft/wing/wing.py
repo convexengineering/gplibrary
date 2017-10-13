@@ -35,18 +35,13 @@ class Wing(Model):
 
         self.surf = AeroSurf(N)
         self.surf.substitutions.update(subdict)
-        self.spar = CapSpar(N)
+        self.spar = CapSpar(N, self.surf)
         self.skin = WingSkin()
         self.components = [self.spar, self.skin]
 
 
         constraints = [
             W/mfac >= sum(c["W"] for c in self.components),
-            self.spar["dm"] >= (self.spar["(dm/dy)"]*self.surf["b"]/2
-                                * self.surf["d\\eta"]),
-            self.spar["w"] <= self.spar["w_{lim}"]*self.surf["c_{ave}"],
-            self.surf["c_{ave}"]*self.surf["\\tau"] >= (
-                self.spar["h_{in}"] + 2*self.spar["t"]),
             self.skin["W"] >= (self.skin["\\rho_{CFRP}"]*self.surf["S"]*2
                                * self.skin["t"]*self.skin["g"]),
             ]
