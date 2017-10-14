@@ -29,9 +29,9 @@ class Planform(Model):
                            lambda c: 2.0/3.0*(1+c[lam]+c[lam]**2)/(1+c[lam]),
                            "-", "non-dim MAC")
         with Vectorize(N):
+            eta = Variable("\\eta", "-", "(2y/b)")
             cbar = Variable("\\bar{c}", "-",
                             "normalized chord at mid element")
-            eta = Variable("\\eta", "-", "(2y/b)")
         with Vectorize(N-1):
             cbave = Variable("\\bar{c}_{ave}", "-",
                              "normalized mid section chord")
