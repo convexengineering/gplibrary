@@ -24,8 +24,10 @@ class Planform(Model):
         CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
-        lamw = Variable("\\lambda", "-", "wing taper ratio")
-        cbarmac = Variable("\\bar{c}_{MAC}", "-", "non-dim MAC")
+        lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
+        cbarmac = Variable("\\bar{c}_{MAC}",
+                           lambda c: 2.0/3.0*(1+c[lam]+c[lam]**2)/(1+c[lam]),
+                           "-", "non-dim MAC")
         with Vectorize(N):
             cbar = Variable("\\bar{c}", "-",
                             "normalized chord at mid element")
@@ -43,7 +45,7 @@ class Planform(Model):
                        cbar == cbar,
                        eta == eta,
                        deta == deta,
-                       lamw == lamw]
+                       lam == lam]
 
         return constraints
 
@@ -108,7 +110,7 @@ class AeroSurf(Model):
         cb, eta, deta, cbarmac = c_bar(lam, N)
         subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta,
                    "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
-                   "\\bar{c}_{MAC}": cbarmac, "d\\eta": deta}
+                   "d\\eta": deta}
 
         self.planform = Planform(N)
         self.planform.substitutions.update(subdict)
