@@ -12,7 +12,9 @@ class Empennage(Model):
         W = Variable("W", "lbf", "empennage weight")
 
         self.htail = HorizontalTail()
+        self.htail.substitutions.update({"m_{fac}": 1.1})
         self.vtail = VerticalTail()
+        self.vtail.substitutions.update({"m_{fac}": 1.1})
         self.tailboom = TailBoom()
         self.components = [self.htail, self.vtail, self.tailboom]
 
