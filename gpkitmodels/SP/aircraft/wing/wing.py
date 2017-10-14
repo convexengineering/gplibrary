@@ -6,14 +6,13 @@ from gpkit import Variable, SignomialsEnabled
 
 #pylint: disable=attribute-defined-outside-init, invalid-name
 
-def Wing(N=5, lam=0.5, spar="CapSpar", hollow=False):
+class Wing(WingGP):
+    def setup(self, N=5, lam=0.5):
 
-    wing = WingGP(N=N, lam=lam, spar=spar, hollow=hollow)
-    mw = Variable("m_w", "-", "span wise effectiveness")
+        self.wing = WingGP.setup(self, N=N, lam=lam)
+        mw = Variable("m_w", "-", "span wise effectiveness")
 
-    with SignomialsEnabled():
-        constraints = [mw*(1 + 2/wing["AR"]) >= 2*np.pi]
+        with SignomialsEnabled():
+            constraints = [mw*(1 + 2/self.planform["AR"]) >= 2*np.pi]
 
-    wing.append(constraints[0])
-    wing.substitutions.update(constraints[0].substitutions)
-    return wing
+        return self.wing, constraints

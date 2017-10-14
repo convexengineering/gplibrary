@@ -85,7 +85,7 @@ class WingAero(Model):
 
         return constraints
 
-class AeroSurf(Model):
+class Wing(Model):
     """
     Aicraft wing model for constant tapered wing
     INPUTS
