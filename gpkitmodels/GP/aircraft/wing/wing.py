@@ -32,6 +32,7 @@ class Planform(Model):
             eta = Variable("\\eta", "-", "(2y/b)")
             cbar = Variable("\\bar{c}", "-",
                             "normalized chord at mid element")
+            eta = Variable("\\eta", "-", "(2y/b)")
         with Vectorize(N-1):
             cbave = Variable("\\bar{c}_{ave}", "-",
                              "normalized mid section chord")
