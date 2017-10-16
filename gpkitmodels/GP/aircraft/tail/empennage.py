@@ -11,22 +11,23 @@ class Empennage(Model):
         mfac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
         W = Variable("W", "lbf", "empennage weight")
 
-        self.horizontaltail = HorizontalTail()
-        self.verticaltail = VerticalTail()
+        self.htail = HorizontalTail()
+        self.htail.substitutions.update({"m_{fac}": 1.1})
+        self.vtail = VerticalTail()
+        self.vtail.substitutions.update({"m_{fac}": 1.1})
         self.tailboom = TailBoom()
-        self.components = [self.horizontaltail, self.verticaltail,
-                           self.tailboom]
+        self.components = [self.htail, self.vtail, self.tailboom]
 
         state = TailBoomState()
-        loading = [self.tailboom.horizontalbending(self.horizontaltail, state),
-                   self.tailboom.verticalbending(self.verticaltail, state),
-                   self.tailboom.verticaltorsion(self.verticaltail, state)]
+        loading = [self.tailboom.horizontalbending(self.htail, state),
+                   self.tailboom.verticalbending(self.vtail, state),
+                   self.tailboom.verticaltorsion(self.vtail, state)]
 
         constraints = [
-            W/mfac >= (self.horizontaltail["W"] + self.verticaltail["W"]
+            W/mfac >= (self.htail.topvar("W") + self.vtail.topvar("W")
                        + self.tailboom["W"]),
-            self.tailboom["l"] >= self.horizontaltail["l_h"],
-            self.tailboom["l"] >= self.verticaltail["l_v"],
+            self.tailboom["l"] >= self.htail["l_h"],
+            self.tailboom["l"] >= self.vtail["l_v"],
             ]
 
         return self.components, constraints, loading
