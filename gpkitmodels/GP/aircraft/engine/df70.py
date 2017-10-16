@@ -8,7 +8,7 @@ class DF70(Model):
         W = Variable("W", "lbf", "Installed/Total engine weight")
         mfac = Variable("m_{fac}", 1.0, "-", "Engine weight margin factor")
         bsfc_min = Variable("BSFC_{min}", 0.3162, "kg/kW/hr", "minimum BSFC")
-        Wdf70 = Variable("W_{DF70}", 7.1, "lbf",
+        Wdf70 = Variable("W_{DF70}", 7.76, "lbf",
                          "Installed/Total DF70 engine weight")
         Pslmax = Variable("P_{sl-max}", 5.17, "hp",
                           "Max shaft power at sea level")

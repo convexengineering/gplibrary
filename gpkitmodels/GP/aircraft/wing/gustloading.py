@@ -2,7 +2,8 @@
 from gpkit import Model, Variable, Vectorize
 from constant_taper_chord import c_bar
 from gpkitmodels.GP.beam.beam import Beam
-from gpkitmodels.tools.fit_constraintset import FitCS
+# from gpkitmodels.tools.fit_constraintset import FitCS
+from gpfit.fit_constraintset import FitCS
 from numpy import pi
 import numpy as np
 import pandas as pd
@@ -14,8 +15,10 @@ class GustL(Model):
     # def setup(self, static, Wcent, rho, V, S):
 
         Nmax = Variable("N_{max}", 2, "-", "load safety factor")
-        cbar, eta = c_bar(0.5, static.N)
+        cbar, eta, _, _ = c_bar(0.5, static.N)
+
         sigmacfrp = Variable("\\sigma_{CFRP}", 1700e6, "Pa", "CFRP max stress")
+        taucfrp = Variable("\\tau_{CFRP}", 450e6, "Pa", "CFRP fabric stress")
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
 
         with Vectorize(static.N-1):
@@ -32,7 +35,8 @@ class GustL(Model):
 
         beam = Beam(static.N, qbar)
         path = os.path.abspath(__file__).replace(os.path.basename(__file__), "")
-        df = pd.read_csv(path + os.sep + "arctan_fit.csv")
+        df = pd.read_csv(path + os.sep + "arctan_fit.csv").to_dict(
+            orient="records")[0]
 
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
@@ -44,6 +48,8 @@ class GustL(Model):
             Mr == (beam["\\bar{M}"][:-1]*Wcent*Nmax*static["b"]/4),
             sigmacfrp >= Mr/static["S_y"],
             beam["\\bar{\\delta}"][-1] <= kappa,
+            taucfrp >= (beam["\\bar{S}"][-1]*Wcent*Nmax/4/static["t_{shear}"]
+                        / static["c_{ave}"]/static["\\tau"])
             ]
 
         return beam, constraints
