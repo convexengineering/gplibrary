@@ -1,13 +1,9 @@
 " vertical tail "
-from gpkit import Model, Variable
+from gpkit import Variable
 from .tail_aero import TailAero
 from gpkitmodels.GP.aircraft.wing.wing import Wing
-from gpkitmodels.GP.aircraft.wing.constant_taper_chord import c_bar
-from gpkitmodels.GP.aircraft.wing.wing_interior import WingInterior
-from gpkitmodels.GP.aircraft.wing.wing_skin import WingSkin
 
-#pylint: disable=invalid-name, too-many-locals, unused-variable
-#pylint: disable=attribute-defined-outside-init
+#pylint: disable=attribute-defined-outside-init, unused-variable
 
 class VerticalTail(Wing):
     "vertical tail model"
@@ -25,3 +21,4 @@ class VerticalTail(Wing):
         lv = Variable("l_v", "ft", "vertical tail moment arm")
 
         return self.ascs, self.components
+

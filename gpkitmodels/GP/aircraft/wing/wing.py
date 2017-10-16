@@ -36,7 +36,7 @@ class Planform(Model):
             cbave = Variable("\\bar{c}_{ave}", "-",
                              "normalized mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
-            deta = Variable("d\\eta", "-", "\\Detla (2y/b)")
+            deta = Variable("d\\eta", "-", "\\Delta (2y/b)")
 
         constraints = [b**2 == S*AR,
                        cave == cbave*S/b,
@@ -127,3 +127,4 @@ class Wing(Model):
         constraints = [W/mfac >= sum(c["W"] for c in self.components)]
 
         return constraints, self.planform, self.components
+

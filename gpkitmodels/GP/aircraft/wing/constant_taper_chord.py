@@ -8,3 +8,4 @@ def c_bar(lam, N):
     cbarmac = 2./3*(1+lam+lam**2)/(1+lam)
     deta = np.diff(eta)
     return c, eta, deta, cbarmac
+
