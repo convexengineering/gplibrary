@@ -63,7 +63,6 @@ class SimPleAC(Model):
 
         # Wing weight model
         constraints += [W_w >= W_w_surf + W_w_strc,
-                    # W_w_strc >= W_W_coeff1 * (N_ult * A ** 1.5 * ((W_0+V_f_fuse*g*rho_f) * W * S) ** 0.5) / tau, #[GP]
                     W_w_strc**2. >= W_W_coeff1**2. * (N_ult**2. * A ** 3. * ((W_0+V_f_fuse*g*rho_f) * W * S)) / tau**2.,
                     W_w_surf >= W_W_coeff2 * S]
         
@@ -83,16 +82,10 @@ class SimPleAC(Model):
                     V_f_avail <= V_f_wing + V_f_fuse, #[SP]
                     V_f_wing**2 <= 0.0009*S**3/A*tau**2, # linear with b and tau, quadratic with chord
                     V_f_fuse <= 10*units('m')*CDA0,
-                        #TODO: Reduce volume available by the structure!
                     V_f_avail >= V_f,
                     W_f >= TSFC * T_flight * D]
 
         return constraints
-        # return Model(W_f/LoD, constraints)
-        # return Model(D, constraints)
-        # return Model(W,constraints)
-        # return Model(W_f*T_flight,constraints)
-        # return Model(W_f + 1*T_flight*units('N/min'),constraints)
 
 if __name__ == "__main__":
     # Most basic way to execute the model 
