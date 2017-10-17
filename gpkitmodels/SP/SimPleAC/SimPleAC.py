@@ -54,36 +54,37 @@ class SimPleAC(Model):
         V_f_wing  = Variable("V_f_wing",'m^3','fuel volume in the wing', fix = True)
         V_f_fuse  = Variable('V_f_fuse','m^3','fuel volume in the fuselage', fix = True)
         constraints = []
+  
+        # Weight and lift model
+        constraints += [W >= W_0 + W_w + W_f,
+                    W_0 + W_w + 0.5 * W_f <= 0.5 * rho * S * C_L * V ** 2,
+                    W <= 0.5 * rho * S * C_Lmax * V_min ** 2,
+                    T_flight >= Range / V,
+                    LoD == C_L/C_D]
 
-        # Drag model
+        # Thrust and drag model
         C_D_fuse = CDA0 / S
         C_D_wpar = k * C_f * S_wetratio
         C_D_ind  = C_L ** 2 / (np.pi * A * e)
-        constraints += [C_D >= C_D_fuse + C_D_wpar + C_D_ind]
-
-        # Wing weight model
-        constraints += [W_w >= W_w_surf + W_w_strc,
-                    W_w_strc**2. >= W_W_coeff1**2. * (N_ult**2. * A ** 3. * ((W_0+V_f_fuse*g*rho_f) * W * S)) / tau**2.,
-                    W_w_surf >= W_W_coeff2 * S]
-        
-        # Weight and aerodynamics model
-        constraints += [LoD == C_L/C_D,
+        constraints += [W_f >= TSFC * T_flight * D,
                     D >= 0.5 * rho * S * C_D * V ** 2,
+                    C_D >= C_D_fuse + C_D_wpar + C_D_ind,
+                    V_f_fuse <= 10*units('m')*CDA0,
                     Re <= (rho / mu) * V * (S / A) ** 0.5,
-                    C_f >= 0.074 / Re ** 0.2,
-                    T_flight >= Range / V,
-                    W_0 + W_w + 0.5 * W_f <= 0.5 * rho * S * C_L * V ** 2,
-                    W <= 0.5 * rho * S * C_Lmax * V_min ** 2,
-                    W >= W_0 + W_w + W_f]
+                    C_f >= 0.074 / Re ** 0.2]
 
         # Fuel volume model 
         with SignomialsEnabled():
             constraints +=[V_f == W_f / g / rho_f,
-                    V_f_avail <= V_f_wing + V_f_fuse, #[SP]
                     V_f_wing**2 <= 0.0009*S**3/A*tau**2, # linear with b and tau, quadratic with chord
-                    V_f_fuse <= 10*units('m')*CDA0,
-                    V_f_avail >= V_f,
-                    W_f >= TSFC * T_flight * D]
+                    V_f_avail <= V_f_wing + V_f_fuse, #[SP]
+                    V_f_avail >= V_f
+                    ]
+
+        # Wing weight model
+        constraints += [W_w_surf >= W_W_coeff2 * S,
+                    W_w_strc**2. >= W_W_coeff1**2. / tau**2. * (N_ult**2. * A ** 3. * ((W_0+V_f_fuse*g*rho_f) * W * S)),
+                    W_w >= W_w_surf + W_w_strc]
 
         return constraints
 
