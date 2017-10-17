@@ -1,22 +1,21 @@
 " wing.py "
-import numpy as np
-from gpkit import Variable, Model, Vectorize, SignomialsEnabled
-from wing_interior import WingInterior
-from wing_skin import WingSkin
-from capspar import CapSpar
-from tube_spar import TubeSpar
-from constant_taper_chord import c_bar
-from gpkitmodels.tools.fit_constraintset import FitCS
-from gpkit.constraints.tight import Tight as TCS
-import pandas as pd
 import os
+import numpy as np
+import pandas as pd
+from gpkit import Variable, Model, Vectorize
+from .wing_interior import WingInterior
+from .wing_skin import WingSkin
+from .capspar import CapSpar
+from .constant_taper_chord import c_bar
+from gpfit.fit_constraintset import XfoilFit
 
-class Wing(Model):
+#pylint: disable=invalid-name, attribute-defined-outside-init, unused-variable
+#pylint: disable=too-many-instance-attributes, too-many-locals
+
+class Planform(Model):
     "The thing that creates the lift"
-    def setup(self, N=5, lam=0.5, spar="CapSpar", hollow=False):
+    def setup(self, N):
 
-        W = Variable("W", "lbf", "weight")
-        mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
         S = Variable("S", "ft^2", "surface area")
         AR = Variable("AR", "-", "aspect ratio")
         b = Variable("b", "ft", "wing span")
@@ -25,50 +24,40 @@ class Wing(Model):
         CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
-        lamw = Variable("\\lambda", lam, "-", "wing taper ratio")
-        cb, _ = c_bar(lam, N)
+        lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
+        cbarmac = Variable("\\bar{c}_{MAC}",
+                           lambda c: 2.0/3.0*(1+c[lam]+c[lam]**2)/(1+c[lam]),
+                           "-", "non-dim MAC")
         with Vectorize(N):
-            cbar = Variable("\\bar{c}", cb, "-",
+            eta = Variable("\\eta", "-", "(2y/b)")
+            cbar = Variable("\\bar{c}", "-",
                             "normalized chord at mid element")
+            eta = Variable("\\eta", "-", "(2y/b)")
         with Vectorize(N-1):
-            cbave = Variable("\\bar{c}_{ave}", (cb[1:]+cb[:-1])/2, "-",
+            cbave = Variable("\\bar{c}_{ave}", "-",
                              "normalized mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
+            deta = Variable("d\\eta", "-", "\\Delta (2y/b)")
 
         constraints = [b**2 == S*AR,
                        cave == cbave*S/b,
-                       croot == S/b*cb[0],
-                       cmac == S/b]
+                       croot == S/b*cbar[0],
+                       cmac == croot*cbarmac,
+                       cbar == cbar,
+                       eta == eta,
+                       deta == deta,
+                       lam == lam]
 
-        if spar == "CapSpar":
-            self.spar = CapSpar(b, cave, tau, N)
-        elif spar == "TubeSpar":
-            self.spar = TubeSpar(b, cave, tau, N)
-        self.wingskin = WingSkin(S, croot, b)
-        self.components = [self.spar, self.wingskin]
-
-        if not hollow:
-            self.winginterior = WingInterior(cave, b, N)
-            self.components.extend([self.winginterior])
-
-        constraints.extend([W/mfac >= sum(c["W"] for c in self.components)])
-
-        return self.components, constraints
-
-    def flight_model(self, state):
-        return WingAero(self, state)
-
-    def loading(self, Wcent, Wwing=None, V=None, CL=None):
-        return WingLoading(self, Wcent, Wwing, V, CL)
+        return constraints
 
 class WingLoading(Model):
     "wing loading cases"
     def setup(self, wing, Wcent, Wwing=None, V=None, CL=None):
 
-        loading = [wing.wingskin.loading()]
-        loading.append(wing.spar.loading(Wcent))
+        loading = [wing.skin.loading(wing)]
+        loading.append(wing.spar.loading(wing, Wcent))
         if Wwing:
-            loading.append(wing.spar.gustloading(Wcent, Wwing, V, CL))
+            loading.append(wing.spar.gustloading(wing, Wcent, Wwing, V, CL))
 
         return loading
 
@@ -83,16 +72,60 @@ class WingAero(Model):
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
 
-        path = os.path.abspath(__file__).replace(os.path.basename(__file__), "")
+        path = os.path.dirname(__file__)
         df = pd.read_csv(path + os.sep + "jho_fitdata.csv")
+        fd = df.to_dict(orient="records")[0]
 
         constraints = [
             Cd >= cdp + CL**2/np.pi/static["AR"]/e,
             Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
-            # FitCS(df, cdp, [CL, Re], airfoil="jho1.dat"),
-            FitCS(df, cdp, [CL, Re]),
+            # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
+            XfoilFit(fd, cdp, [CL, Re]),
             CL <= CLstall
             ]
 
         return constraints
+
+class Wing(Model):
+    """
+    Aicraft wing model for constant tapered wing
+    INPUTS
+    ------
+    N : int             number of sections
+    lam : float         taper ratio
+    hollow: boolean     True if wing is not hollow (filled with foam)
+    """
+
+    sparModel = CapSpar
+    fillModel = WingInterior
+    flight_model = WingAero
+    loading = WingLoading
+
+    def setup(self, N=5, lam=0.5):
+
+        self.N = N
+
+        W = Variable("W", "lbf", "wing weight")
+        mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
+
+        cb, eta, deta, cbarmac = c_bar(lam, N)
+        subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta,
+                   "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
+                   "d\\eta": deta}
+
+        self.planform = Planform(N)
+        self.planform.substitutions.update(subdict)
+        self.skin = WingSkin(self.planform)
+        self.components = [self.skin]
+
+        if self.sparModel:
+            self.spar = self.sparModel(N, self.planform)
+            self.components.extend([self.spar])
+        if self.fillModel:
+            self.foam = self.fillModel(self.planform)
+            self.components.extend([self.foam])
+
+        constraints = [W/mfac >= sum(c["W"] for c in self.components)]
+
+        return constraints, self.planform, self.components
 
