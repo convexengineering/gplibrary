@@ -1,0 +1,363 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ADD YOUR \usepackage{...} COMMANDS HERE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{graphicx,grffile}
+
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+\date{}
+
+\begin{document}
+
+\section{SimPleAC}\label{simpleac}
+
+In this example, we modify the simple wing model proposed by
+Prof.~Warren Hoburg in his thesis to create a simple aircraft model
+compatible with signomial programming (SP).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ImportTok{from}\NormalTok{ gpkit }\ImportTok{import}\NormalTok{ Model, Variable, SignomialsEnabled, VarKey, units}
+\ImportTok{import}\NormalTok{ numpy }\ImportTok{as}\NormalTok{ np}
+\ImportTok{import}\NormalTok{ matplotlib.pyplot }\ImportTok{as}\NormalTok{ plt}
+
+\KeywordTok{class}\NormalTok{ SimPleAC(Model):}
+    \KeywordTok{def}\NormalTok{ setup(}\VariableTok{self}\NormalTok{):}
+        \CommentTok{# Variable definitions...}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Weight and Lift model}\label{weight-and-lift-model}
+
+The simple aircraft borrows a majority of its aerodynamic model from
+Prof.~Warren Hoburg's thesis, with some minor adjustments to make the
+model a SP. The aircraft is assumed to be in steady-level flight so that
+thrust equals drag, and the lift equals the weight.
+
+The total weight of the aircraft is the sum of the payload weight
+\(W_0\), the wing weight \(W_w\), and the fuel weight \(W_f\).
+
+\begin{equation}
+    W \geq W_0 + W_w + W_f
+\end{equation}
+
+We use the naive \(W \leq L\) model below for steady state flight:
+
+\begin{equation}
+    W_0 + W_w + 0.5 W_f \leq \frac{1}{2} \rho S C_L V^2
+\end{equation}
+
+where the lift of the aircraft is equal to weight of the aircraft with
+half-fuel. We would also like the fully-fueled aircraft to be able to
+fly at a minimum speed of \(V_{min}\) without stalling , so we add the
+following constraint:
+
+\begin{equation}
+    W \leq \frac{1}{2} \rho V_{min}^2 S C_{L_{max}}
+\end{equation}
+
+The time of flight of the aircraft, which is a useful metric of
+performance, is simply the range over velocity:
+
+\begin{equation}
+    T_{flight} \geq \frac{Range}{V}
+\end{equation}
+
+The lift-to-drag ratio is also defined:
+
+\begin{equation}
+    L/D = \frac{C_L}{C_D}    
+\end{equation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+        \CommentTok{# Weight and lift model}
+\NormalTok{        constraints }\OperatorTok{+=}\NormalTok{ [W }\OperatorTok{>=}\NormalTok{ W_0 }\OperatorTok{+}\NormalTok{ W_w }\OperatorTok{+}\NormalTok{ W_f,}
+\NormalTok{                W_0 }\OperatorTok{+}\NormalTok{ W_w }\OperatorTok{+} \FloatTok{0.5} \OperatorTok{*}\NormalTok{ W_f }\OperatorTok{<=} 
+                        \FloatTok{0.5} \OperatorTok{*}\NormalTok{ rho }\OperatorTok{*}\NormalTok{ S }\OperatorTok{*}\NormalTok{ C_L }\OperatorTok{*}\NormalTok{ V }\OperatorTok{**} \DecValTok{2}\NormalTok{,}
+\NormalTok{                W }\OperatorTok{<=} \FloatTok{0.5} \OperatorTok{*}\NormalTok{ rho }\OperatorTok{*}\NormalTok{ S }\OperatorTok{*}\NormalTok{ C_Lmax }\OperatorTok{*}\NormalTok{ V_min }\OperatorTok{**} \DecValTok{2}\NormalTok{,}
+\NormalTok{                T_flight }\OperatorTok{>=}\NormalTok{ Range }\OperatorTok{/}\NormalTok{ V,}
+\NormalTok{                LoD }\OperatorTok{==}\NormalTok{ C_L}\OperatorTok{/}\NormalTok{C_D]}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Thrust and drag model}\label{thrust-and-drag-model}
+
+We assume a constant thrust specific fuel consumption (TSFC) for the
+`engine' of the aircraft, which is assumed to provide as much thrust as
+needed. Since \(T \geq D\):
+
+\begin{equation}
+    W_f \geq TSFC \times T_{flight} \times D
+\end{equation}
+
+the fuel weight required is the product of the TSFC, time of flight, and
+the total drag on the aircraft. The drag of the aircraft is the product
+of dynamic pressure (\(\frac{1}{2} \rho V^2\)), the planform area \(S\),
+and the coefficient of drag of the aircraft:
+
+\begin{equation} 
+    D \geq \frac{1}{2}  \rho V^2 S  C_D
+\label{e:d}
+\end{equation}
+
+The drag coefficient of the aircraft is assumed to be the sum of the
+fuselage drag, the wing profile drag, and the wing induced drag
+coefficients:
+
+\begin{equation}
+    C_D \geq C_{D_{fuse}} + C_{D_{wpar}} + C_{D_{ind}}
+\label{e:cd}
+\end{equation}
+
+The fuselage drag is a function of its drag area \(CDA_0\) and the
+planform area of the wing:
+
+\begin{equation}
+    C_{D_{fuse}} = \frac{CDA_0}{S}
+\label{e:cdfuse}
+\end{equation}
+
+where the \(CDA_0\) is linearly proportional to the volume of fuel in
+the fuselage:
+
+\begin{equation}
+    V_{f_{fuse}} \leq 10 CDA_0 \times meters
+\label{e:vffuse}
+\end{equation}
+
+Note that we correct the dimensionality of the volume here, since GPkit
+automatically checks units.
+
+The wing profile drag is the product of the form factor, the friction
+drag coefficient, and the wetted area ratio of the wing,
+
+\begin{equation}
+    C_{D_{wpar}} = k C_f S_{wetratio}
+\label{e:cdwpar}
+\end{equation}
+
+The Reynolds number of the aircraft wing is approximated
+
+\begin{equation}
+    Re \leq \frac{\rho}{\mu} V \sqrt{\frac{S}{AR}}
+\label{e:re}
+\end{equation}
+
+and used to find the friction drag coefficient of wing. We approximate
+the \(C_f\) by assuming a turbulent Blasius flow over a flat plate as
+below:
+
+\begin{equation}
+    C_f \geq \frac{0.074} {Re^{0.2}}
+\end{equation}
+
+The induced drag of the wing is calculated with a span efficiency factor
+e, and is a function of the \(C_L\) and aspect ratio \(AR\) of the wing.
+
+\begin{equation}
+    C_{D_{induced}} = \frac{C_L^2}{\pi AR e}
+\label{e:cdinduced}
+\end{equation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+        \CommentTok{# Thrust and drag model}
+\NormalTok{        C_D_fuse }\OperatorTok{=}\NormalTok{ CDA0 }\OperatorTok{/}\NormalTok{ S}
+\NormalTok{        C_D_wpar }\OperatorTok{=}\NormalTok{ k }\OperatorTok{*}\NormalTok{ C_f }\OperatorTok{*}\NormalTok{ S_wetratio}
+\NormalTok{        C_D_ind  }\OperatorTok{=}\NormalTok{ C_L }\OperatorTok{**} \DecValTok{2} \OperatorTok{/}\NormalTok{ (np.pi }\OperatorTok{*}\NormalTok{ A }\OperatorTok{*}\NormalTok{ e)}
+\NormalTok{        constraints }\OperatorTok{+=}\NormalTok{ [W_f }\OperatorTok{>=}\NormalTok{ TSFC }\OperatorTok{*}\NormalTok{ T_flight }\OperatorTok{*}\NormalTok{ D,}
+\NormalTok{                    D }\OperatorTok{>=} \FloatTok{0.5} \OperatorTok{*}\NormalTok{ rho }\OperatorTok{*}\NormalTok{ S }\OperatorTok{*}\NormalTok{ C_D }\OperatorTok{*}\NormalTok{ V }\OperatorTok{**} \DecValTok{2}\NormalTok{,}
+\NormalTok{                    C_D }\OperatorTok{>=}\NormalTok{ C_D_fuse }\OperatorTok{+}\NormalTok{ C_D_wpar }\OperatorTok{+}\NormalTok{ C_D_ind,}
+\NormalTok{                    V_f_fuse }\OperatorTok{<=} \DecValTok{10}\OperatorTok{*}\NormalTok{units(}\StringTok{'m'}\NormalTok{)}\OperatorTok{*}\NormalTok{CDA0,}
+\NormalTok{                    Re }\OperatorTok{<=}\NormalTok{ (rho }\OperatorTok{/}\NormalTok{ mu) }\OperatorTok{*}\NormalTok{ V }\OperatorTok{*}\NormalTok{ (S }\OperatorTok{/}\NormalTok{ A) }\OperatorTok{**} \FloatTok{0.5}\NormalTok{,}
+\NormalTok{                    C_f }\OperatorTok{>=} \FloatTok{0.074} \OperatorTok{/}\NormalTok{ Re }\OperatorTok{**} \FloatTok{0.2}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Fuel volume model}\label{fuel-volume-model}
+
+The fuel volume model is the main difference between simpleWing and
+SimPleAC, and introduces the only signomial constraints in the model.
+Firstly we define the required fuel volume using fuel density
+\(\rho_f\).
+
+\begin{equation}
+    V_f = \frac{W_f } {\rho_f g}
+\label{e:vf}
+\end{equation}
+
+We consider wing fuel tanks and fuselage fuel tanks. The fuselage fuel
+was defined in the aerodynamic model, where the fuel volume contributes
+to drag.
+
+\begin{equation}
+    V_{f_{wing}}^2 \leq 0.0009 \frac{S \tau^2}{AR}
+\label{e:vfwing}
+\end{equation}
+
+The signomial constraint is introduced here, where the available fuel
+volume is upper-bounded by the sum of the fuselage and wing fuel
+volumes.
+
+\begin{equation}
+    V_{f_{avail}} \leq V_{f_{wing}} + V_{f_{fuse}}
+\label{vfavail}
+\end{equation}
+
+We constrain the total fuel volume to be less than the available fuel
+volume.
+
+\begin{equation}
+    V_{f_{avail}} \geq V_{f}
+\label{e:vfineq}
+\end{equation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+        \CommentTok{# Fuel volume model }
+        \ControlFlowTok{with}\NormalTok{ SignomialsEnabled():}
+\NormalTok{            constraints }\OperatorTok{+=}\NormalTok{[V_f }\OperatorTok{==}\NormalTok{ W_f }\OperatorTok{/}\NormalTok{ g }\OperatorTok{/}\NormalTok{ rho_f,}
+\NormalTok{                V_f_wing}\OperatorTok{**}\DecValTok{2} \OperatorTok{<=} \FloatTok{0.0009}\OperatorTok{*}\NormalTok{S}\OperatorTok{**}\DecValTok{3}\OperatorTok{/}\NormalTok{A}\OperatorTok{*}\NormalTok{tau}\OperatorTok{**}\DecValTok{2}\NormalTok{, }
+                    \CommentTok{# linear with b and tau, quadratic with chord}
+\NormalTok{                V_f_avail }\OperatorTok{<=}\NormalTok{ V_f_wing }\OperatorTok{+}\NormalTok{ V_f_fuse, }\CommentTok{#[SP]}
+\NormalTok{                V_f_avail }\OperatorTok{>=}\NormalTok{ V_f]}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Wing Weight Build-Up}\label{wing-weight-build-up}
+
+The wing surface weight is a function of the planform area of the wing.
+
+\begin{equation}
+W_{w_{surf}} \geq W_{w_{coeff2}} S
+\label{e:wwsurf}
+\end{equation}
+
+The wing structural weight is a complex posynomial expression that takes
+into account the root bending moment and shear relief due to presence of
+fuel in the wings.
+
+\begin{equation}
+W_{w_{strc}}^2 \geq \frac{W_{w_{coeff1}}^2}{\tau^2} (N_{ult}^2 AR ^ 3 ((W_0+\rho_fgV_{f_{fuse}}) W S))
+\label{e:wwstrc}
+\end{equation}
+
+The total wing weight is lower-bounded.
+
+\begin{equation}
+W_w \geq W_{w_{surf}} + W_{w_{strc}}
+\label{e:ww}
+\end{equation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+        \CommentTok{# Wing weight model}
+\NormalTok{        constraints }\OperatorTok{+=}\NormalTok{ [W_w_surf }\OperatorTok{>=}\NormalTok{ W_W_coeff2 }\OperatorTok{*}\NormalTok{ S,}
+\NormalTok{            W_w_strc}\OperatorTok{**}\DecValTok{2}\NormalTok{. }\OperatorTok{>=}\NormalTok{ W_W_coeff1}\OperatorTok{**}\DecValTok{2}\NormalTok{.}\OperatorTok{/}\NormalTok{ tau}\OperatorTok{**}\DecValTok{2}\NormalTok{. }\OperatorTok{*}
+\NormalTok{            (N_ult}\OperatorTok{**}\DecValTok{2}\NormalTok{. }\OperatorTok{*}\NormalTok{ A }\OperatorTok{**} \DecValTok{3}\NormalTok{. }\OperatorTok{*}\NormalTok{ ((W_0}\OperatorTok{+}\NormalTok{V_f_fuse}\OperatorTok{*}\NormalTok{g}\OperatorTok{*}\NormalTok{rho_f) }\OperatorTok{*}\NormalTok{ W }\OperatorTok{*}\NormalTok{ S)) ,}
+\NormalTok{            W_w }\OperatorTok{>=}\NormalTok{ W_w_surf }\OperatorTok{+}\NormalTok{ W_w_strc]}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Valid objective functions}\label{valid-objective-functions}
+
+We have tested a variety of potential objectives for the SimpPleAC
+model, some of which are as follows:
+
+\begin{itemize}
+    \item $W_f$: Fuel weight, the default objective in the ```main``` method.
+    \item $W$: Total aircraft weight. Like fuel weight, but also adding extra cost for airframe weight.
+    \item $D$: Drag. 
+    \item $\frac{W_f}{T_{flight}}$: Product of the fuel weight and the inverse of the time of flight. 
+    \item $W_{f} + c \times T_{flight}$: A linear combination of fuel weight and time of flight. This can simulate recurring costs (fuel and labor), and yield interesting results. 
+\end{itemize}
+
+\end{document}
