@@ -12,13 +12,13 @@ This repository includes a number of useful GP- and SP- compatible models, such 
   * [Raymer Weights](https://github.com/convexengineering/gplibrary/tree/master/gpkitmodels/misc/Raymer%20Weights): rule-of-thumb weight relations for aircraft design
 * **GP models**
   * Aircraft
-    * Engine
-    * Fuselage
-    * Tail
-    * Wing
-    * Mission: a model that unifies the subsystems and the aircraft flight profile
-  * Beam: discretized beam for distributed loads
+    * [Wing Structural and Aero Models](https://github.com/convexengineering/gplibrary/tree/master/gpkitmodels/GP/aircraft/wing)
+    * [Empennage](https://github.com/convexengineering/gplibrary/tree/master/gpkitmodels/GP/aircraft/tail): TailBoom, HorizontalTail, and VerticalTail inherit from the Wing model
+    * [Mission](https://github.com/convexengineering/gplibrary/tree/master/gpkitmodels/GP/aircraft/mission): models that unify subsystems and flight profiles
+    * [Fuselage](https://github.com/convexengineering/gplibrary/tree/master/gpkitmodels/GP/aircraft/fuselage): elliptical and cylindrical fuselage models
+    * [IC Gas Engine Model](https://github.com/convexengineering/gplibrary/tree/master/gpkitmodels/GP/aircraft/engine)
+  * [Bending Beam](https://github.com/convexengineering/gplibrary/tree/master/gpkitmodels/GP/beam): discretized beam for distributed loads
 * **SP models**
   * Aircraft
-    * Tail
-    * Wing
+    * [Tail Boom Flexibility](https://github.com/convexengineering/gplibrary/tree/master/gpkitmodels/SP/aircraft/tail/tail_boom_flex.py)
+    * [Wing Spanwise Effectiveness](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/SP/aircraft/wing/wing.py)
