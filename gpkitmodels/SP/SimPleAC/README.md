@@ -1,7 +1,7 @@
 SimPleAC
 ========
 
-In this example, we modify the simple wing model proposed by Prof. Warren Hoburg in his thesis to create a simple aircraft model compatible with signomial programming (SP). 
+In this example, we modify the simple wing model proposed by Prof. Warren Hoburg in his thesis to create a simple aircraft model incorporating signomial programming (SP). 
 
 ```python
 from gpkit import Model, Variable, SignomialsEnabled, VarKey, units
@@ -92,7 +92,7 @@ The fuselage drag is a function of its drag area $CDA_0$ and the planform area o
 where the $CDA_0$ is linearly proportional to the volume of fuel in the fuselage:
 
 \begin{equation}
-    V_{f_{fuse}} \leq 10 CDA_0 \times meters
+    V_{f_{fuse}} \leq CDA_0 \times 10 \mathrm{[meters]}
 \label{e:vffuse}
 \end{equation}
 
@@ -210,6 +210,7 @@ W_w \geq W_{w_{surf}} + W_{w_{strc}}
             (N_ult**2. * A ** 3. * ((W_0+V_f_fuse*g*rho_f) * W * S)),
             W_w >= W_w_surf + W_w_strc]
 
+        return constraints
 ```
 
 Valid objective functions
