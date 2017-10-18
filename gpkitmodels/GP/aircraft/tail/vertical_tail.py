@@ -2,12 +2,14 @@
 from gpkit import Variable
 from .tail_aero import TailAero
 from gpkitmodels.GP.aircraft.wing.wing import Wing
+from gpkitmodels.GP.aircraft.wing.wing_interior import WingInterior
 
 #pylint: disable=attribute-defined-outside-init, unused-variable
 
 class VerticalTail(Wing):
     "vertical tail model"
     flight_model = TailAero
+    fillModel = WingInterior
     sparModel = None
     def setup(self, N=3, lam=0.8):
 
