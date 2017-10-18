@@ -25,7 +25,6 @@ class SimPleAC(Model):
 
         # Dimensional constants
         Range     = Variable("Range",3000, "km", "aircraft range")
-        # toz       = Variable("toz", 1, "-", pr=15.)
         TSFC      = Variable("TSFC", 0.6, "1/hr", "thrust specific fuel consumption")
         V_min     = Variable("V_{min}", 25, "m/s", "takeoff speed", pr=20.)
         W_0       = Variable("W_0", 6250, "N", "aircraft weight excluding wing", pr=20.)

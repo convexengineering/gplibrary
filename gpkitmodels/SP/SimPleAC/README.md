@@ -33,7 +33,6 @@ class SimPleAC(Model):
 
         # Dimensional constants
         Range     = Variable("Range",3000, "km", "aircraft range")
-        # toz       = Variable("toz", 1, "-", pr=15.)
         TSFC      = Variable("TSFC", 0.6, "1/hr", 
             "thrust specific fuel consumption")
         V_min     = Variable("V_{min}", 25, "m/s", "takeoff speed", pr=20.)
@@ -145,7 +144,7 @@ The fuselage drag is a function of its drag area $CDA_0$ and the planform area o
 where the $CDA_0$ is linearly proportional to the volume of fuel in the fuselage:
 
 \begin{equation}
-    V_{f_{fuse}} \leq CDA_0 \times 10 \mathrm{[meters]}
+    V_{f_{fuse}} \leq CDA_0 \times 10 ~\mathrm{[meters]}
 \label{e:vffuse}
 \end{equation}
 
@@ -269,11 +268,10 @@ W_w \geq W_{w_{surf}} + W_{w_{strc}}
 Running the model
 -----------------
 
-The ```main``` method within ```SimPleAC.py```... allows the model to be run directly from a terminal with the command ```python SimPleAC.py```. 
+The ```main``` method within ```SimPleAC.py``` allows the model to be run directly from a terminal with the command ```python SimPleAC.py```. 
 
 ```python
 if __name__ == "__main__":
-    # Most basic way to execute the model 
     m = SimPleAC()
     m.cost = m['W_f'] 
     sol = m.localsolve(verbosity = 4)
@@ -286,7 +284,7 @@ Valid objective functions
 
 We have tested a variety of potential objectives for the SimpPleAC model, some of which are as follows:
 \begin{itemize}
-    \item $W_f$: Fuel weight, the default objective in the ```main``` method.
+    \item $W_f$: Fuel weight, the default objective.
     \item $W$: Total aircraft weight. Like fuel weight, but also adding extra cost for airframe weight.
     \item $D$: Drag. 
     \item $\frac{W_f}{T_{flight}}$: Product of the fuel weight and the inverse of the time of flight. 
