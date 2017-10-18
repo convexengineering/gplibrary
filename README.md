@@ -5,7 +5,7 @@
 This repository contains those GP-/SP-compatible models that we consider well documented and general enough to be useful to multiple projects.
 
 * **Simple models with in-depth explanations** (good for learning GPkit)
-  * [SimpleAC](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/SP/SimPleAC/simpleac.pdf): a basic but surprisingly useful aircraft model 
+  * [SimPleAC](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/SP/SimPleAC/simpleac.pdf): a basic aircraft model that captures the fundamental tradeoffs in aircraft design
   * [Economic Order Quantity](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/misc/Economic%20Order%20Quantity/eoq.pdf): tradeoff between setup and holding costs
   * [Cylindrical Beam Moment of Inertia](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/misc/Moment%20of%20Inertia%20(cylindrical%20beam)/moi.pdf): GP approximation of cylindrical beam MOI
   * [Net Present Value](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/misc/Net%20Present%20Value/npv.pdf): financial tradeoff between cash and equipment
