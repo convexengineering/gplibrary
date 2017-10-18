@@ -2,7 +2,7 @@
 
 [![Build Status](https://acdl.mit.edu/csi/job/gpkit_commons_Push_Models/badge/icon)](https://acdl.mit.edu/csi/job/gpkit_commons_Push_Models/)
 
-This repository contains GP-/SP-compatible models that are well documented and generic enough to be used by multiple different projects.
+This repository contains those GP-/SP-compatible models that we consider well documented and general enough to be useful to multiple projects.
 
 * **Simple models with in-depth explanations** (good for learning GPkit)
   * [SimpleAC](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/SP/SimPleAC/simpleac.pdf): a basic but surprisingly useful aircraft model 
