@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import pandas as pd
-from gpkit import Variable, Model, Vectorize
+from gpkit import Variable, Model, Vectorize, VectorVariable
 from .wing_interior import WingInterior
 from .wing_skin import WingSkin
 from .capspar import CapSpar
@@ -27,14 +27,12 @@ class Planform(Model):
         lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
         return_cmac = lambda c: 2.0/3.0*(1+c[lam]+c[lam]**2)/(1+c[lam])
         cbarmac = Variable("\\bar{c}_{MAC}", return_cmac, "-", "non-dim MAC")
-        with Vectorize(N):
-            eta = Variable("\\eta", "-", "(2y/b)")
-            cbar = Variable("\\bar{c}", "-",
-                            "normalized chord at mid element")
-            eta = Variable("\\eta", "-", "(2y/b)")
+        eta = VectorVariable(N, "\\eta", np.linspace(0, 1, N), "-", "(2y/b)")
+        return_c = lambda c: [2.0/(1+c[lam])*(1+(c[lam]-1)*e) for e in c[eta]]
+        cbar = VectorVariable(N, "\\bar{c}", return_c, "-",
+                              "normalized chord at nodes")
         with Vectorize(N-1):
-            cbave = Variable("\\bar{c}_{ave}", "-",
-                             "normalized mid section chord")
+            cbave = Variable("\\bar{c}_{ave}", "-", "non-dim mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
             deta = Variable("d\\eta", "-", "\\Delta (2y/b)")
 
@@ -108,7 +106,7 @@ class Wing(Model):
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
 
         cb, eta, deta, cbarmac = c_bar(lam, N)
-        subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta,
+        subdict = {"\\lambda": lam, "\\eta": eta, "\\bar{c}": cb,
                    "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
                    "d\\eta": deta}
 

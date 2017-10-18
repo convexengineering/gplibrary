@@ -18,12 +18,13 @@ class ChordSparL(Model):
             Mr = Variable("M_r", "N*m", "wing section root moment")
 
         with Vectorize(static.N):
-            qbar = Variable("\\bar{q}", cbar, "-", "normalized loading")
+            qbar = Variable("\\bar{q}", "-", "normalized loading")
 
         beam = Beam(static.N, qbar)
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
+            qbar == static["\\bar{c}"],
             beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
                                   / Wcent/static["b"]**2),
             Mr == (beam["\\bar{M}"][:-1]*Wcent*Nmax*static["b"]/4),
