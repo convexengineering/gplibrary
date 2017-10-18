@@ -25,9 +25,8 @@ class Planform(Model):
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
         lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
-        cbarmac = Variable("\\bar{c}_{MAC}",
-                           lambda c: 2.0/3.0*(1+c[lam]+c[lam]**2)/(1+c[lam]),
-                           "-", "non-dim MAC")
+        return_cmac = lambda c: 2.0/3.0*(1+c[lam]+c[lam]**2)/(1+c[lam])
+        cbarmac = Variable("\\bar{c}_{MAC}", return_cmac, "-", "non-dim MAC")
         with Vectorize(N):
             eta = Variable("\\eta", "-", "(2y/b)")
             cbar = Variable("\\bar{c}", "-",
