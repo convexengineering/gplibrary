@@ -106,7 +106,7 @@ class Wing(Model):
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
 
         cb, eta, deta, cbarmac = c_bar(lam, N)
-        subdict = {"\\lambda": lam, "\\eta": eta, "\\bar{c}": cb,
+        subdict = {"\\lambda": lam,
                    "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
                    "d\\eta": deta}
 
