@@ -1,6 +1,7 @@
 " Weissenger vortex lattice method "
 import numpy as np
-from numpy import arange, array, interp, pi, sqrt, zeros, flip, cos, sin
+from numpy import arange, array, interp, pi, sqrt, zeros, flip, cos, sin, dot
+from numpy import diff
 from numpy.linalg import lstsq
 from vorvel import vorvel
 
@@ -89,6 +90,19 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
                       array([xc, yc, zc]), 1)
         A[i, :] = vvor[0, :]*sint + vvor[2, :]*cost
 
+    wyG = zeros([2*N, 2*N])
+    wzG = zeros([2*N, 2*N])
+
+    for i in range(2*N):
+        rsqi = (yv-y[i])**2 + (zv-z[i])**2
+        rsqp = (yv-y[i+1])**2 + (zv-z[i+1])**2
+        wyG[i, :] = ((zv-z[i])/rsqi - (zv-z[i+1])/rsqp)/(4*pi)
+        wzG[i, :] = -((yv-y[i])/rsqi - (yv-y[i+1])/rsqp)/(4*pi)
+
+    dx = diff(x)
+    dy = diff(y)
+    dz = diff(z)
+
     alpha = 0.0
     beta = 0.0
     pbar = 0.0
@@ -166,36 +180,18 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
         G_p = lstsq(A.T, R_p.T)[0]
         G_r = lstsq(A.T, R_r.T)[0]
 
-        vi = zeros(2*N)
-        wi = zeros(2*N)
+        vi = dot(G, wyG)
+        wi = dot(G, wzG)
 
-        vi_a = zeros(2*N)
-        vi_b = zeros(2*N)
-        vi_p = zeros(2*N)
-        vi_r = zeros(2*N)
+        vi_a = dot(G_a, wyG)
+        vi_b = dot(G_b, wyG)
+        vi_p = dot(G_p, wyG)
+        vi_r = dot(G_r, wyG)
 
-        wi_a = zeros(2*N)
-        wi_b = zeros(2*N)
-        wi_p = zeros(2*N)
-        wi_r = zeros(2*N)
-
-        for i in range(2*N):
-            rsqi = (yv-y[i])**2 + (zv-z[i])**2
-            rsqp = (yv-y[i+1])**2 + (zv-z[i+1])**2
-            wyG =  ((zv-z[i])/rsqi - (zv-z[i+1])/rsqp)/(4*pi)
-            wzG = -((yv-y[i])/rsqi - (yv-y[i+1])/rsqp)/(4*pi)
-            vi = vi + G[i]*wyG
-            wi = wi + G[i]*wzG
-
-            vi_a = vi_a + G_a[i]*wyG
-            vi_b = vi_b + G_b[i]*wyG
-            vi_p = vi_p + G_p[i]*wyG
-            vi_r = vi_r + G_r[i]*wyG
-
-            wi_a = wi_a + G_a[i]*wzG
-            wi_b = wi_b + G_b[i]*wzG
-            wi_p = wi_p + G_p[i]*wzG
-            wi_r = wi_r + G_r[i]*wzG
+        wi_a = dot(G_a, wzG)
+        wi_b = dot(G_b, wzG)
+        wi_p = dot(G_p, wzG)
+        wi_r = dot(G_r, wzG)
 
         cl = zeros(2*N)  # local L'/(0.5 rho V^2 c)        =  cl
         ccl = zeros(2*N)  # local L'/(0.5 rho Vinf^2 cref)
@@ -222,9 +218,6 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
         Cn_r = 0.0
 
         for i in range(2*N):
-            dx = x[i+1]-x[i]
-            dy = y[i+1]-y[i]
-            dz = z[i+1]-z[i]
             # % normalized local velocity relative to wing station,
             # [Vx,Vy,Vz] = [u,v,w]/Vinf
             Vx = cosa*cosb - yc[i]*rbar
@@ -250,36 +243,36 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
             cl[i] = 2*G[i]/(Vx*cv[i])
             ccl[i] = 2*G[i]*Vx/cref
 
-            CL = CL + 2*G[i]* Vx*dy/Sref
-            Cr = Cr - 2*G[i]* Vx*(yv[i]*dy+zv[i]*dz)/(bref*Sref)
-            Cn = Cn - 2*G[i]*(Vz+wi[i])* yv[i]*dy/(bref*Sref)
+            CL = CL + 2*G[i]* Vx*dy[i]/Sref
+            Cr = Cr - 2*G[i]* Vx*(yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref)
+            Cn = Cn - 2*G[i]*(Vz+wi[i])* yv[i]*dy[i]/(bref*Sref)
 
-            Cb = Cb + 2*G[i]* Vx*abs(yv[i]*dy+zv[i]*dz)/(bref*Sref)
-            CDi = CDi- 2*G[i]*(wi[i]*dy-vi[i]*dz)/Sref
+            Cb = Cb + 2*G[i]* Vx*abs(yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref)
+            CDi = CDi- 2*G[i]*(wi[i]*dy[i]-vi[i]*dz[i])/Sref
 
-            CL_a = CL_a + 2*(G_a[i]*Vx + G[i]*Vx_a) * dy/Sref
+            CL_a = CL_a + 2*(G_a[i]*Vx + G[i]*Vx_a) * dy[i]/Sref
             Cr_a = (Cr_a - 2*(G_a[i]*Vx + G[i]*Vx_a)
-                    * (yv[i]*dy+zv[i]*dz)/(bref*Sref))
+                    * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
             Cn_a = (Cn_a - 2*(G_a[i]*(Vz+wi[i]) + G[i]*(Vz_a+wi_a[i]))
-                    * yv[i]*dy/(bref*Sref))
+                    * yv[i]*dy[i]/(bref*Sref))
 
-            CL_b = CL_b + 2*(G_b[i]*Vx + G[i]*Vx_b) * dy/Sref
+            CL_b = CL_b + 2*(G_b[i]*Vx + G[i]*Vx_b) * dy[i]/Sref
             Cr_b = (Cr_b - 2*(G_b[i]*Vx + G[i]*Vx_b)
-                    * (yv[i]*dy+zv[i]*dz)/(bref*Sref))
+                    * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
             Cn_b = (Cn_b - 2*(G_b[i]*(Vz+wi[i]) + G[i]*(Vz_b+wi_b[i]))
-                    * yv[i]*dy/(bref*Sref))
+                    * yv[i]*dy[i]/(bref*Sref))
 
-            CL_p = CL_p + 2*(G_p[i]*Vx + G[i]*Vx_p) * dy/Sref
+            CL_p = CL_p + 2*(G_p[i]*Vx + G[i]*Vx_p) * dy[i]/Sref
             Cr_p = (Cr_p - 2*(G_p[i]*Vx + G[i]*Vx_p)
-                    * (yv[i]*dy+zv[i]*dz)/(bref*Sref))
+                    * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
             Cn_p = (Cn_p - 2*(G_p[i]*(Vz+wi[i]) + G[i]*(Vz_p+wi_p[i]))
-                    * yv[i]*dy/(bref*Sref))
+                    * yv[i]*dy[i]/(bref*Sref))
 
-            CL_r = CL_r + 2*(G_r[i]*Vx + G[i]*Vx_r) * dy/Sref
+            CL_r = CL_r + 2*(G_r[i]*Vx + G[i]*Vx_r) * dy[i]/Sref
             Cr_r = (Cr_r - 2*(G_r[i]*Vx + G[i]*Vx_r)
-                    * (yv[i]*dy+zv[i]*dz)/(bref*Sref))
+                    * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
             Cn_r = (Cn_r - 2*(G_r[i]*(Vz+wi[i]) + G[i]*(Vz_r+wi_r[i]))
-                    * yv[i]*dy/(bref*Sref))
+                    * yv[i]*dy[i]/(bref*Sref))
 
         nsys = npar
         Asys = zeros([nsys, nsys])
@@ -324,7 +317,7 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
             Asys[ksys, 2] = Cn_p
             Asys[ksys, 3] = Cn_r
 
-        if (ksys != nsys):
+        if (ksys+1 != nsys):
             print ('Error: %3i quantities are specified for flow '
                    'condition %3i .  Must have 4. \n' % (ksys, 1))
 
@@ -342,4 +335,4 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
 
         itr = itr + 1
 
-    return A, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb
+    return A, wzG, dy, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb

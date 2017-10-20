@@ -99,7 +99,7 @@ if xcaxis >= 0.0:
 
 cref = cavg
 
-A, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb = wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec, rbspec, CLspec, Crspec, Cnspec, ialspec, ibespec, ipbspec, irbspec, iCLspec, iCrspec, iCnspec)
+A, wzG, dy, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb = wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec, rbspec, CLspec, Crspec, Cnspec, ialspec, ibespec, ipbspec, irbspec, iCLspec, iCrspec, iCnspec)
 
 # Ainv = np.linalg.inv(A)
 Ainv = np.array([1])
