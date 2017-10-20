@@ -1,6 +1,7 @@
 import numpy as np
 from wvl import wvl
-from gpkit import Variable, Model, VectorVariable
+from gpkit import Variable, Model, VectorVariable, SignomialsEnabled
+from gpkit.constraints.tight import Tight as TCS
 
 """
 Geometric parameters
@@ -99,21 +100,36 @@ if xcaxis >= 0.0:
 
 cref = cavg
 
-A, wzG, dy, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb = wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec, rbspec, CLspec, Crspec, Cnspec, ialspec, ibespec, ipbspec, irbspec, iCLspec, iCrspec, iCnspec)
+A, wzG, dy, twa, Vx, G, yv, zv,cl,ccl,vi,wivl,alpha,beta,pbar,rbar,CLvl,CDi,Cr,Cn,Cb = wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec, rbspec, CLspec, Crspec, Cnspec, ialspec, ibespec, ipbspec, irbspec, iCLspec, iCrspec, iCnspec)
 
-# Ainv = np.linalg.inv(A)
-Ainv = np.array([1])
+Ainv = np.linalg.inv(A)
 
 class WVL(Model):
     def setup(self):
 
         Na = Ainv.shape[0]
 
-        Aijm = VectorVariable([Na, Na], "A_{i,j}^{-1}", Ainv, "-",
+        Aijm = VectorVariable([Na, Na], "A_{i,j}^{-1}", -Ainv, "-",
                               "AIC matrix")
         G = VectorVariable(Na, "\\Gamma", "-", "vortex filament strength")
-        th = VectorVariable(Na, "\\theta", "-", "twist")
-        CL = Variable("C_L", "-", "coefficient of lift")
+        th = VectorVariable(Na, "\\theta", twa+alpha, "-", "twist")
+        CL = Variable("C_L", CLvl, "-", "coefficient of lift")
         CDi = Variable("C_{D_i}", "-", "induced drag coefficient")
+        eta = VectorVariable(Na, "\\eta", dy, "-", "(2y/b)")
+        wzg = VectorVariable([Na, Na], "w_{z_G}", wzG, "-", "downwash coefficient")
+        wi = VectorVariable(Na, "w", -wivl, "-", "downwash")
+        S = Variable("S_{ref}", Sref, "-", "reference area")
+        V = VectorVariable(Na, "V_x", Vx, "-", "velocity")
 
-        constraints = [G >= np.sum(Aijm*th, 1)]
+        constraints = [TCS([G >= np.sum(Aijm*th, 1)]),
+                       TCS([CDi >= sum(2*G*wi*eta/S)])]
+
+        with SignomialsEnabled():
+            sigc = TCS([CL <= sum(2*G*V*eta/Sref)])
+
+        return constraints, sigc
+
+if __name__ == "__main__":
+    wvl = WVL()
+    wvl.cost = wvl["C_{D_i}"]
+    sol = wvl.localsolve("mosek")

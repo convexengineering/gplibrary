@@ -82,14 +82,6 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
     cosd = array(list(flip(cosd, 0)) + list(cosd))
     sind = array(list(flip(-sind, 0)) + list(sind))
 
-    A = zeros([2*N, 2*N])
-
-    for i in range(2*N):
-        vvor = vorvel(array([x[i], y[i], z[i]]),
-                      array([x[i+1], y[i+1], z[i+1]]),
-                      array([xc, yc, zc]), 1)
-        A[i, :] = vvor[0, :]*sint + vvor[2, :]*cost
-
     wyG = zeros([2*N, 2*N])
     wzG = zeros([2*N, 2*N])
 
@@ -102,6 +94,14 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
     dx = diff(x)
     dy = diff(y)
     dz = diff(z)
+
+    A = zeros([2*N, 2*N])
+
+    for i in range(2*N):
+        vvor = vorvel(array([x[i], y[i], z[i]]),
+                      array([x[i+1], y[i+1], z[i+1]]),
+                      array([xc, yc, zc]), 1)
+        A[i, :] = vvor[0, :]*sint + vvor[2, :]*cost
 
     alpha = 0.0
     beta = 0.0
@@ -217,10 +217,12 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
         Cn_p = 0.0
         Cn_r = 0.0
 
+        Vx = zeros(2*N)
+
         for i in range(2*N):
             # % normalized local velocity relative to wing station,
             # [Vx,Vy,Vz] = [u,v,w]/Vinf
-            Vx = cosa*cosb - yc[i]*rbar
+            Vx[i] = cosa*cosb - yc[i]*rbar
             Vy = -sinb - zc[i]*pbar
             Vz = sina*cosb + yc[i]*pbar
 
@@ -240,36 +242,36 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
             Vy_r = 0.0
             Vz_r = 0.0
 
-            cl[i] = 2*G[i]/(Vx*cv[i])
-            ccl[i] = 2*G[i]*Vx/cref
+            cl[i] = 2*G[i]/(Vx[i]*cv[i])
+            ccl[i] = 2*G[i]*Vx[i]/cref
 
-            CL = CL + 2*G[i]* Vx*dy[i]/Sref
-            Cr = Cr - 2*G[i]* Vx*(yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref)
+            CL = CL + 2*G[i]* Vx[i]*dy[i]/Sref
+            Cr = Cr - 2*G[i]* Vx[i]*(yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref)
             Cn = Cn - 2*G[i]*(Vz+wi[i])* yv[i]*dy[i]/(bref*Sref)
 
-            Cb = Cb + 2*G[i]* Vx*abs(yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref)
+            Cb = Cb + 2*G[i]* Vx[i]*abs(yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref)
             CDi = CDi- 2*G[i]*(wi[i]*dy[i]-vi[i]*dz[i])/Sref
 
-            CL_a = CL_a + 2*(G_a[i]*Vx + G[i]*Vx_a) * dy[i]/Sref
-            Cr_a = (Cr_a - 2*(G_a[i]*Vx + G[i]*Vx_a)
+            CL_a = CL_a + 2*(G_a[i]*Vx[i] + G[i]*Vx_a) * dy[i]/Sref
+            Cr_a = (Cr_a - 2*(G_a[i]*Vx[i] + G[i]*Vx_a)
                     * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
             Cn_a = (Cn_a - 2*(G_a[i]*(Vz+wi[i]) + G[i]*(Vz_a+wi_a[i]))
                     * yv[i]*dy[i]/(bref*Sref))
 
-            CL_b = CL_b + 2*(G_b[i]*Vx + G[i]*Vx_b) * dy[i]/Sref
-            Cr_b = (Cr_b - 2*(G_b[i]*Vx + G[i]*Vx_b)
+            CL_b = CL_b + 2*(G_b[i]*Vx[i] + G[i]*Vx_b) * dy[i]/Sref
+            Cr_b = (Cr_b - 2*(G_b[i]*Vx[i] + G[i]*Vx_b)
                     * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
             Cn_b = (Cn_b - 2*(G_b[i]*(Vz+wi[i]) + G[i]*(Vz_b+wi_b[i]))
                     * yv[i]*dy[i]/(bref*Sref))
 
-            CL_p = CL_p + 2*(G_p[i]*Vx + G[i]*Vx_p) * dy[i]/Sref
-            Cr_p = (Cr_p - 2*(G_p[i]*Vx + G[i]*Vx_p)
+            CL_p = CL_p + 2*(G_p[i]*Vx[i] + G[i]*Vx_p) * dy[i]/Sref
+            Cr_p = (Cr_p - 2*(G_p[i]*Vx[i] + G[i]*Vx_p)
                     * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
             Cn_p = (Cn_p - 2*(G_p[i]*(Vz+wi[i]) + G[i]*(Vz_p+wi_p[i]))
                     * yv[i]*dy[i]/(bref*Sref))
 
-            CL_r = CL_r + 2*(G_r[i]*Vx + G[i]*Vx_r) * dy[i]/Sref
-            Cr_r = (Cr_r - 2*(G_r[i]*Vx + G[i]*Vx_r)
+            CL_r = CL_r + 2*(G_r[i]*Vx[i] + G[i]*Vx_r) * dy[i]/Sref
+            Cr_r = (Cr_r - 2*(G_r[i]*Vx[i] + G[i]*Vx_r)
                     * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
             Cn_r = (Cn_r - 2*(G_r[i]*(Vz+wi[i]) + G[i]*(Vz_r+wi_r[i]))
                     * yv[i]*dy[i]/(bref*Sref))
@@ -335,4 +337,4 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
 
         itr = itr + 1
 
-    return A, wzG, dy, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb
+    return A, wzG, dy, twa, Vx, G, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb
