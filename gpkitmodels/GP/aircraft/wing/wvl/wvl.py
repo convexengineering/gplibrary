@@ -219,6 +219,10 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
 
         Vx = zeros(2*N)
 
+        B = - wzG*dy + wyG*dz
+
+        CDi = 2*sum(dot(B, G)*G)/Sref
+
         for i in range(2*N):
             # % normalized local velocity relative to wing station,
             # [Vx,Vy,Vz] = [u,v,w]/Vinf
@@ -337,4 +341,4 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
 
         itr = itr + 1
 
-    return A, wzG, dy, twa, Vx, G, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb
+    return A, wzG, wyG, dy, dz, twa, Vx, G, B, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb

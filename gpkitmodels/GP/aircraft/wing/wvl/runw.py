@@ -100,9 +100,12 @@ if xcaxis >= 0.0:
 
 cref = cavg
 
-A, wzG, dy, twa, Vx, G, yv, zv,cl,ccl,vi,wivl,alpha,beta,pbar,rbar,CLvl,CDi,Cr,Cn,Cb = wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec, rbspec, CLspec, Crspec, Cnspec, ialspec, ibespec, ipbspec, irbspec, iCLspec, iCrspec, iCnspec)
+A, wzG, wyG, dy, dz, twa, Vx, G, B, yv, zv,cl,ccl,vi,wivl,alpha,beta,pbar,rbar,CLvl,CDi,Cr,Cn,Cb = wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec, rbspec, CLspec, Crspec, Cnspec, ialspec, ibespec, ipbspec, irbspec, iCLspec, iCrspec, iCnspec)
 
 Ainv = np.linalg.inv(A)
+wA, vA = np.linalg.eig(A)
+
+z = np.linalg.lstsq(vA, G)
 
 class WVL(Model):
     def setup(self):
