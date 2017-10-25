@@ -6,11 +6,10 @@ from gpkit import Variable, Model, Vectorize
 from .wing_interior import WingInterior
 from .wing_skin import WingSkin
 from .capspar import CapSpar
-from .constant_taper_chord import c_bar
 from gpfit.fit_constraintset import XfoilFit
 
 #pylint: disable=invalid-name, attribute-defined-outside-init, unused-variable
-#pylint: disable=too-many-instance-attributes, too-many-locals
+#pylint: disable=too-many-instance-attributes, too-many-locals, no-member
 
 class Planform(Model):
     "The thing that creates the lift"
@@ -97,14 +96,12 @@ class Wing(Model):
     flight_model = WingAero
     loading = WingLoading
 
-    def setup(self, N=5, lam=0.5):
+    def setup(self, N=5):
 
         self.N = N
 
         W = Variable("W", "lbf", "wing weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
-
-        cb, eta, deta, cbarmac = c_bar(lam, N)
 
         self.planform = Planform(N)
         self.skin = WingSkin(self.planform)
