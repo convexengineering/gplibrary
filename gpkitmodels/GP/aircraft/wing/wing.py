@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import pandas as pd
-from gpkit import Variable, Model, Vectorize, VectorVariable
+from gpkit import Variable, Model, Vectorize
 from .wing_interior import WingInterior
 from .wing_skin import WingSkin
 from .capspar import CapSpar
@@ -27,7 +27,6 @@ class Planform(Model):
         lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
         return_cmac = lambda c: 2./3*(1+c[lam]+c[lam]**2)/(1+c[lam])
         cbarmac = Variable("\\bar{c}_{MAC}", return_cmac, "-", "non-dim MAC")
-
         with Vectorize(N):
             eta = Variable("\\eta", np.linspace(0, 1, N), "-", "(2y/b)")
             return_c = lambda c: [2./(1+c[lam])*(1+(c[lam]-1)*e) for e in c[eta]]
@@ -102,7 +101,7 @@ class Wing(Model):
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
 
         cb, eta, deta, cbarmac = c_bar(lam, N)
-        subdict = {"\\lambda": lam,
+        subdict = {"\\lambda": lam, "\\eta": eta, "\\bar{c}": cb,
                    "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
                    "d\\eta": deta}
 
