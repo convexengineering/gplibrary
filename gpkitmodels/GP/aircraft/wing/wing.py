@@ -29,13 +29,17 @@ class Planform(Model):
         cbarmac = Variable("\\bar{c}_{MAC}", return_cmac, "-", "non-dim MAC")
         with Vectorize(N):
             eta = Variable("\\eta", np.linspace(0, 1, N), "-", "(2y/b)")
-            return_c = lambda c: [2./(1+c[lam])*(1+(c[lam]-1)*e) for e in c[eta]]
-            cbar = Variable("\\bar{c}", return_c, "-", "normalized chord at nodes")
+            return_c = lambda c: np.array([2./(1+c[lam])*(1+(c[lam]-1)*e)
+                                           for e in c[eta]])
+            cbar = Variable("\\bar{c}", return_c, "-", "non-dim chord at nodes")
 
         with Vectorize(N-1):
             cave = Variable("c_{ave}", "ft", "mid section chord")
-            cbave = Variable("\\bar{c}_{ave}", "-", "non-dim mid section chord")
-            deta = Variable("d\\eta", "-", "\\Delta (2y/b)")
+            return_avg = lambda c: (return_c(c)[:-1] + return_c(c)[1:])/2.
+            cbave = Variable("\\bar{c}_{ave}", return_avg, "-",
+                             "non-dim mid section chord")
+            return_deta = lambda c: np.diff(c[eta])
+            deta = Variable("d\\eta", return_deta, "-", "\\Delta (2y/b)")
 
         return [b**2 == S*AR,
                 cave == cbave*S/b,
@@ -101,12 +105,8 @@ class Wing(Model):
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
 
         cb, eta, deta, cbarmac = c_bar(lam, N)
-        subdict = {"\\lambda": lam, "\\eta": eta, "\\bar{c}": cb,
-                   "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
-                   "d\\eta": deta}
 
         self.planform = Planform(N)
-        self.planform.substitutions.update(subdict)
         self.skin = WingSkin(self.planform)
         self.components = [self.skin]
 
