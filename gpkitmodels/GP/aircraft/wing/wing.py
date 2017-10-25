@@ -25,27 +25,22 @@ class Planform(Model):
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
         lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
-        return_cmac = lambda c: 2.0/3.0*(1+c[lam]+c[lam]**2)/(1+c[lam])
+        return_cmac = lambda c: 2./3*(1+c[lam]+c[lam]**2)/(1+c[lam])
         cbarmac = Variable("\\bar{c}_{MAC}", return_cmac, "-", "non-dim MAC")
         with Vectorize(N):
-            eta = Variable("\\eta", "-", "(2y/b)")
-            cbar = Variable("\\bar{c}", "-",
-                            "normalized chord at nodes")
+            eta = Variable("\\eta", np.linspace(0, 1, N), "-", "(2y/b)")
+            return_c = lambda c: [2./(1+c[lam])*(1+(c[lam]-1)*e) for e in c[eta]]
+            cbar = Variable("\\bar{c}", return_c, "-", "normalized chord at nodes")
+
         with Vectorize(N-1):
-            cbave = Variable("\\bar{c}_{ave}", "-", "non-dim mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
+            cbave = Variable("\\bar{c}_{ave}", "-", "non-dim mid section chord")
             deta = Variable("d\\eta", "-", "\\Delta (2y/b)")
 
-        constraints = [b**2 == S*AR,
-                       cave == cbave*S/b,
-                       croot == S/b*cbar[0],
-                       cmac == croot*cbarmac,
-                       cbar == cbar,
-                       eta == eta,
-                       deta == deta,
-                       lam == lam]
-
-        return constraints
+        return [b**2 == S*AR,
+                cave == cbave*S/b,
+                croot == S/b*cbar[0],
+                cmac == croot*cbarmac]
 
 class WingLoading(Model):
     "wing loading cases"
@@ -125,4 +120,3 @@ class Wing(Model):
         constraints = [W/mfac >= sum(c["W"] for c in self.components)]
 
         return constraints, self.planform, self.components
-
