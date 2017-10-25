@@ -30,7 +30,7 @@ class CapSpar(Model):
 
         constraints = [
             I/mfac <= 2*w*t*(hin/2)**2,
-            dm >= (rhocfrp*(2*w*t + 2*tshear*(w + hin + 2*t))
+            dm >= (rhocfrp*(2*w*t + 2*tshear*(hin + 2*t))
                    + rhofoam*w*hin)*surface["b"]/2*surface["d\\eta"],
             W >= 2*dm.sum()*g,
             w <= wlim*surface["c_{ave}"],
