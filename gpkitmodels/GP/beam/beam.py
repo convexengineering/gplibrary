@@ -3,13 +3,15 @@ from gpkit import Model, Variable, Vectorize
 
 class Beam(Model):
     "discretized beam bending model"
-    def setup(self, N, qbar):
+    def setup(self, N):
 
         with Vectorize(N-1):
             EIbar = Variable("\\bar{EI}", "-",
                              "normalized YM and moment of inertia")
+            dx = Variable("dx", "-", "normalized length of element")
 
         with Vectorize(N):
+            qbar = Variable("\\bar{q}", "-", "normalized loading")
             Sbar = Variable("\\bar{S}", "-", "normalized shear")
             Mbar = Variable("\\bar{M}", "-", "normalized moment")
             th = Variable("\\theta", "-", "deflection slope")
@@ -21,7 +23,6 @@ class Beam(Model):
         throot = Variable("\\theta_{root}", 1e-10, "-", "Base angle")
         dbarroot = Variable("\\bar{\\delta}_{root}", 1e-10, "-",
                             "Base deflection")
-        dx = Variable("dx", "-", "normalized length of element")
 
         constraints = [
             Sbar[:-1] >= Sbar[1:] + 0.5*dx*(qbar[:-1] + qbar[1:]),
@@ -32,7 +33,6 @@ class Beam(Model):
             th[1:] >= th[:-1] + 0.5*dx*(Mbar[1:] + Mbar[:-1])/EIbar,
             dbar[0] >= dbarroot,
             dbar[1:] >= dbar[:-1] + 0.5*dx*(th[1:] + th[:-1]),
-            1 == (N-1)*dx,
             ]
 
         return constraints
