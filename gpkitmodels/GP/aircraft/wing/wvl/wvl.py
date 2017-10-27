@@ -95,6 +95,8 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
     dy = diff(y)
     dz = diff(z)
 
+    B = - wzG*dy + wyG*dz
+
     A = zeros([2*N, 2*N])
 
     for i in range(2*N):
@@ -219,16 +221,17 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
 
         Vx = zeros(2*N)
 
-        B = - wzG*dy + wyG*dz
-
         CDi = 2*sum(dot(B, G)*G)/Sref
+
+        Vx = cosa*cosb - yc*rbar
+        Vy = -sinb - zc*pbar
+        Vz = sina*cosb + yc*pbar
+
+        CL = sum(2*G*Vx*dy/Sref)
 
         for i in range(2*N):
             # % normalized local velocity relative to wing station,
             # [Vx,Vy,Vz] = [u,v,w]/Vinf
-            Vx[i] = cosa*cosb - yc[i]*rbar
-            Vy = -sinb - zc[i]*pbar
-            Vz = sina*cosb + yc[i]*pbar
 
             Vx_a = -sina*cosb
             Vy_a = 0.0
@@ -249,35 +252,35 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
             cl[i] = 2*G[i]/(Vx[i]*cv[i])
             ccl[i] = 2*G[i]*Vx[i]/cref
 
-            CL = CL + 2*G[i]* Vx[i]*dy[i]/Sref
+            # CL = CL + 2*G[i]* Vx[i]*dy[i]/Sref
             Cr = Cr - 2*G[i]* Vx[i]*(yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref)
-            Cn = Cn - 2*G[i]*(Vz+wi[i])* yv[i]*dy[i]/(bref*Sref)
+            Cn = Cn - 2*G[i]*(Vz[i]+wi[i])* yv[i]*dy[i]/(bref*Sref)
 
             Cb = Cb + 2*G[i]* Vx[i]*abs(yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref)
-            CDi = CDi- 2*G[i]*(wi[i]*dy[i]-vi[i]*dz[i])/Sref
+            # CDi = CDi- 2*G[i]*(wi[i]*dy[i]-vi[i]*dz[i])/Sref
 
             CL_a = CL_a + 2*(G_a[i]*Vx[i] + G[i]*Vx_a) * dy[i]/Sref
             Cr_a = (Cr_a - 2*(G_a[i]*Vx[i] + G[i]*Vx_a)
                     * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
-            Cn_a = (Cn_a - 2*(G_a[i]*(Vz+wi[i]) + G[i]*(Vz_a+wi_a[i]))
+            Cn_a = (Cn_a - 2*(G_a[i]*(Vz[i]+wi[i]) + G[i]*(Vz_a+wi_a[i]))
                     * yv[i]*dy[i]/(bref*Sref))
 
             CL_b = CL_b + 2*(G_b[i]*Vx[i] + G[i]*Vx_b) * dy[i]/Sref
             Cr_b = (Cr_b - 2*(G_b[i]*Vx[i] + G[i]*Vx_b)
                     * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
-            Cn_b = (Cn_b - 2*(G_b[i]*(Vz+wi[i]) + G[i]*(Vz_b+wi_b[i]))
+            Cn_b = (Cn_b - 2*(G_b[i]*(Vz[i]+wi[i]) + G[i]*(Vz_b+wi_b[i]))
                     * yv[i]*dy[i]/(bref*Sref))
 
             CL_p = CL_p + 2*(G_p[i]*Vx[i] + G[i]*Vx_p) * dy[i]/Sref
             Cr_p = (Cr_p - 2*(G_p[i]*Vx[i] + G[i]*Vx_p)
                     * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
-            Cn_p = (Cn_p - 2*(G_p[i]*(Vz+wi[i]) + G[i]*(Vz_p+wi_p[i]))
+            Cn_p = (Cn_p - 2*(G_p[i]*(Vz[i]+wi[i]) + G[i]*(Vz_p+wi_p[i]))
                     * yv[i]*dy[i]/(bref*Sref))
 
             CL_r = CL_r + 2*(G_r[i]*Vx[i] + G[i]*Vx_r) * dy[i]/Sref
             Cr_r = (Cr_r - 2*(G_r[i]*Vx[i] + G[i]*Vx_r)
                     * (yv[i]*dy[i]+zv[i]*dz[i])/(bref*Sref))
-            Cn_r = (Cn_r - 2*(G_r[i]*(Vz+wi[i]) + G[i]*(Vz_r+wi_r[i]))
+            Cn_r = (Cn_r - 2*(G_r[i]*(Vz[i]+wi[i]) + G[i]*(Vz_r+wi_r[i]))
                     * yv[i]*dy[i]/(bref*Sref))
 
         nsys = npar

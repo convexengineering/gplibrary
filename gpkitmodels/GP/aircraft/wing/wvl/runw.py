@@ -15,7 +15,7 @@ Geometric parameters
 
 #                 xLE, y,   z,   c,    tw,   a0
 geom = np.array([[0.0, 0.0, 0.0, 0.22, 0.0, -6.0],
-                 [0.0, 1.0, 0.2, 0.11, 0.0, -6.0]])
+                 [0.0, 1.0, 0.0, 0.11, 0.0, -6.0]])
 
 Sref = 0.33
 bref = 2.0
@@ -45,7 +45,7 @@ irbspec = 1
 iCrspec = 0
 iCnspec = 0
 
-N = 10
+N = 3
 
 ispace = 2
 
@@ -104,33 +104,37 @@ A, wzG, wyG, dy, dz, twa, Vx, G, B, yv, zv,cl,ccl,vi,wivl,alpha,beta,pbar,rbar,C
 
 Ainv = np.linalg.inv(A)
 wA, vA = np.linalg.eig(A)
+BG = np.dot(B, G)
+Na = Ainv.shape[0]
+
+Bdiag = np.diagonal(B)*np.identity(Na)
+Boff = B-Bdiag
 
 z = np.linalg.lstsq(vA, G)
 
 class WVL(Model):
     def setup(self):
 
-        Na = Ainv.shape[0]
-
         Aijm = VectorVariable([Na, Na], "A_{i,j}^{-1}", -Ainv, "-",
                               "AIC matrix")
         G = VectorVariable(Na, "\\Gamma", "-", "vortex filament strength")
-        th = VectorVariable(Na, "\\theta", twa+alpha, "-", "twist")
+        th = VectorVariable(Na, "\\theta", "-", "twist")
         CL = Variable("C_L", CLvl, "-", "coefficient of lift")
         CDi = Variable("C_{D_i}", "-", "induced drag coefficient")
         eta = VectorVariable(Na, "\\eta", dy, "-", "(2y/b)")
-        wzg = VectorVariable([Na, Na], "w_{z_G}", wzG, "-", "downwash coefficient")
-        wi = VectorVariable(Na, "w", -wivl, "-", "downwash")
+        Bd = VectorVariable([Na, Na], "D_{diag}", Bdiag, "-", "B diagonals")
+        Bo = VectorVariable([Na, Na], "D_{off}", -Boff, "-", "B offdiagonals")
         S = Variable("S_{ref}", Sref, "-", "reference area")
         V = VectorVariable(Na, "V_x", Vx, "-", "velocity")
 
-        constraints = [TCS([G >= np.sum(Aijm*th, 1)]),
-                       TCS([CDi >= sum(2*G*wi*eta/S)])]
-
         with SignomialsEnabled():
-            sigc = TCS([CL <= sum(2*G*V*eta/Sref)])
+            constraints = [
+                # TCS([G >= np.sum(Aijm*th, 1)]),
+                TCS([CDi + 2*sum(np.dot(Aijm, th)*np.dot(Bo, np.dot(Aijm, th)))/S >= sum(2*np.dot(Aijm, th)*np.dot(Bd, np.dot(Aijm, th))/S)]),
+                TCS([CL <= sum(2*np.dot(Aijm, th)*V*eta/S)])
+                ]
 
-        return constraints, sigc
+        return constraints
 
 if __name__ == "__main__":
     wvl = WVL()
