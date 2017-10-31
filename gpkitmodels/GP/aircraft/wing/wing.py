@@ -96,7 +96,8 @@ class Wing(Model):
     flight_model = WingAero
     loading = WingLoading
 
-    def setup(self, N=5):
+    def setup(self, N=5, lam=0.5):
+        # TODO: phase out lam in later version
 
         self.N = N
 
