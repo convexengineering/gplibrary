@@ -43,7 +43,8 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
 
     cv = interp(sv, ssec[:, 0], geom[:, 3])
     xv = interp(sv, ssec[:, 0], geom[:, 0]) + 0.25*cv
-    yv = interp(sv, ssec[:, 0], geom[:, 1])
+    # yv = interp(sv, ssec[:, 0], geom[:, 1])
+    yv = y[:-1] + diff(y)/2
     zv = interp(sv, ssec[:, 0], geom[:, 2])
 
     xc = xv + 0.5*cv
@@ -344,4 +345,4 @@ def wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec,
 
         itr = itr + 1
 
-    return A, wzG, wyG, dy, dz, twa, Vx, G, B, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb
+    return A, wzG, wyG, dy, y, dz, z, twa, Vx, G, B, yv,zv,cl,ccl,vi,wi,alpha,beta,pbar,rbar,CL,CDi,Cr,Cn,Cb

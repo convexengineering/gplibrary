@@ -100,7 +100,7 @@ if xcaxis >= 0.0:
 
 cref = cavg
 
-A, wzG, wyG, dy, dz, twa, Vx, G, B, yv, zv,cl,ccl,vi,wivl,alpha,beta,pbar,rbar,CLvl,CDi,Cr,Cn,Cb = wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec, rbspec, CLspec, Crspec, Cnspec, ialspec, ibespec, ipbspec, irbspec, iCLspec, iCrspec, iCnspec)
+A, wzG, wyG, dy, y, dz, z, twa, Vx, G, B, yv, zv,cl,ccl,vi,wivl,alpha,beta,pbar,rbar,CLvl,CDi,Cr,Cn,Cb = wvl(geom, N, ispace, Sref, bref, cref, itmax, toler, alspec, bespec, pbspec, rbspec, CLspec, Crspec, Cnspec, ialspec, ibespec, ipbspec, irbspec, iCLspec, iCrspec, iCnspec)
 
 Ainv = np.linalg.inv(A)
 wA, vA = np.linalg.eig(A)
@@ -110,22 +110,22 @@ Na = Ainv.shape[0]
 Bdiag = np.diagonal(B)*np.identity(Na)
 Boff = B-Bdiag
 
-z = np.linalg.lstsq(vA, G)
+# z = np.linalg.lstsq(vA, G)
 
 class WVL(Model):
     def setup(self):
 
-        Aijm = VectorVariable([Na, Na], "A_{i,j}^{-1}", -Ainv, "-",
-                              "AIC matrix")
+        Aijm = -Ainv #VectorVariable([Na, Na], "A_{i,j}^{-1}", -Ainv, "-",
+                      #        "AIC matrix")
         G = VectorVariable(Na, "\\Gamma", "-", "vortex filament strength")
         th = VectorVariable(Na, "\\theta", "-", "twist")
         CL = Variable("C_L", CLvl, "-", "coefficient of lift")
         CDi = Variable("C_{D_i}", "-", "induced drag coefficient")
-        eta = VectorVariable(Na, "\\eta", dy, "-", "(2y/b)")
-        Bd = VectorVariable([Na, Na], "D_{diag}", Bdiag, "-", "B diagonals")
-        Bo = VectorVariable([Na, Na], "D_{off}", -Boff, "-", "B offdiagonals")
+        eta = dy #VectorVariable(Na, "\\eta", dy, "-", "(2y/b)")
+        Bd = Bdiag #VectorVariable([Na, Na], "D_{diag}", Bdiag, "-", "B diagonals")
+        Bo = -Boff #VectorVariable([Na, Na], "D_{off}", -Boff, "-", "B offdiagonals")
         S = Variable("S_{ref}", Sref, "-", "reference area")
-        V = VectorVariable(Na, "V_x", Vx, "-", "velocity")
+        V = Vx #VectorVariable(Na, "V_x", Vx, "-", "velocity")
 
         with SignomialsEnabled():
             constraints = [
