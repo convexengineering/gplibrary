@@ -32,7 +32,7 @@ class BoxSpar(Model):
 
         constraints = [
             I/mfac <= w*t*hin**2,
-            dm >= (rhocfrp*(4*w*t + 2*tshear*(w + hin + 2*tcore + 4*t))
+            dm >= (rhocfrp*(4*w*t + 2*tshear*(hin + 2*tcore + 4*t))
                    + rhofoam*w*tcore*2)*surface["b"]/2*surface["d\\eta"],
             w <= wlim*surface["c_{ave}"],
             surface["c_{ave}"]*surface["\\tau"] >= hin + 4*t + 2*tcore,

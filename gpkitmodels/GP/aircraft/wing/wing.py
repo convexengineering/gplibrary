@@ -6,11 +6,10 @@ from gpkit import Variable, Model, Vectorize
 from .wing_interior import WingInterior
 from .wing_skin import WingSkin
 from .capspar import CapSpar
-from .constant_taper_chord import c_bar
 from gpfit.fit_constraintset import XfoilFit
 
 #pylint: disable=invalid-name, attribute-defined-outside-init, unused-variable
-#pylint: disable=too-many-instance-attributes, too-many-locals
+#pylint: disable=too-many-instance-attributes, too-many-locals, no-member
 
 class Planform(Model):
     "The thing that creates the lift"
@@ -25,29 +24,26 @@ class Planform(Model):
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
         lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
-        return_cmac = lambda c: 2.0/3.0*(1+c[lam]+c[lam]**2)/(1+c[lam])
+        return_cmac = lambda c: 2./3*(1+c[lam]+c[lam]**2)/(1+c[lam])
         cbarmac = Variable("\\bar{c}_{MAC}", return_cmac, "-", "non-dim MAC")
         with Vectorize(N):
-            eta = Variable("\\eta", "-", "(2y/b)")
-            cbar = Variable("\\bar{c}", "-",
-                            "normalized chord at mid element")
-            eta = Variable("\\eta", "-", "(2y/b)")
+            eta = Variable("\\eta", np.linspace(0, 1, N), "-", "(2y/b)")
+            return_c = lambda c: np.array([2./(1+c[lam])*(1+(c[lam]-1)*e)
+                                           for e in c[eta]])
+            cbar = Variable("\\bar{c}", return_c, "-", "non-dim chord at nodes")
+
         with Vectorize(N-1):
-            cbave = Variable("\\bar{c}_{ave}", "-",
-                             "normalized mid section chord")
             cave = Variable("c_{ave}", "ft", "mid section chord")
-            deta = Variable("d\\eta", "-", "\\Delta (2y/b)")
+            return_avg = lambda c: (return_c(c)[:-1] + return_c(c)[1:])/2.
+            cbave = Variable("\\bar{c}_{ave}", return_avg, "-",
+                             "non-dim mid section chord")
+            return_deta = lambda c: np.diff(c[eta])
+            deta = Variable("d\\eta", return_deta, "-", "\\Delta (2y/b)")
 
-        constraints = [b**2 == S*AR,
-                       cave == cbave*S/b,
-                       croot == S/b*cbar[0],
-                       cmac == croot*cbarmac,
-                       cbar == cbar,
-                       eta == eta,
-                       deta == deta,
-                       lam == lam]
-
-        return constraints
+        return [b**2 == S*AR,
+                cave == cbave*S/b,
+                croot == S/b*cbar[0],
+                cmac == croot*cbarmac]
 
 class WingLoading(Model):
     "wing loading cases"
@@ -101,19 +97,14 @@ class Wing(Model):
     loading = WingLoading
 
     def setup(self, N=5, lam=0.5):
+        # TODO: phase out lam in later version
 
         self.N = N
 
         W = Variable("W", "lbf", "wing weight")
         mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
 
-        cb, eta, deta, cbarmac = c_bar(lam, N)
-        subdict = {"\\lambda": lam, "\\bar{c}": cb, "\\eta": eta,
-                   "\\bar{c}_{ave}": (cb[1:]+cb[:-1])/2,
-                   "d\\eta": deta}
-
         self.planform = Planform(N)
-        self.planform.substitutions.update(subdict)
         self.skin = WingSkin(self.planform)
         self.components = [self.skin]
 
@@ -127,4 +118,3 @@ class Wing(Model):
         constraints = [W/mfac >= sum(c["W"] for c in self.components)]
 
         return constraints, self.planform, self.components
-

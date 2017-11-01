@@ -6,7 +6,7 @@ from fuselage_skin import FuselageSkin
 
 class Fuselage(Model):
     "The thing that carries the fuel, engine, and payload"
-    def setup(self, Wfueltot):
+    def setup(self):
 
         R = Variable("R", "ft", "fuselage radius")
         l = Variable("l", "ft", "fuselage length")
@@ -28,7 +28,6 @@ class Fuselage(Model):
             k >= 1 + 60/f**3 + f/400,
             3*(S/np.pi)**1.6075 >= 2*(l*R*2)**1.6075 + (2*R)**(2*1.6075),
             Vol <= 4*np.pi/3*(l/2)*R**2,
-            Vol >= Wfueltot/rhofuel,
             W/mfac >= S*rhocfrp*t*g,
             ]
 

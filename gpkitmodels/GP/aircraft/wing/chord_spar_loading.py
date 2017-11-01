@@ -1,14 +1,14 @@
 " cap spar "
 from gpkit import Model, Variable, Vectorize
-from constant_taper_chord import c_bar
 from gpkitmodels.GP.beam.beam import Beam
+
+#pylint: disable=invalid-name
 
 class ChordSparL(Model):
     "spar loading model"
     def setup(self, static, Wcent):
 
         Nmax = Variable("N_{max}", 5, "-", "max loading")
-        cbar, _, _, _ = c_bar(0.5, static.N)
 
         sigmacfrp = Variable("\\sigma_{CFRP}", 1700e6, "Pa", "CFRP max stress")
         taucfrp = Variable("\\tau_{CFRP}", 450e6, "Pa", "CFRP fabric stress")
@@ -17,13 +17,12 @@ class ChordSparL(Model):
         with Vectorize(static.N-1):
             Mr = Variable("M_r", "N*m", "wing section root moment")
 
-        with Vectorize(static.N):
-            qbar = Variable("\\bar{q}", cbar, "-", "normalized loading")
-
-        beam = Beam(static.N, qbar)
+        beam = Beam(static.N)
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
+            beam["\\bar{q}"] == static["\\bar{c}"],
+            beam["dx"] == static["d\\eta"],
             beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
                                   / Wcent/static["b"]**2),
             Mr == (beam["\\bar{M}"][:-1]*Wcent*Nmax*static["b"]/4),
