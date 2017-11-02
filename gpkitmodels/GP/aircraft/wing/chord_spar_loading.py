@@ -18,10 +18,11 @@ class ChordSparL(Model):
             Mr = Variable("M_r", "N*m", "wing section root moment")
 
         beam = Beam(static.N)
+        beam.substitutions["\\bar{q}"] = static.substitutions["\\bar{c}"]
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            beam["\\bar{q}"] == static["\\bar{c}"],
+            # beam["\\bar{q}"] == static["\\bar{c}"],
             beam["dx"] == static["d\\eta"],
             beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
                                   / Wcent/static["b"]**2),
