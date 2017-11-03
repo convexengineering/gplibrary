@@ -23,7 +23,7 @@ def wing_test():
     W.substitutions[W.topvar("W")] = 50
     fs = FlightState()
     perf = W.flight_model(W, fs)
-    # loading = W.loading(W, Wcent, W.topvar("W"), fs["V"], perf["C_L"])
+    loading = W.loading(W, Wcent, W.topvar("W"), fs["V"], perf["C_L"])
     loading = W.loading(W, Wcent)
 
     m = Model(perf["C_d"], [W, fs, perf, loading])

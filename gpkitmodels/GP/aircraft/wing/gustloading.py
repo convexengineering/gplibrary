@@ -30,6 +30,8 @@ class GustL(Model):
             cosminus1 = Variable("1-cos(\\eta)", return_cosm1,
                                  "-", "1 minus cosine factor")
 
+        Beam.qbarFun = None
+        Beam.SbarFun = None
         beam = Beam(static.N)
         path = os.path.abspath(__file__).replace(os.path.basename(__file__), "")
         df = pd.read_csv(path + os.sep + "arctan_fit.csv").to_dict(
