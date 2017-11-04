@@ -27,8 +27,7 @@ def wing_test():
     loading = W.loading(W, Wcent)
 
     m = Model(perf["C_d"], [W, fs, perf, loading])
-    s = m.solve("mosek")
-    return s
+    m.solve("mosek")
 
 if __name__ == "__main__":
-    s = wing_test()
+    wing_test()

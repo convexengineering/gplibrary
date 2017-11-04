@@ -4,19 +4,19 @@ from numpy import pi, hstack, cos
 import pandas as pd
 from gpkit import Variable, Vectorize
 from gpfit.fit_constraintset import FitCS
-from .chord_spar_loading import ChordSparL
+from .chord_spar_loading import SparLoading
 
 #pylint: disable=invalid-name, no-member, arguments-differ
 #pylint: disable=attribute-defined-outside-init
 
-class GustL(ChordSparL):
+class GustL(SparLoading):
     "spar loading model"
     new_qbarFun = None
     new_SbarFun = None
 
     def setup(self, static, Wcent, Wwing, V, CL):
 
-        self.load = ChordSparL.setup(self, static, Wcent)
+        self.load = SparLoading.setup(self, static, Wcent)
         vgust = Variable("V_{gust}", 10, "m/s", "gust velocity")
 
         with Vectorize(static.N):

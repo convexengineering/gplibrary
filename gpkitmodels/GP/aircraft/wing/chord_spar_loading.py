@@ -6,6 +6,15 @@ from gpkitmodels.GP.beam.beam import Beam
 #pylint: disable=invalid-name
 
 class ChordSparL(Model):
+    " place holder so dependent repos don't break "
+    def setup(self, static, Wcent):
+
+        sploading = SparLoading(static, Wcent)
+
+        return sploading
+
+
+class SparLoading(Model):
     "spar loading model"
 
     def new_qbarFun(self, c):
