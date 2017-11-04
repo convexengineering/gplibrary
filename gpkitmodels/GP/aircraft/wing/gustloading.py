@@ -4,7 +4,7 @@ from numpy import pi, hstack, cos
 import pandas as pd
 from gpkit import Variable, Vectorize
 from gpfit.fit_constraintset import FitCS
-from .chord_spar_loading import SparLoading
+from .sparloading import SparLoading
 
 #pylint: disable=invalid-name, no-member, arguments-differ
 #pylint: disable=attribute-defined-outside-init
