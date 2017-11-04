@@ -1,6 +1,6 @@
 " cap spar "
 from gpkit import Model, Variable, Vectorize
-from chord_spar_loading import ChordSparL
+from sparloading import ChordSparL
 from gustloading import GustL
 
 class BoxSpar(Model):
