@@ -10,16 +10,8 @@ class ChordSparL(Model):
 
     def new_qbarFun(self, c):
         " define qbar model for chord loading "
-        return [f(c) for f in self.static.substitutions["\\bar{c}"]]
-
-    def new_SbarFun(self, c):
-        " define Sbar model for chord loading "
-        Sb = [1e-10]*self.static.N
-        for i in flip(range(self.static.N-1), 0):
-            Sb[i] = (Sb[i+1] + self.static.substitutions["d\\eta"][i](c)
-                     * (self.new_qbarFun(c)[i]
-                        + self.new_qbarFun(c)[i+1])/2)
-        return Sb
+        barc = self.static["\\bar{c}"]
+        return [f(c) for f in self.static.substitutions[barc]]
 
     def setup(self, static, Wcent):
 
@@ -31,25 +23,25 @@ class ChordSparL(Model):
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
         W = Variable("W", "lbf", "loading weight")
 
-        with Vectorize(static.N-1):
+        with Vectorize(self.static.N-1):
             Mr = Variable("M_r", "N*m", "wing section root moment")
 
 
         Beam.qbarFun = self.new_qbarFun
-        Beam.SbarFun = self.new_SbarFun
-        beam = Beam(static.N)
+        self.beam = Beam(self.static.N)
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            beam["dx"] == static["d\\eta"],
+            self.beam["dx"] == self.static["d\\eta"],
             W == Wcent,
-            beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
-                                  / W/static["b"]**2),
-            Mr == (beam["\\bar{M}"][:-1]*W*Nmax*static["b"]/4),
-            sigmacfrp >= Mr/static["S_y"],
-            beam["\\bar{\\delta}"][-1] <= kappa,
-            taucfrp >= (beam["\\bar{S}"][-1]*W*Nmax/4/static["t_{shear}"]
-                        / static["c_{ave}"]/static["\\tau"])
+            self.beam["\\bar{EI}"] <= (8*self.static["E"]*self.static["I"]/Nmax
+                                       / W/self.static["b"]**2),
+            Mr == (self.beam["\\bar{M}"][:-1]*W*Nmax*self.static["b"]/4),
+            sigmacfrp >= Mr/self.static["S_y"],
+            self.beam["\\bar{\\delta}"][-1] <= kappa,
+            taucfrp >= (self.beam["\\bar{S}"][-1]*W*Nmax/4
+                        / self.static["t_{shear}"]/self.static["c_{ave}"]
+                        / self.static["\\tau"])
             ]
 
-        return beam, constraints
+        return self.beam, constraints
