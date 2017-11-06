@@ -37,7 +37,7 @@ class Planform(Model):
             return_avg = lambda c: (return_c(c)[:-1] + return_c(c)[1:])/2.
             cbave = Variable("\\bar{c}_{ave}", return_avg, "-",
                              "non-dim mid section chord")
-            return_deta = lambda c: np.diff(c[eta])
+            return_deta = lambda c: np.diff(c[eta], axis=0)
             deta = Variable("d\\eta", return_deta, "-", "\\Delta (2y/b)")
 
         return [b**2 == S*AR,
