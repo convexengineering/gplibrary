@@ -24,6 +24,7 @@ def wing_test():
     fs = FlightState()
     perf = W.flight_model(W, fs)
     loading = W.loading(W, Wcent, W.topvar("W"), fs["V"], perf["C_L"])
+    loading = W.loading(W, Wcent)
 
     m = Model(perf["C_d"], [W, fs, perf, loading])
     m.solve("mosek")
