@@ -13,6 +13,22 @@ from gpfit.fit_constraintset import XfoilFit
 
 class Planform(Model):
     "The thing that creates the lift"
+    def return_c(self, c):
+        " return normalized chord distribution "
+        return np.array([2./(1+c[self.lam])*(1+(c[self.lam]-1)*e) for e
+                         in c[self.eta]])
+
+    def return_cmac(self, c):
+        " return normalized MAC "
+        cbar = self.return_c(c)
+        lam = cbar[1:]/cbar[:-1]
+        maci = 2./3*cbar[:-1]*(1 + lam + lam**2)/(1 + lam)
+        deta = np.diff(c[self.eta])
+        num = sum([(cbar[i] + cbar[i+1])/2*maci[i]*deta[i] for i
+                   in range(len(deta))])
+        den = sum([(cbar[i] + cbar[i+1])/2*deta[i] for i in range(len(deta))])
+        return num/den/cbar[0]
+
     def setup(self, N):
 
         S = Variable("S", "ft^2", "surface area")
@@ -23,22 +39,20 @@ class Planform(Model):
         CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
         croot = Variable("c_{root}", "ft", "root chord")
         cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
-        lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
-        return_cmac = lambda c: 2./3*(1+c[lam]+c[lam]**2)/(1+c[lam])
-        cbarmac = Variable("\\bar{c}_{MAC}", return_cmac, "-", "non-dim MAC")
+        self.lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
         with Vectorize(N):
-            eta = Variable("\\eta", np.linspace(0, 1, N), "-", "(2y/b)")
-            return_c = lambda c: np.array([2./(1+c[lam])*(1+(c[lam]-1)*e)
-                                           for e in c[eta]])
-            cbar = Variable("\\bar{c}", return_c, "-", "non-dim chord at nodes")
+            self.eta = Variable("\\eta", np.linspace(0, 1, N), "-", "(2y/b)")
+            cbar = Variable("\\bar{c}", self.return_c, "-", "non-dim chord at nodes")
 
         with Vectorize(N-1):
             cave = Variable("c_{ave}", "ft", "mid section chord")
-            return_avg = lambda c: (return_c(c)[:-1] + return_c(c)[1:])/2.
+            return_avg = lambda c: (self.return_c(c)[:-1] + self.return_c(c)[1:])/2.
             cbave = Variable("\\bar{c}_{ave}", return_avg, "-",
                              "non-dim mid section chord")
-            return_deta = lambda c: np.diff(c[eta])
+            return_deta = lambda c: np.diff(c[self.eta])
             deta = Variable("d\\eta", return_deta, "-", "\\Delta (2y/b)")
+        cbarmac = Variable("\\bar{c}_{MAC}", self.return_cmac, "-",
+                           "non-dim MAC")
 
         return [b**2 == S*AR,
                 cave == cbave*S/b,
