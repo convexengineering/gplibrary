@@ -19,7 +19,7 @@ class SparLoading(Model):
 
     def new_qbarFun(self, c):
         " define qbar model for chord loading "
-        barc = self.static["\\bar{c}"]
+        barc = self.static.planform.cbar
         return [f(c) for f in self.static.substitutions[barc]]
 
     def setup(self, static, Wcent=None):
@@ -41,16 +41,16 @@ class SparLoading(Model):
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            self.beam["dx"] == self.static["d\\eta"],
+            self.beam["dx"] == self.static.planform.deta,
             W == Wcent,
             self.beam["\\bar{EI}"] <= (8*self.static["E"]*self.static["I"]/Nmax
-                                       / W/self.static["b"]**2),
-            Mr == (self.beam["\\bar{M}"][:-1]*W*Nmax*self.static["b"]/4),
+                                       / W/self.static.planform.b**2),
+            Mr == (self.beam["\\bar{M}"][:-1]*W*Nmax*self.static.planform.b/4),
             sigmacfrp >= Mr/self.static["S_y"],
             self.beam["\\bar{\\delta}"][-1] <= kappa,
             taucfrp >= (self.beam["\\bar{S}"][-1]*W*Nmax/4
-                        / self.static["t_{shear}"]/self.static["c_{ave}"]
-                        / self.static["\\tau"])
+                        / self.static["t_{shear}"]/self.static.planform.cave
+                        / self.static.planform.tau)
             ]
 
         return self.beam, constraints

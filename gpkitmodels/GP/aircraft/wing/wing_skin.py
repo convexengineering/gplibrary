@@ -38,10 +38,10 @@ class WingSkin(Model):
         exec parse_variables(WingSkin.__doc__)
 
         self.loading = WingSkinL
-        return [W >= rhocfrp*surface["S"]*2*t*g,
+        return [W >= rhocfrp*surface.S*2*t*g,
                 t >= tmin,
-                taucfrp >= (1/Jtbar/(surface["c_{root}"])**2/t*Cmw
-                            * surface["S"]*rhosl*Vne**2)
+                taucfrp >= (1/Jtbar/surface.croot**2/t*Cmw
+                            * surface.S*rhosl*Vne**2)
                 ]
 
 class WingSkinL(Model):

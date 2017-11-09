@@ -11,7 +11,7 @@ class WingInterior(Model):
                         "jh01 non dimensional area")
         g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
 
-        constraints = [W >= 2*(g*rhofoam*Abar*surface["c_{ave}"]**2
-                               * surface["b"]/2* surface["d\\eta"]).sum()]
+        constraints = [W >= 2*(g*rhofoam*Abar*surface.cave**2
+                               * surface.b/2*surface.deta).sum()]
 
         return constraints

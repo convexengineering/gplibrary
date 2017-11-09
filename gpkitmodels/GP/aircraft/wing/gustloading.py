@@ -25,7 +25,7 @@ class GustL(SparLoading):
         with Vectorize(static.N):
             agust = Variable("\\alpha_{gust}", "-", "gust angle of attack")
             return_cosm1 = lambda c: hstack(
-                [1e-10, 1-cos(c[static["\\eta"]][1:]*pi/2)])
+                [1e-10, 1-cos(c[static.planform.eta][1:]*pi/2)])
             cosminus1 = Variable("1-cos(\\eta)", return_cosm1,
                                  "-", "1 minus cosine factor")
 
@@ -39,7 +39,7 @@ class GustL(SparLoading):
             CL == cl,
             Ww == Wwing,
             FitCS(df, agust, [cosminus1*vgust/v]),
-            self.beam["\\bar{q}"] >= self.static["\\bar{c}"]*(
+            self.beam["\\bar{q}"] >= self.static.planform.cbar*(
                 1 + 2*pi*agust/cl*(1+Ww/Wcent)),
             ]
 
