@@ -3,6 +3,7 @@ from gpkit import Model, Variable, parse_variables
 
 class WingSkin(Model):
     """ Wing Skin model
+
     Variables
     ---------
     rhocfrp         1.6         [g/cm^3]        density of CFRP
@@ -15,6 +16,23 @@ class WingSkin(Model):
     Cmw             0.121       [-]             negative wing moment coeff
     rhosl           1.225       [kg/m^3]        sea level air density
     Vne             45          [m/s]           never exceed vehicle speed
+
+    Upper Unbounded
+    ---------------
+    W
+
+    LaTex Strings
+    -------------
+    W       W_{\\mathrm{skin}}
+    g       g
+    t       t_{\\mathrm{skin}}
+    t       t_{\\mathrm{min}}
+    Jtbar   \\bar{J/t}
+    taucfrp \\tau_{\\mathrm{CFRP}}
+    Cmw     C_{m_w}
+    rhosl   \\rho_{\\mathrm{SL}}
+    Vne     V_{\\mathrm{NE}}
+
     """
     def setup(self, surface):
         exec parse_variables(WingSkin.__doc__)
