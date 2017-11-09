@@ -14,10 +14,13 @@ class GustL(SparLoading):
     new_qbarFun = None
     new_SbarFun = None
 
-    def setup(self, static, Wcent, Wwing, V, CL):
+    def setup(self, static, Wcent=None, Wwing=None, V=None, CL=None):
 
         self.load = SparLoading.setup(self, static, Wcent)
         vgust = Variable("V_{gust}", 10, "m/s", "gust velocity")
+        Ww = Variable("W_w", "lbf", "wing weight")
+        v = Variable("V", "m/s", "speed")
+        cl = Variable("c_l", "-", "wing lift coefficient")
 
         with Vectorize(static.N):
             agust = Variable("\\alpha_{gust}", "-", "gust angle of attack")
@@ -32,9 +35,12 @@ class GustL(SparLoading):
 
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
-            FitCS(df, agust, [cosminus1*vgust/V]),
+            V == v,
+            CL == cl,
+            Ww == Wwing,
+            FitCS(df, agust, [cosminus1*vgust/v]),
             self.beam["\\bar{q}"] >= self.static["\\bar{c}"]*(
-                1 + 2*pi*agust/CL*(1+Wwing/Wcent)),
+                1 + 2*pi*agust/cl*(1+Ww/Wcent)),
             ]
 
         return self.load, constraints
