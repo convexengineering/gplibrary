@@ -1,6 +1,6 @@
 " cap spar "
 from gpkit import Model, Variable, Vectorize
-from sparloading import ChordSparL
+from sparloading import SparLoading
 from gustloading import GustL
 
 class CapSpar(Model):
@@ -39,7 +39,7 @@ class CapSpar(Model):
             tshear >= tshearmin
             ]
 
-        self.loading = ChordSparL
+        self.loading = SparLoading
         self.gustloading = GustL
 
         return constraints
