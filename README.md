@@ -1,6 +1,6 @@
 # gplibrary
 
-[![Build Status](https://acdl.mit.edu/csi/job/gpkit_commons_Push_Models/badge/icon)](https://acdl.mit.edu/csi/job/gpkit_commons_Push_Models/)
+[![Build Status](https://acdl.mit.edu/csi/view/convexengineering/job/gplibrary_Push_Models/badge/icon)](https://acdl.mit.edu/csi/view/convexengineering/job/gplibrary_Push_Models/)
 
 This repository contains those GP-/SP-compatible models that we consider well documented and general enough to be useful to multiple projects.
 
