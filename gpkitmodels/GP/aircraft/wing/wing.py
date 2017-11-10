@@ -85,11 +85,16 @@ class WingAero(Model):
         df = pd.read_csv(path + os.sep + fitdata)
         fd = df.to_dict(orient="records")[0]
 
+        if fd["d"] == 2:
+            independentvars = [CL, Re]
+        elif fd["d"] == 3:
+            independentvars = [CL, Re, static["\\tau"]]
+
         constraints = [
             Cd >= cdp + CL**2/np.pi/static["AR"]/e,
             Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
             # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
-            XfoilFit(fd, cdp, [CL, Re]),
+            XfoilFit(fd, cdp, independentvars),
             CL <= CLstall
             ]
 
