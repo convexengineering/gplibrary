@@ -22,7 +22,7 @@ class SparLoading(Model):
         barc = self.static["\\bar{c}"]
         return [f(c) for f in self.static.substitutions[barc]]
 
-    def setup(self, static, Wcent):
+    def setup(self, static, Wcent=None):
 
         self.static = static
         Nmax = Variable("N_{max}", 5, "-", "max loading")
