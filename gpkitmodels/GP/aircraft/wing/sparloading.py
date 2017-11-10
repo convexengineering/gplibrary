@@ -42,7 +42,6 @@ class SparLoading(Model):
         constraints = [
             # dimensionalize moment of inertia and young's modulus
             self.beam["dx"] == self.static["d\\eta"],
-            W == Wcent,
             self.beam["\\bar{EI}"] <= (8*self.static["E"]*self.static["I"]/Nmax
                                        / W/self.static["b"]**2),
             Mr == (self.beam["\\bar{M}"][:-1]*W*Nmax*self.static["b"]/4),
@@ -52,5 +51,8 @@ class SparLoading(Model):
                         / self.static["t_{shear}"]/self.static["c_{ave}"]
                         / self.static["\\tau"])
             ]
+
+        if Wcent:
+            constraints.extend([W == Wcent])
 
         return self.beam, constraints

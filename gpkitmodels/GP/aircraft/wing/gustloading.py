@@ -16,7 +16,7 @@ class GustL(SparLoading):
 
     def setup(self, static, Wcent=None, Wwing=None, V=None, CL=None):
 
-        self.load = SparLoading.setup(self, static, Wcent)
+        self.load = SparLoading.setup(self, static, Wcent=Wcent)
         vgust = Variable("V_{gust}", 10, "m/s", "gust velocity")
         Ww = Variable("W_w", "lbf", "wing weight")
         v = Variable("V", "m/s", "speed")
@@ -35,12 +35,14 @@ class GustL(SparLoading):
 
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
-            V == v,
-            CL == cl,
-            Ww == Wwing,
             FitCS(df, agust, [cosminus1*vgust/v]),
             self.beam["\\bar{q}"] >= self.static["\\bar{c}"]*(
                 1 + 2*pi*agust/cl*(1+Ww/Wcent)),
             ]
+
+        if Wcent:
+            constraints.extend([V == v,
+                                CL == cl,
+                                Ww == Wwing])
 
         return self.load, constraints
