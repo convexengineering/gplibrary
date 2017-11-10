@@ -23,10 +23,15 @@ def wing_test():
     W.substitutions[W.topvar("W")] = 50
     fs = FlightState()
     perf = W.flight_model(W, fs)
-    loading = W.loading(W, Wcent, W.topvar("W"), fs["V"], perf["C_L"])
-    loading = W.loading(W, Wcent)
+    loading = [W.spar.loading(W)]
+    loading[0].substitutions["W"] = 100
+    loading.append(W.spar.gustloading(W))
+    loading[1].substitutions["W"] = 100
 
-    m = Model(perf["C_d"], [W, fs, perf, loading])
+    m = Model(perf["C_d"], [loading[1]["V"] == fs["V"],
+                            loading[1]["c_l"] == perf["C_L"],
+                            loading[1]["W_w"] == W.topvar("W"),
+                            W, fs, perf, loading])
     m.solve("mosek")
 
 if __name__ == "__main__":
