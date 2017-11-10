@@ -72,7 +72,7 @@ class WingLoading(Model):
 
 class WingAero(Model):
     "wing aerodynamic model with profile and induced drag"
-    def setup(self, static, state):
+    def setup(self, static, state, fitdata="jho_fitdata.csv"):
         "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
@@ -81,8 +81,8 @@ class WingAero(Model):
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
 
-        path = os.path.dirname(__file__)
-        df = pd.read_csv(path + os.sep + "jho_fitdata.csv")
+        path = os.path.dirname(os.path.abspath(fitdata))
+        df = pd.read_csv(path + os.sep + fitdata)
         fd = df.to_dict(orient="records")[0]
 
         constraints = [
