@@ -59,17 +59,6 @@ class Planform(Model):
                 croot == S/b*cbar[0],
                 cmac == croot*cbarmac]
 
-class WingLoading(Model):
-    "wing loading cases"
-    def setup(self, wing, Wcent, Wwing=None, V=None, CL=None):
-
-        loading = [wing.skin.loading(wing)]
-        loading.append(wing.spar.loading(wing, Wcent))
-        if Wwing:
-            loading.append(wing.spar.gustloading(wing, Wcent, Wwing, V, CL))
-
-        return loading
-
 class WingAero(Model):
     "wing aerodynamic model with profile and induced drag"
     def setup(self, static, state):
@@ -108,7 +97,6 @@ class Wing(Model):
     sparModel = CapSpar
     fillModel = WingInterior
     flight_model = WingAero
-    loading = WingLoading
 
     def setup(self, N=5, lam=0.5):
         # TODO: phase out lam in later version
