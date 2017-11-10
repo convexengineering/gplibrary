@@ -37,7 +37,7 @@ class GustL(SparLoading):
             # fit for arctan from 0 to 1, RMS = 0.044
             FitCS(df, agust, [cosminus1*vgust/v]),
             self.beam["\\bar{q}"] >= self.static["\\bar{c}"]*(
-                1 + 2*pi*agust/cl*(1+Ww/Wcent)),
+                1 + 2*pi*agust/cl*(1+Ww/self.W)),
             ]
 
         if Wcent:
