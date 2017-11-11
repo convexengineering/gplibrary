@@ -27,13 +27,13 @@ class Planform(Model):
     lam             0.5                 [-]     taper ratio
     cbarmac         self.return_cmac    [-]     non-dim MAC
 
-    Variables of length 5
+    Variables of length N
     ---------------------
     eta         np.linspace(0, 1, 5)    [-]     (2y/b)
     cbar        self.return_c           [-]     non-dim chord at nodes
 
-    Variables of length 4
-    ---------------------
+    Variables of length N-1
+    -----------------------
     cave                                [ft]    mid section chord
     cbave       self.return_avg         [-]     non-dim mid section chord
     deta        self.return_deta        [-]     \\Delta (2y/b)
@@ -60,29 +60,6 @@ class Planform(Model):
 
     def setup(self, N):
         exec parse_variables(Planform.__doc__)
-
-        # S = Variable("S", "ft^2", "surface area")
-        # AR = Variable("AR", "-", "aspect ratio")
-        # b = Variable("b", "ft", "wing span")
-        # tau = Variable("\\tau", 0.115, "-", "airfoil thickness ratio")
-        # CLmax = Variable("C_{L_{max}}", 1.39, "-", "maximum CL of JHO1")
-        # CM = Variable("C_M", 0.14, "-", "wing moment coefficient")
-        # croot = Variable("c_{root}", "ft", "root chord")
-        # cmac = Variable("c_{MAC}", "ft", "mean aerodynamic chord")
-        # self.lam = Variable("\\lambda", 0.5, "-", "wing taper ratio")
-        # with Vectorize(N):
-        #     self.eta = Variable("\\eta", np.linspace(0, 1, N), "-", "(2y/b)")
-        #     cbar = Variable("\\bar{c}", self.return_c, "-", "non-dim chord at nodes")
-
-        # with Vectorize(N-1):
-        #     cave = Variable("c_{ave}", "ft", "mid section chord")
-        #     return_avg = lambda c: (self.return_c(c)[:-1] + self.return_c(c)[1:])/2.
-        #     cbave = Variable("\\bar{c}_{ave}", return_avg, "-",
-        #                      "non-dim mid section chord")
-        #     return_deta = lambda c: np.diff(c[self.eta])
-        #     deta = Variable("d\\eta", return_deta, "-", "\\Delta (2y/b)")
-        # cbarmac = Variable("\\bar{c}_{MAC}", self.return_cmac, "-",
-        #                    "non-dim MAC")
 
         return [b**2 == S*AR,
                 cave == cbave*S/b,
