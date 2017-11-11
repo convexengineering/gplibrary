@@ -1,5 +1,6 @@
 " wing.py "
-import os
+from os import sep
+from os.path import abspath, dirname
 import numpy as np
 import pandas as pd
 from gpkit import Variable, Model, Vectorize
@@ -61,7 +62,8 @@ class Planform(Model):
 
 class WingAero(Model):
     "wing aerodynamic model with profile and induced drag"
-    def setup(self, static, state, fitdata="jho_fitdata.csv"):
+    def setup(self, static, state,
+              fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"):
         "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
@@ -70,8 +72,7 @@ class WingAero(Model):
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
 
-        path = os.path.dirname(os.path.abspath(fitdata))
-        df = pd.read_csv(path + os.sep + fitdata)
+        df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
 
         if fd["d"] == 2:
