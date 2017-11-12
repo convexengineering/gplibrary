@@ -5,15 +5,6 @@ from gpkitmodels.GP.beam.beam import Beam
 
 #pylint: disable=invalid-name
 
-class ChordSparL(Model):
-    " place holder so dependent repos don't break "
-    def setup(self, static, Wcent):
-
-        sploading = SparLoading(static, Wcent)
-
-        return sploading
-
-
 class SparLoading(Model):
     "spar loading model"
 
@@ -22,7 +13,7 @@ class SparLoading(Model):
         barc = self.static["\\bar{c}"]
         return [f(c) for f in self.static.substitutions[barc]]
 
-    def setup(self, static, Wcent=None):
+    def setup(self, static):
 
         self.static = static
         Nmax = Variable("N_{max}", 5, "-", "max loading")
@@ -51,8 +42,5 @@ class SparLoading(Model):
                         / self.static["t_{shear}"]/self.static["c_{ave}"]
                         / self.static["\\tau"])
             ]
-
-        if Wcent:
-            constraints.extend([self.W == Wcent])
 
         return self.beam, constraints

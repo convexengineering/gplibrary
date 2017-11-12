@@ -1,5 +1,6 @@
 " wing.py "
-import os
+from os import sep
+from os.path import abspath, dirname
 import numpy as np
 import pandas as pd
 from gpkit import Variable, Model, Vectorize
@@ -59,20 +60,10 @@ class Planform(Model):
                 croot == S/b*cbar[0],
                 cmac == croot*cbarmac]
 
-class WingLoading(Model):
-    "wing loading cases"
-    def setup(self, wing, Wcent, Wwing=None, V=None, CL=None):
-
-        loading = [wing.skin.loading(wing)]
-        loading.append(wing.spar.loading(wing, Wcent))
-        if Wwing:
-            loading.append(wing.spar.gustloading(wing, Wcent, Wwing, V, CL))
-
-        return loading
-
 class WingAero(Model):
     "wing aerodynamic model with profile and induced drag"
-    def setup(self, static, state):
+    def setup(self, static, state,
+              fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"):
         "wing drag model"
         Cd = Variable("C_d", "-", "wing drag coefficient")
         CL = Variable("C_L", "-", "lift coefficient")
@@ -81,15 +72,19 @@ class WingAero(Model):
         Re = Variable("Re", "-", "Reynold's number")
         cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
 
-        path = os.path.dirname(__file__)
-        df = pd.read_csv(path + os.sep + "jho_fitdata.csv")
+        df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
+
+        if fd["d"] == 2:
+            independentvars = [CL, Re]
+        elif fd["d"] == 3:
+            independentvars = [CL, Re, static["\\tau"]]
 
         constraints = [
             Cd >= cdp + CL**2/np.pi/static["AR"]/e,
             Re == state["\\rho"]*state["V"]*static["c_{MAC}"]/state["\\mu"],
             # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
-            XfoilFit(fd, cdp, [CL, Re]),
+            XfoilFit(fd, cdp, independentvars),
             CL <= CLstall
             ]
 
@@ -108,7 +103,6 @@ class Wing(Model):
     sparModel = CapSpar
     fillModel = WingInterior
     flight_model = WingAero
-    loading = WingLoading
 
     def setup(self, N=5, lam=0.5):
         # TODO: phase out lam in later version

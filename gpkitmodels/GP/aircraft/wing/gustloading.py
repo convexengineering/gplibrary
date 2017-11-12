@@ -14,9 +14,9 @@ class GustL(SparLoading):
     new_qbarFun = None
     new_SbarFun = None
 
-    def setup(self, static, Wcent=None, Wwing=None, V=None, CL=None):
+    def setup(self, static):
 
-        self.load = SparLoading.setup(self, static, Wcent=Wcent)
+        self.load = SparLoading.setup(self, static)
         vgust = Variable("V_{gust}", 10, "m/s", "gust velocity")
         Ww = Variable("W_w", "lbf", "wing weight")
         v = Variable("V", "m/s", "speed")
@@ -39,10 +39,5 @@ class GustL(SparLoading):
             self.beam["\\bar{q}"] >= self.static["\\bar{c}"]*(
                 1 + 2*pi*agust/cl*(1+Ww/self.W)),
             ]
-
-        if Wcent:
-            constraints.extend([V == v,
-                                CL == cl,
-                                Ww == Wwing])
 
         return self.load, constraints
