@@ -31,13 +31,16 @@ def test_emp():
     fs = FlightState()
     emp.substitutions.update({emp.topvar("W"): 10, "l": 5,
                               emp.htail.planform["AR"]: 4,
-                              emp.vtail.planform["AR"]: 4})
+                              emp.vtail.planform["AR"]: 4,
+                              emp.vtail["V_v"]: 0.04,
+                              emp.htail["m_h"]: 0.01})
     htperf = emp.htail.flight_model(emp.htail, fs)
     vtperf = emp.vtail.flight_model(emp.vtail, fs)
     tbperf = emp.tailboom.flight_model(fs)
 
     m = Model(htperf["C_d"] + vtperf["C_d"] + tbperf["C_f"],
-              [emp, fs, htperf, vtperf, tbperf])
+              [emp["l_v"] == emp["l"], emp["l_h"] == emp["l"],
+               emp, fs, htperf, vtperf, tbperf])
     m.solve("mosek")
 
 if __name__ == "__main__":

@@ -80,8 +80,8 @@ class VerticalBoomTorsion(Model):
         taucfrp = Variable("\\tau_{CFRP}", 210, "MPa", "torsional stress limit")
 
         constraints = [
-            T >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S"]
-                  * vtail["C_{L_{max}}"]*vtail["b"]),
+            T >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail.planform.S
+                  * vtail.planform.CLmax*vtail.planform.b),
             taucfrp >= T*tailboom["d_0"]/2/tailboom["J"]
             ]
 
@@ -97,8 +97,8 @@ class VerticalBoomBending(Model):
                          "max tail boom deflection angle")
 
         constraints = [
-            F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail["S"]
-                  * vtail["C_{L_{max}}"]),
+            F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*vtail.planform.S
+                  * vtail.planform.CLmax),
             th >= (F*tailboom["l"]**2/tailboom["E"]/tailboom["I_0"]
                    * (1+tailboom["k"])/2),
             th <= thmax,
@@ -116,8 +116,8 @@ class HorizontalBoomBending(Model):
                          "max tail boom deflection angle")
 
         constraints = [
-            F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*htail["S"]
-                  * htail["C_{L_{max}}"]),
+            F >= (0.5*state["\\rho_{sl}"]*state["V_{NE}"]**2*htail.planform.S
+                  * htail.planform.CLmax),
             th >= (F*tailboom["l"]**2/tailboom["E"]/tailboom["I_0"]
                    * (1+tailboom["k"])/2),
             th <= thmax,

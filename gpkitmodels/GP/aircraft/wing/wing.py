@@ -30,7 +30,7 @@ class Planform(Model):
 
     Variables of length N
     ---------------------
-    eta         np.linspace(0,1,5)      [-]     (2y/b)
+    eta         np.linspace(0,1,N)      [-]     (2y/b)
     cbar        self.return_c           [-]     non-dim chord at nodes
 
     Variables of length N-1

@@ -15,9 +15,10 @@ class HorizontalTail(Wing):
 
     def setup(self, N=3, lam=0.8):
         self.ascs = Wing.setup(self, N)
-        self.planform.substitutions.update({"AR": 4, "\\tau": 0.08,
-                                            "\\lambda": 0.8})
-        self.skin.substitutions.update({"\\rho_{CFRP}": 0.049})
+        self.planform.substitutions.update(
+            {self.planform.AR: 4, self.planform.tau: 0.08,
+             self.planform.lam: 0.8})
+        self.skin.substitutions.update({self.skin.rhocfrp: 0.049})
         self.foam.substitutions.update({"\\bar{A}_{jh01}": 0.0548,
                                         "\\rho_{foam}": 0.024})
         Vh = Variable("V_h", "-", "horizontal tail volume coefficient")
