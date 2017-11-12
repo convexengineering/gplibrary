@@ -2,14 +2,14 @@
 import os
 import numpy as np
 import pandas as pd
-from gpkit import Variable, Model, Vectorize, parse_variables
+from gpkit import Variable, Model, parse_variables
 from .wing_interior import WingInterior
 from .wing_skin import WingSkin
 from .capspar import CapSpar
 from gpfit.fit_constraintset import XfoilFit
 
-#pylint: disable=invalid-name, attribute-defined-outside-init, unused-variable
-#pylint: disable=too-many-instance-attributes, too-many-locals, no-member
+#pylint: disable=no-member, invalid-name, unused-argument, exec-used
+#pylint: disable=undefined-variable
 
 class Planform(Model):
     """ Planform Area Definition
@@ -29,7 +29,7 @@ class Planform(Model):
 
     Variables of length N
     ---------------------
-    eta         np.linspace(0, 1, 5)    [-]     (2y/b)
+    eta         np.linspace(0,1,5)      [-]     (2y/b)
     cbar        self.return_c           [-]     non-dim chord at nodes
 
     Variables of length N-1
@@ -55,7 +55,8 @@ class Planform(Model):
         den = sum([(cbar[i] + cbar[i+1])/2*deta[i] for i in range(len(deta))])
         return num/den/cbar[0]
 
-    return_avg = lambda self, c: (self.return_c(c)[:-1] + self.return_c(c)[1:])/2.
+    return_avg = lambda self, c: (self.return_c(c)[:-1]
+                                  + self.return_c(c)[1:])/2.
     return_deta = lambda self, c: np.diff(c[self.eta])
 
     def setup(self, N):
