@@ -35,7 +35,7 @@ class SparLoading(Model):
             self.beam["dx"] == self.static.planform.deta,
             self.beam["\\bar{EI}"] <= (8*self.static["E"]*self.static["I"]/Nmax
                                        / self.W/self.static.planform.b**2),
-            Mr == (self.beam["\\bar{M}"][:-1]*self.W*Nmax
+            Mr >= (self.beam["\\bar{M}"][:-1]*self.W*Nmax
                    * self.static.planform.b/4),
             sigmacfrp >= Mr/self.static["S_y"],
             self.beam["\\bar{\\delta}"][-1] <= kappa,
