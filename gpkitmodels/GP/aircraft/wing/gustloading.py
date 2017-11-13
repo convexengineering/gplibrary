@@ -36,7 +36,7 @@ class GustL(SparLoading):
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
             FitCS(df, agust, [cosminus1*vgust/v]),
-            self.beam["\\bar{q}"] >= self.static["\\bar{c}"]*(
+            self.beam["\\bar{q}"] >= self.static.planform.cbar*(
                 1 + 2*pi*agust/cl*(1+Ww/self.W)),
             ]
 

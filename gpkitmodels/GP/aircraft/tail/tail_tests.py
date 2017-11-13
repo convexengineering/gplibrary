@@ -9,7 +9,8 @@ def test_htail():
 
     ht = HorizontalTail()
     fs = FlightState()
-    ht.substitutions.update({ht.topvar("W"): 5, "m_h": 0.01, "AR": 4})
+    ht.substitutions.update({ht.topvar("W"): 5, "m_h": 0.01, "AR": 4,
+                             "V_h": 0.5})
     perf = ht.flight_model(ht, fs)
 
     m = Model(perf["C_d"], [ht, perf])

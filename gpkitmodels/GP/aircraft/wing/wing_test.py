@@ -32,7 +32,8 @@ def wing_test():
                             loading[1]["c_l"] == perf["C_L"],
                             loading[1]["W_w"] == W.topvar("W"),
                             W, fs, perf, loading])
-    m.solve("mosek")
+    s = m.solve("mosek")
+    print s("b")
 
 if __name__ == "__main__":
     wing_test()
