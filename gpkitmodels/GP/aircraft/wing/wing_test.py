@@ -14,8 +14,9 @@ class FlightState(Model):
 
         return constraints
 
-def wing_test():
+def test():
     " test wing models "
+    from gpkit import units
 
     Wcent = Variable("W_{cent}", 100, "lbf", "center weight")
 
@@ -32,8 +33,7 @@ def wing_test():
                             loading[1]["c_l"] == perf["C_L"],
                             loading[1]["W_w"] == W.topvar("W"),
                             W, fs, perf, loading])
-    s = m.solve("mosek")
-    print s("b")
+    m.solve(verbosity=0)
 
 if __name__ == "__main__":
-    wing_test()
+    test()
