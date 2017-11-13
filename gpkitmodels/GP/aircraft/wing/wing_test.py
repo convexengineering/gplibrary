@@ -1,6 +1,6 @@
 " wing test "
 from gpkitmodels.GP.aircraft.wing.wing import Wing
-from gpkit import Variable, Model
+from gpkit import Variable, Model, units
 
 class FlightState(Model):
     " state variables "
@@ -31,9 +31,9 @@ def wing_test():
     m = Model(perf["C_d"], [loading[1]["V"] == fs["V"],
                             loading[1]["c_l"] == perf["C_L"],
                             loading[1]["W_w"] == W.topvar("W"),
+                            W["b"] >= 0.1*units("ft"),
                             W, fs, perf, loading])
-    s = m.solve("mosek")
-    print s("b")
+    print m.solve("mosek").table()
 
 if __name__ == "__main__":
     wing_test()

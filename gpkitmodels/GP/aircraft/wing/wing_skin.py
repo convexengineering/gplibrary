@@ -24,9 +24,8 @@ class WingSkin(Model):
     LaTex Strings
     -------------
     W       W_{\\mathrm{skin}}
-    g       g
     t       t_{\\mathrm{skin}}
-    t       t_{\\mathrm{min}}
+    tmin    t_{\\mathrm{min}}
     Jtbar   \\bar{J/t}
     taucfrp \\tau_{\\mathrm{CFRP}}
     Cmw     C_{m_w}

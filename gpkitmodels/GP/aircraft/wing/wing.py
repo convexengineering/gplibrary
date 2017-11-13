@@ -15,7 +15,7 @@ from gpfit.fit_constraintset import XfoilFit
 class Planform(Model):
     """ Planform Area Definition
 
-    Variables
+    Scalar Variables
     ---------
     S                                   [ft^2]  surface area
     AR                                  [-]     aspect ratio
