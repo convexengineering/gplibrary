@@ -1,0 +1,1 @@
+pip install : pandas, git+https://github.com/hoburg/gpfit.git

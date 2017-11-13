@@ -13,7 +13,7 @@ def test_htail():
     perf = ht.flight_model(ht, fs)
 
     m = Model(perf["C_d"], [ht, perf])
-    m.solve("mosek")
+    m.solve(verbosity=0)
 
 def test_vtail():
 
@@ -23,24 +23,27 @@ def test_vtail():
     perf = ht.flight_model(ht, fs)
 
     m = Model(perf["C_d"], [ht, perf])
-    m.solve("mosek")
+    m.solve(verbosity=0)
 
-def test_emp():
+# def test_emp():
+#
+#     emp = Empennage()
+#     fs = FlightState()
+#     emp.substitutions.update({emp.topvar("W"): 10, "l": 5,
+#                               emp.htail.planform["AR"]: 4,
+#                               emp.vtail.planform["AR"]: 4})
+#     htperf = emp.htail.flight_model(emp.htail, fs)
+#     vtperf = emp.vtail.flight_model(emp.vtail, fs)
+#     tbperf = emp.tailboom.flight_model(fs)
+#
+#     m = Model(htperf["C_d"] + vtperf["C_d"] + tbperf["C_f"],
+#               [emp, fs, htperf, vtperf, tbperf])
+#     m.solve(verbosity=0)
 
-    emp = Empennage()
-    fs = FlightState()
-    emp.substitutions.update({emp.topvar("W"): 10, "l": 5,
-                              emp.htail.planform["AR"]: 4,
-                              emp.vtail.planform["AR"]: 4})
-    htperf = emp.htail.flight_model(emp.htail, fs)
-    vtperf = emp.vtail.flight_model(emp.vtail, fs)
-    tbperf = emp.tailboom.flight_model(fs)
-
-    m = Model(htperf["C_d"] + vtperf["C_d"] + tbperf["C_f"],
-              [emp, fs, htperf, vtperf, tbperf])
-    m.solve("mosek")
-
-if __name__ == "__main__":
+def test():
     test_htail()
     test_vtail()
-    test_emp()
+    # test_emp()
+
+if __name__ == "__main__":
+    test()
