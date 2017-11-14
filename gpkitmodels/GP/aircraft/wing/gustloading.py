@@ -6,8 +6,8 @@ from gpkit import parse_variables
 from gpfit.fit_constraintset import FitCS
 from .sparloading import SparLoading
 
-#pylint: disable=invalid-name, no-member, arguments-differ
-#pylint: disable=attribute-defined-outside-init
+#pylint: disable=invalid-name, no-member, arguments-differ, exec-used
+#pylint: disable=attribute-defined-outside-init, undefined-variable
 
 class GustL(SparLoading):
     """ Gust Loading Model
@@ -24,6 +24,21 @@ class GustL(SparLoading):
     agust                           [-]         gust angle of attack
     cosminus1   self.return_cosm1   [-]         1 minus cosine factor
 
+    Upper Unbounded
+    ---------------
+    v, cl
+
+    Lower Unbounded
+    ---------------
+    Ww
+
+    LaTex Strings
+    -------------
+    vgust               V_{\\mathrm{gust}}
+    Ww                  W_{\\mathrm{w}}
+    cl                  c_l
+    agust               \\alpha_{\\mathrm{gust}}
+    cosminus1           (cos(x)-1)
 
     """
     new_qbarFun = None

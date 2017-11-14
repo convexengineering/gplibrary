@@ -20,6 +20,18 @@ class SparLoading(Model):
     ----------------------------
     Mr                      [N*m]   wing section root moment
 
+    Lower Unbounded
+    ---------------
+    W
+
+    LaTex Strings
+    -------------
+    Nmax                N_{\\mathrm{max}}
+    sigmacfrp           \\sigma_{\\mathrm{CFRP}}
+    taucfrp             \\tau_{\\mathrm{CFRP}}
+    kappa               \\kappa
+    Mr                  M_r
+
     """
     def new_qbarFun(self, c):
         " define qbar model for chord loading "
