@@ -32,7 +32,7 @@ def wing_test():
     m = Model(perf.Cd, [
         loading[1].v == fs["V"],
         loading[1].cl == perf.CL,
-        loading[1].Ww == W.topvar("W"),
+        loading[1].Ww == W.W,
         loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
     m.solve(verbosity=0)
@@ -53,7 +53,7 @@ def box_spar():
     m = Model(perf.Cd, [
         loading[1].v == fs["V"],
         loading[1].cl == perf.CL,
-        loading[1].Ww == W.topvar("W"),
+        loading[1].Ww == W.W,
         loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
     m.solve(verbosity=0)
