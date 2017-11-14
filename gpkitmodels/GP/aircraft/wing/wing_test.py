@@ -2,6 +2,8 @@
 from gpkitmodels.GP.aircraft.wing.wing import Wing
 from gpkit import Variable, Model
 
+#pylint: disable=no-member
+
 class FlightState(Model):
     " state variables "
     def setup(self):
@@ -26,11 +28,11 @@ def test():
     loading.append(W.spar.gustloading(W))
     loading[1].substitutions["W"] = 100
 
-    m = Model(perf["C_d"], [
+    m = Model(perf.Cd, [
         loading[1]["V"] == fs["V"],
-        loading[1]["c_l"] == perf["C_L"],
+        loading[1]["c_l"] == perf.CL,
         loading[1]["W_w"] == W.topvar("W"),
-        loading[1]["W_w"] <= 0.5*fs["\\rho"]*fs["V"]**2*perf["C_L"]*W["S"],
+        loading[1]["W_w"] <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
     m.solve(verbosity=0)
 

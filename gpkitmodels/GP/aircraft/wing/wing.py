@@ -69,34 +69,38 @@ class Planform(Model):
                 cmac == croot*cbarmac]
 
 class WingAero(Model):
-    "wing aerodynamic model with profile and induced drag"
+    """
+    Wing Aero Model
+
+    Variables
+    ---------
+    Cd                      [-]     wing drag coefficient
+    CL                      [-]     lift coefficient
+    CLstall         1.3     [-]     stall CL
+    e               0.9     [-]     span efficiency
+    Re                      [-]     reynolds number
+    cdp                     [-]     wing profile drag coefficient
+
+    """
     def setup(self, static, state,
               fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"):
-        "wing drag model"
-        Cd = Variable("C_d", "-", "wing drag coefficient")
-        CL = Variable("C_L", "-", "lift coefficient")
-        CLstall = Variable("C_{L_{stall}}", 1.3, "-", "stall CL")
-        e = Variable("e", 0.9, "-", "span efficiency")
-        Re = Variable("Re", "-", "Reynold's number")
-        cdp = Variable("c_{dp}", "-", "wing profile drag coeff")
+        exec parse_variables(WingAero.__doc__)
 
         df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
 
         if fd["d"] == 2:
-            independentvars = [CL, Re]
+            independentvars = [self.CL, self.Re]
         elif fd["d"] == 3:
-            independentvars = [CL, Re, static["\\tau"]]
+            independentvars = [self.CL, self.Re, static["\\tau"]]
 
-        constraints = [
-            Cd >= cdp + CL**2/np.pi/static.planform.AR/e,
-            Re == state["\\rho"]*state["V"]*static.planform.cmac/state["\\mu"],
-            # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
-            XfoilFit(fd, cdp, independentvars),
-            CL <= CLstall
-            ]
-
-        return constraints
+        return [Cd >= cdp + CL**2/np.pi/static.planform.AR/e,
+                Re == (state["\\rho"]*state["V"]*static.planform.cmac
+                       / state["\\mu"]),
+                # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
+                XfoilFit(fd, cdp, independentvars),
+                CL <= CLstall
+               ]
 
 class Wing(Model):
     """
@@ -112,8 +116,7 @@ class Wing(Model):
     fillModel = WingInterior
     flight_model = WingAero
 
-    def setup(self, N=5, lam=0.5):
-        # TODO: phase out lam in later version
+    def setup(self, N=5):
 
         self.N = N
 
