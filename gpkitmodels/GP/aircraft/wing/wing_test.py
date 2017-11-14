@@ -1,6 +1,6 @@
 " wing test "
 from gpkitmodels.GP.aircraft.wing.wing import Wing
-from gpkit import Variable, Model, units
+from gpkit import Variable, Model
 
 class FlightState(Model):
     " state variables "
@@ -18,8 +18,6 @@ def test():
     " test wing models "
     from gpkit import units
 
-    Wcent = Variable("W_{cent}", 100, "lbf", "center weight")
-
     W = Wing()
     W.substitutions[W.topvar("W")] = 50
     fs = FlightState()
@@ -29,11 +27,12 @@ def test():
     loading.append(W.spar.gustloading(W))
     loading[1].substitutions["W"] = 100
 
-    m = Model(perf["C_d"], [loading[1]["V"] == fs["V"],
-                            loading[1]["c_l"] == perf["C_L"],
-                            loading[1]["W_w"] == W.topvar("W"),
-                            W["b"] >= 0.1*units("ft"),
-                            W, fs, perf, loading])
+    m = Model(perf["C_d"], [
+        loading[1]["V"] == fs["V"],
+        loading[1]["c_l"] == perf["C_L"],
+        loading[1]["W_w"] == W.topvar("W"),
+        loading[1]["W_w"] <= 0.5*fs["\\rho"]*fs["V"]**2*perf["C_L"]*W["S"],
+        W, fs, perf, loading])
     m.solve(verbosity=0)
 
 if __name__ == "__main__":
