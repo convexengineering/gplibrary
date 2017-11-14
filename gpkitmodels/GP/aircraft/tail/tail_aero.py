@@ -5,19 +5,26 @@ from gpfit.fit_constraintset import XfoilFit
 import pandas as pd
 
 class TailAero(Model):
-    "horizontal tail aero model"
-    def setup(self, static, state):
+    """horizontal tail aero model
 
+    Upper Unbounded
+    ---------------
+    cmac, Cd
+    
+    """
+    def setup(self, static, state):
         name = get_lowername(static.__class__.__name__)
         Re = Variable("Re", "-", "%s reynolds number" % name)
-        Cd = Variable("C_d", "-", "%s drag coefficient" % name)
+        Cd = self.Cd = Variable("C_d", "-", "%s drag coefficient" % name)
+
+        cmac = self.cmac = static.planform.cmac
 
         path = os.path.dirname(__file__)
         fd = pd.read_csv(path + os.sep + "tail_dragfit.csv").to_dict(
             orient="records")[0]
 
         constraints = [
-            Re == (state["V"]*state["\\rho"]*static.planform.cmac
+            Re == (state["V"]*state["\\rho"]*cmac
                    / state["\\mu"]),
             # XfoilFit(fd, Cd, [Re, static["\\tau"]],
             #          err_margin="RMS", airfoil="naca 0008")
