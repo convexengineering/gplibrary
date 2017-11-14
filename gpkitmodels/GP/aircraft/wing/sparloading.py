@@ -10,12 +10,12 @@ class SparLoading(Model):
 
     def new_qbarFun(self, c):
         " define qbar model for chord loading "
-        barc = self.static.planform.cbar
-        return [f(c) for f in self.static.substitutions[barc]]
+        barc = self.wing.planform.cbar
+        return [f(c) for f in self.wing.substitutions[barc]]
 
-    def setup(self, static):
+    def setup(self, wing):
 
-        self.static = static
+        self.wing = wing
         Nmax = Variable("N_{max}", 5, "-", "max loading")
 
         sigmacfrp = Variable("\\sigma_{CFRP}", 1700e6, "Pa", "CFRP max stress")
@@ -23,25 +23,24 @@ class SparLoading(Model):
         kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
         self.W = Variable("W", "lbf", "loading weight")
 
-        with Vectorize(self.static.N-1):
+        with Vectorize(self.wing.N-1):
             Mr = Variable("M_r", "N*m", "wing section root moment")
 
-
         Beam.qbarFun = self.new_qbarFun
-        self.beam = Beam(self.static.N)
+        self.beam = Beam(self.wing.N)
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            self.beam["dx"] == self.static.planform.deta,
-            self.beam["\\bar{EI}"] <= (8*self.static["E"]*self.static["I"]/Nmax
-                                       / self.W/self.static.planform.b**2),
+            self.beam["dx"] == self.wing.planform.deta,
+            self.beam["\\bar{EI}"] <= (8*self.wing.spar.E*self.wing.spar.I/Nmax
+                                       / self.W/self.wing.planform.b**2),
             Mr >= (self.beam["\\bar{M}"][:-1]*self.W*Nmax
-                   * self.static.planform.b/4),
-            sigmacfrp >= Mr/self.static["S_y"],
+                   * self.wing.planform.b/4),
+            sigmacfrp >= Mr/self.wing.spar.Sy,
             self.beam["\\bar{\\delta}"][-1] <= kappa,
             taucfrp >= (self.beam["\\bar{S}"][-1]*self.W*Nmax/4
-                        / self.static["t_{shear}"]/self.static.planform.cave
-                        / self.static.planform.tau)
+                        / self.wing.spar.tshear/self.wing.planform.cave
+                        / self.wing.planform.tau)
             ]
 
         return self.beam, constraints

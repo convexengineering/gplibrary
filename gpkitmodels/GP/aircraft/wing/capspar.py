@@ -1,45 +1,69 @@
 " cap spar "
-from gpkit import Model, Variable, Vectorize
+from gpkit import Model, Variable, Vectorize, parse_variables
 from sparloading import SparLoading
 from gustloading import GustL
 
 class CapSpar(Model):
-    "cap spar model"
+    """ Cap Spar Model
+
+    Scalar Variables
+    ----------------
+    rhocfrp         1.6     [g/cm^3]    density of CFRP
+    E               2e7     [psi]       Young modulus of CFRP
+    W                       [lbf]       spar weight
+    wlim            0.15    [-]         spar width to chord ratio
+    tshearmin       0.012   [in]        min gauge shear web thickness
+    g               9.81    [m/s^2]     gravitational acceleration
+    mfac            0.97    [-]         curvature knockdown factor
+    rhocore         0.036   [g/cm^3]    foam core density
+
+    Variables of length N-1
+    -----------------------
+    hin                     [in]        height between caps
+    I                       [m^4]       spar x moment of inertia
+    Sy                      [m^3]       section modulus
+    dm                      [kg]        segment spar mass
+    w                       [in]        spar width
+    t                       [in]        spar cap thickness
+    tshear                  [in]        shear web thickness
+
+    Upper Unbounded
+    ---------------
+    W
+
+    Lower Unbounded
+    ---------------
+    Sy
+
+    LaTex Strings
+    -------------
+    rhocfrp                 \\rho_{\\mathrm{CFRP}}
+    wlim                    w_{\\mathrm{lim}}
+    tshearmin               t_{\\mathrm{shear-min}}
+    mfac                    m_{\\mathrm{fac}}
+    rhocore                 \\rho_{\\mathrm{core}}
+    hin                     h_{\\mathrm{in}_i}
+    I                       I_i
+    Sy                      S_{y_i}
+    dm                      \\Delta{m}
+    w                       w_i
+    t                       t_i
+    tshear                  t_{\\mathrm{shear}_i}
+
+    """
+    loading = SparLoading
+    gustloading = GustL
+
     def setup(self, N, surface):
+        exec parse_variables(CapSpar.__doc__)
 
-        # phyiscal properties
-        rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
-        E = Variable("E", 2e7, "psi", "Youngs modulus of CFRP")
+        return [I/mfac <= 2*w*t*(hin/2)**2,
+                dm >= (rhocfrp*(2*w*t + 2*tshear*(hin + 2*t))
+                       + rhocore*w*hin)*surface.b/2*surface.deta,
+                W >= 2*dm.sum()*g,
+                w <= wlim*surface.cave,
+                surface.cave*surface.tau >= hin + 2*t,
+                Sy*(hin/2 + t) <= I,
+                tshear >= tshearmin
+               ]
 
-        with Vectorize(N-1):
-            hin = Variable("h_{in}", "in", "inner spar height")
-            I = Variable("I", "m^4", "spar x moment of inertia")
-            Sy = Variable("S_y", "m**3", "section modulus")
-            dm = Variable("dm", "kg", "segment spar mass")
-            w = Variable("w", "in", "spar width")
-            t = Variable("t", "in", "spar cap thickness")
-            tshear = Variable("t_{shear}", "in", "shear web thickness")
-
-        W = Variable("W", "lbf", "spar weight")
-        wlim = Variable("w_{lim}", 0.15, "-", "spar width to chord ratio")
-        tshearmin = Variable("t_{shear-min}", 0.012, "in",
-                             "min shear web thickness")
-        g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
-        mfac = Variable("m_{fac}", 0.97, "-", "curvature knockdown factor")
-        rhofoam = Variable("\\rho_{foam}", 0.036, "g/cm^3", "foam density")
-
-        constraints = [
-            I/mfac <= 2*w*t*(hin/2)**2,
-            dm >= (rhocfrp*(2*w*t + 2*tshear*(hin + 2*t))
-                   + rhofoam*w*hin)*surface.b/2*surface.deta,
-            W >= 2*dm.sum()*g,
-            w <= wlim*surface.cave,
-            surface.cave*surface.tau >= hin + 2*t,
-            Sy*(hin/2 + t) <= I,
-            tshear >= tshearmin
-            ]
-
-        self.loading = SparLoading
-        self.gustloading = GustL
-
-        return constraints

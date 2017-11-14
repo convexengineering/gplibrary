@@ -14,18 +14,18 @@ class GustL(SparLoading):
     new_qbarFun = None
     new_SbarFun = None
 
-    def setup(self, static):
+    def setup(self, wing):
 
-        self.load = SparLoading.setup(self, static)
+        self.load = SparLoading.setup(self, wing)
         vgust = Variable("V_{gust}", 10, "m/s", "gust velocity")
         Ww = Variable("W_w", "lbf", "wing weight")
         v = Variable("V", "m/s", "speed")
         cl = Variable("c_l", "-", "wing lift coefficient")
 
-        with Vectorize(static.N):
+        with Vectorize(self.wing.N):
             agust = Variable("\\alpha_{gust}", "-", "gust angle of attack")
             return_cosm1 = lambda c: hstack(
-                [1e-10, 1-cos(c[static.planform.eta][1:]*pi/2)])
+                [1e-10, 1-cos(c[self.wing.planform.eta][1:]*pi/2)])
             cosminus1 = Variable("1-cos(\\eta)", return_cosm1,
                                  "-", "1 minus cosine factor")
 
@@ -36,7 +36,7 @@ class GustL(SparLoading):
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
             FitCS(df, agust, [cosminus1*vgust/v]),
-            self.beam["\\bar{q}"] >= self.static.planform.cbar*(
+            self.beam["\\bar{q}"] >= self.wing.planform.cbar*(
                 1 + 2*pi*agust/cl*(1+Ww/self.W)),
             ]
 

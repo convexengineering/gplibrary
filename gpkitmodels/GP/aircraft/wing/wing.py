@@ -87,8 +87,7 @@ class Planform(Model):
                 cmac == croot*cbarmac]
 
 class WingAero(Model):
-    """
-    Wing Aero Model
+    """ Wing Aero Model
 
     Variables
     ---------
