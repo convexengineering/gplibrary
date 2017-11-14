@@ -1,7 +1,9 @@
 " cap spar "
-from gpkit import Model, Variable, Vectorize, parse_variables
-from sparloading import SparLoading
-from gustloading import GustL
+from gpkit import Model, parse_variables
+from .sparloading import SparLoading
+from .gustloading import GustL
+
+#pylint: disable=exec-used, undefined-variable, unused-argument, invalid-name
 
 class CapSpar(Model):
     """ Cap Spar Model
