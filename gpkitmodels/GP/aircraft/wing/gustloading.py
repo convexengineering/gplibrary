@@ -2,7 +2,7 @@
 import os
 from numpy import pi, hstack, cos
 import pandas as pd
-from gpkit import Variable, Vectorize
+from gpkit import parse_variables
 from gpfit.fit_constraintset import FitCS
 from .sparloading import SparLoading
 
@@ -10,24 +10,31 @@ from .sparloading import SparLoading
 #pylint: disable=attribute-defined-outside-init
 
 class GustL(SparLoading):
-    "spar loading model"
+    """ Gust Loading Model
+
+    Variables
+    ---------
+    vgust       10      [m/s]       gust velocity
+    Ww                  [lbf]       wing weight
+    v                   [m/s]       vehicle speed
+    cl                  [-]         wing lift coefficient
+
+    Variables of length wing.N
+    --------------------------
+    agust                           [-]         gust angle of attack
+    cosminus1   self.return_cosm1   [-]         1 minus cosine factor
+
+
+    """
     new_qbarFun = None
     new_SbarFun = None
 
+    return_cosm1 = lambda self, c: hstack(
+        [1e-10, 1-cos(c[self.wing.planform.eta][1:]*pi/2)])
+
     def setup(self, wing):
-
+        exec parse_variables(GustL.__doc__)
         self.load = SparLoading.setup(self, wing)
-        vgust = Variable("V_{gust}", 10, "m/s", "gust velocity")
-        Ww = Variable("W_w", "lbf", "wing weight")
-        v = Variable("V", "m/s", "speed")
-        cl = Variable("c_l", "-", "wing lift coefficient")
-
-        with Vectorize(self.wing.N):
-            agust = Variable("\\alpha_{gust}", "-", "gust angle of attack")
-            return_cosm1 = lambda c: hstack(
-                [1e-10, 1-cos(c[self.wing.planform.eta][1:]*pi/2)])
-            cosminus1 = Variable("1-cos(\\eta)", return_cosm1,
-                                 "-", "1 minus cosine factor")
 
         path = os.path.dirname(os.path.abspath(__file__))
         df = pd.read_csv(path + os.sep + "arctan_fit.csv").to_dict(

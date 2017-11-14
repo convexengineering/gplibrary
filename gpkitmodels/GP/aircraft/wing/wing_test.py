@@ -21,7 +21,7 @@ def wing_test():
     " test wing models "
 
     W = Wing()
-    W.substitutions[W.topvar("W")] = 50
+    W.substitutions[W.W] = 50
     fs = FlightState()
     perf = W.flight_model(W, fs)
     loading = [W.spar.loading(W)]
@@ -30,10 +30,10 @@ def wing_test():
     loading[1].substitutions["W"] = 100
 
     m = Model(perf.Cd, [
-        loading[1]["V"] == fs["V"],
-        loading[1]["c_l"] == perf.CL,
-        loading[1]["W_w"] == W.topvar("W"),
-        loading[1]["W_w"] <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
+        loading[1].v == fs["V"],
+        loading[1].cl == perf.CL,
+        loading[1].Ww == W.topvar("W"),
+        loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
     m.solve(verbosity=0)
 
@@ -42,7 +42,7 @@ def box_spar():
 
     Wing.sparModel = BoxSpar
     W = Wing()
-    W.substitutions[W.topvar("W")] = 50
+    W.substitutions[W.W] = 50
     fs = FlightState()
     perf = W.flight_model(W, fs)
     loading = [W.spar.loading(W)]
@@ -51,10 +51,10 @@ def box_spar():
     loading[1].substitutions["W"] = 100
 
     m = Model(perf.Cd, [
-        loading[1]["V"] == fs["V"],
-        loading[1]["c_l"] == perf.CL,
-        loading[1]["W_w"] == W.topvar("W"),
-        loading[1]["W_w"] <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
+        loading[1].v == fs["V"],
+        loading[1].cl == perf.CL,
+        loading[1].Ww == W.topvar("W"),
+        loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
     m.solve(verbosity=0)
 

@@ -37,12 +37,12 @@ class SparLoading(Model):
             # dimensionalize moment of inertia and young's modulus
             self.beam["dx"] == self.wing.planform.deta,
             self.beam["\\bar{EI}"] <= (8*self.wing.spar.E*self.wing.spar.I/Nmax
-                                       / self.W/self.wing.planform.b**2),
-            Mr >= (self.beam["\\bar{M}"][:-1]*self.W*Nmax
+                                       / W/self.wing.planform.b**2),
+            Mr >= (self.beam["\\bar{M}"][:-1]*W*Nmax
                    * self.wing.planform.b/4),
             sigmacfrp >= Mr/self.wing.spar.Sy,
             self.beam["\\bar{\\delta}"][-1] <= kappa,
-            taucfrp >= (self.beam["\\bar{S}"][-1]*self.W*Nmax/4
+            taucfrp >= (self.beam["\\bar{S}"][-1]*W*Nmax/4
                         / self.wing.spar.tshear/self.wing.planform.cave
                         / self.wing.planform.tau)
             ]
