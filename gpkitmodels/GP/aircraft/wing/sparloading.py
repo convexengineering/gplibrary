@@ -20,9 +20,14 @@ class SparLoading(Model):
     ----------------------------
     Mr                      [N*m]   wing section root moment
 
+    Upper Unbounded
+    ---------------
+    I, tshear, Sy, cave
+
     Lower Unbounded
     ---------------
-    W
+    b, W
+
 
     LaTex Strings
     -------------
@@ -45,18 +50,22 @@ class SparLoading(Model):
         Beam.qbarFun = self.new_qbarFun
         self.beam = Beam(self.wing.N)
 
+        b = self.b = self.wing.planform.b
+        I = self.I = self.wing.spar.I
+        Sy = self.Sy = self.wing.spar.Sy
+        cave = self.cave = self.wing.planform.cave
+        tshear = self.tshear = self.wing.spar.tshear
+        E = self.wing.spar.E
+        tau = self.wing.planform.tau
+
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            self.beam["dx"] == self.wing.planform.deta,
-            self.beam["\\bar{EI}"] <= (8*self.wing.spar.E*self.wing.spar.I/Nmax
-                                       / W/self.wing.planform.b**2),
-            Mr >= (self.beam["\\bar{M}"][:-1]*W*Nmax
-                   * self.wing.planform.b/4),
-            sigmacfrp >= Mr/self.wing.spar.Sy,
+            self.beam.dx == self.wing.planform.deta,
+            self.beam["\\bar{EI}"] <= 8*E*I/Nmax/W/b**2,
+            Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*b/4,
+            sigmacfrp >= Mr/Sy,
             self.beam["\\bar{\\delta}"][-1] <= kappa,
-            taucfrp >= (self.beam["\\bar{S}"][-1]*W*Nmax/4
-                        / self.wing.spar.tshear/self.wing.planform.cave
-                        / self.wing.planform.tau)
+            taucfrp >= self.beam["\\bar{S}"][-1]*W*Nmax/4/tshear/cave/tau
             ]
 
         return self.beam, constraints

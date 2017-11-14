@@ -26,11 +26,11 @@ class GustL(SparLoading):
 
     Upper Unbounded
     ---------------
-    v, cl
+    v, cl, I, tshear, Sy, cave
 
     Lower Unbounded
     ---------------
-    Ww
+    Ww, b
 
     LaTex Strings
     -------------
@@ -50,6 +50,12 @@ class GustL(SparLoading):
     def setup(self, wing):
         exec parse_variables(GustL.__doc__)
         self.load = SparLoading.setup(self, wing)
+
+        self.b = self.wing.planform.b
+        self.I = self.wing.spar.I
+        self.Sy = self.wing.spar.Sy
+        self.cave = self.wing.planform.cave
+        self.tshear = self.wing.spar.tshear
 
         path = os.path.dirname(os.path.abspath(__file__))
         df = pd.read_csv(path + os.sep + "arctan_fit.csv").to_dict(

@@ -37,7 +37,7 @@ class BoxSpar(Model):
 
     Lower Unbounded
     ---------------
-    Sy
+    Sy, b
 
     LaTex Strings
     -------------
@@ -62,14 +62,18 @@ class BoxSpar(Model):
     def setup(self, N, surface):
         exec parse_variables(BoxSpar.__doc__)
 
+        b = self.b = surface.b
+        cave = surface.cave
+        tau = surface.tau
+        deta = surface.deta
+
         return [I/mfac <= w*t*hin**2,
                 dm >= (rhocfrp*(4*w*t + 2*tshear*(hin + 2*tcore + 4*t))
-                       + rhocore*w*tcore*2)*surface.b/2*surface.deta,
-                w <= wlim*surface.cave,
-                surface.cave*surface.tau >= hin + 4*t + 2*tcore,
+                       + rhocore*w*tcore*2)*b/2*deta,
+                w <= wlim*cave,
+                cave*tau >= hin + 4*t + 2*tcore,
                 W >= 2*dm.sum()*g,
                 Sy*(hin/2 + 2*t + tcore) <= I,
                 tshear >= tshearmin,
-                tcore >= tcoret*surface.cave*surface.tau
+                tcore >= tcoret*cave*tau
                ]
-
