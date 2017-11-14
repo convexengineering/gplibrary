@@ -1,30 +1,34 @@
-" cap spar "
-from numpy import flip
-from gpkit import Model, Variable, Vectorize
+" spar loading "
+from gpkit import Model, parse_variables
 from gpkitmodels.GP.beam.beam import Beam
 
-#pylint: disable=invalid-name
+#pylint: disable=no-member, unused-argument, exec-used, invalid-name
+#pylint: disable=undefined-variable, attribute-defined-outside-init
 
 class SparLoading(Model):
-    "spar loading model"
+    """ Spar Loading Model
 
+    Variables
+    ---------
+    Nmax            5       [-]     max loading
+    sigmacfrp       1700e6  [Pa]    CFRP max stress
+    taucfrp         450e6   [Pa]    CFRP fabric stress
+    kappa           0.2     [-]     max tip deflection ratio
+    W                       [lbf]   loading weight
+
+    Variables of length wing.N-1
+    ----------------------------
+    Mr                      [N*m]   wing section root moment
+
+    """
     def new_qbarFun(self, c):
         " define qbar model for chord loading "
         barc = self.wing.planform.cbar
         return [f(c) for f in self.wing.substitutions[barc]]
 
     def setup(self, wing):
-
         self.wing = wing
-        Nmax = Variable("N_{max}", 5, "-", "max loading")
-
-        sigmacfrp = Variable("\\sigma_{CFRP}", 1700e6, "Pa", "CFRP max stress")
-        taucfrp = Variable("\\tau_{CFRP}", 450e6, "Pa", "CFRP fabric stress")
-        kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
-        self.W = Variable("W", "lbf", "loading weight")
-
-        with Vectorize(self.wing.N-1):
-            Mr = Variable("M_r", "N*m", "wing section root moment")
+        exec parse_variables(SparLoading.__doc__)
 
         Beam.qbarFun = self.new_qbarFun
         self.beam = Beam(self.wing.N)
