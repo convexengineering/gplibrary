@@ -143,6 +143,15 @@ class Wing(Model):
     ---------
     W                   [lbf]       wing weight
     mfac        1.2     [-]         wing weight margin factor
+
+    Upper Unbounded
+    ---------------
+    W
+
+    LaTex Strings
+    -------------
+    mfac                m_{\\mathrm{fac}}
+
     """
 
     sparModel = CapSpar
