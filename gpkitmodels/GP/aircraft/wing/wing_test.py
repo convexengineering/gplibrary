@@ -16,7 +16,6 @@ class FlightState(Model):
 
 def test():
     " test wing models "
-    from gpkit import units
 
     W = Wing()
     W.substitutions[W.topvar("W")] = 50
