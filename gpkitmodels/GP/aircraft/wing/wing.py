@@ -4,7 +4,7 @@ from os.path import abspath, dirname
 import numpy as np
 import pandas as pd
 from gpkit import Variable, Model, parse_variables
-from .wing_interior import WingInterior
+from .wing_core import WingCore
 from .wing_skin import WingSkin
 from .capspar import CapSpar
 from gpfit.fit_constraintset import XfoilFit
@@ -155,7 +155,7 @@ class Wing(Model):
     """
 
     sparModel = CapSpar
-    fillModel = WingInterior
+    fillModel = WingCore
     flight_model = WingAero
 
     def setup(self, N=5):
