@@ -137,12 +137,12 @@ class WingAero(Model):
 
 class Wing(Model):
     """
-    Aicraft wing model for constant tapered wing
-    INPUTS
-    ------
-    N : int             number of sections
-    lam : float         taper ratio
-    hollow: boolean     True if wing is not hollow (filled with foam)
+    Wing Model
+
+    Variables
+    ---------
+    W                   [lbf]       wing weight
+    mfac        1.2     [-]         wing weight margin factor
     """
 
     sparModel = CapSpar
@@ -150,11 +150,9 @@ class Wing(Model):
     flight_model = WingAero
 
     def setup(self, N=5):
+        exec parse_variables(Wing.__doc__)
 
         self.N = N
-
-        W = Variable("W", "lbf", "wing weight")
-        mfac = Variable("m_{fac}", 1.2, "-", "wing weight margin factor")
 
         self.planform = Planform(N)
         self.skin = WingSkin(self.planform)

@@ -4,7 +4,7 @@ from .horizontal_tail import HorizontalTail
 from .vertical_tail import VerticalTail
 from .tail_boom import TailBoom, TailBoomState
 
-#pylint: disable=attribute-defined-outside-init
+#pylint: disable=attribute-defined-outside-init, no-member
 class Empennage(Model):
     "empennage model, consisting of vertical, horizontal and tailboom"
     def setup(self):
@@ -12,9 +12,9 @@ class Empennage(Model):
         W = Variable("W", "lbf", "empennage weight")
 
         self.htail = HorizontalTail()
-        self.htail.substitutions.update({"m_{fac}": 1.1})
+        self.htail.substitutions.update({self.htail.mfac: 1.1})
         self.vtail = VerticalTail()
-        self.vtail.substitutions.update({"m_{fac}": 1.1})
+        self.vtail.substitutions.update({self.vtail.mfac: 1.1})
         self.tailboom = TailBoom()
         self.components = [self.htail, self.vtail, self.tailboom]
 
