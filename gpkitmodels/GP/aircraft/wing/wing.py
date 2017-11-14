@@ -39,6 +39,24 @@ class Planform(Model):
     cbave       self.return_avg         [-]     non-dim mid section chord
     deta        self.return_deta        [-]     \\Delta (2y/b)
 
+    Upper Unbounded
+    ---------------
+    S, AR, b, croot, cmac
+
+    Lower Unbounded
+    ---------------
+    S, AR, b, croot, cmac
+
+    LaTex Strings
+    -------------
+    tau         \\tau
+    CLmax       C_{L_{\\mathrm{max}}}
+    CM          C_M
+    croot       c_{\\mathrm{root}}
+    cmac        c_{\\mathrm{MAC}}
+    lam         \\lambda
+    cbarmac     \\bar{c}_{\\mathrm{MAC}}
+
     """
     def return_c(self, c):
         " return normalized chord distribution "
@@ -80,6 +98,21 @@ class WingAero(Model):
     e               0.9     [-]     span efficiency
     Re                      [-]     reynolds number
     cdp                     [-]     wing profile drag coefficient
+
+    Upper Unbounded
+    ---------------
+    Cd, Re
+
+    Lower Unbounded
+    ---------------
+    CL
+
+    LaTex Strings
+    -------------
+    Cd              C_d
+    CL              C_L
+    CLstall         C_{L_{\\mathrm{stall}}}
+    cdp             c_{d_p}
 
     """
     def setup(self, static, state,
