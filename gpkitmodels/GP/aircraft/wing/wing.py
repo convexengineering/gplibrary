@@ -40,12 +40,12 @@ class Planform(Model):
     deta        self.return_deta        [-]     \\Delta (2y/b)
 
     Upper Unbounded
-    ---------------
-    S, AR, b, croot, cmac
+    ---------------  # bounding any pair of variables will work
+    cave, b
 
     Lower Unbounded
     ---------------
-    S, AR, b, croot, cmac
+    cave, b
 
     LaTex Strings
     -------------
@@ -100,11 +100,7 @@ class WingAero(Model):
 
     Upper Unbounded
     ---------------
-    Cd, Re
-
-    Lower Unbounded
-    ---------------
-    CL
+    Cd, Re, AR
 
     LaTex Strings
     -------------
@@ -121,14 +117,16 @@ class WingAero(Model):
         df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
 
+        AR = self.AR = static.planform.AR
+        cmac = static.planform.cmac
+
         if fd["d"] == 2:
             independentvars = [self.CL, self.Re]
         elif fd["d"] == 3:
             independentvars = [self.CL, self.Re, static["\\tau"]]
 
-        return [Cd >= cdp + CL**2/np.pi/static.planform.AR/e,
-                Re == (state["\\rho"]*state["V"]*static.planform.cmac
-                       / state["\\mu"]),
+        return [Cd >= cdp + CL**2/np.pi/AR/e,
+                Re == (state["\\rho"]*state["V"]*cmac/state["\\mu"]),
                 # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
                 XfoilFit(fd, cdp, independentvars),
                 CL <= CLstall
@@ -147,6 +145,10 @@ class Wing(Model):
     ---------------
     W
 
+    Lower Unbounded
+    ---------------
+    b, Sy
+
     LaTex Strings
     -------------
     mfac                m_{\\mathrm{fac}}
@@ -163,12 +165,14 @@ class Wing(Model):
         self.N = N
 
         self.planform = Planform(N)
+        self.b = self.planform.b
         self.skin = WingSkin(self.planform)
         self.components = [self.skin]
 
         if self.sparModel:
             self.spar = self.sparModel(N, self.planform)
             self.components.extend([self.spar])
+            self.Sy = self.spar.Sy
         if self.fillModel:
             self.foam = self.fillModel(self.planform)
             self.components.extend([self.foam])

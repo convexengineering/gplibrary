@@ -31,11 +31,11 @@ class CapSpar(Model):
 
     Upper Unbounded
     ---------------
-    W
+    W, cave
 
     Lower Unbounded
     ---------------
-    Sy
+    Sy, b
 
     LaTex Strings
     -------------
@@ -59,13 +59,17 @@ class CapSpar(Model):
     def setup(self, N, surface):
         exec parse_variables(CapSpar.__doc__)
 
+        cave = self.cave = surface.cave
+        b = self.b = surface.b
+        deta = surface.deta
+        tau = surface.tau
+
         return [I/mfac <= 2*w*t*(hin/2)**2,
                 dm >= (rhocfrp*(2*w*t + 2*tshear*(hin + 2*t))
-                       + rhocore*w*hin)*surface.b/2*surface.deta,
+                       + rhocore*w*hin)*b/2*deta,
                 W >= 2*dm.sum()*g,
-                w <= wlim*surface.cave,
-                surface.cave*surface.tau >= hin + 2*t,
+                w <= wlim*cave,
+                cave*tau >= hin + 2*t,
                 Sy*(hin/2 + t) <= I,
                 tshear >= tshearmin
                ]
-

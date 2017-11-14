@@ -19,7 +19,11 @@ class WingSkin(Model):
 
     Upper Unbounded
     ---------------
-    W
+    W, croot
+
+    Lower Unbounded
+    ---------------
+    S
 
     LaTex Strings
     -------------
@@ -36,11 +40,13 @@ class WingSkin(Model):
     def setup(self, surface):
         exec parse_variables(WingSkin.__doc__)
 
+        croot = self.croot = surface.croot
+        S = self.S = surface.S
         self.loading = WingSkinL
+
         return [W >= rhocfrp*surface.S*2*t*g,
                 t >= tmin,
-                taucfrp >= (1/Jtbar/surface.croot**2/t*Cmw
-                            * surface.S*rhosl*Vne**2)
+                taucfrp >= 1/Jtbar/croot**2/t*Cmw*S*rhosl*Vne**2
                 ]
 
 class WingSkinL(Model):

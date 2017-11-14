@@ -35,7 +35,7 @@ def wing_test():
         loading[1].Ww == W.topvar("W"),
         loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
-    m.solve(verbosity=0)
+    m.solve("cvxopt", verbosity=0)
 
 def box_spar():
     " test wing models "

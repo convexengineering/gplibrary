@@ -17,6 +17,10 @@ class WingCore(Model):
     ---------------
     W
 
+    Lower Unbounded
+    ---------------
+    cave, b
+
     LaTex Strings
     -------------
     rhocore                 \\rho_{\\mathrm{core}}
@@ -26,6 +30,8 @@ class WingCore(Model):
     def setup(self, surface):
         exec parse_variables(WingCore.__doc__)
 
-        return [W >= 2*(g*rhocore*Abar*surface.cave**2
-                        * surface.b/2*surface.deta).sum()]
+        cave = self.cave = surface.cave
+        b = self.b = surface.b
+        deta = surface.deta
 
+        return [W >= 2*(g*rhocore*Abar*cave**2*b/2*deta).sum()]
