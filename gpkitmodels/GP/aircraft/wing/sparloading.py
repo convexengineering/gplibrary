@@ -28,7 +28,6 @@ class SparLoading(Model):
     ---------------
     b, W
 
-
     LaTex Strings
     -------------
     Nmax                N_{\\mathrm{max}}
