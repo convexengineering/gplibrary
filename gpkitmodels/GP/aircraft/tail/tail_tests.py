@@ -48,9 +48,9 @@ def test_emp():
                               emp.htail.mh: 0.01})
     htperf = emp.htail.flight_model(emp.htail, fs)
     vtperf = emp.vtail.flight_model(emp.vtail, fs)
-    tbperf = emp.tailboom.flight_model(fs)
+    tbperf = emp.tailboom.flight_model(emp.tailboom, fs)
 
-    m = Model(htperf.Cd + vtperf.Cd + tbperf["C_f"],
+    m = Model(htperf.Cd + vtperf.Cd + tbperf.Cf,
               [emp.vtail.lv == emp.tailboom.l, emp.htail.lh == emp.tailboom.l,
                emp.htail.Vh <= emp.htail.planform.S*emp.htail.lh/Sw/cmac,
                emp.vtail.Vv <= emp.vtail.planform.S*emp.vtail.lv/Sw/bw,
