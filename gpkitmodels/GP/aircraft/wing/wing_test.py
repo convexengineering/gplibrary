@@ -28,11 +28,12 @@ def wing_test():
     loading[0].substitutions["W"] = 100
     loading.append(W.spar.gustloading(W))
     loading[1].substitutions["W"] = 100
-    for l in loading:
-        for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}", "\\bar{\\delta}_{root}", "\\theta_{root}"]:
-            l.beam.substitutions[v] = 1e-2
 
-        print l.beam.substitutions
+    from gpkit import settings
+    if settings["default_solver"] == "cvxopt":
+        for l in loading:
+            for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}", "\\bar{\\delta}_{root}", "\\theta_{root}"]:
+                l.substitutions[v] = 1e-3
 
     m = Model(perf.Cd, [
         loading[1].v == fs["V"],
@@ -40,7 +41,7 @@ def wing_test():
         loading[1].Ww == W.W,
         loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
-    print m.solve(verbosity=0).table()
+    m.solve(verbosity=0)
 
 def box_spar():
     " test wing models "
@@ -55,13 +56,19 @@ def box_spar():
     loading.append(W.spar.gustloading(W))
     loading[1].substitutions["W"] = 100
 
+    from gpkit import settings
+    if settings["default_solver"] == "cvxopt":
+        for l in loading:
+            for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}", "\\bar{\\delta}_{root}", "\\theta_{root}"]:
+                l.substitutions[v] = 1e-3
+
     m = Model(perf.Cd, [
         loading[1].v == fs["V"],
         loading[1].cl == perf.CL,
         loading[1].Ww == W.W,
         loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
-    m.solve("cvxopt", verbosity=0)
+    m.solve(verbosity=0)
 
 def test():
     wing_test()

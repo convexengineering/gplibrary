@@ -4,7 +4,17 @@ from gpkit import Model, Variable, Vectorize
 #pylint: disable=invalid-name
 
 class Beam(Model):
-    "discretized beam bending model"
+    """discretized beam bending model
+
+    Upper Unbounded
+    ---------------
+    EIbar, dbar_tip
+
+    Lower Unbounded
+    ---------------
+    dx, qbar (if not qbarFun)
+
+    """
     qbarFun = None
     SbarFun = None
     MbarFun = None
@@ -12,15 +22,16 @@ class Beam(Model):
     def setup(self, N):
 
         with Vectorize(N-1):
-            EIbar = Variable("\\bar{EI}", "-",
+            EIbar = self.EIbar = Variable("\\bar{EI}", "-",
                              "normalized YM and moment of inertia")
-            dx = Variable("dx", "-", "normalized length of element")
+            dx = self.dx = Variable("dx", "-", "normalized length of element")
 
         with Vectorize(N):
             Sbar = Variable("\\bar{S}", self.SbarFun, "-", "normalized shear")
             Mbar = Variable("\\bar{M}", self.MbarFun, "-", "normalized moment")
             th = Variable("\\theta", "-", "deflection slope")
             dbar = Variable("\\bar{\\delta}", "-", "normalized displacement")
+            self.dbar_tip = dbar[-1]
 
 
         throot = Variable("\\theta_{root}", 1e-10, "-", "Base angle")
@@ -30,7 +41,7 @@ class Beam(Model):
         constraints = []
         if self.SbarFun is None:
             with Vectorize(N):
-                qbar = Variable("\\bar{q}", self.qbarFun, "-",
+                qbar = self.qbar = Variable("\\bar{q}", self.qbarFun, "-",
                                 "normalized loading")
             Sbartip = Variable("\\bar{S}_{tip}", 1e-10, "-", "Tip loading")
             constraints.extend([
@@ -51,4 +62,3 @@ class Beam(Model):
             ])
 
         return constraints
-
