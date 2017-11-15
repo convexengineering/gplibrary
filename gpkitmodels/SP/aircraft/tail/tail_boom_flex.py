@@ -15,16 +15,16 @@ class TailBoomFlexibility(Model):
         sph2 = Variable("sph2", "-", "second term involving $V_h$")
 
         constraints = [
-            Fne >= (1 + htail["m_h"]*0.5*state["V_{NE}"]**2*state["\\rho_{sl}"]
-                    * htail["S"]*htail["l_h"]**2/tailboom["E"]
-                    / tailboom["I_0"]*tailboom["(1-k/2)"]),
-            sph1*(wing["m_w"]*Fne/htail["m_h"]/htail["V_h"]) + deda <= 1,
-            sph2 <= htail["V_h"]*htail["(C_{L_h})_{min}"]/wing["C_{L_{max}}"],
+            Fne >= (1 + htail.mh*0.5*state.Vne**2*state.rhosl
+                    * htail["S"]*htail.lh**2/tailboom.E
+                    / tailboom.I0*tailboom.kfac),
+            sph1*(wing["m_w"]*Fne/htail.mh/htail.Vh) + deda <= 1,
+            sph2 <= htail.Vh*htail.CLhmin/wing.planform.CLmax,
             # (sph1 + sph2).mono_lower_bound({"sph1": .48, "sph2": .52}) >= (
             #     SMcorr + wing["C_M"]/wing["C_{L_{max}}"]),
-            deda >= wing["m_w"]*wing["S"]/wing["b"]/4/np.pi/htail["l_h"]]
+            deda >= wing["m_w"]*wing["S"]/wing["b"]/4/np.pi/htail.lh]
 
         with SignomialsEnabled():
-            constraints.extend([sph1 + sph2 >= SMcorr + wing["C_M"]/wing["C_{L_{max}}"]])
+            constraints.extend([sph1 + sph2 >= SMcorr + wing.planform.CM/wing.planform.CLmax])
 
         return constraints

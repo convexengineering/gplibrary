@@ -1,46 +1,70 @@
-" cap spar "
-from numpy import flip
-from gpkit import Model, Variable, Vectorize
+" spar loading "
+from gpkit import Model, parse_variables
 from gpkitmodels.GP.beam.beam import Beam
 
-#pylint: disable=invalid-name
+#pylint: disable=no-member, unused-argument, exec-used, invalid-name
+#pylint: disable=undefined-variable, attribute-defined-outside-init
 
 class SparLoading(Model):
-    "spar loading model"
+    """ Spar Loading Model
 
+    Variables
+    ---------
+    Nmax            5       [-]     max loading
+    sigmacfrp       1700e6  [Pa]    CFRP max stress
+    taucfrp         450e6   [Pa]    CFRP fabric stress
+    kappa           0.2     [-]     max tip deflection ratio
+    W                       [lbf]   loading weight
+
+    Variables of length wing.N-1
+    ----------------------------
+    Mr                      [N*m]   wing section root moment
+
+    Upper Unbounded
+    ---------------
+    I, tshear, Sy, cave
+
+    Lower Unbounded
+    ---------------
+    b, W
+
+    LaTex Strings
+    -------------
+    Nmax                N_{\\mathrm{max}}
+    sigmacfrp           \\sigma_{\\mathrm{CFRP}}
+    taucfrp             \\tau_{\\mathrm{CFRP}}
+    kappa               \\kappa
+    Mr                  M_r
+
+    """
     def new_qbarFun(self, c):
         " define qbar model for chord loading "
-        barc = self.static["\\bar{c}"]
-        return [f(c) for f in self.static.substitutions[barc]]
+        barc = self.wing.planform.cbar
+        return [f(c) for f in self.wing.substitutions[barc]]
 
-    def setup(self, static):
-
-        self.static = static
-        Nmax = Variable("N_{max}", 5, "-", "max loading")
-
-        sigmacfrp = Variable("\\sigma_{CFRP}", 1700e6, "Pa", "CFRP max stress")
-        taucfrp = Variable("\\tau_{CFRP}", 450e6, "Pa", "CFRP fabric stress")
-        kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
-        self.W = Variable("W", "lbf", "loading weight")
-
-        with Vectorize(self.static.N-1):
-            Mr = Variable("M_r", "N*m", "wing section root moment")
-
+    def setup(self, wing):
+        self.wing = wing
+        exec parse_variables(SparLoading.__doc__)
 
         Beam.qbarFun = self.new_qbarFun
-        self.beam = Beam(self.static.N)
+        self.beam = Beam(self.wing.N)
+
+        b = self.b = self.wing.planform.b
+        I = self.I = self.wing.spar.I
+        Sy = self.Sy = self.wing.spar.Sy
+        cave = self.cave = self.wing.planform.cave
+        tshear = self.tshear = self.wing.spar.tshear
+        E = self.wing.spar.E
+        tau = self.wing.planform.tau
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            self.beam["dx"] == self.static["d\\eta"],
-            self.beam["\\bar{EI}"] <= (8*self.static["E"]*self.static["I"]/Nmax
-                                       / self.W/self.static["b"]**2),
-            Mr == (self.beam["\\bar{M}"][:-1]*self.W*Nmax*self.static["b"]/4),
-            sigmacfrp >= Mr/self.static["S_y"],
+            self.beam["dx"] == self.wing.planform.deta,
+            self.beam["\\bar{EI}"] <= 8*E*I/Nmax/W/b**2,
+            Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*b/4,
+            sigmacfrp >= Mr/Sy,
             self.beam["\\bar{\\delta}"][-1] <= kappa,
-            taucfrp >= (self.beam["\\bar{S}"][-1]*self.W*Nmax/4
-                        / self.static["t_{shear}"]/self.static["c_{ave}"]
-                        / self.static["\\tau"])
+            taucfrp >= self.beam["\\bar{S}"][-1]*W*Nmax/4/tshear/cave/tau
             ]
 
         return self.beam, constraints

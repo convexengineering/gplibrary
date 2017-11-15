@@ -1,6 +1,9 @@
 " wing test "
 from gpkitmodels.GP.aircraft.wing.wing import Wing
+from gpkitmodels.GP.aircraft.wing.boxspar import BoxSpar
 from gpkit import Variable, Model
+
+#pylint: disable=no-member
 
 class FlightState(Model):
     " state variables "
@@ -14,14 +17,11 @@ class FlightState(Model):
 
         return constraints
 
-def test():
+def wing_test():
     " test wing models "
-    from gpkit import units
-
-    Wcent = Variable("W_{cent}", 100, "lbf", "center weight")
 
     W = Wing()
-    W.substitutions[W.topvar("W")] = 50
+    W.substitutions[W.W] = 50
     fs = FlightState()
     perf = W.flight_model(W, fs)
     loading = [W.spar.loading(W)]
@@ -29,11 +29,52 @@ def test():
     loading.append(W.spar.gustloading(W))
     loading[1].substitutions["W"] = 100
 
-    m = Model(perf["C_d"], [loading[1]["V"] == fs["V"],
-                            loading[1]["c_l"] == perf["C_L"],
-                            loading[1]["W_w"] == W.topvar("W"),
-                            W, fs, perf, loading, W["b"] >= 0.01*units("ft")])
-    m.solve("mosek")
+    from gpkit import settings
+    if settings["default_solver"] == "cvxopt":
+        for l in loading:
+            for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}",
+                      "\\bar{\\delta}_{root}", "\\theta_{root}"]:
+                l.substitutions[v] = 1e-3
+
+    m = Model(perf.Cd, [
+        loading[1].v == fs["V"],
+        loading[1].cl == perf.CL,
+        loading[1].Ww == W.W,
+        loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
+        W, fs, perf, loading])
+    m.solve(verbosity=0)
+
+def box_spar():
+    " test wing models "
+
+    Wing.sparModel = BoxSpar
+    W = Wing()
+    W.substitutions[W.W] = 50
+    fs = FlightState()
+    perf = W.flight_model(W, fs)
+    loading = [W.spar.loading(W)]
+    loading[0].substitutions["W"] = 100
+    loading.append(W.spar.gustloading(W))
+    loading[1].substitutions["W"] = 100
+
+    from gpkit import settings
+    if settings["default_solver"] == "cvxopt":
+        for l in loading:
+            for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}",
+                      "\\bar{\\delta}_{root}", "\\theta_{root}"]:
+                l.substitutions[v] = 1e-3
+
+    m = Model(perf.Cd, [
+        loading[1].v == fs["V"],
+        loading[1].cl == perf.CL,
+        loading[1].Ww == W.W,
+        loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
+        W, fs, perf, loading])
+    m.solve(verbosity=0)
+
+def test():
+    wing_test()
+    box_spar()
 
 if __name__ == "__main__":
-    wing_test()
+    test()
