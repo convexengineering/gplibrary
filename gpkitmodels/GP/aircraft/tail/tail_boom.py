@@ -1,6 +1,9 @@
 " tail boom model "
 import numpy as np
-from gpkit import Variable, Model, parse_variables
+from gpkit import Model, parse_variables
+
+#pylint: disable=exec-used, undefined-variable, invalid-name
+#pylint: disable=attribute-defined-outside-init
 
 class TailBoomAero(Model):
     """ Tail Boom Aero Model
@@ -26,7 +29,7 @@ class TailBoomAero(Model):
 
         return [Re == (state["V"]*state["\\rho"]*l/state["\\mu"]),
                 Cf >= 0.455/Re**0.3,
-                ]
+               ]
 
 class TailBoomState(Model):
     """ Tail Boom Loading State
@@ -80,7 +83,7 @@ class VerticalBoomTorsion(Model):
 
         return [T >= 0.5*rhosl*Vne**2*S*CLmax*b,
                 taucfrp >= T*d0/2/J
-                ]
+               ]
 
 class VerticalBoomBending(Model):
     """ Tail Boom Bending from Vtail Deflection

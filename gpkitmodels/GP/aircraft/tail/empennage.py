@@ -1,12 +1,18 @@
 " empennage.py "
-from gpkit import Variable, Model
+from gpkit import Model, parse_variables
 from .horizontal_tail import HorizontalTail
 from .vertical_tail import VerticalTail
 from .tail_boom import TailBoom, TailBoomState
 
-#pylint: disable=attribute-defined-outside-init, no-member
+#pylint: disable=attribute-defined-outside-init, no-member, exec-used
+#pylint: disable=too-many-instance-attributes, invalid-name, undefined-variable
 class Empennage(Model):
     """empennage model, consisting of vertical, horizontal and tailboom
+
+    Variables
+    ---------
+    mfac        1.0     [-]     tail weight margin factor
+    W                   [lbf]   empennage weight
 
     Upper Unbounded
     ---------------
@@ -16,10 +22,13 @@ class Empennage(Model):
     ---------------
     lv, lh, Vv, Vh, bv, bh, mh
 
+    LaTex Strings
+    -------------
+    mfac        m_{\\mathrm{fac}}
+
     """
     def setup(self):
-        mfac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
-        W = self.W = Variable("W", "lbf", "empennage weight")
+        exec parse_variables(Empennage.__doc__)
 
         self.htail = HorizontalTail()
         self.htail.substitutions.update({self.htail.mfac: 1.1})

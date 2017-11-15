@@ -40,7 +40,7 @@ def test_emp():
     cmac = Variable("cmac", 15, "in", "wing MAC")
     emp = Empennage()
     fs = FlightState()
-    emp.substitutions.update({emp.topvar("W"): 10, emp.tailboom.l: 5,
+    emp.substitutions.update({emp.W: 10, emp.tailboom.l: 5,
                               emp.htail.planform.AR: 4,
                               emp.vtail.planform.AR: 4,
                               emp.vtail.Vv: 0.04,
