@@ -7,9 +7,10 @@ from gpkit import Variable, SignomialsEnabled
 #pylint: disable=attribute-defined-outside-init, invalid-name
 
 class Wing(WingGP):
-    def setup(self, N=5, lam=0.5):
 
-        self.wing = WingGP.setup(self, N=N, lam=lam)
+    def setup(self, N=5):
+
+        self.wing = WingGP.setup(self, N=N)
         mw = Variable("m_w", "-", "span wise effectiveness")
 
         with SignomialsEnabled():
