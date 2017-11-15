@@ -3,14 +3,15 @@ from os import sep
 from os.path import abspath, dirname
 import numpy as np
 import pandas as pd
-from gpkit import Variable, Model, parse_variables
+from gpkit import Model, parse_variables
 from .wing_core import WingCore
 from .wing_skin import WingSkin
 from .capspar import CapSpar
 from gpfit.fit_constraintset import XfoilFit
 
 #pylint: disable=no-member, invalid-name, unused-argument, exec-used
-#pylint: disable=undefined-variable
+#pylint: disable=undefined-variable, attribute-defined-outside-init
+#pylint: disable=too-many-instance-attributes
 
 class Planform(Model):
     """ Planform Area Definition
@@ -123,7 +124,7 @@ class WingAero(Model):
         if fd["d"] == 2:
             independentvars = [self.CL, self.Re]
         elif fd["d"] == 3:
-            independentvars = [self.CL, self.Re, static["\\tau"]]
+            independentvars = [self.CL, self.Re, static.planform.tau]
 
         return [Cd >= cdp + CL**2/np.pi/AR/e,
                 Re == (state["\\rho"]*state["V"]*cmac/state["\\mu"]),
