@@ -60,7 +60,7 @@ class SparLoading(Model):
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            self.beam.dx == self.wing.planform.deta,
+            self.beam["dx"] == self.wing.planform.deta,
             self.beam["\\bar{EI}"] <= 8*E*I/Nmax/W/b**2,
             Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*b/4,
             sigmacfrp >= Mr/Sy,
