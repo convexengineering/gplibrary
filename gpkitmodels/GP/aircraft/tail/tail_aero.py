@@ -1,24 +1,33 @@
 " tail aerodynamics "
-from gpkit import Variable, Model
 import os
-from gpfit.fit_constraintset import XfoilFit
 import pandas as pd
+from gpkit import Model, parse_variables
+from gpfit.fit_constraintset import XfoilFit
+
+#pylint: disable=exec-used, attribute-defined-outside-init, undefined-variable
+#pylint: disable=no-member
 
 class TailAero(Model):
-    """horizontal tail aero model
+    """Tail Aero Model
+
+    Variables
+    ---------
+    Re          [-]     Reynolds number
+    Cd          [-]     drag coefficient
 
     Upper Unbounded
     ---------------
-    cmac, Cd
-    
+    Cd, Re
+
+    LaTex Strings
+    -------------
+    Cd      C_d
+
     """
     def setup(self, static, state):
-        name = get_lowername(static.__class__.__name__)
-        Re = Variable("Re", "-", "%s reynolds number" % name)
-        Cd = self.Cd = Variable("C_d", "-", "%s drag coefficient" % name)
+        exec parse_variables(TailAero.__doc__)
 
         cmac = self.cmac = static.planform.cmac
-
         path = os.path.dirname(__file__)
         fd = pd.read_csv(path + os.sep + "tail_dragfit.csv").to_dict(
             orient="records")[0]
@@ -33,11 +42,3 @@ class TailAero(Model):
 
         return constraints
 
-def get_lowername(classname):
-    start = [c for c in classname if c.isupper()]
-    name = [classname]
-    for t in start:
-        name = name[-1].split(t)
-
-    n = " ".join([t.lower()+n for n, t in zip(name, start)])
-    return n

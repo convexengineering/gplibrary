@@ -1,13 +1,18 @@
 " vertical tail "
-from gpkit import Variable
+from gpkit import parse_variables
 from .tail_aero import TailAero
 from gpkitmodels.GP.aircraft.wing.wing import Wing
 from gpkitmodels.GP.aircraft.wing.wing_core import WingCore
 
-#pylint: disable=attribute-defined-outside-init, unused-variable, no-member
+#pylint: disable=attribute-defined-outside-init, no-member, exec-used
 
 class VerticalTail(Wing):
-    """vertical tail model
+    """ Vertical Tail Model
+
+    Variables
+    ---------
+    Vv                  [-]         vertical tail volume coefficient
+    lv                  [ft]        vertical tail moment arm
 
     Upper Unbounded
     ---------------
@@ -17,11 +22,17 @@ class VerticalTail(Wing):
     ---------------
     lv, Vv, b
 
+    LaTex Strings
+    -------------
+    Vv      V_{\\mathrm{v}}
+    lv      l_{\\mathrm{v}}
+
     """
     flight_model = TailAero
     fillModel = WingCore
     sparModel = None
     def setup(self, N=3):
+        exec parse_variables(VerticalTail.__doc__)
 
         self.ascs = Wing.setup(self, N)
         self.planform.substitutions.update(
@@ -29,8 +40,5 @@ class VerticalTail(Wing):
         self.skin.substitutions.update({self.skin.rhocfrp: 0.049})
         self.foam.substitutions.update({self.foam.Abar: 0.0548,
                                         self.foam.rhocore: 0.024})
-
-        Vv = self.Vv = Variable("V_v", "-", "vertical tail volume coefficient")
-        lv = self.lv = Variable("l_v", "ft", "vertical tail moment arm")
 
         return self.ascs, self.components
