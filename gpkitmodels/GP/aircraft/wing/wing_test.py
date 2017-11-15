@@ -28,6 +28,11 @@ def wing_test():
     loading[0].substitutions["W"] = 100
     loading.append(W.spar.gustloading(W))
     loading[1].substitutions["W"] = 100
+    for l in loading:
+        for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}", "\\bar{\\delta}_{root}", "\\theta_{root}"]:
+            l.beam.substitutions[v] = 1e-2
+
+        print l.beam.substitutions
 
     m = Model(perf.Cd, [
         loading[1].v == fs["V"],
@@ -56,7 +61,7 @@ def box_spar():
         loading[1].Ww == W.W,
         loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
-    m.solve(verbosity=0)
+    m.solve("cvxopt", verbosity=0)
 
 def test():
     wing_test()
