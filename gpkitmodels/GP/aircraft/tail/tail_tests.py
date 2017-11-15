@@ -40,7 +40,7 @@ def test_emp():
     cmac = Variable("cmac", 15, "in", "wing MAC")
     emp = Empennage()
     fs = FlightState()
-    emp.substitutions.update({emp.topvar("W"): 10, "l": 5,
+    emp.substitutions.update({emp.topvar("W"): 10, emp.tailboom.l: 5,
                               emp.htail.planform.AR: 4,
                               emp.vtail.planform.AR: 4,
                               emp.vtail.Vv: 0.04,
@@ -51,7 +51,7 @@ def test_emp():
     tbperf = emp.tailboom.flight_model(fs)
 
     m = Model(htperf.Cd + vtperf.Cd + tbperf["C_f"],
-              [emp.vtail.lv == emp["l"], emp.htail.lh == emp["l"],
+              [emp.vtail.lv == emp.tailboom.l, emp.htail.lh == emp.tailboom.l,
                emp.htail.Vh <= emp.htail.planform.S*emp.htail.lh/Sw/cmac,
                emp.vtail.Vv <= emp.vtail.planform.S*emp.vtail.lv/Sw/bw,
                emp, fs, htperf, vtperf, tbperf])
