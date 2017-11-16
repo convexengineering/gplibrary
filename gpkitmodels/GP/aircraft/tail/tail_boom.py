@@ -26,8 +26,11 @@ class TailBoomAero(Model):
         exec parse_variables(TailBoomAero.__doc__)
 
         l = self.l = static.l
+        rho = self.rho = state.rho
+        V = self.V = state.V
+        mu = self.mu = state.mu
 
-        return [Re == (state["V"]*state["\\rho"]*l/state["\\mu"]),
+        return [Re == (V*rho*l/mu),
                 Cf >= 0.455/Re**0.3,
                ]
 
