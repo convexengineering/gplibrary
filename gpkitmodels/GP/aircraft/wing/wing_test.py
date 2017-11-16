@@ -1,9 +1,9 @@
 " wing test "
 from gpkitmodels.GP.aircraft.wing.wing import Wing
 from gpkitmodels.GP.aircraft.wing.boxspar import BoxSpar
-from gpkit import Variable, Model, parse_variables
+from gpkit import Model, parse_variables
 
-#pylint: disable=no-member
+#pylint: disable=no-member, exec-used
 
 class FlightState(Model):
     """ Flight State
@@ -74,6 +74,7 @@ def box_spar():
     m.solve(verbosity=0)
 
 def test():
+    " tests "
     wing_test()
     box_spar()
 

@@ -38,7 +38,7 @@ class TailAero(Model):
             orient="records")[0]
 
         constraints = [
-            Re == (V*rho*S/b/mu),
+            Re == V*rho*S/b/mu,
             # XfoilFit(fd, Cd, [Re, static["\\tau"]],
             #          err_margin="RMS", airfoil="naca 0008")
             XfoilFit(fd, Cd, [Re, static.planform.tau], err_margin="RMS")

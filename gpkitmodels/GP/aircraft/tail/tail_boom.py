@@ -30,7 +30,7 @@ class TailBoomAero(Model):
         V = self.V = state.V
         mu = self.mu = state.mu
 
-        return [Re == (V*rho*l/mu),
+        return [Re == V*rho*l/mu,
                 Cf >= 0.455/Re**0.3,
                ]
 
