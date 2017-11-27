@@ -30,13 +30,15 @@ class TailAero(Model):
         cmac = self.cmac = static.planform.cmac
         b = self.b = static.planform.b
         S = self.S = static.planform.S
+        rho = self.rho = state.rho
+        V = self.V = state.V
+        mu = self.mu = state.mu
         path = os.path.dirname(__file__)
         fd = pd.read_csv(path + os.sep + "tail_dragfit.csv").to_dict(
             orient="records")[0]
 
         constraints = [
-            Re == (state["V"]*state["\\rho"]*S/b
-                   / state["\\mu"]),
+            Re == V*rho*S/b/mu,
             # XfoilFit(fd, Cd, [Re, static["\\tau"]],
             #          err_margin="RMS", airfoil="naca 0008")
             XfoilFit(fd, Cd, [Re, static.planform.tau], err_margin="RMS")

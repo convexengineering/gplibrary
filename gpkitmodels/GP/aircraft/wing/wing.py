@@ -120,6 +120,9 @@ class WingAero(Model):
 
         AR = self.AR = static.planform.AR
         cmac = static.planform.cmac
+        rho = self.rho = state.rho
+        V = self.V = state.V
+        mu = self.mu = state.mu
 
         if fd["d"] == 2:
             independentvars = [self.CL, self.Re]
@@ -127,7 +130,7 @@ class WingAero(Model):
             independentvars = [self.CL, self.Re, static.planform.tau]
 
         return [Cd >= cdp + CL**2/np.pi/AR/e,
-                Re == (state["\\rho"]*state["V"]*cmac/state["\\mu"]),
+                Re == rho*V*cmac/mu,
                 # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
                 XfoilFit(fd, cdp, independentvars),
                 CL <= CLstall
