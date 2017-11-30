@@ -3,6 +3,8 @@ from gpkit import parse_variables
 from .tail_aero import TailAero
 from gpkitmodels.GP.aircraft.wing.wing import Wing
 from gpkitmodels.GP.aircraft.wing.wing_core import WingCore
+from gpkitmodels.GP.aircraft.wing.wing_skin import WingSkin
+from gpkitmodels.GP.materials.kevlar import Kevlar
 
 #pylint: disable=attribute-defined-outside-init, no-member, exec-used
 
@@ -34,10 +36,10 @@ class VerticalTail(Wing):
     def setup(self, N=3):
         exec parse_variables(VerticalTail.__doc__)
 
+        WingSkin.material = Kevlar()
         self.ascs = Wing.setup(self, N)
         self.planform.substitutions.update(
             {self.planform.tau: 0.08, self.planform.lam: 0.8})
-        self.skin.substitutions.update({self.skin.rhocfrp: 0.049})
         self.foam.substitutions.update({self.foam.Abar: 0.0548,
                                         self.foam.rhocore: 0.024})
 
