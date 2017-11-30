@@ -1,6 +1,6 @@
 " wing skin "
 from gpkit import Model, Variable, parse_variables
-from gpkitmodels.GP.materials.cfrp import CFRP
+from gpkitmodels.GP.materials.cfrp import CFRPFabric
 
 class WingSkin(Model):
     """ Wing Skin model
@@ -33,7 +33,7 @@ class WingSkin(Model):
     Vne     V_{\\mathrm{NE}}
 
     """
-    material = CFRP()
+    material = CFRPFabric()
 
     def setup(self, surface):
         exec parse_variables(WingSkin.__doc__)

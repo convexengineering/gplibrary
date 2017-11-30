@@ -2,6 +2,8 @@
 from gpkit import Model, parse_variables
 from .sparloading import SparLoading
 from .gustloading import GustL
+from gpkitmodels.GP.materials.cfrp import CFRPUD, CFRPFabric
+from gpkitmodels.GP.materials.foam import Foam
 
 #pylint: disable=exec-used, undefined-variable, unused-argument, invalid-name
 
@@ -10,14 +12,11 @@ class CapSpar(Model):
 
     Scalar Variables
     ----------------
-    rhocfrp         1.6     [g/cm^3]    density of CFRP
     E               2e7     [psi]       Young modulus of CFRP
     W                       [lbf]       spar weight
     wlim            0.15    [-]         spar width to chord ratio
-    tshearmin       0.012   [in]        min gauge shear web thickness
     g               9.81    [m/s^2]     gravitational acceleration
     mfac            0.97    [-]         curvature knockdown factor
-    rhocore         0.036   [g/cm^3]    foam core density
 
     Variables of length N-1
     -----------------------
@@ -39,11 +38,8 @@ class CapSpar(Model):
 
     LaTex Strings
     -------------
-    rhocfrp                 \\rho_{\\mathrm{CFRP}}
     wlim                    w_{\\mathrm{lim}}
-    tshearmin               t_{\\mathrm{shear-min}}
     mfac                    m_{\\mathrm{fac}}
-    rhocore                 \\rho_{\\mathrm{core}}
     hin                     h_{\\mathrm{in}_i}
     I                       I_i
     Sy                      S_{y_i}
@@ -55,6 +51,9 @@ class CapSpar(Model):
     """
     loading = SparLoading
     gustloading = GustL
+    material = CFRPUD()
+    shearMaterial = CFRPFabric()
+    coreMaterial = Foam()
 
     def setup(self, N, surface):
         exec parse_variables(CapSpar.__doc__)
@@ -63,9 +62,13 @@ class CapSpar(Model):
         b = self.b = surface.b
         deta = surface.deta
         tau = surface.tau
+        rho = self.material.rho
+        rhoshear = self.shearMaterial.rho
+        rhocore = self.coreMaterial.rho
+        tshearmin = self.shearMaterial.tmin
 
         return [I/mfac <= 2*w*t*(hin/2)**2,
-                dm >= (rhocfrp*(2*w*t + 2*tshear*(hin + 2*t))
+                dm >= (rho*(2*w*t) + 2*tshear*rhoshear*(hin + 2*t)
                        + rhocore*w*hin)*b/2*deta,
                 W >= 2*dm.sum()*g,
                 w <= wlim*cave,
@@ -73,3 +76,4 @@ class CapSpar(Model):
                 Sy*(hin/2 + t) <= I,
                 tshear >= tshearmin
                ]
+

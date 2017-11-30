@@ -5,7 +5,7 @@ class Kevlar(Model):
 
     Variables
     ---------
-    rho         0.049       [g/m^3]         density of Kevlar
+    rho         0.049       [g/cm^3]        density of Kevlar
     tmin        0.012       [in]            minimum gauge thickness
     tau         200         [MPa]           torsional stress limit
 
