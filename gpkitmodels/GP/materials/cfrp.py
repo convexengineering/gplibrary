@@ -5,7 +5,7 @@ class CFRPFabric(Model):
 
     Variables
     ---------
-    rho         1.6         [g/m^3]         density of CFRP
+    rho         1.6         [g/cm^3]        density of CFRP
     tmin        0.012       [in]            minimum gauge thickness
     tau         570         [MPa]           torsional stress limit
 

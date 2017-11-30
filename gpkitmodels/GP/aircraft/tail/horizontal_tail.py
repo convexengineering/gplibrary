@@ -43,7 +43,6 @@ class HorizontalTail(Wing):
     def setup(self, N=3):
         exec parse_variables(HorizontalTail.__doc__)
 
-        WingSkin.material = Kevlar()
         self.ascs = Wing.setup(self, N)
         self.planform.substitutions.update(
             {self.planform.AR: 4, self.planform.tau: 0.08,
