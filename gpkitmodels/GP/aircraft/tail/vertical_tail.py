@@ -38,10 +38,10 @@ class VerticalTail(Wing):
     def setup(self, N=3):
         exec parse_variables(VerticalTail.__doc__)
 
-        WingSkin.material = Kevlar()
         self.ascs = Wing.setup(self, N)
         self.planform.substitutions.update(
-            {self.planform.tau: 0.08, self.planform.lam: 0.8})
+            {self.planform.tau: 0.08, self.planform.lam: 0.8,
+             self.planform.AR: 4})
         if self.fillModel:
             self.foam.substitutions.update({self.foam.Abar: 0.0548,
                                             self.foam.material.rho: 0.024})
