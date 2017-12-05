@@ -11,8 +11,6 @@ class SparLoading(Model):
     Variables
     ---------
     Nmax            5       [-]     max loading
-    sigmacfrp       1700e6  [Pa]    CFRP max stress
-    taucfrp         450e6   [Pa]    CFRP fabric stress
     kappa           0.2     [-]     max tip deflection ratio
     W                       [lbf]   loading weight
 
@@ -31,8 +29,6 @@ class SparLoading(Model):
     LaTex Strings
     -------------
     Nmax                N_{\\mathrm{max}}
-    sigmacfrp           \\sigma_{\\mathrm{CFRP}}
-    taucfrp             \\tau_{\\mathrm{CFRP}}
     kappa               \\kappa
     Mr                  M_r
 
@@ -54,17 +50,19 @@ class SparLoading(Model):
         Sy = self.Sy = self.wing.spar.Sy
         cave = self.cave = self.wing.planform.cave
         tshear = self.tshear = self.wing.spar.tshear
-        E = self.wing.spar.E
+        E = self.wing.spar.material.E
+        sigma = self.wing.spar.material.sigma
         tau = self.wing.planform.tau
+        taumat = self.wing.spar.shearMaterial.tau
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
             self.beam["dx"] == self.wing.planform.deta,
             self.beam["\\bar{EI}"] <= 8*E*I/Nmax/W/b**2,
             Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*b/4,
-            sigmacfrp >= Mr/Sy,
+            sigma >= Mr/Sy,
             self.beam["\\bar{\\delta}"][-1] <= kappa,
-            taucfrp >= self.beam["\\bar{S}"][-1]*W*Nmax/4/tshear/cave/tau
+            taumat >= self.beam["\\bar{S}"][-1]*W*Nmax/4/tshear/cave/tau
             ]
 
         return self.beam, constraints
