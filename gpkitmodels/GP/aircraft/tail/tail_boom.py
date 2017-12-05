@@ -1,6 +1,7 @@
 " tail boom model "
 import numpy as np
 from gpkit import Model, parse_variables
+from gpkitmodels import g
 
 #pylint: disable=exec-used, undefined-variable, invalid-name
 #pylint: disable=attribute-defined-outside-init
@@ -182,7 +183,6 @@ class TailBoom(Model):
     t0                          [in]        tail boom thickness
     tmin        0.25            [mm]        minimum tail boom thickness
     rhocfrp     1.6             [g/cm^3]    density of CFRP
-    g           9.81            [m/s^2]     gravitational acceleration
     W                           [lbf]       tail boom weight
     J                           [m^4]       tail boom polar moment of inertia
     S                           [ft^2]      tail boom surface area

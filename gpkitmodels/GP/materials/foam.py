@@ -1,7 +1,7 @@
 from gpkit import Model, parse_variables
 
-class Foam(Model):
-    """ Foam material properties
+class FoamHD(Model):
+    """ Foam high density material properties
 
     Variables
     ---------
@@ -13,4 +13,19 @@ class Foam(Model):
 
     """
     def setup(self):
-        exec parse_variables(Foam.__doc__)
+        exec parse_variables(FoamHD.__doc__)
+
+class FoamLD(Model):
+    """ Foam low density material properties
+
+    Variables
+    ---------
+    rho         0.024       [g/cm^3]        foam density
+
+    LaTex Strings
+    -------------
+    rho             \\rho_{\\mathrm{foam}}
+
+    """
+    def setup(self):
+        exec parse_variables(FoamLD.__doc__)

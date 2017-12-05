@@ -2,8 +2,8 @@
 from gpkit import Model, parse_variables
 from .sparloading import SparLoading
 from .gustloading import GustL
-from gpkitmodels.GP.materials.cfrp import CFRPUD, CFRPFabric
-from gpkitmodels.GP.materials.foam import Foam
+from gpkitmodels.GP.materials import cfrpud, cfrpfabric, foamhd
+from gpkitmodels import g
 
 #pylint: disable=exec-used, undefined-variable, unused-argument, invalid-name
 
@@ -15,7 +15,6 @@ class CapSpar(Model):
     E               2e7     [psi]       Young modulus of CFRP
     W                       [lbf]       spar weight
     wlim            0.15    [-]         spar width to chord ratio
-    g               9.81    [m/s^2]     gravitational acceleration
     mfac            0.97    [-]         curvature knockdown factor
 
     Variables of length N-1
@@ -51,9 +50,9 @@ class CapSpar(Model):
     """
     loading = SparLoading
     gustloading = GustL
-    material = CFRPUD()
-    shearMaterial = CFRPFabric()
-    coreMaterial = Foam()
+    material = cfrpud
+    shearMaterial = cfrpfabric
+    coreMaterial = foamhd
 
     def setup(self, N, surface):
         exec parse_variables(CapSpar.__doc__)

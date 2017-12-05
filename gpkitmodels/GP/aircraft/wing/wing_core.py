@@ -1,6 +1,7 @@
 " wing interior "
 from gpkit import Model, parse_variables
-from gpkitmodels.GP.materials.foam import Foam
+from gpkitmodels.GP.materials import foamhd
+from gpkitmodels import g
 
 #pylint: disable=exec-used, no-member, undefined-variable
 
@@ -11,7 +12,6 @@ class WingCore(Model):
     ---------
     W                           [lbf]       wing core weight
     Abar            0.0753449   [-]         normalized cross section area
-    g               9.81        [m/s^2]     graviataional constant
 
     Upper Unbounded
     ---------------
@@ -27,7 +27,7 @@ class WingCore(Model):
     Abar                    \\bar{A}
 
     """
-    material = Foam()
+    material = foamhd
 
     def setup(self, surface):
         exec parse_variables(WingCore.__doc__)

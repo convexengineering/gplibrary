@@ -5,7 +5,6 @@ from .tail_aero import TailAero
 from gpkitmodels.GP.aircraft.wing.wing import Wing
 from gpkitmodels.GP.aircraft.wing.wing_skin import WingSkin
 from gpkitmodels.GP.aircraft.wing.wing_core import WingCore
-from gpkitmodels.GP.materials.kevlar import Kevlar
 
 #pylint: disable=attribute-defined-outside-init, no-member
 #pylint: disable=exec-used, undefined-variable
