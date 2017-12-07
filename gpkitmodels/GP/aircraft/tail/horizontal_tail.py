@@ -3,6 +3,7 @@ import numpy as np
 from gpkit import parse_variables
 from .tail_aero import TailAero
 from gpkitmodels.GP.aircraft.wing.wing import Wing
+from gpkitmodels.GP.aircraft.wing.wing_skin import WingSkin
 from gpkitmodels.GP.aircraft.wing.wing_core import WingCore
 
 #pylint: disable=attribute-defined-outside-init, no-member
@@ -45,8 +46,8 @@ class HorizontalTail(Wing):
         self.planform.substitutions.update(
             {self.planform.AR: 4, self.planform.tau: 0.08,
              self.planform.lam: 0.8})
-        self.skin.substitutions.update({self.skin.rhocfrp: 0.049})
-        self.foam.substitutions.update({self.foam.Abar: 0.0548,
-                                        self.foam.rhocore: 0.024})
+        if self.fillModel:
+            self.foam.substitutions.update({self.foam.Abar: 0.0548,
+                                            self.foam.material.rho: 0.024})
 
         return self.ascs, mh*(1+2.0/self.planform["AR"]) <= 2*np.pi

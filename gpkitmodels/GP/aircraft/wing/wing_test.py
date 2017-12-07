@@ -1,21 +1,24 @@
 " wing test "
 from gpkitmodels.GP.aircraft.wing.wing import Wing
+from gpkitmodels.GP.aircraft.wing.wing_skin import WingSkin
+from gpkitmodels.GP.aircraft.wing.wing_core import WingCore
 from gpkitmodels.GP.aircraft.wing.boxspar import BoxSpar
-from gpkit import Variable, Model
+from gpkit import Model, parse_variables
 
-#pylint: disable=no-member
+#pylint: disable=no-member, exec-used
 
 class FlightState(Model):
-    " state variables "
+    """ Flight State
+
+    Variables
+    ---------
+    V           50      [m/s]        airspeed
+    rho         1.255   [kg/m^3]     air density
+    mu          1.5e-5  [N*s/m**2]   air viscosity
+
+    """
     def setup(self):
-
-        V = Variable("V", 50, "m/s", "airspeed")
-        rho = Variable("\\rho", 1.255, "kg/m^3", "air density")
-        mu = Variable("\\mu", 1.5e-5, "N*s/m**2", "air viscosity")
-
-        constraints = [V == V, rho == rho, mu == mu]
-
-        return constraints
+        exec parse_variables(FlightState.__doc__)
 
 def wing_test():
     " test wing models "
@@ -37,10 +40,10 @@ def wing_test():
                 l.substitutions[v] = 1e-3
 
     m = Model(perf.Cd, [
-        loading[1].v == fs["V"],
+        loading[1].v == fs.V,
         loading[1].cl == perf.CL,
         loading[1].Ww == W.W,
-        loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
+        loading[1].Ww <= 0.5*fs.rho*fs.V**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
     m.solve(verbosity=0)
 
@@ -65,14 +68,15 @@ def box_spar():
                 l.substitutions[v] = 1e-3
 
     m = Model(perf.Cd, [
-        loading[1].v == fs["V"],
+        loading[1].v == fs.V,
         loading[1].cl == perf.CL,
         loading[1].Ww == W.W,
-        loading[1].Ww <= 0.5*fs["\\rho"]*fs["V"]**2*perf.CL*W.planform.S,
+        loading[1].Ww <= 0.5*fs.rho*fs.V**2*perf.CL*W.planform.S,
         W, fs, perf, loading])
     m.solve(verbosity=0)
 
 def test():
+    " tests "
     wing_test()
     box_spar()
 
