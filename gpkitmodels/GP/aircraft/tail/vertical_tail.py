@@ -45,4 +45,4 @@ class VerticalTail(Wing):
             self.foam.substitutions.update({self.foam.Abar: 0.0548,
                                             self.foam.material.rho: 0.024})
 
-        return self.ascs, self.components
+        return self.ascs
