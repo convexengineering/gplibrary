@@ -164,9 +164,9 @@ class HorizontalBoomBending(Model):
         Vne = self.Vne = state.Vne
         CLmax = htail.planform.CLmax
 
-        return [F >= 0.5*rhosl*Vne**2*S*CLmax,
+        return [F >= 0.5*rhosl*Vne**2*S,
                 th >= F*l**2/E/I0*(1+k)/2,
-                th <= thmax,
+                th*CLmax <= thmax,
                ]
 
 class TailBoom(Model):
