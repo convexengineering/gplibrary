@@ -8,6 +8,7 @@ class CFRPFabric(Model):
     rho         1.6         [g/cm^3]        density of CFRP
     tmin        0.012       [in]            minimum gauge thickness
     tau         570         [MPa]           torsional stress limit
+    E           150e9       [Pa]            Youngs modulus
 
     LaTex Strings
     -------------

@@ -1,7 +1,7 @@
 " tail boom model "
-import numpy as np
+from numpy import pi
 from gpkit import Model, parse_variables
-from gpkitmodels import g
+from .tube_spar import TubeSpar
 
 #pylint: disable=exec-used, undefined-variable, invalid-name
 #pylint: disable=attribute-defined-outside-init
@@ -78,7 +78,7 @@ class VerticalBoomTorsion(Model):
         exec parse_variables(VerticalBoomTorsion.__doc__)
 
         J = self.J = tailboom.J
-        d0 = self.d0 = tailboom.d0
+        d0 = self.d0 = tailboom.d
         b = self.b = vtail.planform.b
         S = self.S = vtail.planform.S
         rhosl = self.rhosl = state.rhosl
@@ -115,10 +115,10 @@ class VerticalBoomBending(Model):
     def setup(self, tailboom, vtail, state):
         exec parse_variables(VerticalBoomBending.__doc__)
 
-        I0 = self.I0 = tailboom.I0
+        I0 = self.I0 = tailboom.I
         l = self.l = tailboom.l
         S = self.S = vtail.planform.S
-        E = self.E = tailboom.E
+        E = self.E = tailboom.material.E
         k = self.k = tailboom.k
         rhosl = self.rhosl = state.rhosl
         Vne = self.Vne = state.Vne
@@ -155,10 +155,10 @@ class HorizontalBoomBending(Model):
     def setup(self, tailboom, htail, state):
         exec parse_variables(HorizontalBoomBending.__doc__)
 
-        I0 = self.I0 = tailboom.I0
+        I0 = self.I0 = tailboom.I
         l = self.l = tailboom.l
         S = self.S = htail.planform.S
-        E = self.E = tailboom.E
+        E = self.E = tailboom.material.E
         k = self.k = tailboom.k
         rhosl = self.rhosl = state.rhosl
         Vne = self.Vne = state.Vne
@@ -169,58 +169,29 @@ class HorizontalBoomBending(Model):
                 th*CLmax <= thmax,
                ]
 
-class TailBoom(Model):
+class TailBoom(TubeSpar):
     """ Tail Boom Model
 
     Variables
     ---------
     l                           [ft]        tail boom length
-    E           150e9           [N/m^2]     Youngs modulus for carbon fiber
-    k           0.8             [-]         tail boom taper index
-    kfac        self.minusk2    [-]         (1-k/2)
-    I0                          [m^4]       tail boom moment of inertia
-    d0                          [in]        tail boom diameter
-    t0                          [in]        tail boom thickness
-    tmin        0.25            [mm]        minimum tail boom thickness
-    rhocfrp     1.6             [g/cm^3]    density of CFRP
-    W                           [lbf]       tail boom weight
-    J                           [m^4]       tail boom polar moment of inertia
     S                           [ft^2]      tail boom surface area
-    mfac        1.0             [-]         tail boom margin factor
-
-    Upper Unbounded
-    ---------------
-    W
-
-    Lower Unbounded
-    ---------------
-    S, J, l, I0
-
-    LaTex Strings
-    -------------
-    kfac        (1-k/2)
-    I0          I_0
-    d0          d_0
-    t0          t_0
-    tmin        t_{\\mathrm{min}}
-    rhocfrp     \\rho_{\\mathrm{CFRP}}
-    mfac        m_{\\mathrm{fac}}
+    deta          1./(N-1)      [-]         normalized segment length
 
     """
 
-    minusk2 = lambda self, c: 1-c[self.k]/2.
     flight_model = TailBoomAero
     hbending = HorizontalBoomBending
     vbending = VerticalBoomBending
     vtorsion = VerticalBoomTorsion
 
-    def setup(self):
+    def setup(self, N=2):
         exec parse_variables(TailBoom.__doc__)
 
-        return [I0 <= np.pi*t0*d0**3/8.0,
-                W/mfac >= np.pi*g*rhocfrp*d0*l*t0*kfac,
-                t0 >= tmin,
-                J <= np.pi/8.0*d0**3*t0,
-                S == l*np.pi*d0,
-               ]
+        self.spar = TubeSpar.setup(self, N, self)
+
+        d0 = self.d0 = self.d[0]
+
+        return self.spar, S == l*pi*d0
+
 
