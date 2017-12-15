@@ -19,7 +19,6 @@ class TubeSpar(Model):
     I                           [m^4]       moment of inertia
     d                           [in]        diameter
     t                           [in]        thickness
-    J                           [m^4]       polar moment of inertia
     dm                          [kg]        segment mass
 
     Upper Unbounded
@@ -51,5 +50,4 @@ class TubeSpar(Model):
         return [I <= pi*t*d**3/8.0,
                 dm >= pi*rho*d*deta*t*kfac*l,
                 W/mfac >= g*dm.sum(),
-                t >= tmin,
-                J <= pi/8.0*d**3*t]
+                t >= tmin]

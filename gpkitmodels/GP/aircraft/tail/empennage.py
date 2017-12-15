@@ -46,10 +46,11 @@ class Empennage(Model):
         l = self.l = self.tailboom.l
 
         state = TailBoomState()
-        self.hbend = self.tailboom.hbending(self.tailboom, self.htail, state)
-        self.vbend = self.tailboom.vbending(self.tailboom, self.vtail, state)
-        self.vtor = self.tailboom.vtorsion(self.tailboom, self.vtail, state)
-        loading = [self.hbend, self.vbend, self.vtor]
+        self.tailboom.tailLoad.__name__ = "HTailBoomBending"
+        self.hbend = self.tailboom.tailLoad(self.tailboom, self.htail, state)
+        self.tailboom.tailLoad.__name__ = "VTailBoomBending"
+        self.vbend = self.tailboom.tailLoad(self.tailboom, self.vtail, state)
+        loading = [self.hbend, self.vbend]
 
         constraints = [
             W/mfac >= sum(c.W for c in self.components),

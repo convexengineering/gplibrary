@@ -2,6 +2,7 @@
 from numpy import pi
 from gpkit import Model, parse_variables
 from .tube_spar import TubeSpar
+from gpkitmodels.GP.beam.beam import Beam
 
 #pylint: disable=exec-used, undefined-variable, invalid-name
 #pylint: disable=attribute-defined-outside-init
@@ -89,54 +90,14 @@ class VerticalBoomTorsion(Model):
                 taucfrp >= T*d0/2/J
                ]
 
-class VerticalBoomBending(Model):
-    """ Tail Boom Bending from Vtail Deflection
+class TailBoomBending(Model):
+    """ Tail Boom Bending
 
     Variables
     ---------
-    F                       [N]     vertical tail force
+    F                       [N]     tail force
     th                      [-]     tail boom deflection angle
-    thmax           0.1     [-]     max tail boom deflection angle
-
-    Upper Unbounded
-    ---------------
-    I0
-
-    Lower Unbounded
-    ---------------
-    S, l
-
-    LaTex Strings
-    -------------
-    th      \\theta
-    thmax   \\theta_{\\mathrm{max}}
-
-    """
-    def setup(self, tailboom, vtail, state):
-        exec parse_variables(VerticalBoomBending.__doc__)
-
-        I0 = self.I0 = tailboom.I
-        l = self.l = tailboom.l
-        S = self.S = vtail.planform.S
-        E = self.E = tailboom.material.E
-        k = self.k = tailboom.k
-        rhosl = self.rhosl = state.rhosl
-        Vne = self.Vne = state.Vne
-        CLmax = vtail.planform.CLmax
-
-        return [F >= 0.5*rhosl*Vne**2*S*CLmax,
-                th >= F*l**2/E/I0*(1+k)/2,
-                th <= thmax,
-               ]
-
-class HorizontalBoomBending(Model):
-    """ Tail Boom Bending from Htail Deflection
-
-    Variables
-    ---------
-    F                       [N]     horizontal tail force
-    th                      [-]     tail boom deflection angle
-    thmax           0.1     [-]     max tail boom deflection angle
+    kappa           0.1     [-]     max tail boom deflection
 
     Upper Unbounded
     ---------------
@@ -153,21 +114,28 @@ class HorizontalBoomBending(Model):
 
     """
     def setup(self, tailboom, htail, state):
-        exec parse_variables(HorizontalBoomBending.__doc__)
+        exec parse_variables(TailBoomBending.__doc__)
 
-        I0 = self.I0 = tailboom.I
+        N = tailboom.N
+        Beam.qbarFun = [1e-10]*N
+        Beam.SbarFun = [1.]*N
+        beam = Beam(N)
+
+        I = self.I = tailboom.I
         l = self.l = tailboom.l
         S = self.S = htail.planform.S
         E = self.E = tailboom.material.E
-        k = self.k = tailboom.k
         rhosl = self.rhosl = state.rhosl
         Vne = self.Vne = state.Vne
         CLmax = htail.planform.CLmax
+        deta = tailboom.deta
 
-        return [F >= 0.5*rhosl*Vne**2*S,
-                th >= F*l**2/E/I0*(1+k)/2,
-                th*CLmax <= thmax,
-               ]
+        return beam, [beam["dx"] == deta,
+                      F >= 0.5*rhosl*Vne**2*S,
+                      beam["\\bar{EI}"] <= E*I/F/l**2/2,
+                      th == beam["\\theta"][-1],
+                      beam["\\bar{\\delta}"][-1]*CLmax <= kappa
+                     ]
 
 class TailBoom(TubeSpar):
     """ Tail Boom Model
@@ -181,17 +149,15 @@ class TailBoom(TubeSpar):
     """
 
     flight_model = TailBoomAero
-    hbending = HorizontalBoomBending
-    vbending = VerticalBoomBending
-    vtorsion = VerticalBoomTorsion
+    tailLoad = TailBoomBending
 
     def setup(self, N=2):
         exec parse_variables(TailBoom.__doc__)
+        self.N = N
 
         self.spar = TubeSpar.setup(self, N, self)
 
         d0 = self.d0 = self.d[0]
 
         return self.spar, S == l*pi*d0
-
 

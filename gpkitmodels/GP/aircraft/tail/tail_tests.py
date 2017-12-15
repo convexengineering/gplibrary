@@ -55,12 +55,14 @@ def test_emp():
                emp.htail.Vh <= emp.htail.planform.S*emp.htail.lh/Sw/cmac,
                emp.vtail.Vv <= emp.vtail.planform.S*emp.vtail.lv/Sw/bw,
                emp, fs, htperf, vtperf, tbperf])
-    m.solve(verbosity=0)
+    sol = m.solve(verbosity=0)
+    return sol
 
 def test():
     test_htail()
     test_vtail()
-    test_emp()
+    sol = test_emp()
+    return sol
 
 if __name__ == "__main__":
-    test()
+    sol = test()
