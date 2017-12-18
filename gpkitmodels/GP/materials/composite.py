@@ -9,6 +9,7 @@ class CFRPFabric(Model):
     tmin        0.012       [in]            minimum gauge thickness
     tau         570         [MPa]           torsional stress limit
     E           150e9       [Pa]            Youngs modulus
+    sigma       400         [MPa]           max stress
 
     LaTex Strings
     -------------

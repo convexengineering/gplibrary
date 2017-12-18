@@ -38,11 +38,14 @@ class SparLoading(Model):
         barc = self.wing.planform.cbar
         return [f(c) for f in self.wing.substitutions[barc]]
 
+    new_SbarFun = None
+
     def setup(self, wing):
         self.wing = wing
         exec parse_variables(SparLoading.__doc__)
 
         Beam.qbarFun = self.new_qbarFun
+        Beam.SbarFun = self.new_SbarFun
         self.beam = Beam(self.wing.N)
 
         b = self.b = self.wing.planform.b

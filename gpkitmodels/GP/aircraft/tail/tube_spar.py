@@ -1,8 +1,8 @@
 " tube spar "
 from numpy import pi
 from gpkitmodels.GP.materials import cfrpfabric
-from gpkit import Model, parse_variables
 from gpkitmodels import g
+from gpkit import Model, parse_variables
 
 class TubeSpar(Model):
     """ Tail Boom Model
@@ -20,6 +20,7 @@ class TubeSpar(Model):
     d                           [in]        diameter
     t                           [in]        thickness
     dm                          [kg]        segment mass
+    Sy                          [m^3]       section modulus
 
     Upper Unbounded
     ---------------
@@ -48,6 +49,7 @@ class TubeSpar(Model):
         l = surface.l
 
         return [I <= pi*t*d**3/8.0,
+                Sy <= 2*I/d,
                 dm >= pi*rho*d*deta*t*kfac*l,
                 W/mfac >= g*dm.sum(),
                 t >= tmin]

@@ -1,6 +1,6 @@
 " tail boom model "
 from numpy import pi
-from gpkit import Model, parse_variables
+from gpkit import Model, parse_variables, Variable, VectorVariable
 from .tube_spar import TubeSpar
 from gpkitmodels.GP.beam.beam import Beam
 
@@ -99,6 +99,10 @@ class TailBoomBending(Model):
     th                      [-]     tail boom deflection angle
     kappa           0.1     [-]     max tail boom deflection
 
+    Variables of length N-1
+    -----------------------
+    Mr                      [N*m]   section root moment
+
     Upper Unbounded
     ---------------
     I0
@@ -114,9 +118,9 @@ class TailBoomBending(Model):
 
     """
     def setup(self, tailboom, htail, state):
+        N = tailboom.N
         exec parse_variables(TailBoomBending.__doc__)
 
-        N = tailboom.N
         Beam.qbarFun = [1e-10]*N
         Beam.SbarFun = [1.]*N
         beam = Beam(N)
@@ -125,39 +129,53 @@ class TailBoomBending(Model):
         l = self.l = tailboom.l
         S = self.S = htail.planform.S
         E = self.E = tailboom.material.E
+        Sy = self.Sy = tailboom.Sy
         rhosl = self.rhosl = state.rhosl
         Vne = self.Vne = state.Vne
         CLmax = htail.planform.CLmax
         deta = tailboom.deta
+        sigma = tailboom.material.sigma
 
         return beam, [beam["dx"] == deta,
                       F >= 0.5*rhosl*Vne**2*S,
                       beam["\\bar{EI}"] <= E*I/F/l**2/2,
+                      Mr >= beam["\\bar{M}"][:-1]*F*l,
+                      sigma >= Mr/Sy,
                       th == beam["\\theta"][-1],
                       beam["\\bar{\\delta}"][-1]*CLmax <= kappa
                      ]
 
-class TailBoom(TubeSpar):
-    """ Tail Boom Model
+def makeTailBoom(N=2, tailboomSpar=TubeSpar):
+    class TailBoom(tailboomSpar):
+        """ Tail Boom Model
 
-    Variables
-    ---------
-    l                           [ft]        tail boom length
-    S                           [ft^2]      tail boom surface area
-    deta          1./(N-1)      [-]         normalized segment length
+        Variables
+        ---------
+        l                           [ft]        tail boom length
+        S                           [ft^2]      tail boom surface area
+        deta          1./(N-1)      [-]         normalized segment length
 
-    """
+        """
 
-    flight_model = TailBoomAero
-    tailLoad = TailBoomBending
+        flight_model = TailBoomAero
+        tailLoad = TailBoomBending
 
-    def setup(self, N=2):
-        exec parse_variables(TailBoom.__doc__)
-        self.N = N
+        def setup(self, N=N):
+            # exec parse_variables(TailBoom.__doc__)
+            self.N = N
 
-        self.spar = TubeSpar.setup(self, N, self)
+            l = self.l = Variable("l", "ft", "tail boom length")
+            S = self.S = Variable("S", "ft^2", "tail boom surface area")
+            self.deta = Variable("deta", 1./(N-1), "-",
+                                 "non-dim segment length")
+            b = self.b = Variable("b", "ft", "twice tail boom length")
+            self.cave = VectorVariable(N-1, "cave", "ft",
+                                       "average segment width")
+            self.tau = Variable("tau", 1.0, "-", "thickness to width ratio")
 
-        d0 = self.d0 = self.d[0]
+            self.spar = tailboomSpar.setup(self, N, self)
 
-        return self.spar, S == l*pi*d0
+            d0 = self.d0 = self.d[0]
 
+            return self.spar, [S == l*pi*d0, b == 2*l]
+    return TailBoom()
