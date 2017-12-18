@@ -54,8 +54,8 @@ def test_emp():
     from gpkit import settings
     if settings["default_solver"] == "cvxopt":
         for l in [emp.hbend, emp.vbend]:
-            for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}",
-                      "\\bar{\\delta}_{root}", "\\theta_{root}"]:
+            for v in ["\\bar{M}_{tip}", "\\bar{\\delta}_{root}",
+                      "\\theta_{root}"]:
                 l.substitutions[v] = 1e-3
 
     m = Model(htperf.Cd + vtperf.Cd + tbperf.Cf,
@@ -87,8 +87,8 @@ def test_tailboom_mod():
     from gpkit import settings
     if settings["default_solver"] == "cvxopt":
         for l in [emp.hbend, emp.vbend]:
-            for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}",
-                      "\\bar{\\delta}_{root}", "\\theta_{root}"]:
+            for v in ["\\bar{M}_{tip}", "\\bar{\\delta}_{root}",
+                      "\\theta_{root}"]:
                 l.substitutions[v] = 1e-3
 
     m = Model(htperf.Cd + vtperf.Cd + tbperf.Cf,
