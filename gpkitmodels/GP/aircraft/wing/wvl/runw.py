@@ -115,11 +115,9 @@ Boff = B-Bdiag
 class WVL(Model):
     def setup(self):
 
-        Aijm = -Ainv #VectorVariable([Na, Na], "A_{i,j}^{-1}", -Ainv, "-",
-                      #        "AIC matrix")
         G = VectorVariable(Na, "\\Gamma", "-", "vortex filament strength")
         th = VectorVariable(Na, "\\theta", "-", "twist")
-        CL = Variable("C_L", CLvl, "-", "coefficient of lift")
+        CL = Variable("C_L", 1.1, "-", "coefficient of lift")
         CDi = Variable("C_{D_i}", "-", "induced drag coefficient")
         eta = dy #VectorVariable(Na, "\\eta", dy, "-", "(2y/b)")
         Bd = Bdiag #VectorVariable([Na, Na], "D_{diag}", Bdiag, "-", "B diagonals")
@@ -136,7 +134,31 @@ class WVL(Model):
 
         return constraints
 
+class wvlGP(Model):
+    def setup(self):
+
+        Na = 10
+        G = VectorVariable(Na, "\\Gamma", "-", "vortex filament strength")
+        CL = Variable("C_L", 1.1, "-", "coefficient of lift")
+        CDi = Variable("C_{D_i}", "-", "induced drag coefficient")
+        cl = Variable("cl", "-", "segment lifting coefficient")
+        Dy = VectorVariable(Na, "dy", "-", "segment length")
+        Bij = VectorVariable([Na, Na], "Bij", "-", "Bij matrix")
+        S = Variable("S_{ref}", Sref, "-", "reference area")
+
+        constraints = [CL <= 2*Na*cl/Sref,
+                       cl <= G*Dy,
+                       Dy <= 2.,
+                       CDi >= 2*np.dot(G, np.dot(Bij, G))/Sref]
+
+        for i in range(Na):
+            for j in range(Na):
+                constraints.append(Bij[i][j] >= Dy[j]/np.pi/Dy[i])
+
+        return constraints
+
 if __name__ == "__main__":
-    wvl = WVL()
+    wvl = wvlGP()
     wvl.cost = wvl["C_{D_i}"]
-    sol = wvl.localsolve("mosek")
+    sol = wvl.solve("mosek")
+    print sol.table()
