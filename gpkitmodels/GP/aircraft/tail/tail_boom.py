@@ -169,7 +169,7 @@ def makeTailBoom(N=2, tailboomSpar=TubeSpar):
             self.deta = Variable("deta", 1./(N-1), "-",
                                  "non-dim segment length")
             b = self.b = Variable("b", "ft", "twice tail boom length")
-            self.cave = VectorVariable(N-1, "cave", "ft",
+            self.cave = VectorVariable(N-1, "cave", "in",
                                        "average segment width")
             self.tau = Variable("tau", 1.0, "-", "thickness to width ratio")
 
