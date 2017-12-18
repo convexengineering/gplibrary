@@ -97,8 +97,7 @@ def test_tailboom_mod():
                emp.vtail.Vv <= emp.vtail.planform.S*emp.vtail.lv/Sw/bw,
                emp.tailboom.cave <= cmax,
                emp, fs, htperf, vtperf, tbperf])
-    sol = m.solve("cvxopt", verbosity=0)
-    return m
+    m.solve(verbosity=0)
 
 def test():
     test_htail()
