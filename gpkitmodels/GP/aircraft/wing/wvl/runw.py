@@ -137,19 +137,20 @@ class WVL(Model):
 class wvlGP(Model):
     def setup(self):
 
-        Na = 10
+        Na = 1
         G = VectorVariable(Na, "\\Gamma", "-", "vortex filament strength")
         CL = Variable("C_L", 1.1, "-", "coefficient of lift")
         CDi = Variable("C_{D_i}", "-", "induced drag coefficient")
         cl = Variable("cl", "-", "segment lifting coefficient")
+        c = VectorVariable(Na, "c", "-", "chord")
         Dy = VectorVariable(Na, "dy", "-", "segment length")
         Bij = VectorVariable([Na, Na], "Bij", "-", "Bij matrix")
         S = Variable("S_{ref}", Sref, "-", "reference area")
 
-        constraints = [CL <= 2*Na*cl/Sref,
-                       cl <= G*Dy,
-                       Dy <= 2.,
-                       CDi >= 2*np.dot(G, np.dot(Bij, G))/Sref]
+        constraints = [CL <= 2.*Na*cl,
+                       cl <= G*Dy*c,
+                       sum(Dy*c) <= S,
+                       CDi >= 2.*np.dot(G, np.dot(Bij, G))]
 
         for i in range(Na):
             for j in range(Na):
