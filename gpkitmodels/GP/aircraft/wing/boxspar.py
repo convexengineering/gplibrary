@@ -24,6 +24,7 @@ class BoxSpar(Model):
     Sy                      [m^3]       section modulus
     dm                      [kg]        segment spar mass
     w                       [in]        spar width
+    d                       [in]        cross secitonal diameter
     t                       [in]        spar cap thickness
     tshear                  [in]        shear web thickness
     tcore                   [in]        core thickness
@@ -76,5 +77,6 @@ class BoxSpar(Model):
                 W >= 2*dm.sum()*g,
                 Sy*(hin/2 + 2*t + tcore) <= I,
                 tshear >= tshearmin,
-                tcore >= tcoret*cave*tau
+                tcore >= tcoret*cave*tau,
+                d == w,
                ]

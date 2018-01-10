@@ -1,7 +1,8 @@
 " tail boom model "
-import numpy as np
-from gpkit import Model, parse_variables
-from gpkitmodels import g
+from numpy import pi
+from gpkit import Model, parse_variables, Variable, VectorVariable
+from .tube_spar import TubeSpar
+from gpkitmodels.GP.beam.beam import Beam
 
 #pylint: disable=exec-used, undefined-variable, invalid-name
 #pylint: disable=attribute-defined-outside-init
@@ -78,7 +79,7 @@ class VerticalBoomTorsion(Model):
         exec parse_variables(VerticalBoomTorsion.__doc__)
 
         J = self.J = tailboom.J
-        d0 = self.d0 = tailboom.d0
+        d0 = self.d0 = tailboom.d
         b = self.b = vtail.planform.b
         S = self.S = vtail.planform.S
         rhosl = self.rhosl = state.rhosl
@@ -89,54 +90,18 @@ class VerticalBoomTorsion(Model):
                 taucfrp >= T*d0/2/J
                ]
 
-class VerticalBoomBending(Model):
-    """ Tail Boom Bending from Vtail Deflection
+class TailBoomBending(Model):
+    """ Tail Boom Bending
 
     Variables
     ---------
-    F                       [N]     vertical tail force
+    F                       [N]     tail force
     th                      [-]     tail boom deflection angle
-    thmax           0.1     [-]     max tail boom deflection angle
+    kappa           0.1     [-]     max tail boom deflection
 
-    Upper Unbounded
-    ---------------
-    I0
-
-    Lower Unbounded
-    ---------------
-    S, l
-
-    LaTex Strings
-    -------------
-    th      \\theta
-    thmax   \\theta_{\\mathrm{max}}
-
-    """
-    def setup(self, tailboom, vtail, state):
-        exec parse_variables(VerticalBoomBending.__doc__)
-
-        I0 = self.I0 = tailboom.I0
-        l = self.l = tailboom.l
-        S = self.S = vtail.planform.S
-        E = self.E = tailboom.E
-        k = self.k = tailboom.k
-        rhosl = self.rhosl = state.rhosl
-        Vne = self.Vne = state.Vne
-        CLmax = vtail.planform.CLmax
-
-        return [F >= 0.5*rhosl*Vne**2*S*CLmax,
-                th >= F*l**2/E/I0*(1+k)/2,
-                th <= thmax,
-               ]
-
-class HorizontalBoomBending(Model):
-    """ Tail Boom Bending from Htail Deflection
-
-    Variables
-    ---------
-    F                       [N]     horizontal tail force
-    th                      [-]     tail boom deflection angle
-    thmax           0.1     [-]     max tail boom deflection angle
+    Variables of length N-1
+    -----------------------
+    Mr                      [N*m]   section root moment
 
     Upper Unbounded
     ---------------
@@ -153,74 +118,64 @@ class HorizontalBoomBending(Model):
 
     """
     def setup(self, tailboom, htail, state):
-        exec parse_variables(HorizontalBoomBending.__doc__)
+        N = tailboom.N
+        exec parse_variables(TailBoomBending.__doc__)
 
-        I0 = self.I0 = tailboom.I0
+        Beam.qbarFun = [1e-10]*N
+        Beam.SbarFun = [1.]*N
+        beam = Beam(N)
+
+        I = self.I = tailboom.I
         l = self.l = tailboom.l
         S = self.S = htail.planform.S
-        E = self.E = tailboom.E
-        k = self.k = tailboom.k
+        E = self.E = tailboom.material.E
+        Sy = self.Sy = tailboom.Sy
         rhosl = self.rhosl = state.rhosl
         Vne = self.Vne = state.Vne
         CLmax = htail.planform.CLmax
+        deta = tailboom.deta
+        sigma = tailboom.material.sigma
 
-        return [F >= 0.5*rhosl*Vne**2*S*CLmax,
-                th >= F*l**2/E/I0*(1+k)/2,
-                th <= thmax,
-               ]
+        return beam, [beam["dx"] == deta,
+                      F >= 0.5*rhosl*Vne**2*S,
+                      beam["\\bar{EI}"] <= E*I/F/l**2/2,
+                      Mr >= beam["\\bar{M}"][:-1]*F*l,
+                      sigma >= Mr/Sy,
+                      th == beam["\\theta"][-1],
+                      beam["\\bar{\\delta}"][-1]*CLmax <= kappa
+                     ]
 
-class TailBoom(Model):
-    """ Tail Boom Model
+def makeTailBoom(N=2, tailboomSpar=TubeSpar):
+    class TailBoom(tailboomSpar):
+        """ Tail Boom Model
 
-    Variables
-    ---------
-    l                           [ft]        tail boom length
-    E           150e9           [N/m^2]     Youngs modulus for carbon fiber
-    k           0.8             [-]         tail boom taper index
-    kfac        self.minusk2    [-]         (1-k/2)
-    I0                          [m^4]       tail boom moment of inertia
-    d0                          [in]        tail boom diameter
-    t0                          [in]        tail boom thickness
-    tmin        0.25            [mm]        minimum tail boom thickness
-    rhocfrp     1.6             [g/cm^3]    density of CFRP
-    W                           [lbf]       tail boom weight
-    J                           [m^4]       tail boom polar moment of inertia
-    S                           [ft^2]      tail boom surface area
-    mfac        1.0             [-]         tail boom margin factor
+        Variables
+        ---------
+        l                           [ft]        tail boom length
+        S                           [ft^2]      tail boom surface area
+        deta          1./(N-1)      [-]         normalized segment length
 
-    Upper Unbounded
-    ---------------
-    W
+        """
 
-    Lower Unbounded
-    ---------------
-    S, J, l, I0
+        flight_model = TailBoomAero
+        tailLoad = TailBoomBending
 
-    LaTex Strings
-    -------------
-    kfac        (1-k/2)
-    I0          I_0
-    d0          d_0
-    t0          t_0
-    tmin        t_{\\mathrm{min}}
-    rhocfrp     \\rho_{\\mathrm{CFRP}}
-    mfac        m_{\\mathrm{fac}}
+        def setup(self, N=N):
+            # exec parse_variables(TailBoom.__doc__)
+            self.N = N
 
-    """
+            l = self.l = Variable("l", "ft", "tail boom length")
+            S = self.S = Variable("S", "ft^2", "tail boom surface area")
+            self.deta = Variable("deta", 1./(N-1), "-",
+                                 "non-dim segment length")
+            b = self.b = Variable("b", "ft", "twice tail boom length")
+            self.cave = VectorVariable(N-1, "cave", "in",
+                                       "average segment width")
+            self.tau = Variable("tau", 1.0, "-", "thickness to width ratio")
 
-    minusk2 = lambda self, c: 1-c[self.k]/2.
-    flight_model = TailBoomAero
-    hbending = HorizontalBoomBending
-    vbending = VerticalBoomBending
-    vtorsion = VerticalBoomTorsion
+            self.spar = tailboomSpar.setup(self, N, self)
 
-    def setup(self):
-        exec parse_variables(TailBoom.__doc__)
+            d0 = self.d0 = self.d[0]
 
-        return [I0 <= np.pi*t0*d0**3/8.0,
-                W/mfac >= np.pi*g*rhocfrp*d0*l*t0*kfac,
-                t0 >= tmin,
-                J <= np.pi/8.0*d0**3*t0,
-                S == l*np.pi*d0,
-               ]
-
+            return self.spar, [S == l*pi*d0, b == 2*l]
+    return TailBoom()

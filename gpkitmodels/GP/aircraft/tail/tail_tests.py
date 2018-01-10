@@ -3,6 +3,7 @@ from gpkitmodels.GP.aircraft.tail.horizontal_tail import HorizontalTail
 from gpkitmodels.GP.aircraft.tail.vertical_tail import VerticalTail
 from gpkitmodels.GP.aircraft.tail.empennage import Empennage
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
+from gpkitmodels.GP.aircraft.wing.boxspar import BoxSpar
 from gpkit import Model, Variable, units
 
 #pylint: disable=no-member
@@ -50,17 +51,62 @@ def test_emp():
     vtperf = emp.vtail.flight_model(emp.vtail, fs)
     tbperf = emp.tailboom.flight_model(emp.tailboom, fs)
 
+
     m = Model(htperf.Cd + vtperf.Cd + tbperf.Cf,
               [emp.vtail.lv == emp.tailboom.l, emp.htail.lh == emp.tailboom.l,
                emp.htail.Vh <= emp.htail.planform.S*emp.htail.lh/Sw/cmac,
                emp.vtail.Vv <= emp.vtail.planform.S*emp.vtail.lv/Sw/bw,
                emp, fs, htperf, vtperf, tbperf])
+
+    from gpkit import settings
+    if settings["default_solver"] == "cvxopt":
+        for l in [emp.hbend, emp.vbend]:
+            for v in ["\\bar{M}_{tip}", "\\bar{\\delta}_{root}",
+                      "\\theta_{root}"]:
+                m.substitutions[l[v]] = 1e-3
+
+    m.solve(verbosity=0)
+
+def test_tailboom_mod():
+
+    Sw = Variable("S_w", 50, "ft**2", "wing area")
+    bw = Variable("b_w", 20, "ft", "wing span")
+    cmac = Variable("cmac", 15, "in", "wing MAC")
+    cmax = Variable("cmax", 5, "in", "max width")
+    emp = Empennage(N=5, tailboomSpar=BoxSpar)
+    fs = FlightState()
+    emp.substitutions.update({emp.W: 10, emp.tailboom.l: 5,
+                              emp.htail.planform.AR: 4,
+                              emp.vtail.planform.AR: 4,
+                              emp.vtail.Vv: 0.04,
+                              emp.htail.Vh: 0.4,
+                              emp.htail.mh: 0.01,
+                              emp.tailboom.wlim: 1})
+    htperf = emp.htail.flight_model(emp.htail, fs)
+    vtperf = emp.vtail.flight_model(emp.vtail, fs)
+    tbperf = emp.tailboom.flight_model(emp.tailboom, fs)
+
+    m = Model(htperf.Cd + vtperf.Cd + tbperf.Cf,
+              [emp.vtail.lv == emp.tailboom.l, emp.htail.lh == emp.tailboom.l,
+               emp.htail.Vh <= emp.htail.planform.S*emp.htail.lh/Sw/cmac,
+               emp.vtail.Vv <= emp.vtail.planform.S*emp.vtail.lv/Sw/bw,
+               emp.tailboom.cave <= cmax,
+               emp, fs, htperf, vtperf, tbperf])
+
+    from gpkit import settings
+    if settings["default_solver"] == "cvxopt":
+        for l in [emp.hbend, emp.vbend]:
+            for v in ["\\bar{M}_{tip}", "\\bar{\\delta}_{root}",
+                      "\\theta_{root}"]:
+                m.substitutions[l[v]] = 1e-3
+
     m.solve(verbosity=0)
 
 def test():
     test_htail()
     test_vtail()
     test_emp()
+    test_tailboom_mod()
 
 if __name__ == "__main__":
     test()

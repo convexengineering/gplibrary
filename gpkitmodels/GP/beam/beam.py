@@ -42,7 +42,7 @@ class Beam(Model):
         if self.SbarFun is None:
             with Vectorize(N):
                 qbar = self.qbar = Variable("\\bar{q}", self.qbarFun, "-",
-                                "normalized loading")
+                                            "normalized loading")
             Sbartip = Variable("\\bar{S}_{tip}", 1e-10, "-", "Tip loading")
             constraints.extend([
                 Sbar[:-1] >= Sbar[1:] + 0.5*dx*(qbar[:-1] + qbar[1:]),

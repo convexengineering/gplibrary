@@ -2,7 +2,8 @@
 from gpkit import Model, parse_variables
 from .horizontal_tail import HorizontalTail
 from .vertical_tail import VerticalTail
-from .tail_boom import TailBoom, TailBoomState
+from .tail_boom import makeTailBoom, TailBoomState
+from .tube_spar import TubeSpar
 
 #pylint: disable=attribute-defined-outside-init, no-member, exec-used
 #pylint: disable=too-many-instance-attributes, invalid-name, undefined-variable
@@ -27,7 +28,7 @@ class Empennage(Model):
     mfac        m_{\\mathrm{fac}}
 
     """
-    def setup(self):
+    def setup(self, N=2, tailboomSpar=TubeSpar):
         exec parse_variables(Empennage.__doc__)
 
         self.htail = HorizontalTail()
@@ -41,14 +42,16 @@ class Empennage(Model):
         lv = self.lv = self.vtail.lv
         self.Vv = self.vtail.Vv
         self.bv = self.vtail.b
-        self.tailboom = TailBoom()
+        self.tailboom = makeTailBoom(N=N, tailboomSpar=tailboomSpar)
         self.components = [self.htail, self.vtail, self.tailboom]
         l = self.l = self.tailboom.l
 
         state = TailBoomState()
-        loading = [self.tailboom.hbending(self.tailboom, self.htail, state),
-                   self.tailboom.vbending(self.tailboom, self.vtail, state),
-                   self.tailboom.vtorsion(self.tailboom, self.vtail, state)]
+        self.tailboom.tailLoad.__name__ = "HTailBoomBending"
+        self.hbend = self.tailboom.tailLoad(self.tailboom, self.htail, state)
+        self.tailboom.tailLoad.__name__ = "VTailBoomBending"
+        self.vbend = self.tailboom.tailLoad(self.tailboom, self.vtail, state)
+        loading = [self.hbend, self.vbend]
 
         constraints = [
             W/mfac >= sum(c.W for c in self.components),
