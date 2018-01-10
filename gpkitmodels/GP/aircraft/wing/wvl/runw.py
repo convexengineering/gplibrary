@@ -45,7 +45,7 @@ irbspec = 1
 iCrspec = 0
 iCnspec = 0
 
-N = 3
+N = 10
 
 ispace = 2
 
@@ -115,6 +115,8 @@ Boff = B-Bdiag
 class WVL(Model):
     def setup(self):
 
+        # Aijm = Ainv
+        Aijm = VectorVariable([Na, Na], "Aijm", -Ainv)
         G = VectorVariable(Na, "\\Gamma", "-", "vortex filament strength")
         th = VectorVariable(Na, "\\theta", "-", "twist")
         CL = Variable("C_L", 1.1, "-", "coefficient of lift")
@@ -128,8 +130,10 @@ class WVL(Model):
         with SignomialsEnabled():
             constraints = [
                 # TCS([G >= np.sum(Aijm*th, 1)]),
-                TCS([CDi + 2*sum(np.dot(Aijm, th)*np.dot(Bo, np.dot(Aijm, th)))/S >= sum(2*np.dot(Aijm, th)*np.dot(Bd, np.dot(Aijm, th))/S)]),
-                TCS([CL <= sum(2*np.dot(Aijm, th)*V*eta/S)])
+                # TCS([CDi + 2*sum(np.dot(Aijm, th)*np.dot(Bo, np.dot(Aijm, th)))/S >= sum(2*np.dot(Aijm, th)*np.dot(Bd, np.dot(Aijm, th))/S)]),
+                # TCS([CL <= sum(2*np.dot(Aijm, th)*V*eta/S)])
+                TCS([CDi + 2*np.dot(G, np.dot(Bo, G))/S >= 2*np.dot(G, np.dot(Bd, G))/S]),
+                TCS([CL <= sum(2*G*V*eta/S)])
                 ]
 
         return constraints
@@ -159,7 +163,7 @@ class wvlGP(Model):
         return constraints
 
 if __name__ == "__main__":
-    wvl = wvlGP()
+    wvl = WVL()
     wvl.cost = wvl["C_{D_i}"]
-    sol = wvl.solve("mosek")
+    sol = wvl.localsolve("mosek")
     print sol.table()
