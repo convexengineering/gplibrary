@@ -21,7 +21,7 @@
 \lfoot{\small\scshape } 
 \cfoot{} 
 %%%% insert your name here %%%%
-\rfoot{\footnotesize Author} 
+\rfoot{\footnotesize Burton} 
 \renewcommand{\headrulewidth}{.3pt} 
 \renewcommand{\footrulewidth}{.3pt}
 \setlength\voffset{-0.25in}
@@ -145,11 +145,11 @@ If this were the case, the problem would be solved and we could stop here.
 However, a closer look at the upper and lower variable bounds reveals this is not the case. 
 
 For a GP to be well defined, each variable must have an upper or lower bound.
-A variable with a value, is called a fixed variable and is both upper and lower bounded by the assigned value.  
+A variable with a value, is called a fixed variable and bounded by the assigned value.  
 A maximized variable is lower bounded by the objective function and a minimized variable is upper bounded by the objective function. 
 Every other variable must be upper and lower bounded by the constraints and direction of the inequalities.  
 
-Because $C_{D_i}$ is being minimized and $C_{L_{\mathrm{spec}}}$ and $\bar{\bar{B}}$ are known, the only direction of inequalities that adequately upper and lower bounds each variable is
+Because $C_{D_i}$ is being minimized and $C_{L_{\mathrm{spec}}}$ and $\bar{\bar{B}}$ are known, the only direction of inequalities that adequately upper and lower bound each variable is
 
 \begin{align}
     \text{minimize} & \quad C_{D_i} \nonumber \\
@@ -312,7 +312,7 @@ Thus, the GP formulation under these assumptions is
     \label{e:bij}
     B_{ij} &\geq \frac{1}{\pi} \frac{\Delta y_j}{\Delta y_i}.
 \end{align}
-Each variable is bounded as before.  However, $N$ new variables exist in $\vec{\Delta y}$ that are all upper unbounded.  Unfortunately, because each $\Delta y_i$ appears in both the numerator and denominator of Equation~\ref{e:bij}, the upper bound is negated is this equation. 
+Each variable is bounded as before.  However, $N$ new variables exist in $\vec{\Delta y}$ that are all upper unbounded.  Unfortunately, because each $\Delta y_i$ appears in both the numerator and denominator of Equation~\ref{e:bij}, the upper bound is negated in this equation. 
 
 And this is where I hit a wall.  I don't know how to correctly upper bound $\Delta y$. There may be a way to upper bound $\Delta y$ with $S_{\mathrm{ref}}$, but I haven't found a way to do it.  I appreciate any and all ideas you may have to solving this problem or presenting a different formulation that is GP-compatible. 
 
