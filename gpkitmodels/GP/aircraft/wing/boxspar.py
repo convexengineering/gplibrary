@@ -24,7 +24,7 @@ class BoxSpar(Model):
     Sy                      [m^3]       section modulus
     dm                      [kg]        segment spar mass
     w                       [in]        spar width
-    d                       [in]        cross secitonal diameter
+    d                       [in]        cross sectional diameter
     t                       [in]        spar cap thickness
     tshear                  [in]        shear web thickness
     tcore                   [in]        core thickness
