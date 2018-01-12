@@ -11,6 +11,7 @@ class SparLoading(Model):
     Variables
     ---------
     Nmax            5       [-]     max loading
+    Nsafety         1.0     [-]     safety load factor
     kappa           0.2     [-]     max tip deflection ratio
     W                       [lbf]   loading weight
 
@@ -61,11 +62,11 @@ class SparLoading(Model):
         constraints = [
             # dimensionalize moment of inertia and young's modulus
             self.beam["dx"] == self.wing.planform.deta,
-            self.beam["\\bar{EI}"] <= 8*E*I/Nmax/W/b**2,
-            Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*b/4,
+            self.beam["\\bar{EI}"] <= 8*E*I/Nmax/Nsafety/W/b**2,
+            Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*Nsafety*b/4,
             sigma >= Mr/Sy,
             self.beam["\\bar{\\delta}"][-1] <= kappa,
-            taumat >= self.beam["\\bar{S}"][-1]*W*Nmax/4/tshear/cave/tau
+            taumat >= self.beam["\\bar{S}"][-1]*W*Nmax*Nsafety/4/tshear/cave/tau
             ]
 
         return self.beam, constraints

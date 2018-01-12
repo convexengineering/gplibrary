@@ -21,7 +21,7 @@ class Planform(Model):
     S                                   [ft^2]  surface area
     AR                                  [-]     aspect ratio
     b                                   [ft]    span
-    tau             0.115               [-]     airfoil thickness ratio
+    tau                                 [-]     airfoil thickness ratio
     CLmax           1.39                [-]     maximum lift coefficient
     CM              0.14                [-]     wing moment coefficient
     croot                               [ft]    root chord

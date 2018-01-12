@@ -25,6 +25,7 @@ def wing_test():
 
     W = Wing()
     W.substitutions[W.W] = 50
+    W.substitutions[W.planform.tau] = 0.115
     fs = FlightState()
     perf = W.flight_model(W, fs)
     loading = [W.spar.loading(W)]
@@ -53,6 +54,7 @@ def box_spar():
     Wing.sparModel = BoxSpar
     W = Wing()
     W.substitutions[W.W] = 50
+    W.substitutions[W.planform.tau] = 0.115
     fs = FlightState()
     perf = W.flight_model(W, fs)
     loading = [W.spar.loading(W)]
