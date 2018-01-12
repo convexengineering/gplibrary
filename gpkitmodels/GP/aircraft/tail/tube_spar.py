@@ -48,8 +48,10 @@ class TubeSpar(Model):
         rho = self.material.rho
         l = surface.l
 
+        self.weight = W/mfac >= g*dm.sum()
+
         return [I <= pi*t*d**3/8.0,
                 Sy <= 2*I/d,
                 dm >= pi*rho*d*deta*t*kfac*l,
-                W/mfac >= g*dm.sum(),
+                self.weight,
                 t >= tmin]

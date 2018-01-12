@@ -51,7 +51,6 @@ def test_emp():
     vtperf = emp.vtail.flight_model(emp.vtail, fs)
     tbperf = emp.tailboom.flight_model(emp.tailboom, fs)
 
-
     m = Model(htperf.Cd + vtperf.Cd + tbperf.Cf,
               [emp.vtail.lv == emp.tailboom.l, emp.htail.lh == emp.tailboom.l,
                emp.htail.Vh <= emp.htail.planform.S*emp.htail.lh/Sw/cmac,

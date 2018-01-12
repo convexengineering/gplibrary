@@ -3,6 +3,7 @@ from numpy import pi
 from gpkit import Model, parse_variables, Variable, VectorVariable
 from .tube_spar import TubeSpar
 from gpkitmodels.GP.beam.beam import Beam
+from gpkitmodels import g
 
 #pylint: disable=exec-used, undefined-variable, invalid-name
 #pylint: disable=attribute-defined-outside-init
@@ -159,6 +160,7 @@ def makeTailBoom(N=2, tailboomSpar=TubeSpar):
 
         flight_model = TailBoomAero
         tailLoad = TailBoomBending
+        secondaryWeight = None
 
         def setup(self, N=N):
             # exec parse_variables(TailBoom.__doc__)
@@ -174,6 +176,10 @@ def makeTailBoom(N=2, tailboomSpar=TubeSpar):
             self.tau = Variable("tau", 1.0, "-", "thickness to width ratio")
 
             self.spar = tailboomSpar.setup(self, N, self)
+
+            if self.secondaryWeight:
+                rhoA = self.rhoA = self.secondaryWeight
+                self.weight.right += rhoA*g*S
 
             d0 = self.d0 = self.d[0]
 

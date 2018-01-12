@@ -69,12 +69,14 @@ class BoxSpar(Model):
         rhocore = self.coreMaterial.rho
         tshearmin = self.shearMaterial.tmin
 
+        self.weight = W >= 2*dm.sum()*g
+
         return [I/mfac <= w*t*hin**2,
                 dm >= (rho*(4*w*t) + 2*tshear*rhoshear*(hin + 2*tcore + 4*t)
                        + rhocore*w*tcore*2)*b/2*deta,
                 w <= wlim*cave,
                 cave*tau >= hin + 4*t + 2*tcore,
-                W >= 2*dm.sum()*g,
+                self.weight,
                 Sy*(hin/2 + 2*t + tcore) <= I,
                 tshear >= tshearmin,
                 tcore >= tcoret*cave*tau,
