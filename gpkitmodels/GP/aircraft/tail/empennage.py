@@ -2,8 +2,7 @@
 from gpkit import Model, parse_variables
 from .horizontal_tail import HorizontalTail
 from .vertical_tail import VerticalTail
-from .tail_boom import makeTailBoom, TailBoomState
-from .tube_spar import TubeSpar
+from .tail_boom import TailBoom, TailBoomState
 
 #pylint: disable=attribute-defined-outside-init, no-member, exec-used
 #pylint: disable=too-many-instance-attributes, invalid-name, undefined-variable
@@ -28,7 +27,7 @@ class Empennage(Model):
     mfac        m_{\\mathrm{fac}}
 
     """
-    def setup(self, N=2, tailboomSpar=TubeSpar):
+    def setup(self, N=2):
         exec parse_variables(Empennage.__doc__)
 
         self.htail = HorizontalTail()
@@ -42,7 +41,7 @@ class Empennage(Model):
         lv = self.lv = self.vtail.lv
         self.Vv = self.vtail.Vv
         self.bv = self.vtail.b
-        self.tailboom = makeTailBoom(N=N, tailboomSpar=tailboomSpar)
+        self.tailboom = TailBoom(N=N)
         self.components = [self.htail, self.vtail, self.tailboom]
         l = self.l = self.tailboom.l
 

@@ -146,42 +146,36 @@ class TailBoomBending(Model):
                       beam["\\bar{\\delta}"][-1]*CLmax <= kappa
                      ]
 
-def makeTailBoom(N=2, tailboomSpar=TubeSpar):
-    class TailBoom(tailboomSpar):
-        """ Tail Boom Model
+class TailBoom(TubeSpar):
+    """ Tail Boom Model
 
-        Variables
-        ---------
-        l                           [ft]        tail boom length
-        S                           [ft^2]      tail boom surface area
-        deta          1./(N-1)      [-]         normalized segment length
+    Variables
+    ---------
+    l                           [ft]        tail boom length
+    S                           [ft^2]      tail boom surface area
+    b                           [ft]        twice tail boom length
+    deta          1./(N-1)      [-]         normalized segment length
+    tau           1.0           [-]         thickness to width ratio
+    rhoA          0.15          [kg/m^2]    total aerial density
 
-        """
+    Variables of length N-1
+    -----------------------
+    cave                        [in]        average segment width
 
-        flight_model = TailBoomAero
-        tailLoad = TailBoomBending
-        secondaryWeight = None
+    """
 
-        def setup(self, N=N):
-            # exec parse_variables(TailBoom.__doc__)
-            self.N = N
+    flight_model = TailBoomAero
+    tailLoad = TailBoomBending
+    secondaryWeight = None
 
-            l = self.l = Variable("l", "ft", "tail boom length")
-            S = self.S = Variable("S", "ft^2", "tail boom surface area")
-            self.deta = Variable("deta", 1./(N-1), "-",
-                                 "non-dim segment length")
-            b = self.b = Variable("b", "ft", "twice tail boom length")
-            self.cave = VectorVariable(N-1, "cave", "in",
-                                       "average segment width")
-            self.tau = Variable("tau", 1.0, "-", "thickness to width ratio")
+    def setup(self, N=5):
+        self.N = N
+        exec parse_variables(TailBoom.__doc__)
+        self.spar = super(TailBoom, self).setup(N, self)
 
-            self.spar = tailboomSpar.setup(self, N, self)
+        if self.secondaryWeight:
+            self.weight.right += rhoA*g*S
 
-            if self.secondaryWeight:
-                rhoA = self.rhoA = self.secondaryWeight
-                self.weight.right += rhoA*g*S
+        d0 = self.d0 = self.d[0]
 
-            d0 = self.d0 = self.d[0]
-
-            return self.spar, [S == l*pi*d0, b == 2*l]
-    return TailBoom()
+        return self.spar, [S == l*pi*d0, b == 2*l]

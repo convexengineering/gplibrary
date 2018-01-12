@@ -4,6 +4,7 @@ from gpkitmodels.GP.aircraft.tail.vertical_tail import VerticalTail
 from gpkitmodels.GP.aircraft.tail.empennage import Empennage
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 from gpkitmodels.GP.aircraft.wing.boxspar import BoxSpar
+from gpkitmodels.GP.aircraft.tail.tail_boom import TailBoom
 from gpkit import Model, Variable, units
 
 #pylint: disable=no-member
@@ -72,7 +73,9 @@ def test_tailboom_mod():
     bw = Variable("b_w", 20, "ft", "wing span")
     cmac = Variable("cmac", 15, "in", "wing MAC")
     cmax = Variable("cmax", 5, "in", "max width")
-    emp = Empennage(N=5, tailboomSpar=BoxSpar)
+    TailBoom.__bases__ = (BoxSpar,)
+    TailBoom.secondaryWeight = True
+    emp = Empennage(N=5)
     fs = FlightState()
     emp.substitutions.update({emp.W: 10, emp.tailboom.l: 5,
                               emp.htail.planform.AR: 4,
