@@ -1,6 +1,7 @@
 " spar loading "
 from gpkit import Model, parse_variables
 from gpkitmodels.GP.beam.beam import Beam
+from gpkitmodels.GP.aircraft.tail.tail_boom import TailBoomState
 
 #pylint: disable=no-member, unused-argument, exec-used, invalid-name
 #pylint: disable=undefined-variable, attribute-defined-outside-init
@@ -18,6 +19,8 @@ class SparLoading(Model):
     Variables of length wing.N-1
     ----------------------------
     Mr                      [N*m]   wing section root moment
+    M                       [N*m]   local moment
+    theta                   [-]     twist deflection
 
     Upper Unbounded
     ---------------
@@ -58,10 +61,12 @@ class SparLoading(Model):
         sigma = self.wing.spar.material.sigma
         tau = self.wing.planform.tau
         taumat = self.wing.spar.shearMaterial.tau
+        deta = self.wing.planform.deta
+        cm = self.wing.planform.CM
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            self.beam["dx"] == self.wing.planform.deta,
+            self.beam["dx"] == deta,
             self.beam["\\bar{EI}"] <= 8*E*I/Nmax/Nsafety/W/b**2,
             Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*Nsafety*b/4,
             sigma >= Mr/Sy,
@@ -69,4 +74,13 @@ class SparLoading(Model):
             taumat >= self.beam["\\bar{S}"][-1]*W*Nmax*Nsafety/4/tshear/cave/tau
             ]
 
+        if hasattr(self.wing.spar, "J"):
+            state = TailBoomState()
+            rho = state.rhosl
+            V = state.Vne
+            constraints.extend([
+                M >= 0.5*cm*cave**2*rho*V**2*deta*b/2,
+                theta[0] >= M[0]/G/J*deta[0]*b/2,
+                theta[1:] >= theta[:-1] + M[1:]/G/J*deta[1:]*b/2,
+                ])
         return self.beam, constraints
