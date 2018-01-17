@@ -132,7 +132,7 @@ class WingAero(Model):
         return [Cd >= cdp + CL**2/np.pi/AR/e,
                 Re == rho*V*cmac/mu,
                 # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
-                XfoilFit(fd, cdp, independentvars),
+                XfoilFit(fd, cdp, independentvars, name="polar"),
                 CL <= CLstall
                ]
 
