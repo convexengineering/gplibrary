@@ -99,6 +99,7 @@ class TailBoomBending(Model):
     F                       [N]     tail force
     th                      [-]     tail boom deflection angle
     kappa           0.1     [-]     max tail boom deflection
+    Nsafety         1.0     [-]     safety load factor
 
     Variables of length N-1
     -----------------------
@@ -143,7 +144,7 @@ class TailBoomBending(Model):
                        Mr >= beam["\\bar{M}"][:-1]*F*l,
                        sigma >= Mr/Sy,
                        th == beam["\\theta"][-1],
-                       beam["\\bar{\\delta}"][-1]*CLmax <= kappa]
+                       beam["\\bar{\\delta}"][-1]*CLmax*Nsafety <= kappa]
 
         if hasattr(tailboom, "J"):
             constraints.append(tailboom.J >= 1e-50*units("m^4"))

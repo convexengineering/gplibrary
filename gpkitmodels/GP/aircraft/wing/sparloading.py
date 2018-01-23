@@ -16,7 +16,7 @@ class SparLoading(Model):
     Nsafety         1.0            [-]     safety load factor
     kappa           0.2            [-]     max tip deflection ratio
     W                              [lbf]   loading weight
-    twmax           300.*pi/180     [-]     max tip twist
+    twmax           30.*pi/180     [-]     max tip twist
 
     Variables of length wing.N-1
     ----------------------------
@@ -46,7 +46,7 @@ class SparLoading(Model):
 
     new_SbarFun = None
 
-    def setup(self, wing):
+    def setup(self, wing, state):
         self.wing = wing
         exec parse_variables(SparLoading.__doc__)
 
@@ -58,11 +58,8 @@ class SparLoading(Model):
         I = self.I = self.wing.spar.I
         Sy = self.Sy = self.wing.spar.Sy
         cave = self.cave = self.wing.planform.cave
-        tshear = self.tshear = self.wing.spar.tshear
         E = self.wing.spar.material.E
         sigma = self.wing.spar.material.sigma
-        tau = self.wing.planform.tau
-        taumat = self.wing.spar.shearMaterial.tau
         deta = self.wing.planform.deta
 
         constraints = [
@@ -72,18 +69,15 @@ class SparLoading(Model):
             Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*Nsafety*b/4,
             sigma >= Mr/Sy,
             self.beam["\\bar{\\delta}"][-1] <= kappa,
-            taumat >= self.beam["\\bar{S}"][-1]*W*Nmax*Nsafety/4/tshear/cave/tau
             ]
 
         if hasattr(self.wing.spar, "J"):
-            state = TailBoomState()
-            rho = state.rhosl
-            V = state.Vne
+            qne = state.qne
             J = self.wing.spar.J
             G = self.wing.spar.shearMaterial.G
             cm = self.wing.planform.CM
             constraints.extend([
-                M >= 0.5*cm*cave**2*rho*V**2*deta*b/2,
+                M >= cm*cave**2*qne*deta*b/2,
                 theta[0] >= M[0]/G/J[0]*deta[0]*b/2,
                 theta[1:] >= theta[:-1] + M[1:]/G/J[1:]*deta[1:]*b/2,
                 twmax >= theta[-1]
