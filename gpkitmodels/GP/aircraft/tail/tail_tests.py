@@ -53,16 +53,18 @@ def test_emp():
     htperf = emp.htail.flight_model(emp.htail, fs)
     vtperf = emp.vtail.flight_model(emp.vtail, fs)
     tbperf = emp.tailboom.flight_model(emp.tailboom, fs)
+    hbend = emp.tailboom.tailLoad(emp.tailboom, emp.htail, fs)
+    vbend = emp.tailboom.tailLoad(emp.tailboom, emp.vtail, fs)
 
     m = Model(htperf.Cd + vtperf.Cd + tbperf.Cf,
               [emp.vtail.lv == emp.tailboom.l, emp.htail.lh == emp.tailboom.l,
                emp.htail.Vh <= emp.htail.planform.S*emp.htail.lh/Sw/cmac,
                emp.vtail.Vv <= emp.vtail.planform.S*emp.vtail.lv/Sw/bw,
-               emp, fs, htperf, vtperf, tbperf])
+               emp, fs, htperf, vtperf, tbperf, hbend, vbend])
 
     from gpkit import settings
     if settings["default_solver"] == "cvxopt":
-        for l in [emp.hbend, emp.vbend]:
+        for l in [hbend, vbend]:
             for v in ["\\bar{M}_{tip}", "\\bar{\\delta}_{root}",
                       "\\theta_{root}"]:
                 m.substitutions[l[v]] = 1e-3
@@ -91,17 +93,19 @@ def test_tailboom_mod():
     htperf = emp.htail.flight_model(emp.htail, fs)
     vtperf = emp.vtail.flight_model(emp.vtail, fs)
     tbperf = emp.tailboom.flight_model(emp.tailboom, fs)
+    hbend = emp.tailboom.tailLoad(emp.tailboom, emp.htail, fs)
+    vbend = emp.tailboom.tailLoad(emp.tailboom, emp.vtail, fs)
 
     m = Model(htperf.Cd + vtperf.Cd + tbperf.Cf,
               [emp.vtail.lv == emp.tailboom.l, emp.htail.lh == emp.tailboom.l,
                emp.htail.Vh <= emp.htail.planform.S*emp.htail.lh/Sw/cmac,
                emp.vtail.Vv <= emp.vtail.planform.S*emp.vtail.lv/Sw/bw,
                emp.tailboom.cave <= cmax,
-               emp, fs, htperf, vtperf, tbperf])
+               emp, fs, htperf, vtperf, tbperf, hbend, vbend])
 
     from gpkit import settings
     if settings["default_solver"] == "cvxopt":
-        for l in [emp.hbend, emp.vbend]:
+        for l in [hbend, vbend]:
             for v in ["\\bar{M}_{tip}", "\\bar{\\delta}_{root}",
                       "\\theta_{root}"]:
                 m.substitutions[l[v]] = 1e-3

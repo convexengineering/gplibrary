@@ -132,14 +132,13 @@ class TailBoomBending(Model):
         S = self.S = htail.planform.S
         E = self.E = tailboom.material.E
         Sy = self.Sy = tailboom.Sy
-        rhosl = self.rhosl = state.rhosl
-        Vne = self.Vne = state.Vne
+        qne = self.qne = state.qne
         CLmax = htail.planform.CLmax
         deta = tailboom.deta
         sigma = tailboom.material.sigma
 
         constraints = [beam["dx"] == deta,
-                       F >= 0.5*rhosl*Vne**2*S,
+                       F >= qne*S,
                        beam["\\bar{EI}"] <= E*I/F/l**2/2,
                        Mr >= beam["\\bar{M}"][:-1]*F*l,
                        sigma >= Mr/Sy,
