@@ -1,6 +1,6 @@
 " tail boom model "
 from numpy import pi
-from gpkit import Model, parse_variables, Variable, VectorVariable
+from gpkit import Model, parse_variables, Variable, VectorVariable, units
 from .tube_spar import TubeSpar
 from gpkitmodels.GP.beam.beam import Beam
 from gpkitmodels import g
@@ -137,14 +137,18 @@ class TailBoomBending(Model):
         deta = tailboom.deta
         sigma = tailboom.material.sigma
 
-        return beam, [beam["dx"] == deta,
-                      F >= 0.5*rhosl*Vne**2*S,
-                      beam["\\bar{EI}"] <= E*I/F/l**2/2,
-                      Mr >= beam["\\bar{M}"][:-1]*F*l,
-                      sigma >= Mr/Sy,
-                      th == beam["\\theta"][-1],
-                      beam["\\bar{\\delta}"][-1]*CLmax <= kappa
-                     ]
+        constraints = [beam["dx"] == deta,
+                       F >= 0.5*rhosl*Vne**2*S,
+                       beam["\\bar{EI}"] <= E*I/F/l**2/2,
+                       Mr >= beam["\\bar{M}"][:-1]*F*l,
+                       sigma >= Mr/Sy,
+                       th == beam["\\theta"][-1],
+                       beam["\\bar{\\delta}"][-1]*CLmax <= kappa]
+
+        if hasattr(tailboom, "J"):
+            constraints.append(tailboom.J >= 1e-50*units("m^4"))
+
+        return constraints, beam
 
 class TailBoom(TubeSpar):
     """ Tail Boom Model

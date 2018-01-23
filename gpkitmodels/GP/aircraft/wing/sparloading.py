@@ -2,6 +2,7 @@
 from gpkit import Model, parse_variables
 from gpkitmodels.GP.beam.beam import Beam
 from gpkitmodels.GP.aircraft.tail.tail_boom import TailBoomState
+from numpy import pi
 
 #pylint: disable=no-member, unused-argument, exec-used, invalid-name
 #pylint: disable=undefined-variable, attribute-defined-outside-init
@@ -11,10 +12,11 @@ class SparLoading(Model):
 
     Variables
     ---------
-    Nmax            5       [-]     max loading
-    Nsafety         1.0     [-]     safety load factor
-    kappa           0.2     [-]     max tip deflection ratio
-    W                       [lbf]   loading weight
+    Nmax            5              [-]     max loading
+    Nsafety         1.0            [-]     safety load factor
+    kappa           0.2            [-]     max tip deflection ratio
+    W                              [lbf]   loading weight
+    twmax           300.*pi/180     [-]     max tip twist
 
     Variables of length wing.N-1
     ----------------------------
@@ -62,7 +64,6 @@ class SparLoading(Model):
         tau = self.wing.planform.tau
         taumat = self.wing.spar.shearMaterial.tau
         deta = self.wing.planform.deta
-        cm = self.wing.planform.CM
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
@@ -78,9 +79,13 @@ class SparLoading(Model):
             state = TailBoomState()
             rho = state.rhosl
             V = state.Vne
+            J = self.wing.spar.J
+            G = self.wing.spar.shearMaterial.G
+            cm = self.wing.planform.CM
             constraints.extend([
                 M >= 0.5*cm*cave**2*rho*V**2*deta*b/2,
-                theta[0] >= M[0]/G/J*deta[0]*b/2,
-                theta[1:] >= theta[:-1] + M[1:]/G/J*deta[1:]*b/2,
+                theta[0] >= M[0]/G/J[0]*deta[0]*b/2,
+                theta[1:] >= theta[:-1] + M[1:]/G/J[1:]*deta[1:]*b/2,
+                twmax >= theta[-1]
                 ])
         return self.beam, constraints

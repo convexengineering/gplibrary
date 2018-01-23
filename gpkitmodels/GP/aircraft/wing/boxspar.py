@@ -21,6 +21,7 @@ class BoxSpar(Model):
     -----------------------
     hin                     [in]        height between caps
     I                       [m^4]       spar x moment of inertia
+    J                       [m^4]       spar x polar moment of inertia
     Sy                      [m^3]       section modulus
     dm                      [kg]        segment spar mass
     w                       [in]        spar width
@@ -73,8 +74,9 @@ class BoxSpar(Model):
         self.weight = W >= 2*dm.sum()*g
 
         return [I/mfac <= w*t*hin**2,
-                dm >= (rho*(4*w*t) + 4*tshear*rhoshear*(hin + 2*tcore + 4*t)
-                       + rhocore*w*tcore*2)*b/2*deta,
+                J*2*(hin + w) <= 2*(hin*w)**2*2*tshear,
+                dm >= (rho*4*w*t + 4*tshear*rhoshear*(hin + w)
+                       + 2*rhocore*tcore*(w + hin))*b/2*deta,
                 w <= wlim*cave,
                 cave*tau >= hin + 4*t + 2*tcore,
                 self.weight,

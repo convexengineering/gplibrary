@@ -10,6 +10,7 @@ class CFRPFabric(Model):
     tau         570         [MPa]           torsional stress limit
     E           150         [GPa]           Youngs modulus
     sigma       400         [MPa]           max stress
+    G           2           [GPa]           shear modulus
 
     LaTex Strings
     -------------

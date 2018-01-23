@@ -16,7 +16,7 @@ def test_htail():
     ht = HorizontalTail()
     fs = FlightState()
     ht.substitutions.update({ht.W: 5, ht.mh: 0.01, ht.planform.AR: 4,
-                             ht.Vh: 0.5, ht.lh: 10})
+                             ht.Vh: 0.5, ht.lh: 10, ht.planform.tau: 0.08})
     perf = ht.flight_model(ht, fs)
 
     m = Model(perf.Cd, [ht.Vh <= ht.planform.S*ht.lh/Sw/cmac, ht, perf])
@@ -29,7 +29,7 @@ def test_vtail():
     vt = VerticalTail()
     fs = FlightState()
     vt.substitutions.update({vt.W: 5, vt.planform.AR: 3, vt.Vv: 0.04,
-                             vt.lv: 10})
+                             vt.lv: 10, vt.planform.tau: 0.08})
     perf = vt.flight_model(vt, fs)
 
     m = Model(perf.Cd, [vt.Vv <= vt.planform.S*vt.lv/Sw/bw, vt, perf])
@@ -45,6 +45,8 @@ def test_emp():
     emp.substitutions.update({emp.W: 10, emp.tailboom.l: 5,
                               emp.htail.planform.AR: 4,
                               emp.vtail.planform.AR: 4,
+                              emp.htail.planform.tau: 0.08,
+                              emp.vtail.planform.tau: 0.08,
                               emp.vtail.Vv: 0.04,
                               emp.htail.Vh: 0.4,
                               emp.htail.mh: 0.01})
@@ -80,6 +82,8 @@ def test_tailboom_mod():
     emp.substitutions.update({emp.W: 10, emp.tailboom.l: 5,
                               emp.htail.planform.AR: 4,
                               emp.vtail.planform.AR: 4,
+                              emp.htail.planform.tau: 0.08,
+                              emp.vtail.planform.tau: 0.08,
                               emp.vtail.Vv: 0.04,
                               emp.htail.Vh: 0.4,
                               emp.htail.mh: 0.01,
