@@ -21,7 +21,7 @@ class Planform(Model):
     S                                   [ft^2]  surface area
     AR                                  [-]     aspect ratio
     b                                   [ft]    span
-    tau             0.115               [-]     airfoil thickness ratio
+    tau                                 [-]     airfoil thickness ratio
     CLmax           1.39                [-]     maximum lift coefficient
     CM              0.14                [-]     wing moment coefficient
     croot                               [ft]    root chord
@@ -132,7 +132,7 @@ class WingAero(Model):
         return [Cd >= cdp + CL**2/np.pi/AR/e,
                 Re == rho*V*cmac/mu,
                 # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
-                XfoilFit(fd, cdp, independentvars),
+                XfoilFit(fd, cdp, independentvars, name="polar"),
                 CL <= CLstall
                ]
 
@@ -162,6 +162,7 @@ class Wing(Model):
     sparModel = CapSpar
     fillModel = WingCore
     flight_model = WingAero
+    skinModel = WingSkin
 
     def setup(self, N=5):
         exec parse_variables(Wing.__doc__)
@@ -170,9 +171,11 @@ class Wing(Model):
 
         self.planform = Planform(N)
         self.b = self.planform.b
-        self.skin = WingSkin(self.planform)
-        self.components = [self.skin]
+        self.components = []
 
+        if self.skinModel:
+            self.skin = self.skinModel(self.planform)
+            self.components.extend([self.skin])
         if self.sparModel:
             self.spar = self.sparModel(N, self.planform)
             self.components.extend([self.spar])

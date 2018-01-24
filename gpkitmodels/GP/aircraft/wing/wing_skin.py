@@ -1,5 +1,5 @@
 " wing skin "
-from gpkit import Model, Variable, parse_variables
+from gpkit import Model, parse_variables
 from gpkitmodels.GP.materials import cfrpfabric
 from gpkitmodels import g
 
@@ -46,6 +46,33 @@ class WingSkin(Model):
 
         return [W >= rho*surface.S*2*t*g,
                 t >= tmin,
-                tau >= 1/Jtbar/croot**2/t*Cmw*S*rhosl*Vne**2
-                ]
+                tau >= 1/Jtbar/croot**2/t*Cmw*S*rhosl*Vne**2]
 
+class WingSecondStruct(Model):
+    """ Wing Skin model
+
+    Variables
+    ---------
+    W                           [lbf]           wing skin weight
+    rhoA            0.35        [kg/m^2]        total aerial density
+
+    Upper Unbounded
+    ---------------
+    W
+
+    Lower Unbounded
+    ---------------
+    S
+
+    LaTex Strings
+    -------------
+    W       W_{\\mathrm{skin}}
+    rhoA    \\rho_{A}
+
+    """
+    def setup(self, surface):
+        exec parse_variables(WingSecondStruct.__doc__)
+
+        S = self.S = surface.S
+
+        return [W >= rhoA*S*g]

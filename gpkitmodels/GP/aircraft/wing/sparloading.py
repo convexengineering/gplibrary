@@ -1,6 +1,8 @@
 " spar loading "
 from gpkit import Model, parse_variables
 from gpkitmodels.GP.beam.beam import Beam
+from gpkitmodels.GP.aircraft.tail.tail_boom import TailBoomState
+from numpy import pi
 
 #pylint: disable=no-member, unused-argument, exec-used, invalid-name
 #pylint: disable=undefined-variable, attribute-defined-outside-init
@@ -10,13 +12,17 @@ class SparLoading(Model):
 
     Variables
     ---------
-    Nmax            5       [-]     max loading
-    kappa           0.2     [-]     max tip deflection ratio
-    W                       [lbf]   loading weight
+    Nmax            5              [-]     max loading
+    Nsafety         1.0            [-]     safety load factor
+    kappa           0.2            [-]     max tip deflection ratio
+    W                              [lbf]   loading weight
+    twmax           30.*pi/180     [-]     max tip twist
 
     Variables of length wing.N-1
     ----------------------------
     Mr                      [N*m]   wing section root moment
+    M                       [N*m]   local moment
+    theta                   [-]     twist deflection
 
     Upper Unbounded
     ---------------
@@ -40,7 +46,7 @@ class SparLoading(Model):
 
     new_SbarFun = None
 
-    def setup(self, wing):
+    def setup(self, wing, state):
         self.wing = wing
         exec parse_variables(SparLoading.__doc__)
 
@@ -52,20 +58,28 @@ class SparLoading(Model):
         I = self.I = self.wing.spar.I
         Sy = self.Sy = self.wing.spar.Sy
         cave = self.cave = self.wing.planform.cave
-        tshear = self.tshear = self.wing.spar.tshear
         E = self.wing.spar.material.E
         sigma = self.wing.spar.material.sigma
-        tau = self.wing.planform.tau
-        taumat = self.wing.spar.shearMaterial.tau
+        deta = self.wing.planform.deta
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            self.beam["dx"] == self.wing.planform.deta,
-            self.beam["\\bar{EI}"] <= 8*E*I/Nmax/W/b**2,
-            Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*b/4,
+            self.beam["dx"] == deta,
+            self.beam["\\bar{EI}"] <= 8*E*I/Nmax/Nsafety/W/b**2,
+            Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*Nsafety*b/4,
             sigma >= Mr/Sy,
             self.beam["\\bar{\\delta}"][-1] <= kappa,
-            taumat >= self.beam["\\bar{S}"][-1]*W*Nmax/4/tshear/cave/tau
             ]
 
+        if hasattr(self.wing.spar, "J"):
+            qne = state.qne
+            J = self.wing.spar.J
+            G = self.wing.spar.shearMaterial.G
+            cm = self.wing.planform.CM
+            constraints.extend([
+                M >= cm*cave**2*qne*deta*b/2,
+                theta[0] >= M[0]/G/J[0]*deta[0]*b/2,
+                theta[1:] >= theta[:-1] + M[1:]/G/J[1:]*deta[1:]*b/2,
+                twmax >= theta[-1]
+                ])
         return self.beam, constraints
