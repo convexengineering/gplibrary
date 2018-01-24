@@ -77,7 +77,7 @@ class SparLoading(Model):
             G = self.wing.spar.shearMaterial.G
             cm = self.wing.planform.CM
             constraints.extend([
-                M >= cm*cave**2*qne*deta*b/2,
+                M >= cm*cave**2*qne*deta*b/2*Nsafety,
                 theta[0] >= M[0]/G/J[0]*deta[0]*b/2,
                 theta[1:] >= theta[:-1] + M[1:]/G/J[1:]*deta[1:]*b/2,
                 twmax >= theta[-1]
