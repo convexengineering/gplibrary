@@ -39,8 +39,7 @@ class VerticalTail(Wing):
 
         self.ascs = Wing.setup(self, N)
         self.planform.substitutions.update(
-            {self.planform.tau: 0.08, self.planform.lam: 0.8,
-             self.planform.AR: 4})
+            {self.planform.lam: 0.8, self.planform.AR: 4})
         if self.fillModel:
             self.foam.substitutions.update({self.foam.Abar: 0.0548,
                                             self.foam.material.rho: 0.024})

@@ -6,8 +6,11 @@ class CFRPFabric(Model):
     Variables
     ---------
     rho         1.6         [g/cm^3]        density of CFRP
-    tmin        0.012       [in]            minimum gauge thickness
+    tmin        0.3048      [mm]            minimum gauge thickness
     tau         570         [MPa]           torsional stress limit
+    E           150         [GPa]           Youngs modulus
+    sigma       400         [MPa]           max stress
+    G           2           [GPa]           shear modulus
 
     LaTex Strings
     -------------
@@ -24,9 +27,10 @@ class CFRPUD(Model):
 
     Variables
     ---------
-    rho         1.6         [g/m^3]         density of CFRP
-    E           2e7         [psi]           Youngs Modulus of CFRP
+    rho         1.6         [g/cm^3]        density of CFRP
+    E           137         [GPa]           Youngs Modulus of CFRP
     sigma       1700        [MPa]           maximum stress limit of CFRP
+    tmin        0.1         [mm]            minimum gague thickness
 
     LaTex Strings
     -------------

@@ -1,2 +1,3 @@
 gpkitmodels/GP/aircraft/wing/wing_test.py
 gpkitmodels/GP/aircraft/tail/tail_tests.py
+gpkitmodels/GP/aircraft/fuselage/test_fuselage.py

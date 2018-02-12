@@ -27,7 +27,7 @@ class Empennage(Model):
     mfac        m_{\\mathrm{fac}}
 
     """
-    def setup(self):
+    def setup(self, N=2):
         exec parse_variables(Empennage.__doc__)
 
         self.htail = HorizontalTail()
@@ -41,18 +41,13 @@ class Empennage(Model):
         lv = self.lv = self.vtail.lv
         self.Vv = self.vtail.Vv
         self.bv = self.vtail.b
-        self.tailboom = TailBoom()
+        self.tailboom = TailBoom(N=N)
         self.components = [self.htail, self.vtail, self.tailboom]
         l = self.l = self.tailboom.l
-
-        state = TailBoomState()
-        loading = [self.tailboom.hbending(self.tailboom, self.htail, state),
-                   self.tailboom.vbending(self.tailboom, self.vtail, state),
-                   self.tailboom.vtorsion(self.tailboom, self.vtail, state)]
 
         constraints = [
             W/mfac >= sum(c.W for c in self.components),
             l >= lh, l >= lv,
             ]
 
-        return self.components, constraints, loading
+        return self.components, constraints

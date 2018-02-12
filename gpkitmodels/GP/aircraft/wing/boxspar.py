@@ -21,9 +21,11 @@ class BoxSpar(Model):
     -----------------------
     hin                     [in]        height between caps
     I                       [m^4]       spar x moment of inertia
+    J                       [m^4]       spar x polar moment of inertia
     Sy                      [m^3]       section modulus
     dm                      [kg]        segment spar mass
     w                       [in]        spar width
+    d                       [in]        cross sectional diameter
     t                       [in]        spar cap thickness
     tshear                  [in]        shear web thickness
     tcore                   [in]        core thickness
@@ -67,14 +69,20 @@ class BoxSpar(Model):
         rhoshear = self.shearMaterial.rho
         rhocore = self.coreMaterial.rho
         tshearmin = self.shearMaterial.tmin
+        tmin = self.material.tmin
+
+        self.weight = W >= 2*dm.sum()*g
 
         return [I/mfac <= w*t*hin**2,
-                dm >= (rho*(4*w*t) + 2*tshear*rhoshear*(hin + 2*tcore + 4*t)
-                       + rhocore*w*tcore*2)*b/2*deta,
+                J*2*(hin + w) <= 2*(hin*w)**2*2*tshear,
+                dm >= (rho*4*w*t + 4*tshear*rhoshear*(hin + w)
+                       + 2*rhocore*tcore*(w + hin))*b/2*deta,
                 w <= wlim*cave,
                 cave*tau >= hin + 4*t + 2*tcore,
-                W >= 2*dm.sum()*g,
+                self.weight,
+                t >= tmin,
                 Sy*(hin/2 + 2*t + tcore) <= I,
                 tshear >= tshearmin,
-                tcore >= tcoret*cave*tau
+                tcore >= tcoret*cave*tau,
+                d == w,
                ]
