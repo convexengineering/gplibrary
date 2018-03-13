@@ -1,5 +1,4 @@
 from gpfit.fit import fit
-import gpkitmodels.GP.aircraft.wing.gustloading as GustL
 import os
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,13 +32,5 @@ def arctanfit():
 
 if __name__ == "__main__":
     df, fig, ax = arctanfit()
-    if GENERATE:
-        path = os.path.dirname(GustL.__file__)
-        df.to_csv(path + os.sep + "arctan_fit.csv", index=False)
-    else:
-        df.to_csv("arctan_fit.csv")
-    if len(sys.argv) > 1:
-        path = sys.argv[1]
-        fig.savefig(path + "arctanfit.pdf", bbox_inches="tight")
-    else:
-        fig.savefig("arctanfit.pdf", bbox_inches="tight")
+    df.to_csv("arctan_fit.csv")
+    fig.savefig("arctanfit.pdf", bbox_inches="tight")
