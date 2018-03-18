@@ -15,6 +15,7 @@ class VerticalTail(Wing):
     Vv                  [-]         vertical tail volume coefficient
     lv                  [ft]        vertical tail moment arm
 
+
     Upper Unbounded
     ---------------
     lv, Vv, W
@@ -38,6 +39,7 @@ class VerticalTail(Wing):
         exec parse_variables(VerticalTail.__doc__)
 
         self.ascs = Wing.setup(self, N)
+        self.skinmaterial = self.skin.material
         self.planform.substitutions.update(
             {self.planform.lam: 0.8, self.planform.AR: 4})
         if self.fillModel:

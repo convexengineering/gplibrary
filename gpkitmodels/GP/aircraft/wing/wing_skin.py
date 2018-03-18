@@ -40,7 +40,7 @@ class WingSkin(Model):
 
         croot = self.croot = surface.croot
         S = self.S = surface.S
-        rho = self.material.rho
+        rho = self.rho = self.material.rho
         tau = self.material.tau
         tmin = self.material.tmin
 

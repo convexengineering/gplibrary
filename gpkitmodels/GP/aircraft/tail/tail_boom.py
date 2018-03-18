@@ -16,9 +16,21 @@ class TailBoomAero(Model):
     Cf          [-]     tail boom skin friction coefficient
     Re          [-]     tail boom reynolds number
 
+    Upper Bounded by state
+    ----------------------
+    \\rho, \\mu
+
+    Lower Bounded by state
+    ----------------------
+    \\rho, \\mu, V
+
     Upper Unbounded
     ---------------
-    Re, l, Cf
+    Re, Cf
+
+    Lower Unbounded
+    ---------------
+    l
 
     LaTex Strings
     -------------
@@ -29,6 +41,8 @@ class TailBoomAero(Model):
         exec parse_variables(TailBoomAero.__doc__)
 
         l = self.l = static.l
+        self.static = static
+        self.state = state
         rho = self.rho = state.rho
         V = self.V = state.V
         mu = self.mu = state.mu
@@ -105,6 +119,14 @@ class TailBoomBending(Model):
     -----------------------
     Mr                      [N*m]   section root moment
 
+    Lower Bounded by htail
+    ----------------------
+    CLmax
+
+    Lower Bounded by tailboom
+    ----------------------
+    deta
+
     Upper Unbounded
     ---------------
     I0
@@ -128,12 +150,15 @@ class TailBoomBending(Model):
         beam = Beam(N)
 
         I = self.I = tailboom.I
+        self.I0 = I[0]
         l = self.l = tailboom.l
         S = self.S = htail.planform.S
         E = self.E = tailboom.material.E
         Sy = self.Sy = tailboom.Sy
         qne = self.qne = state.qne
+        self.htail = htail
         CLmax = htail.planform.CLmax
+        self.tailboom = tailboom
         deta = tailboom.deta
         sigma = tailboom.material.sigma
 

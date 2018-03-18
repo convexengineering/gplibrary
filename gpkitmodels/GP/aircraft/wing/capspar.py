@@ -29,7 +29,7 @@ class CapSpar(Model):
 
     Upper Unbounded
     ---------------
-    W, cave
+    W, cave, tau
 
     Lower Unbounded
     ---------------
@@ -57,10 +57,11 @@ class CapSpar(Model):
     def setup(self, N, surface):
         exec parse_variables(CapSpar.__doc__)
 
+        self.surface = surface
         cave = self.cave = surface.cave
         b = self.b = surface.b
         deta = surface.deta
-        tau = surface.tau
+        tau = self.tau = surface.tau
         rho = self.material.rho
         rhoshear = self.shearMaterial.rho
         rhocore = self.coreMaterial.rho
@@ -75,4 +76,3 @@ class CapSpar(Model):
                 Sy*(hin/2 + t) <= I,
                 tshear >= tshearmin
                ]
-
