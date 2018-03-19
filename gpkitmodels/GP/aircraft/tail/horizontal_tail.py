@@ -43,7 +43,6 @@ class HorizontalTail(Wing):
         exec parse_variables(HorizontalTail.__doc__)
 
         self.ascs = Wing.setup(self, N)
-        self.skinmaterial = self.skin.material
         self.planform.substitutions.update(
             {self.planform.AR: 4, self.planform.lam: 0.8})
         if self.fillModel:

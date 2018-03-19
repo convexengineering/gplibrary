@@ -36,6 +36,5 @@ class WingCore(Model):
         b = self.b = surface.b
         deta = surface.deta
         rho = self.material.rho
-        print rho.key.descr
 
         return [W >= 2*(g*rho*Abar*cave**2*b/2*deta).sum()]

@@ -41,7 +41,6 @@ class TailBoomAero(Model):
         exec parse_variables(TailBoomAero.__doc__)
 
         l = self.l = static.l
-        self.static = static
         self.state = state
         rho = self.rho = state.rho
         V = self.V = state.V
