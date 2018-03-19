@@ -8,6 +8,7 @@ class Propeller(Model):
     Variables
     ---------
     R          10           [m]         prop radius
+    W          10           [lbf]        prop weight
 
     """
     def setup(self):
@@ -35,12 +36,12 @@ class Propeller_Performance(Model):
     def helper(self, c):
         return 2. - 1./c[self.etaadd]
 
-    def setup(self, state):
+    def setup(self,parent,  state):
         exec parse_variables(Propeller.__doc__)
 
-        V = state.V
-        rho = state.rho
-        
+        V       = state.V
+        rho     = state.rho
+        R       = parent.R        
 
         constraints = [eta <= etav*etai,
                 Tc == T/(0.5*rho*V**2*pi*R**2),
