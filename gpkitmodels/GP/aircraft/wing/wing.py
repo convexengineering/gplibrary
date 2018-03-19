@@ -41,12 +41,12 @@ class Planform(Model):
     deta        self.return_deta        [-]     \\Delta (2y/b)
 
     Upper Unbounded
-    ---------------  # bounding any pair of variables will work
-    cave, b
+    ---------------  # bounding any pair of planform variables will work
+    cmac, b, tau
 
     Lower Unbounded
     ---------------
-    cave, b
+    cmac, b, tau
 
     LaTex Strings
     -------------
@@ -99,9 +99,21 @@ class WingAero(Model):
     Re                      [-]     reynolds number
     cdp                     [-]     wing profile drag coefficient
 
+    Upper Bounded by state
+    ----------------------
+    \\rho, \\mu
+
+    Lower Bounded by state
+    ----------------------
+    \\rho, \\mu, V
+
     Upper Unbounded
     ---------------
     Cd, Re, AR
+
+    Lower Unbounded
+    ---------------
+    cmac
 
     LaTex Strings
     -------------
@@ -119,7 +131,8 @@ class WingAero(Model):
         fd = df.to_dict(orient="records")[0]
 
         AR = self.AR = static.planform.AR
-        cmac = static.planform.cmac
+        cmac = self.cmac = static.planform.cmac
+        self.state = state
         rho = self.rho = state.rho
         V = self.V = state.V
         mu = self.mu = state.mu

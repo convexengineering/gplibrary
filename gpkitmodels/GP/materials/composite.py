@@ -3,7 +3,7 @@ from gpkit import Model, parse_variables
 class CFRPFabric(Model):
     """ Carbon Fiber Reinforced Plastic Fabric Material Properties
 
-    Variables
+    Constants
     ---------
     rho         1.6         [g/cm^3]        density of CFRP
     tmin        0.3048      [mm]            minimum gauge thickness
@@ -25,7 +25,7 @@ class CFRPFabric(Model):
 class CFRPUD(Model):
     """ Carbon Fiber Reinforced Plastic Unidirectional Material Properties
 
-    Variables
+    Constants
     ---------
     rho         1.6         [g/cm^3]        density of CFRP
     E           137         [GPa]           Youngs Modulus of CFRP
@@ -45,7 +45,7 @@ class CFRPUD(Model):
 class Kevlar(Model):
     """ Kevlar Material Properties
 
-    Variables
+    Constants
     ---------
     rho         0.049       [g/cm^3]        density of Kevlar
     tmin        0.012       [in]            minimum gauge thickness

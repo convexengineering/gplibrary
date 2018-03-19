@@ -16,11 +16,13 @@ class Empennage(Model):
 
     Upper Unbounded
     ---------------
-    W, Vv, Vh
+    W, vtail.Vv, htail.Vh, tailboom.cave
 
     Lower Unbounded
     ---------------
-    lv, lh, Vv, Vh, bv, bh, mh
+    htail.lh, htail.Vh, htail.b, htail.mh
+    vtail.lv, vtail.Vv, vtail.b
+    tailboom.Sy, tailboom.cave
 
     LaTex Strings
     -------------
@@ -33,14 +35,9 @@ class Empennage(Model):
         self.htail = HorizontalTail()
         self.htail.substitutions.update({self.htail.mfac: 1.1})
         lh = self.lh = self.htail.lh
-        self.Vh = self.htail.Vh
-        self.bh = self.htail.b
-        self.mh = self.htail.mh
         self.vtail = VerticalTail()
         self.vtail.substitutions.update({self.vtail.mfac: 1.1})
         lv = self.lv = self.vtail.lv
-        self.Vv = self.vtail.Vv
-        self.bv = self.vtail.b
         self.tailboom = TailBoom(N=N)
         self.components = [self.htail, self.vtail, self.tailboom]
         l = self.l = self.tailboom.l

@@ -26,11 +26,11 @@ class SparLoading(Model):
 
     Upper Unbounded
     ---------------
-    I, tshear, Sy, cave
+    I, Sy, cave, theta, M
 
     Lower Unbounded
     ---------------
-    b, W
+    b, W, theta, M
 
     LaTex Strings
     -------------

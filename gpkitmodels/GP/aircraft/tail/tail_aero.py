@@ -15,9 +15,21 @@ class TailAero(Model):
     Re          [-]     Reynolds number
     Cd          [-]     drag coefficient
 
+    Upper Bounded by state
+    ----------------------
+    \\rho, \\mu
+
+    Lower Bounded by state
+    ----------------------
+    \\rho, \\mu, V
+
     Upper Unbounded
     ---------------
-    Cd, Re
+    Cd, Re, S, b
+
+    Lower Unbounded
+    ---------------
+    S, tau
 
     LaTex Strings
     -------------
@@ -30,6 +42,8 @@ class TailAero(Model):
         cmac = self.cmac = static.planform.cmac
         b = self.b = static.planform.b
         S = self.S = static.planform.S
+        tau = self.tau = static.planform.tau
+        self.state = state
         rho = self.rho = state.rho
         V = self.V = state.V
         mu = self.mu = state.mu
@@ -41,8 +55,7 @@ class TailAero(Model):
             Re == V*rho*S/b/mu,
             # XfoilFit(fd, Cd, [Re, static["\\tau"]],
             #          err_margin="RMS", airfoil="naca 0008")
-            XfoilFit(fd, Cd, [Re, static.planform.tau], err_margin="RMS")
+            XfoilFit(fd, Cd, [Re, tau], err_margin="RMS")
             ]
 
         return constraints
-
