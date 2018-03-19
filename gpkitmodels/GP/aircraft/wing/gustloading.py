@@ -26,11 +26,11 @@ class GustL(SparLoading):
 
     Upper Unbounded
     ---------------
-    v, cl, I, tshear, Sy, cave
+    v, cl, I, tshear, J, Sy
 
     Lower Unbounded
     ---------------
-    Ww, b
+    Ww, b, qne, cave
 
     LaTex Strings
     -------------
