@@ -15,21 +15,13 @@ class TailAero(Model):
     Re          [-]     Reynolds number
     Cd          [-]     drag coefficient
 
-    Upper Bounded by state
-    ----------------------
-    \\rho, \\mu
-
-    Lower Bounded by state
-    ----------------------
-    \\rho, \\mu, V
-
     Upper Unbounded
     ---------------
-    Cd, Re, S, b
+    Cd, Re, S, V, b, rho (if not rhovalue)
 
     Lower Unbounded
     ---------------
-    S, tau
+    S, tau, V, b, rho (if not rhovalue)
 
     LaTex Strings
     -------------
@@ -45,6 +37,7 @@ class TailAero(Model):
         S = self.S = static.planform.S
         tau = self.tau = static.planform.tau
         rho = self.rho = state.rho
+        self.rhovalue = rho.key.value
         V = self.V = state.V
         mu = self.mu = state.mu
         path = os.path.dirname(__file__)

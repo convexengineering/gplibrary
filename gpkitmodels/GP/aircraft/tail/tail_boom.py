@@ -16,21 +16,13 @@ class TailBoomAero(Model):
     Cf          [-]     tail boom skin friction coefficient
     Re          [-]     tail boom reynolds number
 
-    Upper Bounded by state
-    ----------------------
-    \\rho, \\mu
-
-    Lower Bounded by state
-    ----------------------
-    \\rho, \\mu, V
-
     Upper Unbounded
     ---------------
-    Re, Cf
+    Re, Cf, l, V, rho (if not rhovalue)
 
     Lower Unbounded
     ---------------
-    l
+    l, V, rho (if not rhovalue)
 
     LaTex Strings
     -------------
@@ -43,6 +35,7 @@ class TailBoomAero(Model):
 
         l = self.l = static.l
         rho = self.rho = state.rho
+        self.rhovalue = rho.key.value
         V = self.V = state.V
         mu = self.mu = state.mu
 
@@ -118,13 +111,6 @@ class TailBoomBending(Model):
     -----------------------
     Mr                      [N*m]   section root moment
 
-    Lower Bounded by htail
-    ----------------------
-    CLmax
-
-    Lower Bounded by tailboom
-    ----------------------
-    deta
 
     Upper Unbounded
     ---------------
