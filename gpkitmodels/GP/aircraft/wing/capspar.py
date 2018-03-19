@@ -29,11 +29,11 @@ class CapSpar(Model):
 
     Upper Unbounded
     ---------------
-    W, cave, tau
+    W, surface.cave, surface.tau
 
     Lower Unbounded
     ---------------
-    Sy, b
+    Sy, surface.b
 
     LaTex Strings
     -------------
@@ -55,12 +55,13 @@ class CapSpar(Model):
     coreMaterial = foamhd
 
     def setup(self, N, surface):
+        self.surface = surface
         exec parse_variables(CapSpar.__doc__)
 
-        cave = self.cave = surface.cave
-        b = self.b = surface.b
+        cave = surface.cave
+        b = surface.b
         deta = surface.deta
-        tau = self.tau = surface.tau
+        tau = surface.tau
         rho = self.material.rho
         rhoshear = self.shearMaterial.rho
         rhocore = self.coreMaterial.rho

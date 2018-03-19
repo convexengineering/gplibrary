@@ -37,14 +37,14 @@ class Empennage(Model):
         self.htail = HorizontalTail()
         self.hSparModel = self.htail.sparModel
         self.htail.substitutions.update({self.htail.mfac: 1.1})
-        lh = self.lh = self.htail.lh
+        lh = self.htail.lh
         self.vtail = VerticalTail()
         self.vSparModel = self.vtail.sparModel
         self.vtail.substitutions.update({self.vtail.mfac: 1.1})
-        lv = self.lv = self.vtail.lv
+        lv = self.vtail.lv
         self.tailboom = TailBoom(N=N)
         self.components = [self.htail, self.vtail, self.tailboom]
-        l = self.l = self.tailboom.l
+        l = self.tailboom.l
 
         constraints = [
             W/mfac >= sum(c.W for c in self.components),
