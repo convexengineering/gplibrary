@@ -160,7 +160,7 @@ class Wing(Model):
 
     Upper Unbounded
     ---------------
-    W, planform.tau (if not sparModel)
+    W, planform.tau (if not sparJ)
 
     Lower Unbounded
     ---------------
