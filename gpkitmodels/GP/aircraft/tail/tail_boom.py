@@ -128,11 +128,11 @@ class TailBoomBending(Model):
 
     Upper Unbounded
     ---------------
-    I0
+    I0, tailboom.J (if tailboomJ), I (if tailboomJ), Sy (if tailboomJ)
 
     Lower Unbounded
     ---------------
-    S, l
+    S, l, qne (if tailboomJ)
 
     LaTex Strings
     -------------
@@ -169,7 +169,8 @@ class TailBoomBending(Model):
                        th == beam["\\theta"][-1],
                        beam["\\bar{\\delta}"][-1]*CLmax*Nsafety <= kappa]
 
-        if hasattr(tailboom, "J"):
+        self.tailboomJ = hasattr(tailboom, "J")
+        if self.tailboomJ:
             constraints.append(tailboom.J >= 1e-50*units("m^4"))
 
         return constraints, beam

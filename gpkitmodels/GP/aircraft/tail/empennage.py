@@ -16,13 +16,15 @@ class Empennage(Model):
 
     Upper Unbounded
     ---------------
-    W, vtail.Vv, htail.Vh, tailboom.cave
+    W, vtail.Vv, htail.Vh, tailboom.cave (if not hSparModel)
 
     Lower Unbounded
     ---------------
     htail.lh, htail.Vh, htail.b, htail.mh
     vtail.lv, vtail.Vv, vtail.b
-    tailboom.Sy, tailboom.cave
+    htail.Sy (if hSparModel), htail.J (if hSparModel)
+    vtail.Sy (if vSparModel), vtail.J (if vSparModel)
+    tailboom.Sy, tailboom.cave (if not hSparModel), tailboom.J (if hSparModel)
 
     LaTex Strings
     -------------
@@ -33,9 +35,11 @@ class Empennage(Model):
         exec parse_variables(Empennage.__doc__)
 
         self.htail = HorizontalTail()
+        self.hSparModel = self.htail.sparModel
         self.htail.substitutions.update({self.htail.mfac: 1.1})
         lh = self.lh = self.htail.lh
         self.vtail = VerticalTail()
+        self.vSparModel = self.vtail.sparModel
         self.vtail.substitutions.update({self.vtail.mfac: 1.1})
         lv = self.lv = self.vtail.lv
         self.tailboom = TailBoom(N=N)

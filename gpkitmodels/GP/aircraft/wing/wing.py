@@ -164,7 +164,7 @@ class Wing(Model):
 
     Lower Unbounded
     ---------------
-    b, Sy
+    b, Sy, J (if sparModel)
 
     LaTex Strings
     -------------
@@ -193,6 +193,8 @@ class Wing(Model):
             self.spar = self.sparModel(N, self.planform)
             self.components.extend([self.spar])
             self.Sy = self.spar.Sy
+            if hasattr(self.spar, "J"):
+                self.J = self.spar.J
         if self.fillModel:
             self.foam = self.fillModel(self.planform)
             self.components.extend([self.foam])

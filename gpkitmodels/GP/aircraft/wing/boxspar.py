@@ -36,7 +36,7 @@ class BoxSpar(Model):
 
     Lower Unbounded
     ---------------
-    Sy, b
+    Sy, b, J
 
     LaTex Strings
     -------------
