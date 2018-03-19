@@ -27,13 +27,13 @@ class GustL(SparLoading):
     Upper Unbounded
     ---------------
     v, cl, wing.spar.I, wing.spar.tshear, wing.spar.Sy
-    J (if wingSparJ)
+    wing.spar.J (if wingSparJ)
     theta (if not wingSparJ), M (if not wingSparJ)
 
     Lower Unbounded
     ---------------
     Ww, wing.planform.b, wing.planform.cave
-    qne (if wingSparJ)
+    state.qne (if wingSparJ)
     theta (if not wingSparJ), M (if not wingSparJ)
 
     LaTex Strings

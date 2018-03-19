@@ -101,11 +101,14 @@ class WingAero(Model):
 
     Upper Unbounded
     ---------------
-    Cd, Re, AR, cmac, V, rho (if not rhovalue)
+    Cd, Re
+    static.planform.AR, static.planform.cmac
+    state.V, state.rho (if not rhovalue)
 
     Lower Unbounded
     ---------------
-    cmac, V, rho (if not rhovalue)
+    static.planform.cmac
+    state.V, state.rho (if not rhovalue)
 
     LaTex Strings
     -------------
@@ -117,18 +120,19 @@ class WingAero(Model):
     """
     def setup(self, static, state,
               fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"):
+        self.static = static
         self.state = state
         exec parse_variables(WingAero.__doc__)
 
         df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
 
-        AR = self.AR = static.planform.AR
-        cmac = self.cmac = static.planform.cmac
-        rho = self.rho = state.rho
+        AR = static.planform.AR
+        cmac = static.planform.cmac
+        rho = state.rho
         self.rhovalue = rho.key.value
-        V = self.V = state.V
-        mu = self.mu = state.mu
+        V = state.V
+        mu = state.mu
 
         if fd["d"] == 2:
             independentvars = [self.CL, self.Re]

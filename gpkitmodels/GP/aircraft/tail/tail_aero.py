@@ -17,11 +17,14 @@ class TailAero(Model):
 
     Upper Unbounded
     ---------------
-    Cd, Re, S, V, b, rho (if not rhovalue)
+    Cd, Re
+    static.planform.S, static.planform.b
+    state.V, state.rho (if not rhovalue)
 
     Lower Unbounded
     ---------------
-    S, tau, V, b, rho (if not rhovalue)
+    static.planform.S, static.planform.tau, static.planform.b
+    state.V, state.rho (if not rhovalue)
 
     LaTex Strings
     -------------
@@ -30,16 +33,17 @@ class TailAero(Model):
     """
     def setup(self, static, state):
         self.state = state
+        self.static = static
         exec parse_variables(TailAero.__doc__)
 
-        cmac = self.cmac = static.planform.cmac
-        b = self.b = static.planform.b
-        S = self.S = static.planform.S
-        tau = self.tau = static.planform.tau
-        rho = self.rho = state.rho
+        cmac = static.planform.cmac
+        b = static.planform.b
+        S = static.planform.S
+        tau = static.planform.tau
+        rho = state.rho
         self.rhovalue = rho.key.value
-        V = self.V = state.V
-        mu = self.mu = state.mu
+        V = state.V
+        mu = state.mu
         path = os.path.dirname(__file__)
         fd = pd.read_csv(path + os.sep + "tail_dragfit.csv").to_dict(
             orient="records")[0]

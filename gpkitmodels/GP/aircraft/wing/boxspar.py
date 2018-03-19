@@ -36,7 +36,7 @@ class BoxSpar(Model):
 
     Lower Unbounded
     ---------------
-    Sy, b, J
+    Sy, surface.b, J
 
     LaTex Strings
     -------------
@@ -59,9 +59,11 @@ class BoxSpar(Model):
     coreMaterial = foamhd
 
     def setup(self, N, surface):
+        self.N = N
+        self.surface = surface
         exec parse_variables(BoxSpar.__doc__)
 
-        b = self.b = surface.b
+        b = surface.b
         cave = surface.cave
         tau = surface.tau
         deta = surface.deta

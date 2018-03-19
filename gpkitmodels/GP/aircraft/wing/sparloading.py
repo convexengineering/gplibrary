@@ -26,12 +26,12 @@ class SparLoading(Model):
 
     Upper Unbounded
     ---------------
-    I, Sy, J (if wingSparJ)
+    wing.spar.I, wing.spar.Sy, wing.spar.J (if wingSparJ)
     theta (if not wingSparJ), M (if not wingSparJ)
 
     Lower Unbounded
     ---------------
-    b, W, cave, qne (if wingSparJ)
+    wing.planform.b, W, wing.planform.cave, state.qne (if wingSparJ)
     theta (if not wingSparJ), M (if not wingSparJ)
 
     LaTex Strings
@@ -50,16 +50,17 @@ class SparLoading(Model):
 
     def setup(self, wing, state):
         self.wing = wing
+        self.state = state
         exec parse_variables(SparLoading.__doc__)
 
         Beam.qbarFun = self.new_qbarFun
         Beam.SbarFun = self.new_SbarFun
         self.beam = Beam(self.wing.N)
 
-        b = self.b = self.wing.planform.b
-        I = self.I = self.wing.spar.I
-        Sy = self.Sy = self.wing.spar.Sy
-        cave = self.cave = self.wing.planform.cave
+        b = self.wing.planform.b
+        I = self.wing.spar.I
+        Sy = self.wing.spar.Sy
+        cave = self.wing.planform.cave
         E = self.wing.spar.material.E
         sigma = self.wing.spar.material.sigma
         deta = self.wing.planform.deta
@@ -76,8 +77,8 @@ class SparLoading(Model):
         self.wingSparJ = hasattr(self.wing.spar, "J")
 
         if self.wingSparJ:
-            qne = self.qne = state.qne
-            J = self.J = self.wing.spar.J
+            qne = state.qne
+            J = self.wing.spar.J
             G = self.wing.spar.shearMaterial.G
             cm = self.wing.planform.CM
             constraints.extend([
