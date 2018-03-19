@@ -38,10 +38,10 @@ class TailBoomAero(Model):
 
     """
     def setup(self, static, state):
+        self.state = state
         exec parse_variables(TailBoomAero.__doc__)
 
         l = self.l = static.l
-        self.state = state
         rho = self.rho = state.rho
         V = self.V = state.V
         mu = self.mu = state.mu
@@ -128,11 +128,12 @@ class TailBoomBending(Model):
 
     Upper Unbounded
     ---------------
-    I0, tailboom.J (if tailboomJ), I (if tailboomJ), Sy (if tailboomJ)
+    tailboom.I0, tailboom.Sy
+    tailboom.J (if tailboomJ), tailboom.I (if tailboomJ)
 
     Lower Unbounded
     ---------------
-    S, l, qne (if tailboomJ)
+    htail.planform.S, tailboom.l, state.qne
 
     LaTex Strings
     -------------
@@ -141,23 +142,24 @@ class TailBoomBending(Model):
 
     """
     def setup(self, tailboom, htail, state):
-        N = tailboom.N
+        N = self.N = tailboom.N
+        self.state = state
+        self.htail = htail
+        self.tailboom = tailboom
         exec parse_variables(TailBoomBending.__doc__)
 
         Beam.qbarFun = [1e-10]*N
         Beam.SbarFun = [1.]*N
         beam = Beam(N)
 
-        I = self.I = tailboom.I
-        self.I0 = I[0]
-        l = self.l = tailboom.l
-        S = self.S = htail.planform.S
-        E = self.E = tailboom.material.E
-        Sy = self.Sy = tailboom.Sy
-        qne = self.qne = state.qne
-        self.htail = htail
+        I = tailboom.I
+        tailboom.I0 = I[0]
+        l = tailboom.l
+        S = htail.planform.S
+        E = tailboom.material.E
+        Sy = tailboom.Sy
+        qne = state.qne
         CLmax = htail.planform.CLmax
-        self.tailboom = tailboom
         deta = tailboom.deta
         sigma = tailboom.material.sigma
 

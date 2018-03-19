@@ -125,6 +125,7 @@ class WingAero(Model):
     """
     def setup(self, static, state,
               fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"):
+        self.state = state
         exec parse_variables(WingAero.__doc__)
 
         df = pd.read_csv(fitdata)
@@ -132,7 +133,6 @@ class WingAero(Model):
 
         AR = self.AR = static.planform.AR
         cmac = self.cmac = static.planform.cmac
-        self.state = state
         rho = self.rho = state.rho
         V = self.V = state.V
         mu = self.mu = state.mu
@@ -160,11 +160,11 @@ class Wing(Model):
 
     Upper Unbounded
     ---------------
-    W
+    W, planform.tau (if not sparModel)
 
     Lower Unbounded
     ---------------
-    b, Sy, J (if sparModel)
+    planform.b, spar.Sy (if sparModel), spar.J (if sparJ)
 
     LaTex Strings
     -------------
@@ -176,14 +176,13 @@ class Wing(Model):
     fillModel = WingCore
     flight_model = WingAero
     skinModel = WingSkin
+    sparJ = False
 
     def setup(self, N=5):
+        self.N = N
         exec parse_variables(Wing.__doc__)
 
-        self.N = N
-
         self.planform = Planform(N)
-        self.b = self.planform.b
         self.components = []
 
         if self.skinModel:
@@ -192,9 +191,7 @@ class Wing(Model):
         if self.sparModel:
             self.spar = self.sparModel(N, self.planform)
             self.components.extend([self.spar])
-            self.Sy = self.spar.Sy
-            if hasattr(self.spar, "J"):
-                self.J = self.spar.J
+            self.sparJ = hasattr(self.spar, "J")
         if self.fillModel:
             self.foam = self.fillModel(self.planform)
             self.components.extend([self.foam])

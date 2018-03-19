@@ -25,7 +25,7 @@ class HorizontalTail(Wing):
 
     Lower Unbounded
     ---------------
-    lh, Vh, b, mh, Sy (if sparModel), J (if sparModel)
+    lh, Vh, planform.b, mh, spar.Sy (if sparModel), spar.J (if sparJ)
 
     LaTex Strings
     -------------

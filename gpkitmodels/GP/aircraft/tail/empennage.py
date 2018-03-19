@@ -20,10 +20,10 @@ class Empennage(Model):
 
     Lower Unbounded
     ---------------
-    htail.lh, htail.Vh, htail.b, htail.mh
-    vtail.lv, vtail.Vv, vtail.b
-    htail.Sy (if hSparModel), htail.J (if hSparModel)
-    vtail.Sy (if vSparModel), vtail.J (if vSparModel)
+    htail.lh, htail.Vh, htail.planform.b, htail.mh
+    vtail.lv, vtail.Vv, vtail.planform.b
+    htail.spar.Sy (if hSparModel), htail.spar.J (if hSparModel)
+    vtail.spar.Sy (if vSparModel), vtail.spar.J (if vSparModel)
     tailboom.Sy, tailboom.cave (if not hSparModel), tailboom.J (if hSparModel)
 
     LaTex Strings
