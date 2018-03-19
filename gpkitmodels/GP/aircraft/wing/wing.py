@@ -99,21 +99,13 @@ class WingAero(Model):
     Re                      [-]     reynolds number
     cdp                     [-]     wing profile drag coefficient
 
-    Upper Bounded by state
-    ----------------------
-    \\rho, \\mu
-
-    Lower Bounded by state
-    ----------------------
-    \\rho, \\mu, V
-
     Upper Unbounded
     ---------------
-    Cd, Re, AR
+    Cd, Re, AR, cmac, V, rho (if not rhovalue)
 
     Lower Unbounded
     ---------------
-    cmac
+    cmac, V, rho (if not rhovalue)
 
     LaTex Strings
     -------------
@@ -134,6 +126,7 @@ class WingAero(Model):
         AR = self.AR = static.planform.AR
         cmac = self.cmac = static.planform.cmac
         rho = self.rho = state.rho
+        self.rhovalue = rho.key.value
         V = self.V = state.V
         mu = self.mu = state.mu
 
