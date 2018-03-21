@@ -119,7 +119,9 @@ class TailBoomBending(Model):
 
     Lower Unbounded
     ---------------
-    htail.planform.S, tailboom.l, state.qne
+    htail.planform.S, htail.planform.CLmax
+    tailboom.l, tailboom.deta
+    state.qne
 
     LaTex Strings
     -------------
@@ -136,7 +138,7 @@ class TailBoomBending(Model):
 
         Beam.qbarFun = [1e-10]*N
         Beam.SbarFun = [1.]*N
-        beam = Beam(N)
+        beam = self.beam = Beam(N)
 
         I = tailboom.I
         tailboom.I0 = I[0]
@@ -149,7 +151,7 @@ class TailBoomBending(Model):
         deta = tailboom.deta
         sigma = tailboom.material.sigma
 
-        constraints = [beam["dx"] == deta,
+        constraints = [beam.dx == deta,
                        F >= qne*S,
                        beam["\\bar{EI}"] <= E*I/F/l**2/2,
                        Mr >= beam["\\bar{M}"][:-1]*F*l,
