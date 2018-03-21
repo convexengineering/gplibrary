@@ -31,7 +31,8 @@ class SparLoading(Model):
 
     Lower Unbounded
     ---------------
-    b, W, cave, qne (if wingSparJ)
+    b, W, cave
+    wing.planform.CM (if wingSparJ), qne (if wingSparJ)
     theta (if not wingSparJ), M (if not wingSparJ)
 
     LaTex Strings
