@@ -9,7 +9,8 @@ def eta_test():
     p = Propeller(fs)
     p.substitutions[p.T] = 100
     p.cost = 1/p.eta
-    p.solve()
+    sol = p.solve()
+    print sol.table()
 
 def qprop_test():
 
@@ -23,7 +24,7 @@ def qprop_test():
 def test():
     "tests"
     eta_test()
-    qprop_test()
+    #qprop_test()
 
 if __name__ == "__main__":
     test()
