@@ -42,11 +42,11 @@ class Planform(Model):
 
     Upper Unbounded
     ---------------  # bounding any pair of variables will work
-    cave, b
+    cave, b, tau
 
     Lower Unbounded
     ---------------
-    cave, b
+    cave, b, tau
 
     LaTex Strings
     -------------

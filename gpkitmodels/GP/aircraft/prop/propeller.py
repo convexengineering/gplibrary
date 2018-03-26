@@ -1,21 +1,6 @@
 " propeller model "
 from numpy import pi
-from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality
-
-class Propeller(Model):
-    """ Propeller Model
-
-    Variables
-    ---------
-    R          10           [m]         prop radius
-    W          .01          [lbf]        prop weight
-
-    """
-    def setup(self):
-        exec parse_variables(Propeller.__doc__)
-
-    def flight_model(self,state):
-        return Propeller_Performance(self, state)
+from gpkit import Model, parse_variables
 
 class Propeller_Performance(Model):
     """ Propeller Model
@@ -34,27 +19,38 @@ class Propeller_Performance(Model):
     CT                      [-]         thrust coefficient
     CP                      [-]         power coefficient
     Q                       [N*m]       torque
-    omega                   [RPM]       propeller rotation rate 
+    omega                   [rpm]       propeller rotation rate
 
     """
 
     def helper(self, c):
+        " helper function to avoid signomial constraint "
         return 2. - 1./c[self.etaadd]
 
-    def setup(self,parent,  state):
+    def setup(self, static, state):
         exec parse_variables(Propeller_Performance.__doc__)
 
-        V       = state.V
-        rho     = state.rho
-        R       = parent.R        
+        V = state.V
+        rho = state.rho
+        R = static.R
 
-        constraints = [eta <= etav*etai,
+        return [eta <= etav*etai,
                 Tc == T/(0.5*rho*V**2*pi*R**2),
                 z2 >= Tc + 1,
                 etai*(z1 + z2**0.5/etaadd) <= 2,
-                lam == V/(omega*R),
-                CT == Tc*lam**2,
-                #CP == Q*omega/(.5*rho*(omega*R)**3*math.pi*R**2),
-                #eta == CT*lam/CP, #Is this the same eta? check 
-                ]
-        return constraints
+               ]
+
+class Propeller(Model):
+    """ Propeller Model
+
+    Variables
+    ---------
+    R          10           [m]         prop radius
+
+    """
+    #TODO add weight model
+    flight_model = Propeller_Performance
+
+    def setup(self):
+        exec parse_variables(Propeller.__doc__)
+
