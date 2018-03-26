@@ -8,13 +8,13 @@ class Propeller(Model):
     Variables
     ---------
     R          10           [m]         prop radius
-    W          10           [lbf]        prop weight
+    W          .01          [lbf]        prop weight
 
     """
     def setup(self):
         exec parse_variables(Propeller.__doc__)
 
-    def performance(self,state):
+    def flight_model(self,state):
         return Propeller_Performance(self, state)
 
 class Propeller_Performance(Model):
@@ -54,7 +54,7 @@ class Propeller_Performance(Model):
                 etai*(z1 + z2**0.5/etaadd) <= 2,
                 lam == V/(omega*R),
                 CT == Tc*lam**2,
-                CP == Q*omega/(.5*rho*(omega*R)**3*math.pi*R**2),
-                eta == CT*lam/CP, #Is this the same eta? check 
+                #CP == Q*omega/(.5*rho*(omega*R)**3*math.pi*R**2),
+                #eta == CT*lam/CP, #Is this the same eta? check 
                 ]
         return constraints
