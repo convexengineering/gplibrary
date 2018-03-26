@@ -38,7 +38,7 @@ class Propeller_Performance(Model):
                 Tc == T/(0.5*rho*V**2*pi*R**2),
                 z2 >= Tc + 1,
                 etai*(z1 + z2**0.5/etaadd) <= 2,
-               ]
+               ], static
 
 class Propeller(Model):
     """ Propeller Model
