@@ -17,7 +17,11 @@ class TailAero(Model):
 
     Upper Unbounded
     ---------------
-    Cd, Re
+    Cd, Re, S, V, b, rho (if not rhovalue)
+
+    Lower Unbounded
+    ---------------
+    S, tau, V, b, rho (if not rhovalue)
 
     LaTex Strings
     -------------
@@ -25,12 +29,15 @@ class TailAero(Model):
 
     """
     def setup(self, static, state):
+        self.state = state
         exec parse_variables(TailAero.__doc__)
 
         cmac = self.cmac = static.planform.cmac
         b = self.b = static.planform.b
         S = self.S = static.planform.S
+        tau = self.tau = static.planform.tau
         rho = self.rho = state.rho
+        self.rhovalue = rho.key.value
         V = self.V = state.V
         mu = self.mu = state.mu
         path = os.path.dirname(__file__)
@@ -41,8 +48,7 @@ class TailAero(Model):
             Re == V*rho*S/b/mu,
             # XfoilFit(fd, Cd, [Re, static["\\tau"]],
             #          err_margin="RMS", airfoil="naca 0008")
-            XfoilFit(fd, Cd, [Re, static.planform.tau], err_margin="RMS")
+            XfoilFit(fd, Cd, [Re, tau], err_margin="RMS")
             ]
 
         return constraints
-

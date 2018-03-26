@@ -6,7 +6,6 @@ import numpy as np
 
 class FitCS(ConstraintSet):
     def __init__(self, df, ivar, dvars, nobounds=False, err_margin=False, airfoil=False):
-
         self.airfoil = airfoil
         self.dvars = dvars
         self.ivar = ivar

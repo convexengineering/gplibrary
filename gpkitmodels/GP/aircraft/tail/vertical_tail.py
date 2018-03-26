@@ -21,7 +21,7 @@ class VerticalTail(Wing):
 
     Lower Unbounded
     ---------------
-    lv, Vv, b
+    lv, Vv, planform.b, spar.Sy (if sparModel), spar.J (if sparJ)
 
     LaTex Strings
     -------------

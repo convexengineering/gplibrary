@@ -3,7 +3,7 @@ from gpkit import Model, parse_variables
 class FoamHD(Model):
     """ Foam high density material properties
 
-    Variables
+    Constants
     ---------
     rho         0.036       [g/cm^3]        foam density
 
@@ -18,7 +18,7 @@ class FoamHD(Model):
 class FoamLD(Model):
     """ Foam low density material properties
 
-    Variables
+    Constants
     ---------
     rho         0.024       [g/cm^3]        foam density
 
