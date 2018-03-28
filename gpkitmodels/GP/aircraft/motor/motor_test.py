@@ -9,7 +9,7 @@ class Propulsor_Test(Model):
     def setup(self):
         fs = FlightState()
         p = Propulsor()
-        pp = p.flight_model(fs)
+        pp = p.flight_model(p,fs)
         pp.substitutions[pp.prop.T] = 50
         self.cost = 1./pp.motor.etam + p.W/(10000000*units('lbf')) + 1./pp.prop.eta
 

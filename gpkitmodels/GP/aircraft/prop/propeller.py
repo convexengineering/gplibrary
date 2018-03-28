@@ -3,25 +3,7 @@ from numpy import pi
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality
 
 
-class Propeller(Model):
-    """ Propeller Model
 
-    Variables
-    ---------
-    R                               [ft]            prop radius
-    W                               [lbf]           prop weight
-    K           4e-4                [1/ft^2]        prop weight scaling factor
-    T_m_static   40.                [lbf]           prop max static thrust
-    """
-    def setup(self):
-        exec parse_variables(Propeller.__doc__)
-
-        constraints = [W >= K*T_m_static*R**2]
-
-        return constraints
-
-    def flight_model(self,state):
-        return Propeller_Performance(self, state)
 
 class Propeller_Performance(Model):
     """ Propeller Model
@@ -72,3 +54,22 @@ class Propeller_Performance(Model):
 
                 ]
         return constraints, state
+
+class Propeller(Model):
+    """ Propeller Model
+
+    Variables
+    ---------
+    R                               [ft]            prop radius
+    W                               [lbf]           prop weight
+    K           4e-4                [1/ft^2]        prop weight scaling factor
+    T_m_static   40.                [lbf]           prop max static thrust
+    """
+
+    flight_model = Propeller_Performance
+    def setup(self):
+        exec parse_variables(Propeller.__doc__)
+
+        constraints = [W >= K*T_m_static*R**2]
+
+        return constraints
