@@ -41,7 +41,7 @@ class Propeller_Performance(Model):
     CP                      [-]         power coefficient
     Q                       [N*m]       torque
     omega                   [rpm]     propeller rotation rate 
-    omega_max    10000           [rpm]     max rotation rate
+    omega_max    10000      [rpm]     max rotation rate
     P_shaft                 [kW]        shaft power
     M_tip       .5          [-]         Tip mach number
     a           295         [m/s]       Speed of sound at altitude
