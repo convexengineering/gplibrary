@@ -98,10 +98,11 @@ class WingAero(Model):
     e               0.9     [-]     span efficiency
     Re                      [-]     reynolds number
     cdp                     [-]     wing profile drag coefficient
+    Ncrit           9       [-]     critical amplification factor
 
     Upper Unbounded
     ---------------
-    Cd, Re, AR, cmac, V, rho (if not rhovalue)
+    Re, Cd, AR, cmac, V, rho (if not rhovalue)
 
     Lower Unbounded
     ---------------
@@ -129,17 +130,19 @@ class WingAero(Model):
         self.rhovalue = rho.key.value
         V = self.V = state.V
         mu = self.mu = state.mu
+        tau = static.planform.tau
 
         if fd["d"] == 2:
             independentvars = [self.CL, self.Re]
         elif fd["d"] == 3:
-            independentvars = [self.CL, self.Re, static.planform.tau]
+            independentvars = [self.CL, self.Re, tau]
+        elif fd["d"] == 4:
+            independentvars = [self.CL, self.Re, tau, self.Ncrit]
 
         return [Cd >= cdp + CL**2/np.pi/AR/e,
                 Re == rho*V*cmac/mu,
                 # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
                 XfoilFit(fd, cdp, independentvars, name="polar"),
-                CL <= CLstall
                ]
 
 class Wing(Model):
