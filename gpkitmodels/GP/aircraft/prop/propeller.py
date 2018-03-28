@@ -45,7 +45,7 @@ class Propeller(Model):
 
     Variables
     ---------
-    R          10           [m]         prop radius
+    R          1           [m]         prop radius
 
     """
     #TODO add weight model
