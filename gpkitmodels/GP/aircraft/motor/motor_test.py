@@ -20,7 +20,7 @@ def propulsor_test():
     test = Propulsor_Test()
     #sol = test.debug()
     sol = test.solve()
-    #print sol.table()
+    print sol.table()
 
 class Motor_P_Test(Model):
     def setup(self):

@@ -16,7 +16,7 @@ class Propeller(Model):
     def setup(self):
         exec parse_variables(Propeller.__doc__)
 
-        constraints = [W == K*T_m_static*R**2]
+        constraints = [W >= K*T_m_static*R**2]
 
         return constraints
 
@@ -59,13 +59,13 @@ class Propeller_Performance(Model):
 
 
         constraints = [eta <= etav*etai,
-                Tc == T/(0.5*rho*V**2*pi*R**2),
+                Tc >= T/(0.5*rho*V**2*pi*R**2),
                 z2 >= Tc + 1,
                 etai*(z1 + z2**0.5/etaadd) <= 2,
-                lam == V/(omega*R),
-                CT == Tc*lam**2,
-                CP == Q*omega/(.5*rho*(omega*R)**3*pi*R**2),
-                eta == CT*lam/CP, 
+                lam >= V/(omega*R),
+                CT >= Tc*lam**2,
+                CP <= Q*omega/(.5*rho*(omega*R)**3*pi*R**2),
+                eta >= CT*lam/CP, 
                 omega <= omega_max,
                 P_shaft == Q*omega,
                 (M_tip*a)**2 >= (omega*R)**2 + V**2
