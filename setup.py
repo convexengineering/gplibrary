@@ -46,7 +46,12 @@ setup(
     install_requires=["numpy>=1.12", "scipy", "pint"],
     version="0.0.0.0",
     packages=find_packages(),
-    package_data={},
+    package_data={"gpkitmodels": ["GP/aircraft/wing/*.csv",
+                                  ("GP/aircraft/fuselage/"
+                                   "fuselage_profile_drag/*.csv"),
+                                  "GP/aircraft/engine/*.csv",
+                                  "GP/aircraft/engine/DF70/*.csv",
+                                  "GP/aircraft/tail/*.csv"]},
     license=LICENSE,
     long_description=LONG_DESCRIPTION,
 )
