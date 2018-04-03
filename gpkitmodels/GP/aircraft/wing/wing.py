@@ -41,12 +41,12 @@ class Planform(Model):
     deta        self.return_deta        [-]     \\Delta (2y/b)
 
     Upper Unbounded
-    ---------------  # bounding any pair of planform variables will work
-    cmac, b, tau
+    ---------------  # bounding any pair of variables will work
+    cave, b, tau
 
     Lower Unbounded
     ---------------
-    cmac, b, tau
+    cave, b, tau
 
     LaTex Strings
     -------------
