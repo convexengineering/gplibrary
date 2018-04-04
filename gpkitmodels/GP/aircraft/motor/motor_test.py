@@ -1,5 +1,6 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
 from motor import Propulsor, ElecMotor, ElecMotor_Performance
+from prop  import Propeller
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -33,6 +34,46 @@ class Motor_P_Test(Model):
         self.cost = 1./mp.etam
         return self.mp, fs
 
+class speed_280_motor(Model):
+    def setup(self):
+        fs = FlightState()
+        m  = ElecMotor()
+        mp = ElecMotor_Performance(m,fs)
+        self.mp = mp
+        mp.substitutions[m.Qmax] = 100
+        mp.substitutions[mp.R]   = .7
+        mp.substitutions[mp.i0]  = .16
+        mp.substitutions[mp.Kv]  = 3800
+        mp.substitutions[mp.v]   = 6
+        self.cost = 1./mp.etam
+        return self.mp, fs
+
+def speed_280_test():
+    test = speed_280_motor()
+    sol  = test.solve()
+    print sol.table()
+
+
+class graupner_cam_6x3(Model):
+    def setup(self):
+        self.fs = FlightState()
+        self.p  = Propeller()
+
+        self.p.substitutions[self.p.R] = (3./12.) #Convert in to ft
+
+    return self.p, self.fs
+class motorProp(Model):
+    def setup(self):
+        p = graupner_cam_6x3()
+        m = speed_280_motor()
+
+        
+        p.fs.substitutions[p.fs.V] = 10
+
+        self.cost(1/p.)
+
+
+
 def motor_test():
     test = Motor_P_Test()
     sol = test.solve()
@@ -62,4 +103,5 @@ def test():
     propulsor_test()
     
 if __name__ == "__main__":
-    test()
+    #test()
+    speed_280_test()
