@@ -1,6 +1,6 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
 from motor import Propulsor, ElecMotor, ElecMotor_Performance
-from prop  import Propeller
+from gpkitmodels.GP.aircraft.prop.propeller import Actuator_Propeller
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -11,8 +11,9 @@ class Propulsor_Test(Model):
         fs = FlightState()
         p = Propulsor()
         pp = p.flight_model(p,fs)
-        pp.substitutions[pp.prop.T] = 50
-        self.cost = 1./pp.motor.etam + p.W/(10000000*units('lbf')) + 1./pp.prop.eta
+        pp.substitutions[pp.prop.T] = 100
+        #pp.substitutions[pp.prop.AR_b] = 15
+        self.cost = 1./pp.motor.etam + p.W/(1000*units('lbf')) + 1./pp.prop.eta
 
         return fs,p,pp
 
@@ -20,7 +21,7 @@ def propulsor_test():
 
     test = Propulsor_Test()
     #sol = test.debug()
-    sol = test.solve()
+    sol = test.localsolve(iteration_limit = 400)
     print sol.table()
 
 class Motor_P_Test(Model):
@@ -47,11 +48,25 @@ class speed_280_motor(Model):
         mp.substitutions[mp.v]   = 6
         self.cost = 1./mp.etam
         return self.mp, fs
+class hacker_q150_45_motor(Model):
+    def setup(self):
+        fs = FlightState()
+        m  = ElecMotor()
+        mp = ElecMotor_Performance(m,fs)
+        self.mp = mp
+        mp.substitutions[m.Qmax] = 10000
+        mp.substitutions[mp.R]   = .033
+        mp.substitutions[mp.i0]  = 4.5
+        mp.substitutions[mp.Kv]  = 29
+        self.cost = 1./mp.etam
+        return self.mp, fs
 
 def speed_280_test():
     test = speed_280_motor()
     sol  = test.solve()
     print sol.table()
+
+
 
 
 class graupner_cam_6x3(Model):
@@ -61,7 +76,7 @@ class graupner_cam_6x3(Model):
 
         self.p.substitutions[self.p.R] = (3./12.) #Convert in to ft
 
-    return self.p, self.fs
+        return self.p, self.fs
 class motorProp(Model):
     def setup(self):
         p = graupner_cam_6x3()
@@ -70,7 +85,8 @@ class motorProp(Model):
         
         p.fs.substitutions[p.fs.V] = 10
 
-        self.cost(1/p.)
+        self.cost(1/p.eta)
+        
 
 
 
@@ -103,5 +119,5 @@ def test():
     propulsor_test()
     
 if __name__ == "__main__":
-    #test()
-    speed_280_test()
+    test()
+    #speed_280_test()

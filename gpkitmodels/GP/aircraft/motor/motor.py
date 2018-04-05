@@ -1,7 +1,7 @@
 "Electric motor model "
 from numpy import pi
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
-from gpkitmodels.GP.aircraft.prop.propeller import Propeller
+from gpkitmodels.GP.aircraft.prop.propeller import Actuator_Propeller, One_Element_Propeller
 from gpkitmodels import g
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 import matplotlib.pyplot as plt
@@ -21,9 +21,9 @@ class ElecMotor_Performance(Model):
     omega                   [rpm]         propeller rotation rate 
     i                       [amps]          current
     v                       [V]             woltage
-    i0         .1           [amps]          zero-load current
-    Kv         100            [rpm/V]       motor voltage constant
-    R          .05             [ohms]          internal resistance
+    i0         4.5           [amps]          zero-load current
+    Kv         29            [rpm/V]       motor voltage constant
+    R          .033             [ohms]          internal resistance
     """
     def setup(self,parent,  state):
         exec parse_variables(ElecMotor_Performance.__doc__)
@@ -101,7 +101,8 @@ class Propulsor(Model):
     def setup(self):
         exec parse_variables(Propulsor.__doc__)
 
-        self.prop = Propeller()
+        #self.prop = Actuator_Propeller()
+        self.prop = One_Element_Propeller()
         self.motor = ElecMotor()
 
         components = [self.prop, self.motor]
