@@ -135,8 +135,7 @@ class One_Element_Propeller_Performance(Model):
                         TCS([G == (1./2.)*W*c*cl]),
                         r == .8*R,      #Assume 80% chord is representative
                         f == (B/2.)*.2*(1./lam_w), #.2 = 1-.8 = 1-r/R
-                        F == (2./pi)*(1.02232*f**.0458729)**(1./.1),
-                        #vt**2. >= (B*G/(4.*pi*r))**2*(1./(F**2.*(1.+(4.*lam_w*R/(pi*B*r))**2.))),
+                        F == (2./pi)*(1.02232*f**.0458729)**(1./.1), #This is the GP fit of arccos(exp(-f))
                         #TCS([vt == (B*G/(4.*pi*r*F))]),
                         lam_w == (r/R)*(Wa/Wt),
                         va == vt*(Wt/Wa),
