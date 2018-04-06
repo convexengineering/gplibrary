@@ -22,6 +22,7 @@ def propulsor_test():
     test = Propulsor_Test()
     #sol = test.debug()
     sol = test.localsolve(iteration_limit = 400)
+    #sol = test.solve()
     print sol.table()
 
 class Motor_P_Test(Model):
