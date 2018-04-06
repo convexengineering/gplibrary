@@ -1,19 +1,18 @@
-" propelle tests "
+" propeller tests "
 from propeller import Actuator_Propeller
 from propeller import One_Element_Propeller
 from gpkit import units
 #from qprop import QProp
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
-def eta_test():
-
+def simpleprop_test():
+    " test simple propeller model "
     fs = FlightState()
     p = Actuator_Propeller()
-    pp = p.flight_model(p,fs)
-    pp.substitutions[pp.T] = 100
-    pp.cost = 1/pp.eta + pp.Q/(100.*units("N*m"))
-    sol = pp.solve()
-    print sol.table()
+    pp = p.flight_model(p, fs)
+    m = Model(1/pp.eta+ pp.Q/(100.*units("N*m")), [fs, p, pp])
+    m.substitutions.update({"rho": 1.225, "V": 50, "T": 100})
+    m.solve()
 
 def OE_eta_test():
 
@@ -39,7 +38,7 @@ def OE_eta_test():
 
 def test():
     "tests"
-    #eta_test()
+    simpleprop_test()
     OE_eta_test()
     #qprop_test()
 

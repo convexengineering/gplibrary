@@ -16,11 +16,15 @@ class Empennage(Model):
 
     Upper Unbounded
     ---------------
-    W, Vv, Vh
+    W, vtail.Vv, htail.Vh, tailboom.cave (if not tbSecWeight)
 
     Lower Unbounded
     ---------------
-    lv, lh, Vv, Vh, bv, bh, mh
+    htail.lh, htail.Vh, htail.planform.b, htail.mh
+    vtail.lv, vtail.Vv, vtail.planform.b
+    htail.spar.Sy (if hSparModel), htail.spar.J (if hSparModel)
+    vtail.spar.Sy (if vSparModel), vtail.spar.J (if vSparModel)
+    tailboom.Sy, tailboom.cave (if not tbSecWeight), tailboom.J (if tbSecWeight)
 
     LaTex Strings
     -------------
@@ -31,17 +35,15 @@ class Empennage(Model):
         exec parse_variables(Empennage.__doc__)
 
         self.htail = HorizontalTail()
+        self.hSparModel = self.htail.sparModel
         self.htail.substitutions.update({self.htail.mfac: 1.1})
         lh = self.lh = self.htail.lh
-        self.Vh = self.htail.Vh
-        self.bh = self.htail.b
-        self.mh = self.htail.mh
         self.vtail = VerticalTail()
+        self.vSparModel = self.vtail.sparModel
         self.vtail.substitutions.update({self.vtail.mfac: 1.1})
         lv = self.lv = self.vtail.lv
-        self.Vv = self.vtail.Vv
-        self.bv = self.vtail.b
         self.tailboom = TailBoom(N=N)
+        self.tbSecWeight = self.tailboom.secondaryWeight
         self.components = [self.htail, self.vtail, self.tailboom]
         l = self.l = self.tailboom.l
 

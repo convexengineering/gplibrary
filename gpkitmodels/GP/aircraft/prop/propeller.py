@@ -77,6 +77,7 @@ class Actuator_Propeller(Model):
         return constraints
 
 class One_Element_Propeller_Performance(Model):
+
     """ Propeller Model
 
     Variables

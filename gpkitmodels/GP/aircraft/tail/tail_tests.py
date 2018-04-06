@@ -19,7 +19,8 @@ def test_htail():
                              ht.Vh: 0.5, ht.lh: 10, ht.planform.tau: 0.08})
     perf = ht.flight_model(ht, fs)
 
-    m = Model(perf.Cd, [ht.Vh <= ht.planform.S*ht.lh/Sw/cmac, ht, perf])
+    m = Model(perf.Cd,
+              [ht.Vh <= ht.planform.S*ht.lh/Sw/cmac, ht, fs, perf])
     m.solve(verbosity=0)
 
 def test_vtail():
@@ -32,7 +33,7 @@ def test_vtail():
                              vt.lv: 10, vt.planform.tau: 0.08})
     perf = vt.flight_model(vt, fs)
 
-    m = Model(perf.Cd, [vt.Vv <= vt.planform.S*vt.lv/Sw/bw, vt, perf])
+    m = Model(perf.Cd, [vt.Vv <= vt.planform.S*vt.lv/Sw/bw, vt, fs, perf])
     m.solve(verbosity=0)
 
 def test_emp():
@@ -60,7 +61,7 @@ def test_emp():
               [emp.vtail.lv == emp.tailboom.l, emp.htail.lh == emp.tailboom.l,
                emp.htail.Vh <= emp.htail.planform.S*emp.htail.lh/Sw/cmac,
                emp.vtail.Vv <= emp.vtail.planform.S*emp.vtail.lv/Sw/bw,
-               emp, fs, htperf, vtperf, tbperf, hbend, vbend])
+               fs, emp, fs, htperf, vtperf, tbperf, hbend, vbend])
 
     from gpkit import settings
     if settings["default_solver"] == "cvxopt":
