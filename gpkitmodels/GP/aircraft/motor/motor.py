@@ -47,7 +47,7 @@ class Motor(Model):
     flight_model = MotorPerf
 
     def setup(self):
-        exec parse_variables(ElecMotor.__doc__)
+        exec parse_variables(Motor.__doc__)
 
         constraints = [W >= Qstar*Qmax*g]
 
@@ -83,7 +83,7 @@ class Propulsor(Model):
     W                       [lbf]              propulsor weight
 
     """
-    flight_model = Propulsor_Performance
+    flight_model = PropulsorPerf
 
     def setup(self):
         exec parse_variables(Propulsor.__doc__)

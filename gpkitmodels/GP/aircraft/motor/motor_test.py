@@ -28,8 +28,8 @@ def propulsor_test():
 class Motor_P_Test(Model):
     def setup(self):
         fs = FlightState()
-        m  = ElecMotor()
-        mp = ElecMotor_Performance(m,fs)
+        m  = Motor()
+        mp = MotorPerf(m,fs)
         self.mp = mp
         mp.substitutions[m.Qmax] = 100
         mp.substitutions[mp.Q]    = 10
@@ -39,8 +39,8 @@ class Motor_P_Test(Model):
 class speed_280_motor(Model):
     def setup(self):
         fs = FlightState()
-        m  = ElecMotor()
-        mp = ElecMotor_Performance(m,fs)
+        m  = Motor()
+        mp = MotorPerf(m,fs)
         self.mp = mp
         mp.substitutions[m.Qmax] = 100
         mp.substitutions[mp.R]   = .7
@@ -52,8 +52,8 @@ class speed_280_motor(Model):
 class hacker_q150_45_motor(Model):
     def setup(self):
         fs = FlightState()
-        m  = ElecMotor()
-        mp = ElecMotor_Performance(m,fs)
+        m  = Motor()
+        mp = MotorPerf(m,fs)
         self.mp = mp
         mp.substitutions[m.Qmax] = 10000
         mp.substitutions[mp.R]   = .033
