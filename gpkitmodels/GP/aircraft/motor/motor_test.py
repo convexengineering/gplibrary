@@ -1,6 +1,6 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
-from motor import Propulsor, ElecMotor, ElecMotor_Performance
-from gpkitmodels.GP.aircraft.prop.propeller import Actuator_Propeller
+from motor import Propulsor, Motor, MotorPerf
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -83,11 +83,11 @@ class motorProp(Model):
         p = graupner_cam_6x3()
         m = speed_280_motor()
 
-        
+
         p.fs.substitutions[p.fs.V] = 10
 
         self.cost(1/p.eta)
-        
+
 
 
 
@@ -97,7 +97,7 @@ def motor_test():
     #sol = test.debug()
 
     #print sol.table()
-    
+
 def motor_eta_speed():
     test = Motor_P_Test()
     omega = [.01, 10, 100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 3000, 4000, 10000, 100000]
@@ -118,7 +118,7 @@ def motor_eta_speed():
 def test():
     motor_test()
     propulsor_test()
-    
+
 if __name__ == "__main__":
     test()
     #speed_280_test()
