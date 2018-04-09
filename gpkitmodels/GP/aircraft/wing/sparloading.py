@@ -17,11 +17,23 @@ class SparLoading(Model):
     kappa           0.2            [-]     max tip deflection ratio
     W                              [lbf]   loading weight
     twmax           30.*pi/180     [-]     max tip twist
+    Stip            1e-10          [N]     tip loading
+    Mtip            1e-10          [N*m]   tip moment
+    throot          1e-10          [-]     root deflection angle
+    wroot           1e-10          [m]     root deflection
+    N                              [-]     loading factor
+
+    Variables of length wing.N
+    --------------------------
+    q                           [N/m]   distributed wing loading
+    S                           [N]     shear along wing
+    M                           [N*m]   wing section root moment
+    th                          [-]     deflection angle
+    w                           [m]     wing deflection
 
     Variables of length wing.N-1
     ----------------------------
-    Mr                      [N*m]   wing section root moment
-    M                       [N*m]   local moment
+    Mtw                     [N*m]   local moment due to twisting
     theta                   [-]     twist deflection
 
     Upper Unbounded
@@ -31,7 +43,7 @@ class SparLoading(Model):
 
     Lower Unbounded
     ---------------
-    b, W, cave
+    W, cave
     wing.planform.CM (if wingSparJ), qne (if wingSparJ)
     theta (if not wingSparJ), M (if not wingSparJ)
 
@@ -53,25 +65,29 @@ class SparLoading(Model):
         self.wing = wing
         exec parse_variables(SparLoading.__doc__)
 
-        Beam.qbarFun = self.new_qbarFun
-        Beam.SbarFun = self.new_SbarFun
-        self.beam = Beam(self.wing.N)
-
         b = self.b = self.wing.planform.b
         I = self.I = self.wing.spar.I
         Sy = self.Sy = self.wing.spar.Sy
         cave = self.cave = self.wing.planform.cave
+        cbar = self.cbar = self.wing.planform.cbar
         E = self.wing.spar.material.E
         sigma = self.wing.spar.material.sigma
         deta = self.wing.planform.deta
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            self.beam["dx"] == deta,
-            self.beam["\\bar{EI}"] <= 8*E*I/Nmax/Nsafety/W/b**2,
-            Mr >= self.beam["\\bar{M}"][:-1]*W*Nmax*Nsafety*b/4,
-            sigma >= Mr/Sy,
-            self.beam["\\bar{\\delta}"][-1] <= kappa,
+            N == Nsafety*Nmax,
+            q >= N*W/b*cbar,
+            S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:]),
+            S[-1] >= Stip,
+            M[:-1] >= M[1:] + 0.5*deta*(b/2.)*(S[:-1] + S[1:]),
+            M[-1] >= Mtip,
+            th[0] >= throot,
+            th[1:] >= th[:1] + 0.5*deta*(b/2.)*(M[1:] + M[:-1])/E/I,
+            w[0] >= wroot,
+            w[1:] >= w[:-1] + 0.5*deta*(b/2.)*(th[1:] + th[:-1]),
+            sigma >= M[:-1]/Sy,
+            w[-1]/(b/2.) <= kappa,
             ]
 
         self.wingSparJ = hasattr(self.wing.spar, "J")
@@ -82,9 +98,9 @@ class SparLoading(Model):
             G = self.wing.spar.shearMaterial.G
             cm = self.wing.planform.CM
             constraints.extend([
-                M >= cm*cave**2*qne*deta*b/2*Nsafety,
-                theta[0] >= M[0]/G/J[0]*deta[0]*b/2,
-                theta[1:] >= theta[:-1] + M[1:]/G/J[1:]*deta[1:]*b/2,
+                Mtw >= cm*cave**2*qne*deta*b/2*Nsafety,
+                theta[0] >= Mtw[0]/G/J[0]*deta[0]*b/2,
+                theta[1:] >= theta[:-1] + Mtw[1:]/G/J[1:]*deta[1:]*b/2,
                 twmax >= theta[-1]
                 ])
-        return self.beam, constraints
+        return constraints

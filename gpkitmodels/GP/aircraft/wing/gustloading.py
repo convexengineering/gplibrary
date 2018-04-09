@@ -32,7 +32,7 @@ class GustL(SparLoading):
 
     Lower Unbounded
     ---------------
-    Ww, wing.planform.b, wing.planform.cave
+    W, Ww, wing.planform.cave
     wing.planform.CM (if wingSparJ), qne (if wingSparJ)
     theta (if not wingSparJ), M (if not wingSparJ)
 
@@ -57,6 +57,9 @@ class GustL(SparLoading):
 
         cbar = self.wing.planform.cbar
         W = self.W  # from SparLoading
+        q = self.q
+        N = self.N
+        b = self.b
 
         path = os.path.dirname(os.path.abspath(__file__))
         df = pd.read_csv(path + os.sep + "arctan_fit.csv").to_dict(
@@ -65,7 +68,7 @@ class GustL(SparLoading):
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
             FitCS(df, agust, [cosminus1*vgust/v]),
-            self.beam["\\bar{q}"] >= cbar*(1 + 2*pi*agust/cl*(1+Ww/W)),
+            q >= N*W/b*cbar*(1 + 2*pi*agust/cl*(1+Ww/W)),
             ]
 
         return self.load, constraints
