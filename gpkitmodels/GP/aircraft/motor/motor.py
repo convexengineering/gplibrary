@@ -47,7 +47,7 @@ class ElecMotor(Model):
     Qstar       1           [kg/(N*m)]         motor specific torque
     W                       [lbf]              motor weight
     Qmax                    [N*m]              motor max. torque
-    V_max         300          [V]                motor max voltage
+    V_max       300         [V]                motor max voltage
 
     """
 
@@ -75,7 +75,7 @@ class Propulsor_Performance(Model):
         exec parse_variables(Propulsor_Performance.__doc__)
         self.prop    = parent.prop.flight_model(parent.prop,state)
         self.motor   = parent.motor.flight_model(parent.motor,state)
-        self.stat_FS = FlightState()
+        #self.stat_FS = FlightState()
         #self.stat_FS.substitutions[V_static]
         #self.stat_prop = parent.prop.flight_model(stat_FS)
 
@@ -85,7 +85,7 @@ class Propulsor_Performance(Model):
                         self.prop.omega == self.motor.omega
                         ]
 
-        return constraints, self.components, self.stat_FS
+        return constraints, self.components#, self.stat_FS
 
 class Propulsor(Model):
     """Propulsor model
@@ -103,6 +103,27 @@ class Propulsor(Model):
 
         #self.prop = Actuator_Propeller()
         self.prop = One_Element_Propeller()
+        self.motor = ElecMotor()
+
+        components = [self.prop, self.motor]
+
+        return [self.W >= self.prop.W + self.motor.W], components
+
+class Actuator_Propulsor(Model):
+    """Propulsor model
+
+    Variables
+    ---------
+    W                       [lbf]              propulsor weight
+
+    """
+    flight_model = Propulsor_Performance
+
+    def setup(self):
+        exec parse_variables(Propulsor.__doc__)
+
+        #self.prop = Actuator_Propeller()
+        self.prop = Actuator_Propeller()
         self.motor = ElecMotor()
 
         components = [self.prop, self.motor]
