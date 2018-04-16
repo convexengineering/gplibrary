@@ -21,20 +21,21 @@ class SparLoading(Model):
     Mtip            1e-10          [N*m]   tip moment
     throot          1e-10          [-]     root deflection angle
     wroot           1e-10          [m]     root deflection
-    N                              [-]     loading factor
 
     Variables of length wing.N
     --------------------------
-    q                           [N/m]   distributed wing loading
-    S                           [N]     shear along wing
-    M                           [N*m]   wing section root moment
+    q     self.new_qbarFun                   [-]   distributed wing loading
+    S                        [-]     shear along wing
+    Mbar                        [-]   wing section root moment
     th                          [-]     deflection angle
-    w                           [m]     wing deflection
+    w                           [-]     wing deflection
 
     Variables of length wing.N-1
     ----------------------------
     Mtw                     [N*m]   local moment due to twisting
+    M                        [N*m]   wing section root moment
     theta                   [-]     twist deflection
+    EIbar                   [-]    EIbar
 
     Upper Unbounded
     ---------------
@@ -43,7 +44,7 @@ class SparLoading(Model):
 
     Lower Unbounded
     ---------------
-    W, cave
+    b, W, cave
     wing.planform.CM (if wingSparJ), qne (if wingSparJ)
     theta (if not wingSparJ), M (if not wingSparJ)
 
@@ -76,18 +77,21 @@ class SparLoading(Model):
 
         constraints = [
             # dimensionalize moment of inertia and young's modulus
-            N == Nsafety*Nmax,
-            q >= N*W/b*cbar,
-            S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:]),
-            S[-1] >= Stip,
-            M[:-1] >= M[1:] + 0.5*deta*(b/2.)*(S[:-1] + S[1:]),
-            M[-1] >= Mtip,
+            # N == Nsafety*Nmax,
+            # q >= cbar,
+            # S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:]),
+            S[:-1] >= S[1:] + 0.5*deta*(q[:-1] + q[1:]),
+            S[-1] >= 1e-10,
+            Mbar[:-1] >= Mbar[1:] + 0.5*deta*(S[:-1] + S[1:]),
+            Mbar[-1] >= 1e-10,
+            M >= Mbar[:-1]*Nsafety*Nmax*W*b/4,
             th[0] >= throot,
-            th[1:] >= th[:1] + 0.5*deta*(b/2.)*(M[1:] + M[:-1])/E/I,
-            w[0] >= wroot,
-            w[1:] >= w[:-1] + 0.5*deta*(b/2.)*(th[1:] + th[:-1]),
-            sigma >= M[:-1]/Sy,
-            w[-1]/(b/2.) <= kappa,
+            th[1:] >= th[:1] + 0.5*deta*(Mbar[1:] + Mbar[:-1])/EIbar,
+            EIbar <= 8*E*I/Nsafety/Nmax/W/b**2,
+            w[0] >= 1e-10,
+            w[1:] >= w[:-1] + 0.5*deta*(th[1:] + th[:-1]),
+            sigma >= M/Sy,
+            w[-1] <= kappa,
             ]
 
         self.wingSparJ = hasattr(self.wing.spar, "J")
