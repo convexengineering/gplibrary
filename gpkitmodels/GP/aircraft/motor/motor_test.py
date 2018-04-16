@@ -27,7 +27,7 @@ class Actuator_Propulsor_Test(Model):
         pp = p.flight_model(p,fs)
         pp.substitutions[pp.prop.T] = 100
         #pp.substitutions[pp.prop.AR_b] = 15
-        self.cost = 1./pp.motor.etam + p.W/(1000*units('lbf')) + 1./pp.prop.eta
+        self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf')) + 1./pp.prop.eta
 
         return fs,p,pp
 def actuator_propulsor_test():
@@ -54,7 +54,7 @@ class Motor_P_Test(Model):
         self.mp = mp
         mp.substitutions[m.Qmax] = 100
         mp.substitutions[mp.Q]    = 10
-        self.cost = 1./mp.etam
+        self.cost = 1./mp.etam 
         return self.mp, fs
 
 class speed_280_motor(Model):
@@ -138,8 +138,8 @@ def motor_eta_speed():
 
 def test():
     #motor_test()
-    #actuator_propulsor_test()
-    propulsor_test()
+    actuator_propulsor_test()
+    #propulsor_test()
 
     
 if __name__ == "__main__":
