@@ -18,7 +18,11 @@ class TailBoomAero(Model):
 
     Upper Unbounded
     ---------------
-    Re, l, Cf
+    Re, Cf, l, V, rho (if not rhovalue)
+
+    Lower Unbounded
+    ---------------
+    l, V, rho (if not rhovalue)
 
     LaTex Strings
     -------------
@@ -26,10 +30,12 @@ class TailBoomAero(Model):
 
     """
     def setup(self, static, state):
+        self.state = state
         exec parse_variables(TailBoomAero.__doc__)
 
         l = self.l = static.l
         rho = self.rho = state.rho
+        self.rhovalue = rho.key.value
         V = self.V = state.V
         mu = self.mu = state.mu
 
@@ -105,13 +111,17 @@ class TailBoomBending(Model):
     -----------------------
     Mr                      [N*m]   section root moment
 
+
     Upper Unbounded
     ---------------
-    I0
+    tailboom.I0, tailboom.Sy
+    tailboom.J (if tailboomJ), tailboom.I (if tailboomJ)
 
     Lower Unbounded
     ---------------
-    S, l
+    htail.planform.S, htail.planform.CLmax
+    tailboom.l, tailboom.deta
+    state.qne
 
     LaTex Strings
     -------------
@@ -120,24 +130,28 @@ class TailBoomBending(Model):
 
     """
     def setup(self, tailboom, htail, state):
-        N = tailboom.N
+        N = self.N = tailboom.N
+        self.state = state
+        self.htail = htail
+        self.tailboom = tailboom
         exec parse_variables(TailBoomBending.__doc__)
 
         Beam.qbarFun = [1e-10]*N
         Beam.SbarFun = [1.]*N
-        beam = Beam(N)
+        beam = self.beam = Beam(N)
 
-        I = self.I = tailboom.I
-        l = self.l = tailboom.l
-        S = self.S = htail.planform.S
-        E = self.E = tailboom.material.E
-        Sy = self.Sy = tailboom.Sy
-        qne = self.qne = state.qne
+        I = tailboom.I
+        tailboom.I0 = I[0]
+        l = tailboom.l
+        S = htail.planform.S
+        E = tailboom.material.E
+        Sy = tailboom.Sy
+        qne = state.qne
         CLmax = htail.planform.CLmax
         deta = tailboom.deta
         sigma = tailboom.material.sigma
 
-        constraints = [beam["dx"] == deta,
+        constraints = [beam.dx == deta,
                        F >= qne*S,
                        beam["\\bar{EI}"] <= E*I/F/l**2/2,
                        Mr >= beam["\\bar{M}"][:-1]*F*l,
@@ -145,7 +159,8 @@ class TailBoomBending(Model):
                        th == beam["\\theta"][-1],
                        beam["\\bar{\\delta}"][-1]*CLmax*Nsafety <= kappa]
 
-        if hasattr(tailboom, "J"):
+        self.tailboomJ = hasattr(tailboom, "J")
+        if self.tailboomJ:
             constraints.append(tailboom.J >= 1e-50*units("m^4"))
 
         return constraints, beam

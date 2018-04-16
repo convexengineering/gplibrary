@@ -1,15 +1,10 @@
 "Electric motor model "
-from numpy import pi
-from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
-from gpkitmodels.GP.aircraft.prop.propeller import Actuator_Propeller, One_Element_Propeller
-from gpkitmodels import g
-from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
-import matplotlib.pyplot as plt
+from gpkit import Model, parse_variables
 from gpkit.constraints.tight import Tight as TCS
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller
+from gpkitmodels import g
 
-
-    
-class ElecMotor_Performance(Model):
+class MotorPerf(Model):
     """ Electric Motor Performance Model
 
     Variables
@@ -18,28 +13,26 @@ class ElecMotor_Performance(Model):
     Pelec                   [kW]            motor input shaft power
     etam                    [-]             motor efficiency
     Q                       [N*m]           torque
-    omega                   [rpm]         propeller rotation rate 
+    omega                   [rpm]           propeller rotation rate
     i                       [amps]          current
     v                       [V]             woltage
-    i0         4.5           [amps]          zero-load current
-    Kv         29            [rpm/V]       motor voltage constant
-    R          .033             [ohms]          internal resistance
+    i0         4.5          [amps]          zero-load current
+    Kv         29           [rpm/V]         motor voltage constant
+    R          .033         [ohms]          internal resistance
     """
-    def setup(self,parent,  state):
-        exec parse_variables(ElecMotor_Performance.__doc__)
+    def setup(self, static, state):
+        exec parse_variables(MotorPerf.__doc__)
 
-
-        constraints = [Pshaft == Q*omega,
+        return [Pshaft == Q*omega,
                 Pelec == v*i,
-                etam == Pshaft/Pelec, 
-                parent.Qmax >= Q,
-                v <= parent.V_max,
+                etam == Pshaft/Pelec,
+                static.Qmax >= Q,
+                v <= static.V_max,
                 TCS([i >= Q*Kv+i0]),
                 TCS([v >= omega/Kv + i*R])
-                ]
-        return constraints
+               ]
 
-class ElecMotor(Model):
+class Motor(Model):
     """ Electric Motor Model
 
     Variables
@@ -51,41 +44,36 @@ class ElecMotor(Model):
 
     """
 
-    flight_model = ElecMotor_Performance
+    flight_model = MotorPerf
 
     def setup(self):
-        exec parse_variables(ElecMotor.__doc__)
+        exec parse_variables(Motor.__doc__)
 
         constraints = [W >= Qstar*Qmax*g]
 
         return constraints
 
-class Propulsor_Performance(Model):
+class PropulsorPerf(Model):
     """Propulsor Performance Model
+
     Variables
     ---------
-    V_static       1                 [cm/s]              inflow velocity for static thrust
-
+    V_static       1      [cm/s]           inflow velocity for static thrust
 
     """
 
-    
-
-    def setup(self, parent,state):
-        exec parse_variables(Propulsor_Performance.__doc__)
-        self.prop    = parent.prop.flight_model(parent.prop,state)
-        self.motor   = parent.motor.flight_model(parent.motor,state)
-        #self.stat_FS = FlightState()
-        #self.stat_FS.substitutions[V_static]
-        #self.stat_prop = parent.prop.flight_model(stat_FS)
+    def setup(self, static, state):
+        exec parse_variables(PropulsorPerf.__doc__)
+        self.prop = parent.prop.flight_model(static.prop, state)
+        self.motor = parent.motor.flight_model(static.motor, state)
 
         self.components = [self.prop, self.motor]
 
         constraints = [self.prop.Q == self.motor.Q,
-                        self.prop.omega == self.motor.omega
-                        ]
+                       self.prop.omega == self.motor.omega
+                      ]
 
-        return constraints, self.components#, self.stat_FS
+        return constraints, self.components
 
 class Propulsor(Model):
     """Propulsor model
@@ -94,16 +82,14 @@ class Propulsor(Model):
     ---------
     W                       [lbf]              propulsor weight
 
-
     """
-    flight_model = Propulsor_Performance
+    flight_model = PropulsorPerf
 
     def setup(self):
         exec parse_variables(Propulsor.__doc__)
 
-        #self.prop = Actuator_Propeller()
-        self.prop = One_Element_Propeller()
-        self.motor = ElecMotor()
+        self.prop = Propeller()
+        self.motor = Motor()
 
         components = [self.prop, self.motor]
 

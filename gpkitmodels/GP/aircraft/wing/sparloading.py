@@ -26,11 +26,14 @@ class SparLoading(Model):
 
     Upper Unbounded
     ---------------
-    I, tshear, Sy, cave
+    I, Sy, J (if wingSparJ)
+    theta (if not wingSparJ), M (if not wingSparJ)
 
     Lower Unbounded
     ---------------
-    b, W
+    b, W, cave
+    wing.planform.CM (if wingSparJ), qne (if wingSparJ)
+    theta (if not wingSparJ), M (if not wingSparJ)
 
     LaTex Strings
     -------------
@@ -71,9 +74,11 @@ class SparLoading(Model):
             self.beam["\\bar{\\delta}"][-1] <= kappa,
             ]
 
-        if hasattr(self.wing.spar, "J"):
-            qne = state.qne
-            J = self.wing.spar.J
+        self.wingSparJ = hasattr(self.wing.spar, "J")
+
+        if self.wingSparJ:
+            qne = self.qne = state.qne
+            J = self.J = self.wing.spar.J
             G = self.wing.spar.shearMaterial.G
             cm = self.wing.planform.CM
             constraints.extend([

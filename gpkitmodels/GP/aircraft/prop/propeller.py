@@ -6,8 +6,7 @@ from gpfit.fit_constraintset import XfoilFit
 import os
 import pandas as pd
 
-
-class Actuator_Propeller_Performance(Model):
+class ActuatorProp(Model):
     """ Propeller Model
 
     Variables
@@ -24,62 +23,37 @@ class Actuator_Propeller_Performance(Model):
     CT                      [-]         thrust coefficient
     CP                      [-]         power coefficient
     Q                       [N*m]       torque
-    omega                   [rpm]     propeller rotation rate 
-    omega_max    10000      [rpm]     max rotation rate
+    omega                   [rpm]       propeller rotation rate
+    omega_max  10000        [rpm]       max rotation rate
     P_shaft                 [kW]        shaft power
-    M_tip       .5          [-]         Tip mach number
-    a           295         [m/s]       Speed of sound at altitude
+    M_tip      .5           [-]         Tip mach number
+    a          295          [m/s]       Speed of sound at altitude
     """
 
     def helper(self, c):
         return 2. - 1./c[self.etaadd]
 
-    def setup(self,parent,  state):
-        exec parse_variables(Actuator_Propeller_Performance.__doc__)
+    def setup(self, static, state):
+        exec parse_variables(ActuatorProp.__doc__)
 
-        V       = state.V
-        rho     = state.rho
-        R       = parent.R
-
+        V = state.V
+        rho = state.rho
+        R = static.R
 
         constraints = [eta <= etav*etai,
-                Tc >= T/(0.5*rho*V**2*pi*R**2),
-                z2 >= Tc + 1,
-                etai*(z1 + z2**0.5/etaadd) <= 2,
-                lam >= V/(omega*R),
-                CT >= Tc*lam**2,
-                CP <= Q*omega/(.5*rho*(omega*R)**3*pi*R**2),
-                eta >= CT*lam/CP, 
-                omega <= omega_max,
-                P_shaft == Q*omega,
-                (M_tip*a)**2 >= (omega*R)**2 + V**2
-
-                ]
-        return constraints, state
-
-class Actuator_Propeller(Model):
-    """ Propeller Model
-
-    Variables
-    ---------
-    R                               [ft]            prop radius
-    W                               [lbf]           prop weight
-    K           4e-4                [1/ft^2]        prop weight scaling factor
-    T_m_static   40.                [lbf]           prop max static thrust
-    """
-
-    flight_model = Actuator_Propeller_Performance
-    def setup(self):
-        exec parse_variables(Actuator_Propeller.__doc__)
-
-        constraints = [W >= K*T_m_static*R**2]
-
+                       Tc >= T/(0.5*rho*V**2*pi*R**2),
+                       z2 >= Tc + 1,
+                       etai*(z1 + z2**0.5/etaadd) <= 2,
+                       lam >= V/(omega*R),
+                       CT >= Tc*lam**2,
+                       CP <= Q*omega/(.5*rho*(omega*R)**3*pi*R**2),
+                       eta >= CT*lam/CP,
+                       omega <= omega_max,
+                       P_shaft == Q*omega,
+                       (M_tip*a)**2 >= (omega*R)**2 + V**2
+                      ]
         return constraints
 
-
-
-
-    
 class Blade_Element_Performance(Model):
     """ Single element of a propeller blade
 
@@ -209,7 +183,7 @@ class Multi_Element_Propeller_Performance(Model):
         return constraints, blade
 
 
-class One_Element_Propeller_Performance(Model):
+class SimpleQProp(Model):
     """ Propeller Model
 
     Variables
@@ -220,7 +194,7 @@ class One_Element_Propeller_Performance(Model):
     etai                    [-]         inviscid losses
     eta                      [-]         overall efficiency
     Q                       [N*m]       torque
-    omega                   [rpm]     propeller rotation rate 
+    omega                   [rpm]     propeller rotation rate
     omega_max    10000      [rpm]     max rotation rate
     P_shaft                 [kW]        shaft power
     M_tip       .5          [-]         Tip mach number
@@ -250,13 +224,13 @@ class One_Element_Propeller_Performance(Model):
     def helper(self, c):
         return 2. - 1./c[self.etaadd]
 
-    def setup(self,parent,  state):
-        exec parse_variables(One_Element_Propeller_Performance.__doc__)
+    def setup(self, static, state):
+        exec parse_variables(SimpleQProp.__doc__)
 
-        V       = state.V
-        rho     = state.rho
-        R       = parent.R
-        mu      = state.mu
+        V = state.V
+        rho = state.rho
+        R = static.R
+        mu = state.mu
         path = os.path.dirname(__file__)
         fd = pd.read_csv(path + os.sep + "dae51_fitdata.csv").to_dict(
             orient="records")[0]
@@ -302,11 +276,10 @@ class One_Element_Propeller_Performance(Model):
                             #SignomialEquality(1,etai*(1+va/V)+vt/Ut),
                             SignomialEquality(Q,rho*B*G*(Wa+eps*Wt)*R**2/2.),
                             SignomialEquality(T,rho*B*G*(Wt-eps*Wa)*R),
-                    
             ]
         return constraints, state
 
-class One_Element_Propeller(Model):
+class Propeller(Model):
     """ Propeller Model
 
     Variables
@@ -317,13 +290,12 @@ class One_Element_Propeller(Model):
     T_m                             [lbf]           prop max static thrust
     """
 
-    flight_model = One_Element_Propeller_Performance
+    flight_model = SimpleQProp
     def setup(self):
-        exec parse_variables(One_Element_Propeller.__doc__)
+        exec parse_variables(Propeller.__doc__)
 
-        constraints = [W >= K*T_m*R**2]
+        return [W >= K*T_m*R**2]
 
-        return constraints
 
 class Multi_Element_Propeller(Model):
     """ Propeller Model

@@ -49,8 +49,8 @@ def propulsor_test():
 class Motor_P_Test(Model):
     def setup(self):
         fs = FlightState()
-        m  = ElecMotor()
-        mp = ElecMotor_Performance(m,fs)
+        m  = Motor()
+        mp = MotorPerf(m,fs)
         self.mp = mp
         mp.substitutions[m.Qmax] = 100
         mp.substitutions[mp.Q]    = 10
@@ -60,8 +60,8 @@ class Motor_P_Test(Model):
 class speed_280_motor(Model):
     def setup(self):
         fs = FlightState()
-        m  = ElecMotor()
-        mp = ElecMotor_Performance(m,fs)
+        m  = Motor()
+        mp = MotorPerf(m,fs)
         self.mp = mp
         mp.substitutions[m.Qmax] = 100
         mp.substitutions[mp.R]   = .7
@@ -73,8 +73,8 @@ class speed_280_motor(Model):
 class hacker_q150_45_motor(Model):
     def setup(self):
         fs = FlightState()
-        m  = ElecMotor()
-        mp = ElecMotor_Performance(m,fs)
+        m  = Motor()
+        mp = MotorPerf(m,fs)
         self.mp = mp
         mp.substitutions[m.Qmax] = 10000
         mp.substitutions[mp.R]   = .033
@@ -104,11 +104,11 @@ class motorProp(Model):
         p = graupner_cam_6x3()
         m = speed_280_motor()
 
-        
+
         p.fs.substitutions[p.fs.V] = 10
 
         self.cost(1/p.eta)
-        
+
 
 
 
@@ -116,9 +116,8 @@ def motor_test():
     test = Motor_P_Test()
     sol = test.solve()
     #sol = test.debug()
+    #print sol.table()
 
-    print sol.table()
-    
 def motor_eta_speed():
     test = Motor_P_Test()
     omega = [.01, 10, 100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 3000, 4000, 10000, 100000]
