@@ -1,6 +1,6 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
 from motor import Propulsor, Motor, MotorPerf
-from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp, SimpleQProp
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -31,20 +31,7 @@ class Actuator_Propulsor_Test(Model):
         self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
 
         return fs,p,pp
-class SimpleQprop_Propulsor_Test(Model):
-    """Propulsor Test Model
-    """
 
-    def setup(self):
-        fs = FlightState()
-        Propulsor.prop_flight_model = SimpleQProp
-        p = Propulsor()
-        pp = p.flight_model(p,fs)
-        pp.substitutions[pp.prop.T] = 100
-        #pp.substitutions[pp.prop.AR_b] = 15
-        self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
-
-        return fs,p,pp
 
 def actuator_propulsor_test():
 
@@ -54,13 +41,7 @@ def actuator_propulsor_test():
     #sol = test.solve()
     #print sol.table()
 
-def simpleQprop_propulsor_test():
 
-    test = SimpleQprop_Propulsor_Test()
-    #sol = test.debug()
-    sol = test.localsolve()
-    #sol = test.solve()
-    print sol.table()
 
 def propulsor_test():
 
@@ -117,7 +98,6 @@ def test():
     motor_test()
     actuator_propulsor_test()
     propulsor_test()
-    simpleQprop_propulsor_test()
 
     
 if __name__ == "__main__":

@@ -72,7 +72,7 @@ class Propeller(Model):
     c                               [ft]            prop chord 
     """
 
-    flight_model = SimpleQProp
+    flight_model = ActuatorProp
 
     def setup(self, N = 1):
         exec parse_variables(Propeller.__doc__)
