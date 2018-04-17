@@ -313,23 +313,6 @@ class Propeller(Model):
 
         return [W >= K*T_m*R**2]
 
-class Actuator_Propeller(Model):
-    """ Propeller Model
-
-    Variables
-    ---------
-    R                               [ft]            prop radius
-    W                               [lbf]           prop weight
-    K           4e-4                [1/ft^2]        prop weight scaling factor
-    T_m                             [lbf]           prop max static thrust
-    """
-
-    flight_model = ActuatorProp
-
-    def setup(self):
-        exec parse_variables(Propeller.__doc__)
-
-        return [W >= K*T_m*R**2]
 
 
 class Multi_Element_Propeller(Model):
