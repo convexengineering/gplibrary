@@ -75,10 +75,10 @@ def simpleQprop_propulsor_test():
     #sol = test.debug()
     sol = test.localsolve()
     #sol = test.solve()
-    print sol.table()
+    #print sol.table()
 
 def ME_propulsor_test():
-
+    print "Blade Element Model Test"
     test = MultiElement_Propulsor_Test()
     #sol = test.debug()
     sol = test.localsolve()
