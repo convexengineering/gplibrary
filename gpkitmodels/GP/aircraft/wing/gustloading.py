@@ -24,18 +24,6 @@ class GustL(SparLoading):
     agust                           [-]         gust angle of attack
     cosminus1   self.return_cosm1   [-]         1 minus cosine factor
 
-    Upper Unbounded
-    ---------------
-    v, cl, wing.spar.I, wing.spar.tshear, wing.spar.Sy
-    J (if wingSparJ)
-    theta (if not wingSparJ), M (if not wingSparJ)
-
-    Lower Unbounded
-    ---------------
-    Ww, wing.planform.cave, b
-    wing.planform.CM (if wingSparJ), qne (if wingSparJ)
-    theta (if not wingSparJ), M (if not wingSparJ)
-
     LaTex Strings
     -------------
     vgust               V_{\\mathrm{gust}}
@@ -58,7 +46,7 @@ class GustL(SparLoading):
         cbar = self.wing.planform.cbar
         W = self.W  # from SparLoading
         q = self.q
-        # N = self.N
+        N = self.N
         b = self.b
 
         path = os.path.dirname(os.path.abspath(__file__))
@@ -68,7 +56,7 @@ class GustL(SparLoading):
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
             FitCS(df, agust, [cosminus1*vgust/v]),
-            q >= cbar*(1 + 2*pi*agust/cl*(1+Ww/W)),
+            q >= W*N/b*cbar*(1 + 2*pi*agust/cl*(1+Ww/W)),
             ]
 
         return self.load, constraints
