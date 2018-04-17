@@ -1,6 +1,6 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
-from motor import Actuator_Propulsor,Propulsor, Motor, MotorPerf
-from gpkitmodels.GP.aircraft.prop.propeller import Propeller
+from motor import Propulsor, Motor, MotorPerf
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -23,7 +23,8 @@ class Actuator_Propulsor_Test(Model):
 
     def setup(self):
         fs = FlightState()
-        p = Actuator_Propulsor()
+        Propulsor.prop_flight_model = ActuatorProp
+        p = Propulsor()
         pp = p.flight_model(p,fs)
         pp.substitutions[pp.prop.T] = 100
         #pp.substitutions[pp.prop.AR_b] = 15
@@ -42,8 +43,8 @@ def propulsor_test():
 
     test = Propulsor_Test()
     #sol = test.debug()
-    sol = test.localsolve(iteration_limit = 400)
-    #sol = test.solve()
+    #sol = test.localsolve(iteration_limit = 400)
+    sol = test.solve()
     print sol.table()
 
 class Motor_P_Test(Model):
@@ -54,8 +55,8 @@ class Motor_P_Test(Model):
         self.mp = mp
         mp.substitutions[m.Qmax] = 100
         mp.substitutions[mp.Q]    = 10
-        self.cost = 1./mp.etam 
-        return self.mp, fs
+        self.cost = 1./mp.etam + m.W/(100.*units('lbf'))
+        return self.mp, fs, m
 
 class speed_280_motor(Model):
     def setup(self):
@@ -136,9 +137,9 @@ def motor_eta_speed():
     print sol.table()
 
 def test():
-    #motor_test()
+    motor_test()
     actuator_propulsor_test()
-    #propulsor_test()
+    propulsor_test()
 
     
 if __name__ == "__main__":

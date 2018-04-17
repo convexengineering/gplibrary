@@ -1,7 +1,7 @@
 "Electric motor model "
 from gpkit import Model, parse_variables
 from gpkit.constraints.tight import Tight as TCS
-from gpkitmodels.GP.aircraft.prop.propeller import Propeller, Actuator_Propeller
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
 from gpkitmodels import g
 
 class MotorPerf(Model):
@@ -84,10 +84,13 @@ class Propulsor(Model):
 
     """
     flight_model = PropulsorPerf
+    prop_flight_model = ActuatorProp
+
 
     def setup(self):
         exec parse_variables(Propulsor.__doc__)
 
+        Propeller.flight_model = self.prop_flight_model
         self.prop = Propeller()
         self.motor = Motor()
 
@@ -95,24 +98,6 @@ class Propulsor(Model):
 
         return [self.W >= self.prop.W + self.motor.W], components
 
-class Actuator_Propulsor(Model):
-    """Propulsor model
 
-    Variables
-    ---------
-    W                       [lbf]              propulsor weight
-
-    """
-    flight_model = PropulsorPerf
-
-    def setup(self):
-        exec parse_variables(Propulsor.__doc__)
-
-        self.prop = Actuator_Propeller()
-        self.motor = Motor()
-
-        components = [self.prop, self.motor]
-
-        return [self.W >= self.prop.W + self.motor.W], components
 
     
