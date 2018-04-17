@@ -1,6 +1,6 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
-from motor import Actuator_Propulsor,Propulsor, ElecMotor, ElecMotor_Performance
-from gpkitmodels.GP.aircraft.prop.propeller import Actuator_Propeller
+from motor import Actuator_Propulsor,Propulsor, Motor, MotorPerf
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -27,7 +27,7 @@ class Actuator_Propulsor_Test(Model):
         pp = p.flight_model(p,fs)
         pp.substitutions[pp.prop.T] = 100
         #pp.substitutions[pp.prop.AR_b] = 15
-        self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf')) + 1./pp.prop.eta
+        self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
 
         return fs,p,pp
 def actuator_propulsor_test():

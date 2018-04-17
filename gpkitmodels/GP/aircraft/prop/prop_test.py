@@ -11,10 +11,11 @@ def simpleprop_test():
     Propeller.flight_model = ActuatorProp
     p = Propeller()
     pp = p.flight_model(p, fs)
-    m = Model(1/pp.eta + pp.Q/(100.*units("N*m")) + p.W/(100.*units("lbf")),
+    m = Model(1/pp.eta  + p.W/(100.*units("lbf"))+ pp.Q/(100.*units("N*m")),
               [fs, p, pp])
-    m.substitutions.update({"rho": 1.225, "V": 50, "T": 100, "T_m": 40})
-    m.solve()
+    m.substitutions.update({"rho": 1.225, "V": 50, "T": 100, "omega":1000})
+    sol = m.solve()
+    #print sol.table()
 
 def OE_eta_test():
     " simple qprop test "
@@ -23,18 +24,20 @@ def OE_eta_test():
     Propeller.flight_model = SimpleQProp
     p = Propeller()
     pp = p.flight_model(p, fs)
-    pp.substitutions[pp.T] = 1000
+    pp.substitutions[pp.T] = 100
     pp.substitutions[pp.AR_b] = 12
-    m = Model(1/pp.eta + pp.Q/(10.*units("N*m")) + p.W/(100.*units("lbf")),
+    m = Model(1/pp.eta + pp.Q/(10.*units("N*m"))+ p.W/(100.*units("lbf")),
               [pp, p])
-    m.localsolve()
+    #m.debug()
+    sol = m.localsolve()
+    #print sol.table()
 
 def ME_eta_test():
 
     fs  = FlightState()
     p   = Multi_Element_Propeller()
     p.substitutions[p.T_m]  = 100
-    p.substitutions[p.R]    = 2
+    #p.substitutions[p.R]    = 2
     pp = p.flight_model(p,fs)
     pp.substitutions[pp.T]  = 100
    
@@ -42,8 +45,8 @@ def ME_eta_test():
     
     #pp.substitutions[pp.omega] = 1000
     pp.cost = 1./pp.eta + pp.Q/(100.*units("N*m"))
-    sol = pp.localsolve(iteration_limit = 400)
     #sol = pp.debug()
+    sol = pp.localsolve(iteration_limit = 400)
     print sol.table()
 
 #def qprop_test():
@@ -57,11 +60,9 @@ def ME_eta_test():
 
 def test():
     "tests"
-    #eta_test()
-    #OE_eta_test()
+    OE_eta_test()
+    simpleprop_test()
     ME_eta_test()
-    #simpleprop_test()
-
 if __name__ == "__main__":
     test()
 
