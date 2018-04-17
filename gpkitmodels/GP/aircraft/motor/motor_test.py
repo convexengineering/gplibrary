@@ -1,6 +1,6 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
 from motor import Propulsor, Motor, MotorPerf
-from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp, SimpleQProp
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -31,11 +31,34 @@ class Actuator_Propulsor_Test(Model):
         self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
 
         return fs,p,pp
+class SimpleQprop_Propulsor_Test(Model):
+    """Propulsor Test Model
+    """
+
+    def setup(self):
+        fs = FlightState()
+        Propulsor.prop_flight_model = SimpleQProp
+        p = Propulsor()
+        pp = p.flight_model(p,fs)
+        pp.substitutions[pp.prop.T] = 100
+        #pp.substitutions[pp.prop.AR_b] = 15
+        self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
+
+        return fs,p,pp
+
 def actuator_propulsor_test():
 
     test = Actuator_Propulsor_Test()
     #sol = test.debug()
     sol = test.solve()
+    #sol = test.solve()
+    #print sol.table()
+
+def simpleQprop_propulsor_test():
+
+    test = SimpleQprop_Propulsor_Test()
+    #sol = test.debug()
+    sol = test.localsolve()
     #sol = test.solve()
     print sol.table()
 
@@ -45,7 +68,7 @@ def propulsor_test():
     #sol = test.debug()
     #sol = test.localsolve(iteration_limit = 400)
     sol = test.solve()
-    print sol.table()
+    #print sol.table()
 
 class Motor_P_Test(Model):
     def setup(self):
@@ -84,62 +107,17 @@ class hacker_q150_45_motor(Model):
         self.cost = 1./mp.etam
         return self.mp, fs
 
-def speed_280_test():
-    test = speed_280_motor()
-    sol  = test.solve()
-    print sol.table()
-
-
-
-
-class graupner_cam_6x3(Model):
-    def setup(self):
-        self.fs = FlightState()
-        self.p  = Propeller()
-
-        self.p.substitutions[self.p.R] = (3./12.) #Convert in to ft
-
-        return self.p, self.fs
-class motorProp(Model):
-    def setup(self):
-        p = graupner_cam_6x3()
-        m = speed_280_motor()
-
-
-        p.fs.substitutions[p.fs.V] = 10
-
-        self.cost(1/p.eta)
-
-
-
-
 def motor_test():
     test = Motor_P_Test()
     sol = test.solve()
     #sol = test.debug()
     #print sol.table()
 
-def motor_eta_speed():
-    test = Motor_P_Test()
-    omega = [.01, 10, 100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 3000, 4000, 10000, 100000]
-    eta = []
-    for o in omega:
-        test = Motor_P_Test()
-        test.substitutions[test.mp.omega] = o
-        sol = test.solve()
-        eta.append(sol["freevariables"]["etam"])
-
-    print omega
-    print eta
-    #sol = test.debug()
-    plt.plot(omega, eta)
-    plot.show()
-    print sol.table()
-
 def test():
     motor_test()
     actuator_propulsor_test()
     propulsor_test()
+    simpleQprop_propulsor_test()
 
     
 if __name__ == "__main__":
