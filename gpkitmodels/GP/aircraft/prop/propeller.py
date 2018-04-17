@@ -156,7 +156,7 @@ class Blade_Element_Performance(Model):
 
 
 
-class Multi_Element_Propeller_Performance(Model):
+class MultiElementProp(Model):
     """ Performance for a propeller with multiple elements
 
     Variables
@@ -310,7 +310,7 @@ class Propeller(Model):
 
     def setup(self, N = 1):
         exec parse_variables(Propeller.__doc__)
-
+        self.N = N
         return [W >= K*T_m*R**2]
 
 
@@ -326,7 +326,7 @@ class Multi_Element_Propeller(Model):
     T_m                             [lbf]           prop max static thrust
     """
 
-    flight_model = Multi_Element_Propeller_Performance
+    flight_model = MultiElementProp
     def setup(self):
         exec parse_variables(Multi_Element_Propeller.__doc__)
 

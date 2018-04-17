@@ -46,6 +46,21 @@ class SimpleQprop_Propulsor_Test(Model):
 
         return fs,p,pp
 
+class MultiElement_Propulsor_Test(Model):
+    """Propulsor Test Model
+    """
+
+    def setup(self):
+        fs = FlightState()
+        Propulsor.prop_flight_model = MultiElementProp
+        p = Propulsor()
+        pp = p.flight_model(p,fs)
+        pp.substitutions[pp.prop.T] = 100
+        #pp.substitutions[pp.prop.AR_b] = 15
+        self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
+
+        return fs,p,pp
+
 def actuator_propulsor_test():
 
     test = Actuator_Propulsor_Test()
