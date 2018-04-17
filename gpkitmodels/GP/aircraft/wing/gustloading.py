@@ -39,9 +39,9 @@ class GustL(SparLoading):
     return_cosm1 = lambda self, c: hstack(
         [1e-10, 1-cos(c[self.wing.planform.eta][1:]*pi/2)])
 
-    def setup(self, wing, state):
+    def setup(self, wing, state, sp=False):
         exec parse_variables(GustL.__doc__)
-        self.load = SparLoading.setup(self, wing, state)
+        self.load = SparLoading.setup(self, wing, state, sp=sp)
 
         cbar = self.wing.planform.cbar
         W = self.W  # from SparLoading

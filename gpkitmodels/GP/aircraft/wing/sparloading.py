@@ -1,5 +1,5 @@
 " spar loading "
-from gpkit import Model, parse_variables
+from gpkit import Model, parse_variables, SignomialsEnabled
 from gpkitmodels.GP.beam.beam import Beam
 from gpkitmodels.GP.aircraft.tail.tail_boom import TailBoomState
 from numpy import pi
@@ -36,7 +36,8 @@ class SparLoading(Model):
     ----------------------------
     Mtw                     [N*m]   local moment due to twisting
     theta                   [-]     twist deflection
-    EIbar                   [-]    EIbar
+    EIbar                   [-]     EIbar
+    Sout                    [N]     outboard weights
 
     LaTex Strings
     -------------
@@ -52,7 +53,7 @@ class SparLoading(Model):
 
     new_SbarFun = None
 
-    def setup(self, wing, state):
+    def setup(self, wing, state, sp=False):
         self.wing = wing
         exec parse_variables(SparLoading.__doc__)
 
@@ -65,19 +66,22 @@ class SparLoading(Model):
         sigma = self.wing.spar.material.sigma
         deta = self.wing.planform.deta
 
+        if sp:
+            print "here"
+            with SignomialsEnabled():
+                shear = S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
+                                   - Sout)
+        else:
+            shear = S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
+
         constraints = [
-            N == Nsafety*Nmax,
-            q >= N*W/b*cbar,
-            S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:]),
-            S[-1] >= Stip,
-            M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:]),
-            M[-1] >= Mtip,
+            N == Nsafety*Nmax, q >= N*W/b*cbar,
+            shear, S[-1] >= Stip,
+            M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:]), M[-1] >= Mtip,
             th[0] >= throot,
             th[1:] >= th[:-1] + 0.5*deta*(b/2)*(M[1:] + M[:-1])/E/I,
-            w[0] >= wroot,
-            w[1:] >= w[:-1] + 0.5*deta*(b/2)*(th[1:] + th[:-1]),
-            sigma >= M[:-1]/Sy,
-            w[-1]/(b/2) <= kappa,
+            w[0] >= wroot, w[1:] >= w[:-1] + 0.5*deta*(b/2)*(th[1:] + th[:-1]),
+            sigma >= M[:-1]/Sy, w[-1]/(b/2) <= kappa,
             ]
 
         self.wingSparJ = hasattr(self.wing.spar, "J")
