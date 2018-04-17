@@ -196,8 +196,7 @@ class Multi_Element_Propeller_Performance(Model):
 
 
         return constraints, blade
-
-
+"hi"
 class SimpleQProp(Model):
     """ Propeller Model
 
