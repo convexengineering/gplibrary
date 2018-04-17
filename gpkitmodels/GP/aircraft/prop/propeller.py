@@ -190,7 +190,7 @@ class MultiElementProp(Model):
                             TCS([Q >= sum(blade["dQ"][n] for n in range(N))]),
                             eta == state.V*T/(omega*Q),
                             blade["M"][-1] <= Mtip,
-                            #parent.T_m>=T
+                            parent.T_m>=T,
                             omega <= omega_max
                             ]
 

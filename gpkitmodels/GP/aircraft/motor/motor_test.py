@@ -1,6 +1,6 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
 from motor import Propulsor, Motor, MotorPerf
-from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp, SimpleQProp
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp, SimpleQProp, MultiElementProp
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -77,6 +77,13 @@ def simpleQprop_propulsor_test():
     #sol = test.solve()
     print sol.table()
 
+def ME_propulsor_test():
+
+    test = MultiElement_Propulsor_Test()
+    #sol = test.debug()
+    sol = test.localsolve()
+    #sol = test.solve()
+    print sol.table()
 def propulsor_test():
 
     test = Propulsor_Test()
@@ -133,7 +140,7 @@ def test():
     actuator_propulsor_test()
     propulsor_test()
     simpleQprop_propulsor_test()
-
+    ME_propulsor_test()
     
 if __name__ == "__main__":
     test()
