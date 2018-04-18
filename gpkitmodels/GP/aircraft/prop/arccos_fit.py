@@ -9,7 +9,7 @@ j = arccos(exp(-i))
 #u = vstack((Vdd,Vth))
 x = log(i)
 y = log(j)
-K = 3
+K = 8
 
 cstrt, rmsErr = fit(x,y,K,"SMA")
 print rmsErr
