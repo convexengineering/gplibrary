@@ -37,6 +37,7 @@ def ME_eta_test():
     fs  = FlightState()
     Propeller.flight_model = MultiElementProp
     p   = Propeller()
+
     p.substitutions[p.T_m]  = 100
     #p.substitutions[p.R]    = 2
     pp = p.flight_model(p,fs)

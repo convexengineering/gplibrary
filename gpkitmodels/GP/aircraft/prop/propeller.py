@@ -33,7 +33,7 @@ class ActuatorProp(Model):
     def helper(self, c):
         return 2. - 1./c[self.etaadd]
 
-    def setup(self, static, state = None, rho = None, V = None):
+    def setup(self, static, state):
         exec parse_variables(ActuatorProp.__doc__)
 
         V = state.V
@@ -61,7 +61,7 @@ class Blade_Element_Performance(Model):
     Variables
     ---------
     dT                      [lbf]       thrust
-    eta_b                   [-]         local efficiency
+    eta_i                   [-]         local induced efficiency
     dQ                      [N*m]       torque
     omega                   [rpm]       propeller rotation rate 
     Wa                      [m/s]       Axial total relative velocity
@@ -74,7 +74,7 @@ class Blade_Element_Performance(Model):
     cl                     [-]         local lift coefficient
     cd                      [-]         local drag coefficient
     cdp                     [-]         local drag coefficient
-    B           3           [-]         number of blades
+    B           2           [-]         number of blades
     r                       [m]         local radius
     lam_w                   [-]         advance ratio
     eps                     [-]         blade efficiency
@@ -84,7 +84,7 @@ class Blade_Element_Performance(Model):
     Re                      [-]         blade reynolds number
     f                       [-]         intermediate tip loss variable
     F                       [-]         Prandtl tip loss factor
-    cl_max      .9         [-]         max airfoil cl
+    cl_max      .6         [-]         max airfoil cl
     dr                      [m]         length of blade element
     FF                      [-]         form factor
     t_c         .1        [-]         airfoil t/c
@@ -123,7 +123,7 @@ class Blade_Element_Performance(Model):
                         AR_b <= AR_b_max,
                         Re == Wr*c*rho/mu,
                         #eta == T*V/(Q*omega),
-                        eta_b == (V/(omega*r))*(Wt/Wa),
+                        eta_i == (V/(omega*r))*(Wt/Wa),
 
                         #TCS([cd >= cl**2/(pi*AR_b*.85) + cdp]),
                         #TCS([FF >= 1. + .3*t_c + (100*t_c)**.4]),
@@ -184,7 +184,7 @@ class MultiElementProp(Model):
             for n in range(1,N):
                 constraints += [TCS([blade["r"][n] >= blade["r"][n-1] + parent.R/N]),
                                 #SignomialEquality(blade["r"][n],blade["r"][n-1] + parent.R/N),
-                                blade["eta_b"][n] == blade["eta_b"][n-1]
+                                blade["eta_i"][n] == blade["eta_i"][n-1]
                                 ]
             constraints += [TCS([T <= sum(blade["dT"][n] for n in range(N))]),
                             TCS([Q >= sum(blade["dQ"][n] for n in range(N))]),
