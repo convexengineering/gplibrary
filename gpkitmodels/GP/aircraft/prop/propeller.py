@@ -70,24 +70,19 @@ class Blade_Element_Performance(Model):
     va                      [m/s]       Axial induced velocity
     vt                      [m/s]       Tangential induced velocity
     G                       [m^2/s]     Circulation
-    cl                     [-]         local lift coefficient
+    cl                     [-]          local lift coefficient
     cd                      [-]         local drag coefficient
-    cdp                     [-]         local drag coefficient
     B           2           [-]         number of blades
     r                       [m]         local radius
     lam_w                   [-]         advance ratio
     eps                     [-]         blade efficiency
-    AR_b                   [-]         blade aspect ratio
+    AR_b                   [-]          blade aspect ratio
     AR_b_max    50          [-]         max blade aspect ratio
-    Ut                      [m/s]         tangential freestreem
     Re                      [-]         blade reynolds number
     f                       [-]         intermediate tip loss variable
     F                       [-]         Prandtl tip loss factor
-    cl_max      .6         [-]         max airfoil cl
+    cl_max      .6         [-]          max airfoil cl
     dr                      [m]         length of blade element
-    FF                      [-]         form factor
-    t_c         .1        [-]         airfoil t/c
-    C_f                     [-]         skin friction coefficient
     M                       [-]         Mach number
     a           295         [m/s]       Speed of sound at altitude
 
@@ -107,7 +102,7 @@ class Blade_Element_Performance(Model):
         constraints = [TCS([Wa>=V + va]),
                         TCS([Wt + vt<=omega*r]),
                         TCS([G == (1./2.)*Wr*c*cl]),
-                        F == (2./pi)*(1.02232*f**.0458729)**(1./.1), #This is the GP fit of arccos(exp(-f))
+                        F == (2./pi)*(1.01116*f**.0379556)**(1./.1), #This is the GP fit of arccos(exp(-f))
                         M == Wr/a,
                         lam_w == (r/R)*(Wa/Wt),
                         va == vt*(Wt/Wa),
@@ -118,10 +113,6 @@ class Blade_Element_Performance(Model):
                         Re == Wr*c*rho/mu,
                         eta_i == (V/(omega*r))*(Wt/Wa),
                         TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]),
-                        #TCS([cd >= cl**2/(pi*AR_b*.85) + cdp]),
-                        #TCS([FF >= 1. + .3*t_c + (100*t_c)**.4]),
-                        #C_f == .027/(Re**(1./7.)),
-                        #cdp >= FF*C_f*(2.+.4*t_c),
                         
                         XfoilFit(fd, cd, [cl,Re], name="polar"),
                         
@@ -146,16 +137,16 @@ class MultiElementProp(Model):
 
     Variables
     ---------
-    Mtip        .5          [-]         tip mach number
+    Mtip        .5          [-]         Max tip mach number
+    omega_max   10000       [rpm]       maximum rotation rate
+    eta                     [-]         overall efficiency
+    omega                   [rpm]       rotation rate
+    T                       [lbf]       total thrust
+    Q                       [N*m]       total torque
     """
     def setup(self,static,  state, N = 5):
         exec parse_variables(MultiElementProp.__doc__)
-        T = self.T = Variable('T', 'lbf', 'Overall thrust')
-        Q = self.Q = Variable('Q', 'N*m', 'Overall torque')
-        eta = self.eta = Variable('eta', '-', 'Overall efficiency')
-        omega = self.omega =  Variable('omega', 'rpm', 'rotation rate')
-        omega_max  =  Variable('omega_max',10000, 'rpm', 'rotation rate')
-        #Mtip       =  Variable('Mtip', .5, '-', 'Tip Mach')
+        
         with Vectorize(N):
             blade = Blade_Element_Performance(static, state)
 
@@ -166,14 +157,12 @@ class MultiElementProp(Model):
 
         
         with SignomialsEnabled():
-        #    constraints = [blade.r <= static.R]
             for n in range(1,N):
                 constraints += [TCS([blade["r"][n] >= blade["r"][n-1] + static.R/N]),
                                 blade["eta_i"][n] == blade["eta_i"][n-1],
-                                #blade["c"][n] == static["c"][n],
                                 ]
             constraints += [TCS([T <= sum(blade["dT"])]),
-                            TCS([Q >= sum(blade["dQ"][n] for n in range(N))]),
+                            TCS([Q >= sum(blade["dQ"])]),
                             eta == state.V*T/(omega*Q),
                             blade["M"][-1] <= Mtip,
                             static.T_m>=T,
@@ -205,24 +194,3 @@ class Propeller(Model):
         exec parse_variables(Propeller.__doc__)
         self.N = N
         return [W >= K*T_m*R**2]
-
-
-
-class Multi_Element_Propeller(Model):
-    """ Propeller Model
-
-    Variables
-    ---------
-    R                               [ft]            prop radius
-    W                               [lbf]           prop weight
-    K           4e-4                [1/ft^2]        prop weight scaling factor
-    T_m                             [lbf]           prop max static thrust
-    """
-
-    flight_model = MultiElementProp
-    def setup(self):
-        exec parse_variables(Multi_Element_Propeller.__doc__)
-
-        constraints = [W >= K*T_m*R**2]
-
-        return constraints

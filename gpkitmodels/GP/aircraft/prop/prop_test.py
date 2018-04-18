@@ -15,7 +15,6 @@ def simpleprop_test():
               [fs, p, pp])
     m.substitutions.update({"rho": 1.225, "V": 50, "T": 100, "omega":1000})
     sol = m.solve()
-    #print sol.table()
 
 
 def ME_eta_test():
@@ -23,23 +22,16 @@ def ME_eta_test():
     fs  = FlightState()
     Propeller.flight_model = MultiElementProp
     p   = Propeller()
-
-    #p.substitutions[p.R]    = 2
     pp = p.flight_model(p,fs)
     pp.substitutions[pp.T]  = 100
-
-    #pp.substitutions[pp.omega] = 500
-    
-    #pp.substitutions[pp.omega] = 1000
     pp.cost = 1./pp.eta + pp.Q/(100.*units("N*m")) + p.T_m/(1000*units('N'))
-    #sol = pp.debug()
     sol = pp.localsolve(iteration_limit = 400)
     print sol.table()
 
 
 def test():
     "tests"
-    #simpleprop_test()
+    simpleprop_test()
     ME_eta_test()
 if __name__ == "__main__":
     test()

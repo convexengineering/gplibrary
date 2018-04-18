@@ -1,6 +1,6 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
 from motor import Propulsor, Motor, MotorPerf
-from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp, SimpleQProp, MultiElementProp
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp, MultiElementProp
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -12,13 +12,12 @@ class Propulsor_Test(Model):
         p = Propulsor()
         pp = p.flight_model(p,fs)
         pp.substitutions[pp.prop.T] = 100
-        #pp.substitutions[pp.prop.AR_b] = 15
         self.cost = 1./pp.motor.etam + p.W/(1000*units('lbf')) + 1./pp.prop.eta
 
         return fs,p,pp
 
 class Actuator_Propulsor_Test(Model):
-    """Propulsor Test Model
+    """Propulsor Test Model w/ Actuator Disk Propeller
     """
 
     def setup(self):
@@ -27,14 +26,13 @@ class Actuator_Propulsor_Test(Model):
         p = Propulsor()
         pp = p.flight_model(p,fs)
         pp.substitutions[pp.prop.T] = 100
-        #pp.substitutions[pp.prop.AR_b] = 15
         self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
 
         return fs,p,pp
 
 
 class MultiElement_Propulsor_Test(Model):
-    """Propulsor Test Model
+    """Propulsor Test Model w/ Blade Element Propeller
     """
 
     def setup(self):
@@ -43,33 +41,22 @@ class MultiElement_Propulsor_Test(Model):
         p = Propulsor()
         pp = p.flight_model(p,fs)
         pp.substitutions[pp.prop.T] = 100
-        #pp.substitutions[pp.prop.AR_b] = 15
         self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
 
         return fs,p,pp
 
 def actuator_propulsor_test():
-
     test = Actuator_Propulsor_Test()
-    #sol = test.debug()
-    sol = test.solve()
-    #sol = test.solve()
-    #print sol.table()
-
+    test.solve()
+    
 def ME_propulsor_test():
-    print "Blade Element Model Test"
     test = MultiElement_Propulsor_Test()
-    #sol = test.debug()
     sol = test.localsolve()
-    #sol = test.solve()
     print sol.table()
-def propulsor_test():
 
+def propulsor_test():
     test = Propulsor_Test()
-    #sol = test.debug()
-    #sol = test.localsolve(iteration_limit = 400)
     sol = test.solve()
-    #print sol.table()
 
 class Motor_P_Test(Model):
     def setup(self):
@@ -111,8 +98,7 @@ class hacker_q150_45_motor(Model):
 def motor_test():
     test = Motor_P_Test()
     sol = test.solve()
-    #sol = test.debug()
-    #print sol.table()
+
 
 def test():
     motor_test()
@@ -122,4 +108,3 @@ def test():
     
 if __name__ == "__main__":
     test()
-    #speed_280_test()
