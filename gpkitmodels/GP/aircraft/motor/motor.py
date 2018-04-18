@@ -37,7 +37,7 @@ class Motor(Model):
 
     Variables
     ---------
-    Qstar       .5           [kg/(N*m)]         motor specific torque
+    Qstar       .5          [kg/(N*m)]         motor specific torque
     W                       [lbf]              motor weight
     Qmax                    [N*m]              motor max. torque
     V_max       300         [V]                motor max voltage
@@ -55,10 +55,6 @@ class Motor(Model):
 
 class PropulsorPerf(Model):
     """Propulsor Performance Model
-
-    Variables
-    ---------
-    V_static       1      [cm/s]           inflow velocity for static thrust
 
     """
 

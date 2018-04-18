@@ -12,7 +12,6 @@ class Propulsor_Test(Model):
         p = Propulsor()
         pp = p.flight_model(p,fs)
         pp.substitutions[pp.prop.T] = 100
-        #pp.substitutions[pp.prop.AR_b] = 15
         self.cost = 1./pp.motor.etam + p.W/(1000*units('lbf')) + 1./pp.prop.eta
 
         return fs,p,pp
@@ -27,7 +26,6 @@ class Actuator_Propulsor_Test(Model):
         p = Propulsor()
         pp = p.flight_model(p,fs)
         pp.substitutions[pp.prop.T] = 100
-        #pp.substitutions[pp.prop.AR_b] = 15
         self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
 
         return fs,p,pp
@@ -36,9 +34,7 @@ class Actuator_Propulsor_Test(Model):
 def actuator_propulsor_test():
 
     test = Actuator_Propulsor_Test()
-    #sol = test.debug()
     sol = test.solve()
-    #sol = test.solve()
     #print sol.table()
 
 
@@ -46,8 +42,6 @@ def actuator_propulsor_test():
 def propulsor_test():
 
     test = Propulsor_Test()
-    #sol = test.debug()
-    #sol = test.localsolve(iteration_limit = 400)
     sol = test.solve()
     #print sol.table()
 
@@ -91,7 +85,6 @@ class hacker_q150_45_motor(Model):
 def motor_test():
     test = Motor_P_Test()
     sol = test.solve()
-    #sol = test.debug()
     #print sol.table()
 
 def test():
@@ -102,4 +95,3 @@ def test():
     
 if __name__ == "__main__":
     test()
-    #speed_280_test()
