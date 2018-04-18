@@ -34,16 +34,15 @@ class Actuator_Propulsor_Test(Model):
 def actuator_propulsor_test():
 
     test = Actuator_Propulsor_Test()
-    sol = test.solve()
-    #print sol.table()
+    test.solve()
+    
 
 
 
 def propulsor_test():
 
     test = Propulsor_Test()
-    sol = test.solve()
-    #print sol.table()
+    test.solve()
 
 class Motor_P_Test(Model):
     def setup(self):
@@ -84,8 +83,7 @@ class hacker_q150_45_motor(Model):
 
 def motor_test():
     test = Motor_P_Test()
-    sol = test.solve()
-    #print sol.table()
+    test.solve()
 
 def test():
     motor_test()

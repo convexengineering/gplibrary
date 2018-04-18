@@ -14,8 +14,8 @@ def simpleprop_test():
     m = Model(1/pp.eta  + p.W/(100.*units("lbf"))+ pp.Q/(100.*units("N*m")),
               [fs, p, pp])
     m.substitutions.update({"rho": 1.225, "V": 50, "T": 100, "omega":1000})
-    sol = m.solve()
-    #print sol.table()
+    m.solve()
+    
 
 
 def test():
