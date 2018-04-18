@@ -94,12 +94,12 @@ class Blade_Element_Performance(Model):
 
     """
 
-    def setup(self,parent,  state):
+    def setup(self,static,  state):
         exec parse_variables(Blade_Element_Performance.__doc__)
 
         V       = state.V
         rho     = state.rho
-        R       = parent.R
+        R       = static.R
         mu      = state.mu
         path = os.path.dirname(__file__)
         fd = pd.read_csv(path + os.sep + "dae51_fitdata.csv").to_dict(
@@ -149,7 +149,7 @@ class MultiElementProp(Model):
     ---------
     Mtip        .5          [-]         tip mach number
     """
-    def setup(self,parent,  state, N = 4):
+    def setup(self,static,  state, N = 4):
         #exec parse_variables(Multi_Element_Propeller_Performance.__doc__)
         T = self.T = Variable('T', 'lbf', 'Overall thrust')
         Q = self.Q = Variable('Q', 'N*m', 'Overall torque')
@@ -158,24 +158,24 @@ class MultiElementProp(Model):
         omega_max  =  Variable('omega_max',10000, 'rpm', 'rotation rate')
         Mtip       =  Variable('Mtip', .5, '-', 'Tip Mach')
         with Vectorize(N):
-            blade = Blade_Element_Performance(parent, state)
+            blade = Blade_Element_Performance(static, state)
 
 
-        constraints = [blade.dr == parent.R/(N),
+        constraints = [blade.dr == static.R/(N),
                         blade.omega == omega,
-                        blade["r"][0] == parent.R/(2.*N)]
+                        blade["r"][0] == static.R/(2.*N)]
 
         
         with SignomialsEnabled():
             for n in range(1,N):
-                constraints += [TCS([blade["r"][n] >= blade["r"][n-1] + parent.R/N]),
+                constraints += [TCS([blade["r"][n] >= blade["r"][n-1] + static.R/N]),
                                 blade["eta_i"][n] == blade["eta_i"][n-1]
                                 ]
             constraints += [TCS([T <= sum(blade["dT"][n] for n in range(N))]),
                             TCS([Q >= sum(blade["dQ"][n] for n in range(N))]),
                             eta == state.V*T/(omega*Q),
                             blade["M"][-1] <= Mtip,
-                            parent.T_m>=T,
+                            static.T_m>=T,
                             omega <= omega_max
                             ]
 

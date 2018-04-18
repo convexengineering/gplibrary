@@ -38,15 +38,14 @@ def ME_eta_test():
     Propeller.flight_model = MultiElementProp
     p   = Propeller()
 
-    p.substitutions[p.T_m]  = 100
     #p.substitutions[p.R]    = 2
     pp = p.flight_model(p,fs)
     pp.substitutions[pp.T]  = 100
-   
+
     #pp.substitutions[pp.omega] = 500
     
     #pp.substitutions[pp.omega] = 1000
-    pp.cost = 1./pp.eta + pp.Q/(100.*units("N*m"))
+    pp.cost = 1./pp.eta + pp.Q/(100.*units("N*m")) + p.T_m/(1000*units('N'))
     #sol = pp.debug()
     sol = pp.localsolve(iteration_limit = 400)
     print sol.table()
