@@ -1,6 +1,6 @@
 " propeller tests "
 from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
-from gpkitmodels.GP.aircraft.prop.propeller import SimpleQProp, MultiElementProp
+from gpkitmodels.GP.aircraft.prop.propeller import MultiElementProp
 
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 from gpkit import units, Model
@@ -17,20 +17,6 @@ def simpleprop_test():
     sol = m.solve()
     #print sol.table()
 
-def OE_eta_test():
-    " simple qprop test "
-
-    fs = FlightState()
-    Propeller.flight_model = SimpleQProp
-    p = Propeller()
-    pp = p.flight_model(p, fs)
-    pp.substitutions[pp.T] = 100
-    pp.substitutions[pp.AR_b] = 12
-    m = Model(1/pp.eta + pp.Q/(10.*units("N*m"))+ p.W/(100.*units("lbf")),
-              [pp, p])
-    #m.debug()
-    sol = m.localsolve()
-    #print sol.table()
 
 def ME_eta_test():
 
@@ -50,18 +36,9 @@ def ME_eta_test():
     sol = pp.localsolve(iteration_limit = 400)
     print sol.table()
 
-#def qprop_test():
-#
-#    fs = FlightState()
-#    p = QProp(fs)
-#    p.substitutions[p.T] = 100
-#    p.cost = 1/p.eta
-#    sol = p.solve()
-#    print sol.table()
 
 def test():
     "tests"
-    #OE_eta_test()
     #simpleprop_test()
     ME_eta_test()
 if __name__ == "__main__":
