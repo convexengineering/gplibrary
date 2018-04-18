@@ -149,13 +149,13 @@ class MultiElementProp(Model):
     Mtip        .5          [-]         tip mach number
     """
     def setup(self,static,  state, N = 5):
-        #exec parse_variables(MultiElementProp.__doc__)
+        exec parse_variables(MultiElementProp.__doc__)
         T = self.T = Variable('T', 'lbf', 'Overall thrust')
         Q = self.Q = Variable('Q', 'N*m', 'Overall torque')
         eta = self.eta = Variable('eta', '-', 'Overall efficiency')
         omega = self.omega =  Variable('omega', 'rpm', 'rotation rate')
         omega_max  =  Variable('omega_max',10000, 'rpm', 'rotation rate')
-        Mtip       =  Variable('Mtip', .5, '-', 'Tip Mach')
+        #Mtip       =  Variable('Mtip', .5, '-', 'Tip Mach')
         with Vectorize(N):
             blade = Blade_Element_Performance(static, state)
 
