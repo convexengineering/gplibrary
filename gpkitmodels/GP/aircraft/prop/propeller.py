@@ -105,26 +105,20 @@ class Blade_Element_Performance(Model):
         fd = pd.read_csv(path + os.sep + "dae51_fitdata.csv").to_dict(
             orient="records")[0]
 
-        constraints = [#TCS([Wr**2 >= (Wa**2+Wt**2)]),
-                        #Ut == omega*r,
+        constraints = [TCS([Wa>=V + va]),
+                        TCS([Wt + vt<=omega*r]),
                         TCS([G == (1./2.)*Wr*c*cl]),
-                        #TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]), #.2 = 1-.8 = 1-r/R
                         F == (2./pi)*(1.02232*f**.0458729)**(1./.1), #This is the GP fit of arccos(exp(-f))
                         M == Wr/a,
                         lam_w == (r/R)*(Wa/Wt),
                         va == vt*(Wt/Wa),
                         eps == cd/cl,
-                        #TCS([1 >= etai*(1+va/V)+vt/Ut]),
-                        #TCS([1 >= etap*(1+eps*Wt/Wa)+eps*Wt/Wa]),
                         TCS([dQ >= rho*B*G*(Wa+eps*Wt)*r*dr]),
-                        #Wa == V,
-                        #Wt == omega*r,
                         AR_b == R/c,
                         AR_b <= AR_b_max,
                         Re == Wr*c*rho/mu,
-                        #eta == T*V/(Q*omega),
                         eta_i == (V/(omega*r))*(Wt/Wa),
-
+                        TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]),
                         #TCS([cd >= cl**2/(pi*AR_b*.85) + cdp]),
                         #TCS([FF >= 1. + .3*t_c + (100*t_c)**.4]),
                         #C_f == .027/(Re**(1./7.)),
@@ -135,21 +129,13 @@ class Blade_Element_Performance(Model):
                         cl <= cl_max
                     ]
         with SignomialsEnabled():
-            constraints += [TCS([Wa>=V + va]),
-                            #SignomialEquality(Wa, V+va),
-                            SignomialEquality(Wr**2,(Wa**2+Wt**2)),
-                            #TCS([Wr**2 >= (Wa**2+Wt**2)]),
-                            SignomialEquality(Wt,omega*r-vt),
-                            #TCS([Wt<=omega*r-vt]),
+            constraints += [SignomialEquality(Wr**2,(Wa**2+Wt**2)),
+                            
                             TCS([dT <= rho*B*G*(Wt-eps*Wa)*dr]),
-                            SignomialEquality(vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2),(B*G/(4.*pi*r))**2),
-                            #TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2)<=(B*G/(4.*pi*r))**2]),
-                            #TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]),
-                            SignomialEquality(f+(r/R)*B/(2*lam_w),(B/2.)*(1./lam_w))
-                            #SignomialEquality(1,etap*(1+eps*Wt/Wa)+eps*Wa/Wt),
-                            #SignomialEquality(1,etai*(1+va/V)+vt/Ut),
-                            #SignomialEquality(dQ,rho*B*G*(Wa+eps*Wt)*r*dr),
-                            #SignomialEquality(dT,rho*B*G*(Wt-eps*Wa)*dr),
+                            #SignomialEquality(vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2),(B*G/(4.*pi*r))**2),
+                            TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2)>=(B*G/(4.*pi*r))**2]),
+                            #SignomialEquality(f+(r/R)*B/(2*lam_w),(B/2.)*(1./lam_w))
+                            
                     
             ]
         return constraints, state
@@ -183,7 +169,6 @@ class MultiElementProp(Model):
         with SignomialsEnabled():
             for n in range(1,N):
                 constraints += [TCS([blade["r"][n] >= blade["r"][n-1] + parent.R/N]),
-                                #SignomialEquality(blade["r"][n],blade["r"][n-1] + parent.R/N),
                                 blade["eta_i"][n] == blade["eta_i"][n-1]
                                 ]
             constraints += [TCS([T <= sum(blade["dT"][n] for n in range(N))]),
