@@ -39,8 +39,7 @@ def wing_test():
     from gpkit import settings
     if settings["default_solver"] == "cvxopt":
         for l in loading:
-            for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}",
-                      "\\bar{\\delta}_{root}", "\\theta_{root}"]:
+            for v in ["Mtip", "Stip", "wroot", "throot"]:
                 l.substitutions[v] = 1e-3
 
     m = Model(perf.Cd, [
@@ -68,8 +67,7 @@ def box_spar():
     from gpkit import settings
     if settings["default_solver"] == "cvxopt":
         for l in loading:
-            for v in ["\\bar{M}_{tip}", "\\bar{S}_{tip}",
-                      "\\bar{\\delta}_{root}", "\\theta_{root}"]:
+            for v in ["Mtip", "Stip", "wroot", "throot"]:
                 l.substitutions[v] = 1e-3
 
     m = Model(perf.Cd, [
