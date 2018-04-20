@@ -52,7 +52,6 @@ def actuator_propulsor_test():
 def ME_propulsor_test():
     test = MultiElement_Propulsor_Test()
     sol = test.localsolve()
-    print sol.table()
 
 def propulsor_test():
     test = Propulsor_Test()
