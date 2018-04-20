@@ -27,11 +27,9 @@ def ME_eta_test():
     pp.cost = 1./pp.eta + pp.Q/(100.*units("N*m")) + p.T_m/(1000*units('N'))
     sol = pp.localsolve(iteration_limit = 400)
 
-
 def test():
     "tests"
     simpleprop_test()
-    ME_eta_test()
 if __name__ == "__main__":
     test()
 

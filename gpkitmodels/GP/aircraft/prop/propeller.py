@@ -173,6 +173,7 @@ class MultiElementProp(Model):
         return constraints, blade 
 
 
+
 class Propeller(Model):
     """ Propeller Model
 
@@ -188,7 +189,7 @@ class Propeller(Model):
     c                               [ft]            prop chord 
     """
 
-    flight_model = MultiElementProp
+    flight_model = ActuatorProp
 
     def setup(self, N = 5):
         exec parse_variables(Propeller.__doc__)

@@ -29,8 +29,6 @@ class Actuator_Propulsor_Test(Model):
         self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
 
         return fs,p,pp
-
-
 class MultiElement_Propulsor_Test(Model):
     """Propulsor Test Model w/ Blade Element Propeller
     """
@@ -96,8 +94,7 @@ class hacker_q150_45_motor(Model):
 
 def motor_test():
     test = Motor_P_Test()
-    sol = test.solve()
-
+    test.solve()
 
 def test():
     motor_test()
