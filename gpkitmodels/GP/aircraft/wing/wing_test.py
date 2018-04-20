@@ -40,7 +40,7 @@ def wing_test():
     if settings["default_solver"] == "cvxopt":
         for l in loading:
             for v in ["Mtip", "Stip", "wroot", "throot"]:
-                l.substitutions[v] = 1e-3
+                l.substitutions[v] = 1e-1
 
     m = Model(perf.Cd, [
         loading[1].v == fs.V,
@@ -68,7 +68,7 @@ def box_spar():
     if settings["default_solver"] == "cvxopt":
         for l in loading:
             for v in ["Mtip", "Stip", "wroot", "throot"]:
-                l.substitutions[v] = 1e-3
+                l.substitutions[v] = 1e-2
 
     m = Model(perf.Cd, [
         loading[1].v == fs.V,
