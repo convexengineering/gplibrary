@@ -27,7 +27,6 @@ class SparLoading(Model):
     --------------------------
     q                       [N/m]   distributed wing loading
     S                       [N]     shear along wing
-    Mbar                    [-]     wing section root moment
     M                       [N*m]   wing section root moment
     th                      [-]     deflection angle
     w                       [m]     wing deflection
@@ -67,7 +66,6 @@ class SparLoading(Model):
         deta = self.wing.planform.deta
 
         if sp:
-            print "here"
             with SignomialsEnabled():
                 shear = S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
                                    - Sout)
