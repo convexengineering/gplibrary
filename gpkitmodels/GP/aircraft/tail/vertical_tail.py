@@ -1,26 +1,47 @@
 " vertical tail "
-from gpkit import Variable
+from gpkit import parse_variables
 from .tail_aero import TailAero
 from gpkitmodels.GP.aircraft.wing.wing import Wing
-from gpkitmodels.GP.aircraft.wing.wing_interior import WingInterior
+from gpkitmodels.GP.aircraft.wing.wing_core import WingCore
+from gpkitmodels.GP.aircraft.wing.wing_skin import WingSkin
 
-#pylint: disable=attribute-defined-outside-init, unused-variable
+#pylint: disable=attribute-defined-outside-init, no-member, exec-used
 
 class VerticalTail(Wing):
-    "vertical tail model"
+    """ Vertical Tail Model
+
+    Variables
+    ---------
+    Vv                  [-]         vertical tail volume coefficient
+    lv                  [ft]        vertical tail moment arm
+
+    Upper Unbounded
+    ---------------
+    lv, Vv, W
+
+    Lower Unbounded
+    ---------------
+    lv, Vv, planform.b, spar.Sy (if sparModel), spar.J (if sparJ)
+
+    LaTex Strings
+    -------------
+    Vv      V_{\\mathrm{v}}
+    lv      l_{\\mathrm{v}}
+
+    """
+
     flight_model = TailAero
-    fillModel = WingInterior
+    fillModel = WingCore
     sparModel = None
-    def setup(self, N=3, lam=0.8):
 
-        self.ascs = Wing.setup(self, N, lam)
-        self.planform.substitutions.update({"\\tau": 0.08})
-        self.skin.substitutions.update({"\\rho_{CFRP}": 0.049})
-        self.foam.substitutions.update({"\\bar{A}_{jh01}": 0.0548,
-                                        "\\rho_{foam}": 0.024})
+    def setup(self, N=3):
+        exec parse_variables(VerticalTail.__doc__)
 
-        Vv = Variable("V_v", "-", "vertical tail volume coefficient")
-        lv = Variable("l_v", "ft", "vertical tail moment arm")
+        self.ascs = Wing.setup(self, N)
+        self.planform.substitutions.update(
+            {self.planform.lam: 0.8, self.planform.AR: 4})
+        if self.fillModel:
+            self.foam.substitutions.update({self.foam.Abar: 0.0548,
+                                            self.foam.material.rho: 0.024})
 
-        return self.ascs, self.components
-
+        return self.ascs

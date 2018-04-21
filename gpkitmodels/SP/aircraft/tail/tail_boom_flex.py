@@ -1,30 +1,48 @@
 " tail boom flexibility "
-import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled
+from numpy import pi
+from gpkit import Model, parse_variables, SignomialsEnabled
 
 class TailBoomFlexibility(Model):
-    "tail boom flexibility model"
-    def setup(self, htail, tailboom, wing, state):
+    """ Tail Boom Flexibility Model
 
-        Fne = Variable("F_{NE}", "-", "tail boom flexibility factor")
-        deda = Variable("d\\epsilon/d\\alpha", "-", "wing downwash derivative")
-        SMcorr = Variable("SM_{corr}", 0.55, "-", "corrected static margin")
+    Variables
+    ---------
+    Fne                 [-]     tail boom flexibility factor
+    deda                [-]     wing downwash derivative
+    SMcorr      0.55    [-]     corrected static margin
+    sph1                [-]     flexibility helper variable 1
+    sph2                [-]     flexibility helper variable 2
 
-        # signomial helper variables
-        sph1 = Variable("sph1", "-", "first term involving $V_h$")
-        sph2 = Variable("sph2", "-", "second term involving $V_h$")
+    LaTex Strings
+    -------------
+    Fne         F_{\mathrm{NE}}
+    deda        d\\epsilon/d\\alpha
+    SMcorr      SM_{\\mathrm{corr}}
+
+    """
+    def setup(self, htail, hbending, wing):
+        exec parse_variables(TailBoomFlexibility.__doc__)
+
+        mh = htail.mh
+        mw = wing.mw
+        Vh = htail.Vh
+        th = hbending.th
+        CLhmin = htail.CLhmin
+        CLwmax = wing.planform.CLmax
+        Sw = wing.planform.S
+        bw = wing.planform.b
+        lh = htail.lh
+        CM = wing.planform.CM
 
         constraints = [
-            Fne >= (1 + htail["m_h"]*0.5*state["V_{NE}"]**2*state["\\rho_{sl}"]
-                    * htail["S"]*htail["l_h"]**2/tailboom["E"]
-                    / tailboom["I_0"]*tailboom["(1-k/2)"]),
-            sph1*(wing["m_w"]*Fne/htail["m_h"]/htail["V_h"]) + deda <= 1,
-            sph2 <= htail["V_h"]*htail["(C_{L_h})_{min}"]/wing["C_{L_{max}}"],
+            Fne >= 1 + mh*th,
+            sph1*(mw*Fne/mh/Vh) + deda <= 1,
+            sph2 <= Vh*CLhmin/CLwmax,
             # (sph1 + sph2).mono_lower_bound({"sph1": .48, "sph2": .52}) >= (
             #     SMcorr + wing["C_M"]/wing["C_{L_{max}}"]),
-            deda >= wing["m_w"]*wing["S"]/wing["b"]/4/np.pi/htail["l_h"]]
+            deda >= mw*Sw/bw/4/pi/lh]
 
         with SignomialsEnabled():
-            constraints.extend([sph1 + sph2 >= SMcorr + wing["C_M"]/wing["C_{L_{max}}"]])
+            constraints.extend([sph1 + sph2 >= SMcorr + CM/CLwmax])
 
         return constraints

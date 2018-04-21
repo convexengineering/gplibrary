@@ -1,33 +1,55 @@
 " empennage.py "
-from gpkit import Variable, Model
+from gpkit import Model, parse_variables
 from .horizontal_tail import HorizontalTail
 from .vertical_tail import VerticalTail
 from .tail_boom import TailBoom, TailBoomState
 
-#pylint: disable=attribute-defined-outside-init
+#pylint: disable=attribute-defined-outside-init, no-member, exec-used
+#pylint: disable=too-many-instance-attributes, invalid-name, undefined-variable
 class Empennage(Model):
-    "empennage model, consisting of vertical, horizontal and tailboom"
-    def setup(self):
-        mfac = Variable("m_{fac}", 1.0, "-", "Tail weight margin factor")
-        W = Variable("W", "lbf", "empennage weight")
+    """empennage model, consisting of vertical, horizontal and tailboom
+
+    Variables
+    ---------
+    mfac        1.0     [-]     tail weight margin factor
+    W                   [lbf]   empennage weight
+
+    Upper Unbounded
+    ---------------
+    W, vtail.Vv, htail.Vh, tailboom.cave (if not tbSecWeight)
+
+    Lower Unbounded
+    ---------------
+    htail.lh, htail.Vh, htail.planform.b, htail.mh
+    vtail.lv, vtail.Vv, vtail.planform.b
+    htail.spar.Sy (if hSparModel), htail.spar.J (if hSparModel)
+    vtail.spar.Sy (if vSparModel), vtail.spar.J (if vSparModel)
+    tailboom.Sy, tailboom.cave (if not tbSecWeight), tailboom.J (if tbSecWeight)
+
+    LaTex Strings
+    -------------
+    mfac        m_{\\mathrm{fac}}
+
+    """
+    def setup(self, N=2):
+        exec parse_variables(Empennage.__doc__)
 
         self.htail = HorizontalTail()
-        self.htail.substitutions.update({"m_{fac}": 1.1})
+        self.hSparModel = self.htail.sparModel
+        self.htail.substitutions.update({self.htail.mfac: 1.1})
+        lh = self.lh = self.htail.lh
         self.vtail = VerticalTail()
-        self.vtail.substitutions.update({"m_{fac}": 1.1})
-        self.tailboom = TailBoom()
+        self.vSparModel = self.vtail.sparModel
+        self.vtail.substitutions.update({self.vtail.mfac: 1.1})
+        lv = self.lv = self.vtail.lv
+        self.tailboom = TailBoom(N=N)
+        self.tbSecWeight = self.tailboom.secondaryWeight
         self.components = [self.htail, self.vtail, self.tailboom]
-
-        state = TailBoomState()
-        loading = [self.tailboom.horizontalbending(self.htail, state),
-                   self.tailboom.verticalbending(self.vtail, state),
-                   self.tailboom.verticaltorsion(self.vtail, state)]
+        l = self.l = self.tailboom.l
 
         constraints = [
-            W/mfac >= (self.htail.topvar("W") + self.vtail.topvar("W")
-                       + self.tailboom["W"]),
-            self.tailboom["l"] >= self.htail["l_h"],
-            self.tailboom["l"] >= self.vtail["l_v"],
+            W/mfac >= sum(c.W for c in self.components),
+            l >= lh, l >= lv,
             ]
 
-        return self.components, constraints, loading
+        return self.components, constraints

@@ -1,55 +1,73 @@
 " spar loading for gust case "
-from gpkit import Model, Variable, Vectorize
-from constant_taper_chord import c_bar
-from gpkitmodels.GP.beam.beam import Beam
-# from gpkitmodels.tools.fit_constraintset import FitCS
-from gpfit.fit_constraintset import FitCS
-from numpy import pi
-import numpy as np
-import pandas as pd
 import os
+from numpy import pi, hstack, array
+from ad import adnumber
+from ad.admath import cos
+import pandas as pd
+from gpkit import parse_variables
+from gpfit.fit_constraintset import FitCS
+from .sparloading import SparLoading
 
-class GustL(Model):
-    "spar loading model"
-    def setup(self, static, Wcent, Wwing, V, CL):
-    # def setup(self, static, Wcent, rho, V, S):
+#pylint: disable=invalid-name, no-member, arguments-differ, exec-used
+#pylint: disable=attribute-defined-outside-init, undefined-variable
 
-        Nmax = Variable("N_{max}", 2, "-", "load safety factor")
-        cbar, eta, _, _ = c_bar(0.5, static.N)
+class GustL(SparLoading):
+    """ Gust Loading Model
 
-        sigmacfrp = Variable("\\sigma_{CFRP}", 1700e6, "Pa", "CFRP max stress")
-        taucfrp = Variable("\\tau_{CFRP}", 450e6, "Pa", "CFRP fabric stress")
-        kappa = Variable("\\kappa", 0.2, "-", "max tip deflection ratio")
+    Variables
+    ---------
+    vgust       10      [m/s]       gust velocity
+    Ww                  [lbf]       wing weight
+    v                   [m/s]       vehicle speed
+    cl                  [-]         wing lift coefficient
 
-        with Vectorize(static.N-1):
-            Mr = Variable("M_r", "N*m", "wing section root moment")
+    Variables of length wing.N
+    --------------------------
+    agust                           [-]         gust angle of attack
+    cosminus1   self.return_cosm1   [-]         1 minus cosine factor
 
-        vgust = Variable("V_{gust}", 10, "m/s", "gust velocity")
+    Upper Unbounded
+    ---------------
+    v, cl, wing.spar.I, wing.spar.tshear, wing.spar.Sy
+    J (if wingSparJ)
+    theta (if not wingSparJ), M (if not wingSparJ)
 
-        with Vectorize(static.N):
-            agust = Variable("\\alpha_{gust}", "-", "gust angle of attack")
-            qbar = Variable("\\bar{q}", "-", "normalized loading")
-            cosminus1 = Variable("1-cos(\\eta)",
-                                 np.hstack([1e-10, 1-np.cos(eta[1:]*pi/2)]),
-                                 "-", "1 minus cosine factor")
+    Lower Unbounded
+    ---------------
+    Ww, wing.planform.b, wing.planform.cave
+    wing.planform.CM (if wingSparJ), qne (if wingSparJ)
+    theta (if not wingSparJ), M (if not wingSparJ)
 
-        beam = Beam(static.N, qbar)
-        path = os.path.abspath(__file__).replace(os.path.basename(__file__), "")
+    LaTex Strings
+    -------------
+    vgust               V_{\\mathrm{gust}}
+    Ww                  W_{\\mathrm{w}}
+    cl                  c_l
+    agust               \\alpha_{\\mathrm{gust}}
+    cosminus1           (cos(x)-1)
+
+    """
+    new_qbarFun = None
+    new_SbarFun = None
+
+    return_cosm1 = lambda self, c: hstack(
+        [adnumber(1e-10), 1-array(cos(c[self.wing.planform.eta][1:]*pi/2))])
+
+    def setup(self, wing, state):
+        exec parse_variables(GustL.__doc__)
+        self.load = SparLoading.setup(self, wing, state)
+
+        cbar = self.wing.planform.cbar
+        W = self.W  # from SparLoading
+
+        path = os.path.dirname(os.path.abspath(__file__))
         df = pd.read_csv(path + os.sep + "arctan_fit.csv").to_dict(
             orient="records")[0]
 
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
-            FitCS(df, agust, [cosminus1*vgust/V]),
-            qbar >= cbar*(1 + 2*pi*agust/CL*(1+Wwing/Wcent)),
-            # dimensionalize moment of inertia and young's modulus
-            beam["\\bar{EI}"] <= (8*static["E"]*static["I"]/Nmax
-                                  / Wcent/static["b"]**2),
-            Mr == (beam["\\bar{M}"][:-1]*Wcent*Nmax*static["b"]/4),
-            sigmacfrp >= Mr/static["S_y"],
-            beam["\\bar{\\delta}"][-1] <= kappa,
-            taucfrp >= (beam["\\bar{S}"][-1]*Wcent*Nmax/4/static["t_{shear}"]
-                        / static["c_{ave}"]/static["\\tau"])
+            FitCS(df, agust, [cosminus1*vgust/v]),
+            self.beam["\\bar{q}"] >= cbar*(1 + 2*pi*agust/cl*(1+Ww/W)),
             ]
 
-        return beam, constraints
+        return self.load, constraints

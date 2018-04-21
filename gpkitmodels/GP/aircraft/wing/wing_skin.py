@@ -1,37 +1,78 @@
 " wing skin "
-from gpkit import Model, Variable
+from gpkit import Model, parse_variables
+from gpkitmodels.GP.materials import cfrpfabric
+from gpkitmodels import g
 
 class WingSkin(Model):
-    "wing skin model"
+    """ Wing Skin model
+
+    Variables
+    ---------
+    W                           [lbf]           wing skin weight
+    t                           [in]            wing skin thickness
+    Jtbar           0.01114     [1/mm]          torsional moment of inertia
+    Cmw             0.121       [-]             negative wing moment coeff
+    rhosl           1.225       [kg/m^3]        sea level air density
+    Vne             45          [m/s]           never exceed vehicle speed
+
+    Upper Unbounded
+    ---------------
+    W, croot
+
+    Lower Unbounded
+    ---------------
+    S
+
+    LaTex Strings
+    -------------
+    W       W_{\\mathrm{skin}}
+    t       t_{\\mathrm{skin}}
+    Jtbar   \\bar{J/t}
+    Cmw     C_{m_w}
+    rhosl   \\rho_{\\mathrm{SL}}
+    Vne     V_{\\mathrm{NE}}
+
+    """
+    material = cfrpfabric
+
     def setup(self, surface):
+        exec parse_variables(WingSkin.__doc__)
 
-        rhocfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
-        W = Variable("W", "lbf", "wing skin weight")
-        g = Variable("g", 9.81, "m/s^2", "gravitational acceleration")
-        t = Variable("t", "in", "wing skin thickness")
-        tmin = Variable("t_{min}", 0.012, "in", "wing skin min gauge")
-        Jtbar = Variable("\\bar{J/t}", 0.01114, "1/mm",
-                         "torsional moment of inertia")
+        croot = self.croot = surface.croot
+        S = self.S = surface.S
+        rho = self.material.rho
+        tau = self.material.tau
+        tmin = self.material.tmin
 
-        constraints = [W >= rhocfrp*surface["S"]*2*t*g,
-                       t >= tmin]
+        return [W >= rho*surface.S*2*t*g,
+                t >= tmin,
+                tau >= 1/Jtbar/croot**2/t*Cmw*S*rhosl*Vne**2]
 
-        self.loading = WingSkinL
+class WingSecondStruct(Model):
+    """ Wing Skin model
 
-        return constraints
+    Variables
+    ---------
+    W                           [lbf]           wing skin weight
+    rhoA            0.35        [kg/m^2]        total aerial density
 
-class WingSkinL(Model):
-    "wing skin loading model for torsional loads in skin"
-    def setup(self, static):
+    Upper Unbounded
+    ---------------
+    W
 
-        taucfrp = Variable("\\tau_{CFRP}", 570, "MPa", "torsional stress limit")
-        Cmw = Variable("C_{m_w}", 0.121, "-", "negative wing moment coefficent")
-        rhosl = Variable("\\rho_{sl}", 1.225, "kg/m^3",
-                         "air density at sea level")
-        Vne = Variable("V_{NE}", 45, "m/s", "never exceed vehicle speed")
+    Lower Unbounded
+    ---------------
+    S
 
-        constraints = [
-            taucfrp >= (1/static["\\bar{J/t}"]/(static["c_{root}"])**2
-                        / static.skin["t"]*Cmw*static["S"]*rhosl*Vne**2)]
+    LaTex Strings
+    -------------
+    W       W_{\\mathrm{skin}}
+    rhoA    \\rho_{A}
 
-        return constraints
+    """
+    def setup(self, surface):
+        exec parse_variables(WingSecondStruct.__doc__)
+
+        S = self.S = surface.S
+
+        return [W >= rhoA*S*g]

@@ -6,8 +6,8 @@ from chord_spar_loading import ChordSparL
 class TubeSpar(Model):
     " tube spar model "
     def setup(self, b, cave, tau, N=5):
-
         self.N = N
+
         rho_cfrp = Variable("\\rho_{CFRP}", 1.6, "g/cm^3", "density of CFRP")
         E = Variable("E", 2e7, "psi", "Youngs modulus of CF")
 
