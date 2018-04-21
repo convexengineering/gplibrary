@@ -1,6 +1,6 @@
 import numpy as np
 from wvl import wvl
-from gpkit import Variable, Model, VectorVariable, SignomialsEnabled
+from gpkit import Variable, Model, VectorVariable, SignomialsEnabled, parse_variables
 from gpkit.constraints.tight import Tight as TCS
 
 """
@@ -47,7 +47,7 @@ iCnspec = 0
 
 N = 10
 
-ispace = 2
+ispace = 1
 
 itmax = 20
 
@@ -113,57 +113,37 @@ Boff = B-Bdiag
 # z = np.linalg.lstsq(vA, G)
 
 class WVL(Model):
-    def setup(self):
+    """ weissenger vortex lifting line
 
-        # Aijm = Ainv
-        Aijm = VectorVariable([Na, Na], "Aijm", -Ainv)
-        G = VectorVariable(Na, "\\Gamma", "-", "vortex filament strength")
-        th = VectorVariable(Na, "\\theta", "-", "twist")
-        CL = Variable("C_L", 1.1, "-", "coefficient of lift")
-        CDi = Variable("C_{D_i}", "-", "induced drag coefficient")
-        eta = dy #VectorVariable(Na, "\\eta", dy, "-", "(2y/b)")
-        Bd = Bdiag #VectorVariable([Na, Na], "D_{diag}", Bdiag, "-", "B diagonals")
-        Bo = -Boff #VectorVariable([Na, Na], "D_{off}", -Boff, "-", "B offdiagonals")
-        S = Variable("S_{ref}", Sref, "-", "reference area")
-        V = Vx #VectorVariable(Na, "V_x", Vx, "-", "velocity")
+    Variables
+    ---------
+    CL                      [-]         coefficent of lift
+    CDi                     [-]         induced drag coefficient
+    S                       [m**2]      surface area
+
+    Variables of length Na
+    ---------------------
+    deta                    [m]         spanwise section length
+    G                       [m]         Gamma/Vinf vortex filament strength
+
+    """
+
+    def setup(self):
+        exec parse_variables(WVL.__doc__)
 
         with SignomialsEnabled():
             constraints = [
-                # TCS([G >= np.sum(Aijm*th, 1)]),
-                # TCS([CDi + 2*sum(np.dot(Aijm, th)*np.dot(Bo, np.dot(Aijm, th)))/S >= sum(2*np.dot(Aijm, th)*np.dot(Bd, np.dot(Aijm, th))/S)]),
-                # TCS([CL <= sum(2*np.dot(Aijm, th)*V*eta/S)])
-                TCS([CDi + 2*np.dot(G, np.dot(Bo, G))/S >= 2*np.dot(G, np.dot(Bd, G))/S]),
-                TCS([CL <= sum(2*G*V*eta/S)])
+                TCS([CDi >= 2*np.dot(G, np.dot(B, G))/S]),
+                TCS([CL <= sum(2*G*deta/S)])
                 ]
-
-        return constraints
-
-class wvlGP(Model):
-    def setup(self):
-
-        Na = 1
-        G = VectorVariable(Na, "\\Gamma", "-", "vortex filament strength")
-        CL = Variable("C_L", 1.1, "-", "coefficient of lift")
-        CDi = Variable("C_{D_i}", "-", "induced drag coefficient")
-        cl = Variable("cl", "-", "segment lifting coefficient")
-        c = VectorVariable(Na, "c", "-", "chord")
-        Dy = VectorVariable(Na, "dy", "-", "segment length")
-        Bij = VectorVariable([Na, Na], "Bij", "-", "Bij matrix")
-        S = Variable("S_{ref}", Sref, "-", "reference area")
-
-        constraints = [CL <= 2.*Na*cl,
-                       cl <= G*Dy*c,
-                       sum(Dy*c) <= S,
-                       CDi >= 2.*np.dot(G, np.dot(Bij, G))]
-
-        for i in range(Na):
-            for j in range(Na):
-                constraints.append(Bij[i][j] >= Dy[j]/np.pi/Dy[i])
 
         return constraints
 
 if __name__ == "__main__":
     wvl = WVL()
-    wvl.cost = wvl["C_{D_i}"]
+    wvl.substitutions["CL"] = 1.1
+    wvl.substitutions["S"] = Sref
+    wvl.substitutions["deta"] = dy
+    wvl.cost = wvl["CDi"]
     sol = wvl.localsolve("mosek")
     print sol.table()
