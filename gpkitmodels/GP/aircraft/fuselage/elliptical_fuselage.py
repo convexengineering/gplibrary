@@ -12,6 +12,7 @@ class FuselageAero(Model):
     Cf              [-]         fuselage skin friction coefficient
     Re              [-]         fuselage reynolds number
     Cd              [-]         fuselage drag coefficient
+    mfac    1.0     [-]         fuselage drag margin
 
     """
     def setup(self, static, state):
@@ -26,7 +27,7 @@ class FuselageAero(Model):
         constraints = [
             Re == V*rho*l/mu,
             Cf >= 0.455/Re**0.3,
-            Cd >= Cf*k
+            Cd/mfac >= Cf*k
             ]
 
         return constraints
@@ -47,6 +48,7 @@ class Fuselage(Model):
     rhofuel 6.01        [lbf/gallon]    density of 100LL
     rhocfrp 1.6         [g/cm^3]        density of CFRP
     t                   [in]            fuselage skin thickness
+    nply    2           [-]             number of plys
 
     """
     material = cfrpfabric
@@ -64,7 +66,7 @@ class Fuselage(Model):
             3*(S/np.pi)**1.6075 >= 2*(l*R*2)**1.6075 + (2*R)**(2*1.6075),
             Vol <= 4*np.pi/3*(l/2)*R**2,
             W/mfac >= S*rhocfrp*t*g,
-            t >= 2*tmin,
+            t >= nply*tmin,
             ]
 
         return constraints
