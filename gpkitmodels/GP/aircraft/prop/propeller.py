@@ -56,7 +56,6 @@ class ActuatorProp(Model):
         return constraints
 
 
-
 class Propeller(Model):
     """ Propeller Model
 
@@ -74,11 +73,7 @@ class Propeller(Model):
 
     flight_model = ActuatorProp
 
-    def setup(self, N = 1):
+    def setup(self, N = 5):
         exec parse_variables(Propeller.__doc__)
-
+        self.N = N
         return [W >= K*T_m*R**2]
-
-
-
-

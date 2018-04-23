@@ -1,6 +1,7 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
 from motor import Propulsor, Motor, MotorPerf
 from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
+from gpkitmodels.SP.aircraft.prop.propeller import BladeElementProp
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):
@@ -17,7 +18,7 @@ class Propulsor_Test(Model):
         return fs,p,pp
 
 class Actuator_Propulsor_Test(Model):
-    """Propulsor Test Model
+    """Propulsor Test Model w/ Actuator Disk Propeller
     """
 
     def setup(self):
@@ -29,20 +30,31 @@ class Actuator_Propulsor_Test(Model):
         self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
 
         return fs,p,pp
+class BladeElement_Propulsor_Test(Model):
+    """Propulsor Test Model w/ Blade Element Propeller
+    """
 
+    def setup(self):
+        fs = FlightState()
+        Propulsor.prop_flight_model = BladeElementProp
+        p = Propulsor()
+        pp = p.flight_model(p,fs)
+        pp.substitutions[pp.prop.T] = 100
+        self.cost = pp.motor.Pelec/(1000*units('W')) + p.W/(1000*units('lbf'))
+
+        return fs,p,pp
 
 def actuator_propulsor_test():
-
     test = Actuator_Propulsor_Test()
     test.solve()
     
-
-
+def ME_propulsor_test():
+    test = BladeElement_Propulsor_Test()
+    sol = test.localsolve()
 
 def propulsor_test():
-
     test = Propulsor_Test()
-    test.solve()
+    sol = test.solve()
 
 class Motor_P_Test(Model):
     def setup(self):
@@ -89,7 +101,7 @@ def test():
     motor_test()
     actuator_propulsor_test()
     propulsor_test()
-
+    ME_propulsor_test()
     
 if __name__ == "__main__":
     test()

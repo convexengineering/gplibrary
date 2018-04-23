@@ -17,7 +17,9 @@ class MotorPerf(Model):
     i                       [amps]          current
     v                       [V]             woltage
     i0         4.5          [amps]          zero-load current
-    Kv         29           [rpm/V]         motor voltage constant
+    Kv_min     1            [rpm/V]         min motor voltage constant
+    Kv_max     1000         [rpm/V]         max motor voltage constant
+    Kv                      [rpm/V]         motor voltage constant
     R          .033         [ohms]          internal resistance
     """
     def setup(self, static, state):
@@ -29,7 +31,9 @@ class MotorPerf(Model):
                 static.Qmax >= Q,
                 v <= static.V_max,
                 TCS([i >= Q*Kv+i0]),
-                TCS([v >= omega/Kv + i*R])
+                TCS([v >= omega/Kv + i*R]),
+                Kv >= Kv_min,
+                Kv <= Kv_max
                ]
 
 class Motor(Model):
@@ -37,7 +41,7 @@ class Motor(Model):
 
     Variables
     ---------
-    Qstar       .5          [kg/(N*m)]         motor specific torque
+    Qstar       .8          [kg/(N*m)]         motor specific torque
     W                       [lbf]              motor weight
     Qmax                    [N*m]              motor max. torque
     V_max       300         [V]                motor max voltage
