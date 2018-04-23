@@ -24,7 +24,7 @@ def ME_eta_test():
     p   = Propeller()
     pp = p.flight_model(p,fs)
     pp.substitutions[pp.T]  = 100
-    pp.cost = 1./pp.eta + pp.Q/(100.*units("N*m")) + p.T_m/(1000*units('N'))
+    pp.cost = 1./pp.eta + pp.Q/(1000.*units("N*m")) + p.T_m/(1000*units('N'))
     sol = pp.localsolve(iteration_limit = 400)
 
 def test():
