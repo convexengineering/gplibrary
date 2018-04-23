@@ -30,6 +30,7 @@ def ME_eta_test():
 def test():
     "tests"
     simpleprop_test()
+    ME_eta_test()
 if __name__ == "__main__":
     test()
 

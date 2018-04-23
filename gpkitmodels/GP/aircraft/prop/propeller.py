@@ -153,18 +153,18 @@ class MultiElementProp(Model):
 
         constraints = [blade.dr == static.R/(N),
                         blade.omega == omega,
-                        blade["r"][0] == static.R/(2.*N)]
+                        blade.r[0] == static.R/(2.*N)]
 
         
         with SignomialsEnabled():
             for n in range(1,N):
-                constraints += [TCS([blade["r"][n] >= blade["r"][n-1] + static.R/N]),
-                                blade["eta_i"][n] == blade["eta_i"][n-1],
+                constraints += [TCS([blade.r[n] >= blade.r[n-1] + static.R/N]),
+                                blade.eta_i[n] == blade.eta_i[n-1],
                                 ]
-            constraints += [TCS([T <= sum(blade["dT"])]),
-                            TCS([Q >= sum(blade["dQ"])]),
+            constraints += [TCS([T <= sum(blade.dT)]),
+                            TCS([Q >= sum(blade.dQ)]),
                             eta == state.V*T/(omega*Q),
-                            blade["M"][-1] <= Mtip,
+                            blade.M[-1] <= Mtip,
                             static.T_m>=T,
                             omega <= omega_max
                             ]
