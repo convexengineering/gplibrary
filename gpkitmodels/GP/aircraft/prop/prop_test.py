@@ -1,6 +1,6 @@
 " propeller tests "
 from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
-from gpkitmodels.SP.aircraft.prop.propeller import MultiElementProp
+from gpkitmodels.SP.aircraft.prop.propeller import BladeElementProp
 
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 from gpkit import units, Model
@@ -19,7 +19,7 @@ def simpleprop_test():
 def ME_eta_test():
 
     fs  = FlightState()
-    Propeller.flight_model = MultiElementProp
+    Propeller.flight_model = BladeElementProp
     p   = Propeller()
     pp = p.flight_model(p,fs)
     pp.substitutions[pp.T]  = 100
