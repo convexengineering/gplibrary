@@ -1,6 +1,7 @@
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
 from motor import Propulsor, Motor, MotorPerf
-from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp, MultiElementProp
+from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
+from gpkitmodels.SP.aircraft.prop.propeller import MultiElementProp
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 
 class Propulsor_Test(Model):

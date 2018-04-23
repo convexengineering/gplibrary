@@ -1,6 +1,6 @@
 " propeller tests "
 from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
-from gpkitmodels.GP.aircraft.prop.propeller import MultiElementProp
+from gpkitmodels.SP.aircraft.prop.propeller import MultiElementProp
 
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
 from gpkit import units, Model
