@@ -36,16 +36,10 @@ def actuator_propulsor_test():
     test = Actuator_Propulsor_Test()
     test.solve()
     
-<<<<<<< HEAD
-
-
-=======
 def ME_propulsor_test():
     test = MultiElement_Propulsor_Test()
     sol = test.localsolve()
-    print sol.table()
->>>>>>> parent of 46e07bc... updates to tests
-
+    
 def propulsor_test():
 
     test = Propulsor_Test()
