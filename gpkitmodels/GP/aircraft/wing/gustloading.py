@@ -26,18 +26,6 @@ class GustL(SparLoading):
     agust                           [-]         gust angle of attack
     cosminus1   self.return_cosm1   [-]         1 minus cosine factor
 
-    Upper Unbounded
-    ---------------
-    v, cl, wing.spar.I, wing.spar.tshear, wing.spar.Sy
-    J (if wingSparJ)
-    theta (if not wingSparJ), M (if not wingSparJ)
-
-    Lower Unbounded
-    ---------------
-    Ww, wing.planform.b, wing.planform.cave
-    wing.planform.CM (if wingSparJ), qne (if wingSparJ)
-    theta (if not wingSparJ), M (if not wingSparJ)
-
     LaTex Strings
     -------------
     vgust               V_{\\mathrm{gust}}
@@ -53,12 +41,15 @@ class GustL(SparLoading):
     return_cosm1 = lambda self, c: hstack(
         [adnumber(1e-10), 1-array(cos(c[self.wing.planform.eta][1:]*pi/2))])
 
-    def setup(self, wing, state):
+    def setup(self, wing, state, sp=False):
         exec parse_variables(GustL.__doc__)
-        self.load = SparLoading.setup(self, wing, state)
+        self.load = SparLoading.setup(self, wing, state, sp=sp)
 
         cbar = self.wing.planform.cbar
         W = self.W  # from SparLoading
+        q = self.q
+        N = self.N
+        b = self.b
 
         path = os.path.dirname(os.path.abspath(__file__))
         df = pd.read_csv(path + os.sep + "arctan_fit.csv").to_dict(
@@ -67,7 +58,7 @@ class GustL(SparLoading):
         constraints = [
             # fit for arctan from 0 to 1, RMS = 0.044
             FitCS(df, agust, [cosminus1*vgust/v]),
-            self.beam["\\bar{q}"] >= cbar*(1 + 2*pi*agust/cl*(1+Ww/W)),
+            q >= W*N/b*cbar*(1 + 2*pi*agust/cl*(1+Ww/W)),
             ]
 
         return self.load, constraints

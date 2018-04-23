@@ -14,8 +14,7 @@ def simpleprop_test():
     m = Model(1/pp.eta  + p.W/(100.*units("lbf"))+ pp.Q/(100.*units("N*m")),
               [fs, p, pp])
     m.substitutions.update({"rho": 1.225, "V": 50, "T": 100, "omega":1000})
-    sol = m.solve()
-
+    m.solve()
 
 def ME_eta_test():
 
@@ -26,6 +25,7 @@ def ME_eta_test():
     pp.substitutions[pp.T]  = 100
     pp.cost = 1./pp.eta + pp.Q/(1000.*units("N*m")) + p.T_m/(1000*units('N'))
     sol = pp.localsolve(iteration_limit = 400)
+
 
 def test():
     "tests"
