@@ -52,6 +52,7 @@ setup(
                                   "GP/aircraft/engine/*.csv",
                                   "GP/aircraft/motor/*.csv",
                                   "GP/aircraft/prop/*.csv",
+                                  "SP/aircraft/prop/*.csv",
                                   "GP/aircraft/engine/DF70/*.csv",
                                   "GP/aircraft/tail/*.csv"]},
     license=LICENSE,
