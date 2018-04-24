@@ -7,6 +7,9 @@ from gpkitmodels import g
 class MotorPerf(Model):
     """ Electric Motor Performance Model
 
+    Note: The last two constraints may not be tight if there is a motor energy constraint that does not size the motor.
+    TCS removed to prevent unnecessary warnings - for most normal useage they will be tight. 
+
     Variables
     ---------
     Pshaft                  [kW]            motor output shaft power
@@ -30,8 +33,8 @@ class MotorPerf(Model):
                 etam == Pshaft/Pelec,
                 static.Qmax >= Q,
                 v <= V_max,
-                TCS([i >= Q*Kv+i0]),
-                TCS([v >= omega/Kv + i*R]),
+                i >= Q*Kv+i0,
+                v >= omega/Kv + i*R,
                ]
 
 class Motor(Model):
