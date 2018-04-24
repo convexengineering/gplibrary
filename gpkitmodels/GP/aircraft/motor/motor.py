@@ -16,24 +16,22 @@ class MotorPerf(Model):
     omega                   [rpm]           propeller rotation rate
     i                       [amps]          current
     v                       [V]             woltage
-    i0         4.5          [amps]          zero-load current
-    Kv_min     1            [rpm/V]         min motor voltage constant
-    Kv_max     1000         [rpm/V]         max motor voltage constant
-    Kv                      [rpm/V]         motor voltage constant
-    R          .033         [ohms]          internal resistance
     """
     def setup(self, static, state):
         exec parse_variables(MotorPerf.__doc__)
+
+        Kv = static.Kv
+        R  = static.R
+        i0 = static.i0
+        V_max = static.V_max
 
         return [Pshaft == Q*omega,
                 Pelec == v*i,
                 etam == Pshaft/Pelec,
                 static.Qmax >= Q,
-                v <= static.V_max,
+                v <= V_max,
                 TCS([i >= Q*Kv+i0]),
                 TCS([v >= omega/Kv + i*R]),
-                Kv >= Kv_min,
-                Kv <= Kv_max
                ]
 
 class Motor(Model):
@@ -45,7 +43,11 @@ class Motor(Model):
     W                       [lbf]              motor weight
     Qmax                    [N*m]              motor max. torque
     V_max       300         [V]                motor max voltage
-
+    Kv_min     1            [rpm/V]         min motor voltage constant
+    Kv_max     1000         [rpm/V]         max motor voltage constant
+    Kv                      [rpm/V]         motor voltage constant
+    i0         4.5          [amps]          zero-load current 
+    R          .033         [ohms]          internal resistance
     """
 
     flight_model = MotorPerf
@@ -53,7 +55,9 @@ class Motor(Model):
     def setup(self):
         exec parse_variables(Motor.__doc__)
 
-        constraints = [W >= Qstar*Qmax*g]
+        constraints = [W >= Qstar*Qmax*g,
+                        Kv >= Kv_min,
+                        Kv <= Kv_max]
 
         return constraints
 
