@@ -58,8 +58,8 @@ class Motor(Model):
         exec parse_variables(Motor.__doc__)
 
         constraints = [W >= Qstar*Qmax*g,
-                        Kv >= Kv_min,
-                        Kv <= Kv_max]
+                       Kv >= Kv_min,
+                       Kv <= Kv_max]
 
         return constraints
 
