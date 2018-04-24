@@ -67,20 +67,25 @@ class SparLoading(Model):
 
         if sp:
             with SignomialsEnabled():
-                shear = S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
-                                   - Sout)
-        else:
-            shear = S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
+                constraints = [
+                    S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
+                               - Sout + N*W),
+                    S[-1] >= N*W,
+                    M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:] - 2*N*W),
+]
 
-        constraints = [
+        else:
+            constraints = [
+                S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:]),
+                M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:])]
+
+        constraints.extend([
             N == Nsafety*Nmax, q >= N*W/b*cbar,
-            shear, S[-1] >= Stip,
-            M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:]), M[-1] >= Mtip,
-            th[0] >= throot,
+            S[-1] >= Stip, M[-1] >= Mtip, th[0] >= throot,
             th[1:] >= th[:-1] + 0.5*deta*(b/2)*(M[1:] + M[:-1])/E/I,
             w[0] >= wroot, w[1:] >= w[:-1] + 0.5*deta*(b/2)*(th[1:] + th[:-1]),
             sigma >= M[:-1]/Sy, w[-1]/(b/2) <= kappa,
-            ]
+            ])
 
         self.wingSparJ = hasattr(self.wing.spar, "J")
 
