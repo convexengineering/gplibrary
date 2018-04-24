@@ -22,6 +22,7 @@ class SparLoading(Model):
     Mtip            1e-10          [N*m]   tip moment
     throot          1e-10          [-]     root deflection angle
     wroot           1e-10          [m]     root deflection
+    Soffset         1e5            [N]     offset shear
 
     Variables of length wing.N
     --------------------------
@@ -69,7 +70,7 @@ class SparLoading(Model):
             with SignomialsEnabled():
                 constraints = [
                     S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
-                               - Sout + N*W),
+                               - Sout),
                     S[-1] >= N*W,
                     M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:] - 2*N*W),
 ]

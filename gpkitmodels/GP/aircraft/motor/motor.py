@@ -41,7 +41,7 @@ class Motor(Model):
 
     Variables
     ---------
-    Qstar       .8          [kg/(N*m)]         motor specific torque
+    Qstar       .5          [kg/(N*m)]         motor specific torque
     W                       [lbf]              motor weight
     Qmax                    [N*m]              motor max. torque
     V_max       300         [V]                motor max voltage
@@ -100,4 +100,4 @@ class Propulsor(Model):
 
 
 
-    
+
