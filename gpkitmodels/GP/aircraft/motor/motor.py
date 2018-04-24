@@ -34,8 +34,7 @@ class MotorPerf(Model):
                 static.Qmax >= Q,
                 v <= V_max,
                 i >= Q*Kv+i0,
-                v >= omega/Kv + i*R,
-               ]
+                v >= omega/Kv + i*R]
 
 class Motor(Model):
     """ Electric Motor Model
