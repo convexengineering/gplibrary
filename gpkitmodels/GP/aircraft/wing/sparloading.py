@@ -71,8 +71,8 @@ class SparLoading(Model):
                 constraints = [
                     S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
                                - Sout),
-                    S[-1] >= N*W,
-                    M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:] - 2*N*W),
+                    S[-1] >= Soffset,
+                    M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:] - 2*Soffset),
 ]
 
         else:
