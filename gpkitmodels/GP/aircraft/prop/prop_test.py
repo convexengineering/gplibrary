@@ -25,7 +25,7 @@ def ME_eta_test():
     pp.substitutions[pp.T]  = 100
     pp.cost = 1./pp.eta + pp.Q/(1000.*units("N*m")) + p.T_m/(1000*units('N'))
     sol = pp.localsolve(iteration_limit = 400)
-
+    print sol.table()
 
 def test():
     "tests"

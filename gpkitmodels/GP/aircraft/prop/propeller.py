@@ -69,6 +69,7 @@ class Propeller(Model):
     Variables of length N
     ---------------------
     c                               [ft]            prop chord 
+    beta                            [-]             local prop angle
     """
 
     flight_model = ActuatorProp

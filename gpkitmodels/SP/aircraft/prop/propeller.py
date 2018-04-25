@@ -2,7 +2,7 @@
 from numpy import pi
 from gpkit import Model, Variable,Vectorize,parse_variables, SignomialsEnabled, SignomialEquality
 from gpkit.constraints.tight import Tight as TCS
-from gpfit.fit_constraintset import XfoilFit
+from gpfit.fit_constraintset import XfoilFit, FitCS
 import os
 import pandas as pd
 
@@ -34,10 +34,12 @@ class BladeElementPerf(Model):
     Re                      [-]         blade reynolds number
     f                       [-]         intermediate tip loss variable
     F                       [-]         Prandtl tip loss factor
-    cl_max      .6          [-]         max airfoil cl
+    cl_max      .7          [-]         max airfoil cl
     dr                      [m]         length of blade element
     M                       [-]         Mach number
     a           295         [m/s]       Speed of sound at altitude
+    alpha                   [-]         local angle of attack
+    beta_max    1.05        [-]         max twist angle
 
     """
 
@@ -49,9 +51,13 @@ class BladeElementPerf(Model):
         R       = static.R
         mu      = state.mu
         path = os.path.dirname(__file__)
-        fd = pd.read_csv(path + os.sep + "dae51_fitdata.csv").to_dict(
+        fd_cl = pd.read_csv(path + os.sep + "dae51_fitdata_cl_a.csv").to_dict(
             orient="records")[0]
+        fd_cd = pd.read_csv(path + os.sep + "dae51_fitdata.csv").to_dict(
+            orient="records")[0]
+
         c = static.c
+        beta = static.beta
         constraints = [TCS([Wa>=V + va]),
                         TCS([Wt + vt<=omega*r]),
                         TCS([G == (1./2.)*Wr*c*cl]),
@@ -66,13 +72,24 @@ class BladeElementPerf(Model):
                         Re == Wr*c*rho/mu,
                         eta_i == (V/(omega*r))*(Wt/Wa),
                         TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]),                   
-                        XfoilFit(fd, cd, [cl,Re], name="polar"),
+                        #TCS(XfoilFit(fd_cl, cl, [alpha,Re], name="clpolar")),
+                        #beta <= beta_max
+                        XfoilFit(fd_cd, cd, [cl,Re], name="cdpolar"),
+                        #TCS([beta >= alpha + Wa/Wt]), 
+                        #TCS([cl**0.135559 >= 0.250583 * (alpha*180./pi)**0.214389 * (Re)**-0.0391487
+                        #    + 0.251724 * (alpha*180./pi)**0.190369 * (Re)**-0.032165
+                        #    + 0.351677 * (alpha*180./pi)**-0.051975 * (Re)**0.0428966]),
                         cl <= cl_max
                     ]
         with SignomialsEnabled():
             constraints += [SignomialEquality(Wr**2,(Wa**2+Wt**2)),
+                            SignomialEquality(beta, alpha + (0.946041 * (Wa/Wt)**0.996025)),
+                            SignomialEquality(cl**0.135559,0.250583 * (alpha*180./pi)**0.214389 * (Re)**-0.0391487
+                            + 0.251724 * (alpha*180./pi)**0.190369 * (Re)**-0.032165
+                            + 0.351677 * (alpha*180./pi)**-0.051975 * (Re)**0.0428966),
                             TCS([dT <= rho*B*G*(Wt-eps*Wa)*dr]),
-                            TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),                    
+                            TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),
+
             ]
         return constraints, state
 
