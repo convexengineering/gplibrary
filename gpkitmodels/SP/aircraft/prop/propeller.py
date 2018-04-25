@@ -40,6 +40,7 @@ class BladeElementPerf(Model):
     a           295         [m/s]       Speed of sound at altitude
     alpha                   [-]         local angle of attack
     beta_max    1.05        [-]         max twist angle
+    alpha_max   11          [-]         stall AoA
 
     """
 
@@ -53,7 +54,7 @@ class BladeElementPerf(Model):
         path = os.path.dirname(__file__)
         fd_cl = pd.read_csv(path + os.sep + "dae51_fitdata_cl_a.csv").to_dict(
             orient="records")[0]
-        fd_cd = pd.read_csv(path + os.sep + "dae51_fitdata.csv").to_dict(
+        fd_cd = pd.read_csv(path + os.sep + "dae51_fitdata_cd_a.csv").to_dict(
             orient="records")[0]
 
         c = static.c
@@ -75,18 +76,16 @@ class BladeElementPerf(Model):
                         #TCS(XfoilFit(fd_cl, cl, [alpha,Re], name="clpolar")),
                         #beta <= beta_max
                         XfoilFit(fd_cd, cd, [cl,Re], name="cdpolar"),
-                        #TCS([beta >= alpha + Wa/Wt]), 
-                        #TCS([cl**0.135559 >= 0.250583 * (alpha*180./pi)**0.214389 * (Re)**-0.0391487
-                        #    + 0.251724 * (alpha*180./pi)**0.190369 * (Re)**-0.032165
-                        #    + 0.351677 * (alpha*180./pi)**-0.051975 * (Re)**0.0428966]),
+                        alpha*180./pi <= alpha_max,
                         cl <= cl_max
                     ]
         with SignomialsEnabled():
             constraints += [SignomialEquality(Wr**2,(Wa**2+Wt**2)),
+                            #SignomialEquality(Wt + vt,omega*r),
                             SignomialEquality(beta, alpha + (0.946041 * (Wa/Wt)**0.996025)),
-                            SignomialEquality(cl**0.135559,0.250583 * (alpha*180./pi)**0.214389 * (Re)**-0.0391487
-                            + 0.251724 * (alpha*180./pi)**0.190369 * (Re)**-0.032165
-                            + 0.351677 * (alpha*180./pi)**-0.051975 * (Re)**0.0428966),
+                            SignomialEquality(cl**0.163122,0.237871 * (alpha*180./pi)**-0.0466595 * (Re)**0.0255029
+                                                         + 0.351074 * (alpha*180./pi)**0.255199 * (Re)**-0.021581
+                                                         + 0.224209 * (alpha*180./pi)**-0.0427746 * (Re)**0.0258791),
                             TCS([dT <= rho*B*G*(Wt-eps*Wa)*dr]),
                             TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),
 
