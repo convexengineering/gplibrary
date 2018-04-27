@@ -76,16 +76,16 @@ class BladeElementPerf(Model):
                         #TCS(XfoilFit(fd_cl, cl, [alpha,Re], name="clpolar")),
                         #beta <= beta_max
                         XfoilFit(fd_cd, cd, [cl,Re], name="cdpolar"),
-                        alpha*180./pi <= alpha_max,
+                        alpha <= alpha_max,
                         cl <= cl_max
                     ]
         with SignomialsEnabled():
             constraints += [SignomialEquality(Wr**2,(Wa**2+Wt**2)),
                             #SignomialEquality(Wt + vt,omega*r),
-                            SignomialEquality(beta, alpha + (0.946041 * (Wa/Wt)**0.996025)),
-                            SignomialEquality(cl**0.163122,0.237871 * (alpha*180./pi)**-0.0466595 * (Re)**0.0255029
-                                                         + 0.351074 * (alpha*180./pi)**0.255199 * (Re)**-0.021581
-                                                         + 0.224209 * (alpha*180./pi)**-0.0427746 * (Re)**0.0258791),
+                            SignomialEquality(beta*pi/180., alpha*pi/180. + (0.946041 * (Wa/Wt)**0.996025)),
+                            SignomialEquality(cl**0.163122,0.237871 * (alpha)**-0.0466595 * (Re)**0.0255029
+                                                         + 0.351074 * (alpha)**0.255199 * (Re)**-0.021581
+                                                         + 0.224209 * (alpha)**-0.0427746 * (Re)**0.0258791),
                             TCS([dT <= rho*B*G*(Wt-eps*Wa)*dr]),
                             TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),
 
@@ -106,7 +106,7 @@ class BladeElementProp(Model):
     T                       [lbf]       total thrust
     Q                       [N*m]       total torque
     """
-    def setup(self,static,  state, N = 5):
+    def setup(self,static,  state, N = 5, onDesign = False):
         exec parse_variables(BladeElementProp.__doc__)
         
         with Vectorize(N):
@@ -118,9 +118,10 @@ class BladeElementProp(Model):
                         blade.r[0] == static.R/(2.*N)]
 
         for n in range(1,N):
-            constraints += [TCS([blade.r[n] >= blade.r[n-1] + static.R/N]),
-                            blade.eta_i[n] == blade.eta_i[n-1],
-                            ]
+            constraints += [TCS([blade.r[n] >= blade.r[n-1] + static.R/N])]
+
+            if onDesign:    #Enforce MIL constraint at design condition
+                constraints += [blade.eta_i[n] == blade.eta_i[n-1]]
 
         constraints += [TCS([Q >= sum(blade.dQ)]),
                         eta == state.V*T/(omega*Q),
