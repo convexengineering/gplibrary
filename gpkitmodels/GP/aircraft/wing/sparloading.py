@@ -69,10 +69,10 @@ class SparLoading(Model):
         if sp:
             with SignomialsEnabled():
                 constraints = [
-                    S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
-                               - Sout),
-                    S[-1] >= Soffset,
-                    M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:] - 2*Soffset),
+                    # S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
+                    #            - Sout),
+                    S[-1] >= Stip,
+                    # M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:]),
 ]
 
         else:
