@@ -1,7 +1,5 @@
 " spar loading "
-from gpkit import Model, parse_variables, SignomialsEnabled
-from gpkitmodels.GP.beam.beam import Beam
-from gpkitmodels.GP.aircraft.tail.tail_boom import TailBoomState
+from gpkit import Model, parse_variables
 from numpy import pi
 
 #pylint: disable=no-member, unused-argument, exec-used, invalid-name
@@ -66,16 +64,7 @@ class SparLoading(Model):
         sigma = self.wing.spar.material.sigma
         deta = self.wing.planform.deta
 
-        if sp:
-            with SignomialsEnabled():
-                constraints = [
-                    # S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
-                    #            - Sout),
-                    S[-1] >= Stip,
-                    # M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:]),
-]
-
-        else:
+        if not sp:
             constraints = [
                 S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:]),
                 M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:])]
