@@ -34,6 +34,7 @@ class SparLoading(Model):
     Mtw                     [N*m]   local moment due to twisting
     theta                   [-]     twist deflection
     EIbar                   [-]     EIbar
+    Sout                    [-]     outboard variable
 
     LaTex Strings
     -------------
