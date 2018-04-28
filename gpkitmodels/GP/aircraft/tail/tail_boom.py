@@ -18,11 +18,11 @@ class TailBoomAero(Model):
 
     Upper Unbounded
     ---------------
-    Re, Cf, l, V, rho (if not rhovalue)
+    Re, Cf, l, V, rho
 
     Lower Unbounded
     ---------------
-    l, V, rho (if not rhovalue)
+    l, V, rho
 
     LaTex Strings
     -------------
@@ -35,7 +35,6 @@ class TailBoomAero(Model):
 
         l = self.l = static.l
         rho = self.rho = state.rho
-        self.rhovalue = rho.key.value
         V = self.V = state.V
         mu = self.mu = state.mu
 

@@ -36,7 +36,7 @@ class BoxSpar(Model):
 
     Lower Unbounded
     ---------------
-    Sy, b, J
+    Sy, b, J, surface.deta
 
     LaTex Strings
     -------------
@@ -59,6 +59,7 @@ class BoxSpar(Model):
     coreMaterial = foamhd
 
     def setup(self, N, surface):
+        self.surface = surface
         exec parse_variables(BoxSpar.__doc__)
 
         b = self.b = surface.b
@@ -73,16 +74,17 @@ class BoxSpar(Model):
 
         self.weight = W >= 2*dm.sum()*g
 
-        return [I/mfac <= w*t*hin**2,
-                J*2*(hin + w) <= 2*(hin*w)**2*2*tshear,
-                dm >= (rho*4*w*t + 4*tshear*rhoshear*(hin + w)
-                       + 2*rhocore*tcore*(w + hin))*b/2*deta,
-                w <= wlim*cave,
-                cave*tau >= hin + 4*t + 2*tcore,
-                self.weight,
-                t >= tmin,
-                Sy*(hin/2 + 2*t + tcore) <= I,
-                tshear >= tshearmin,
-                tcore >= tcoret*cave*tau,
-                d == w,
-               ]
+        return [
+            I/mfac <= w*t*hin**2,
+            J*2*(hin + w) <= 2*(hin*w)**2*2*tshear,
+            dm >= (rho*4*w*t + 4*tshear*rhoshear*(hin + w)
+                   + 2*rhocore*tcore*(w + hin))*b/2*deta,
+            w <= wlim*cave,
+            cave*tau >= hin + 4*t + 2*tcore,
+            self.weight,
+            t >= tmin,
+            Sy*(hin/2 + 2*t + tcore) <= I,
+            tshear >= tshearmin,
+            tcore >= tcoret*cave*tau,
+            d == w,
+        ]

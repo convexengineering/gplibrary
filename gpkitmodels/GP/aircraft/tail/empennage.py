@@ -17,11 +17,15 @@ class Empennage(Model):
     Upper Unbounded
     ---------------
     W, vtail.Vv, htail.Vh, tailboom.cave (if not tbSecWeight)
+    htail.planform.tau (if not hSparModel)
+    vtail.planform.tau (if not vSparModel)
 
     Lower Unbounded
     ---------------
     htail.lh, htail.Vh, htail.planform.b, htail.mh
     vtail.lv, vtail.Vv, vtail.planform.b
+    htail.planform.tau (if not hSparModel)
+    vtail.planform.tau (if not vSparModel)
     htail.spar.Sy (if hSparModel), htail.spar.J (if hSparModel)
     vtail.spar.Sy (if vSparModel), vtail.spar.J (if vSparModel)
     tailboom.Sy, tailboom.cave (if not tbSecWeight), tailboom.J (if tbSecWeight)

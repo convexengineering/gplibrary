@@ -21,11 +21,12 @@ class HorizontalTail(Wing):
 
     Upper Unbounded
     ---------------
-    lh, Vh, W
+    lh, Vh, W, planform.tau (if not sparModel)
 
     Lower Unbounded
     ---------------
-    lh, Vh, planform.b, mh, spar.Sy (if sparModel), spar.J (if sparJ)
+    lh, Vh, planform.b, mh, planform.tau (if not sparModel)
+    spar.Sy (if sparModel), spar.J (if sparJ)
 
     LaTex Strings
     -------------
