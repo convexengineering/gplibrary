@@ -20,7 +20,6 @@ class SparLoading(Model):
     Mtip            1e-10          [N*m]   tip moment
     throot          1e-10          [-]     root deflection angle
     wroot           1e-10          [m]     root deflection
-    Soffset         1e5            [N]     offset shear
 
     Variables of length wing.N
     --------------------------
@@ -35,7 +34,6 @@ class SparLoading(Model):
     Mtw                     [N*m]   local moment due to twisting
     theta                   [-]     twist deflection
     EIbar                   [-]     EIbar
-    Sout                    [N]     outboard weights
 
     LaTex Strings
     -------------
