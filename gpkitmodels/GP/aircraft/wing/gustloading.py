@@ -39,7 +39,7 @@ class GustL(SparLoading):
     new_SbarFun = None
 
     return_cosm1 = lambda self, c: hstack(
-        [adnumber(1e-10), 1-array(cos(c[self.wing.planform.eta][1:]*pi/2))])
+        [1e-10, 1-array(cos(c[self.wing.planform.eta][1:]*pi/2))])
 
     def setup(self, wing, state, sp=False):
         exec parse_variables(GustL.__doc__)
