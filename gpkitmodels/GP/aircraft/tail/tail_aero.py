@@ -17,11 +17,11 @@ class TailAero(Model):
 
     Upper Unbounded
     ---------------
-    Cd, Re, S, V, b, rho (if not rhovalue)
+    Cd, Re, S, V, b, rho
 
     Lower Unbounded
     ---------------
-    S, tau, V, b, rho (if not rhovalue)
+    S, tau, V, b, rho
 
     LaTex Strings
     -------------
@@ -37,7 +37,6 @@ class TailAero(Model):
         S = self.S = static.planform.S
         tau = self.tau = static.planform.tau
         rho = self.rho = state.rho
-        self.rhovalue = rho.key.value
         V = self.V = state.V
         mu = self.mu = state.mu
         path = os.path.dirname(__file__)

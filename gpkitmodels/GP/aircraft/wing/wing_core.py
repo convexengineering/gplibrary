@@ -19,7 +19,7 @@ class WingCore(Model):
 
     Lower Unbounded
     ---------------
-    cave, b
+    cave, b, surface.deta
 
     LaTex Strings
     -------------
@@ -30,6 +30,7 @@ class WingCore(Model):
     material = foamhd
 
     def setup(self, surface):
+        self.surface = surface
         exec parse_variables(WingCore.__doc__)
 
         cave = self.cave = surface.cave

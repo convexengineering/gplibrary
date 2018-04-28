@@ -37,7 +37,7 @@ class TubeSpar(Model):
 
     """
 
-    minusk2 = lambda self, c: 1-c[self.k]/2.
+    minusk2 = lambda self, c: 1-c(self.k)/2.
     material = cfrpfabric
 
     def setup(self, N, surface):
