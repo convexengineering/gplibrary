@@ -161,7 +161,7 @@ class TailBoomBending(Model):
 
         self.tailboomJ = hasattr(tailboom, "J")
         if self.tailboomJ:
-            constraints.append(tailboom.J >= 1e-50*units("m^4"))
+            constraints.append(tailboom.J >= 1e-10*units("m^4"))
 
         return constraints, beam
 
