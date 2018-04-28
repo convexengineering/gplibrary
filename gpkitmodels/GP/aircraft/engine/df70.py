@@ -33,8 +33,11 @@ class DF70Perf(Model):
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
                                   "alternator efficiency")
         href = Variable("h_{ref}", 1000, "ft", "reference altitude")
-        lfac = [-0.035*(v.value/hr.value) + 1.0
-                for v, hr in zip(state["h"], href)]
+        h_vals = state.substitutions("h")
+        if len(href) == 1:
+            h_vals = [h_vals]
+        lfac = [-0.035*(v/hr.value) + 1.0
+                for v, hr in zip(h_vals, href)]
         Leng = Variable("L_{eng}", lfac, "-", "shaft power loss factor")
         Pshaftmax = Variable("P_{shaft-max}",
                              "hp", "Max shaft power at altitude")
