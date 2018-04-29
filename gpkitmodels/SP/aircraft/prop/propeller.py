@@ -41,6 +41,8 @@ class BladeElementPerf(Model):
     alpha                   [-]         local angle of attack
     beta_max    1.05        [-]         max twist angle
     alpha_max   11          [-]         stall AoA
+    cl0         .477        [-]         zero AoA lift
+    dclda       .1086       [-]         lift slope (per degree)
 
     """
 
@@ -72,6 +74,7 @@ class BladeElementPerf(Model):
                         AR_b <= AR_b_max,
                         Re == Wr*c*rho/mu,
                         eta_i == (V/(omega*r))*(Wt/Wa),
+                        #eta_i*(1.+va/V) + 1 <= (vt/(omega*r)),
                         TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]),                   
                         #TCS(XfoilFit(fd_cl, cl, [alpha,Re], name="clpolar")),
                         #beta <= beta_max
@@ -83,9 +86,10 @@ class BladeElementPerf(Model):
             constraints += [SignomialEquality(Wr**2,(Wa**2+Wt**2)),
                             #SignomialEquality(Wt + vt,omega*r),
                             SignomialEquality(beta*pi/180., alpha*pi/180. + (0.946041 * (Wa/Wt)**0.996025)),
-                            SignomialEquality(cl**0.163122,0.237871 * (alpha)**-0.0466595 * (Re)**0.0255029
-                                                         + 0.351074 * (alpha)**0.255199 * (Re)**-0.021581
-                                                         + 0.224209 * (alpha)**-0.0427746 * (Re)**0.0258791),
+                            #SignomialEquality(cl**0.163122,0.237871 * (alpha)**-0.0466595 * (Re)**0.0255029
+                            #                             + 0.351074 * (alpha)**0.255199 * (Re)**-0.021581
+                            #                             + 0.224209 * (alpha)**-0.0427746 * (Re)**0.0258791),
+                            SignomialEquality(cl, cl0 + alpha*dclda),
                             TCS([dT <= rho*B*G*(Wt-eps*Wa)*dr]),
                             TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),
 
