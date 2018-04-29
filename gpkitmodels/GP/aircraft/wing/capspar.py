@@ -33,7 +33,7 @@ class CapSpar(Model):
 
     Lower Unbounded
     ---------------
-    Sy, b
+    Sy, b, surface.deta
 
     LaTex Strings
     -------------
@@ -55,6 +55,7 @@ class CapSpar(Model):
     coreMaterial = foamhd
 
     def setup(self, N, surface):
+        self.surface = surface
         exec parse_variables(CapSpar.__doc__)
 
         cave = self.cave = surface.cave

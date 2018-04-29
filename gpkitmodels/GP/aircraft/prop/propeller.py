@@ -31,7 +31,7 @@ class ActuatorProp(Model):
     """
 
     def helper(self, c):
-        return 2. - 1./c[self.etaadd]
+        return 2. - 1./c(self.etaadd)
 
     def setup(self, static, state):
         exec parse_variables(ActuatorProp.__doc__)
@@ -68,7 +68,7 @@ class Propeller(Model):
 
     Variables of length N
     ---------------------
-    c                               [ft]            prop chord 
+    c                               [ft]            prop chord
     """
 
     flight_model = ActuatorProp
