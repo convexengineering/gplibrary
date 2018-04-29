@@ -115,7 +115,7 @@ class TailBoomBending(Model):
     Upper Unbounded
     ---------------
     tailboom.I0, tailboom.Sy
-    tailboom.J (if tailboomJ), tailboom.I (if tailboomJ)
+    tailboom.J (if tailboomJ), tailboom.I
 
     Lower Unbounded
     ---------------

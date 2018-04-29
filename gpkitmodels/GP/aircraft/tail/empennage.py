@@ -14,6 +14,8 @@ class Empennage(Model):
     mfac        1.0     [-]     tail weight margin factor
     W                   [lbf]   empennage weight
 
+    SKIP VERIFICATION
+
     Upper Unbounded
     ---------------
     W, vtail.Vv, htail.Vh, tailboom.cave (if not tbSecWeight)

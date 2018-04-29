@@ -15,7 +15,7 @@ class SparLoading(Model):
     kappa           0.2            [-]     max tip deflection ratio
     W                              [lbf]   loading weight
     N                              [-]     loading factor
-    twmax           30.*pi/180     [-]     max tip twist
+    twmax           15.*pi/180     [-]     max tip twist
     Stip            1e-10          [N]     tip loading
     Mtip            1e-10          [N*m]   tip moment
     throot          1e-10          [-]     root deflection angle
@@ -50,7 +50,7 @@ class SparLoading(Model):
 
     new_SbarFun = None
 
-    def setup(self, wing, state, sp=False):
+    def setup(self, wing, state, out=False):
         self.wing = wing
         exec parse_variables(SparLoading.__doc__)
 
@@ -64,7 +64,7 @@ class SparLoading(Model):
         deta = self.wing.planform.deta
 
         constraints = []
-        if not sp:
+        if not out:
             constraints.extend([
                 S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:]),
                 M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:])])
