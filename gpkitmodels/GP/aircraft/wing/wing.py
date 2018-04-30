@@ -156,6 +156,8 @@ class Wing(Model):
     W                   [lbf]       wing weight
     mfac        1.2     [-]         wing weight margin factor
 
+    SKIP VERIFICATION
+
     Upper Unbounded
     ---------------
     W, planform.tau (if not sparJ)

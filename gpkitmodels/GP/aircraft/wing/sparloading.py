@@ -1,7 +1,5 @@
 " spar loading "
-from gpkit import Model, parse_variables, SignomialsEnabled
-from gpkitmodels.GP.beam.beam import Beam
-from gpkitmodels.GP.aircraft.tail.tail_boom import TailBoomState
+from gpkit import Model, parse_variables
 from numpy import pi
 
 #pylint: disable=no-member, unused-argument, exec-used, invalid-name
@@ -17,7 +15,7 @@ class SparLoading(Model):
     kappa           0.2            [-]     max tip deflection ratio
     W                              [lbf]   loading weight
     N                              [-]     loading factor
-    twmax           30.*pi/180     [-]     max tip twist
+    twmax           15.*pi/180     [-]     max tip twist
     Stip            1e-10          [N]     tip loading
     Mtip            1e-10          [N*m]   tip moment
     throot          1e-10          [-]     root deflection angle
@@ -36,7 +34,7 @@ class SparLoading(Model):
     Mtw                     [N*m]   local moment due to twisting
     theta                   [-]     twist deflection
     EIbar                   [-]     EIbar
-    Sout                    [N]     outboard weights
+    Sout                    [-]     outboard variable
 
     LaTex Strings
     -------------
@@ -52,7 +50,7 @@ class SparLoading(Model):
 
     new_SbarFun = None
 
-    def setup(self, wing, state, sp=False):
+    def setup(self, wing, state, out=False):
         self.wing = wing
         exec parse_variables(SparLoading.__doc__)
 
@@ -65,22 +63,19 @@ class SparLoading(Model):
         sigma = self.wing.spar.material.sigma
         deta = self.wing.planform.deta
 
-        if sp:
-            with SignomialsEnabled():
-                shear = S[:-1] >= (S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
-                                   - Sout)
-        else:
-            shear = S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:])
+        constraints = []
+        if not out:
+            constraints.extend([
+                S[:-1] >= S[1:] + 0.5*deta*(b/2.)*(q[:-1] + q[1:]),
+                M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:])])
 
-        constraints = [
+        constraints.extend([
             N == Nsafety*Nmax, q >= N*W/b*cbar,
-            shear, S[-1] >= Stip,
-            M[:-1] >= M[1:] + 0.5*deta*(b/2)*(S[:-1] + S[1:]), M[-1] >= Mtip,
-            th[0] >= throot,
+            S[-1] >= Stip, M[-1] >= Mtip, th[0] >= throot,
             th[1:] >= th[:-1] + 0.5*deta*(b/2)*(M[1:] + M[:-1])/E/I,
             w[0] >= wroot, w[1:] >= w[:-1] + 0.5*deta*(b/2)*(th[1:] + th[:-1]),
             sigma >= M[:-1]/Sy, w[-1]/(b/2) <= kappa,
-            ]
+            ])
 
         self.wingSparJ = hasattr(self.wing.spar, "J")
 

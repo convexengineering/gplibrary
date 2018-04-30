@@ -7,8 +7,9 @@ from gpkitmodels import g
 class MotorPerf(Model):
     """ Electric Motor Performance Model
 
-    Note: The last two constraints may not be tight if there is a motor energy constraint that does not size the motor.
-    TCS removed to prevent unnecessary warnings - for most normal useage they will be tight. 
+    Note: The last two constraints may not be tight if there is a motor energy
+          constraint that does not size the motor. TCS removed to prevent
+          unnecessary warnings - for most normal useage they will be tight.
 
     Variables
     ---------
@@ -48,7 +49,7 @@ class Motor(Model):
     Kv_min     1            [rpm/V]         min motor voltage constant
     Kv_max     1000         [rpm/V]         max motor voltage constant
     Kv                      [rpm/V]         motor voltage constant
-    i0         4.5          [amps]          zero-load current 
+    i0         4.5          [amps]          zero-load current
     R          .033         [ohms]          internal resistance
     """
 
@@ -106,4 +107,4 @@ class Propulsor(Model):
 
 
 
-    
+

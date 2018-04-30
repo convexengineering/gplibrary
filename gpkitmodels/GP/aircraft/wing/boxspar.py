@@ -1,5 +1,5 @@
 " box spar "
-from gpkit import Model, parse_variables
+from gpkit import Model, parse_variables, SignomialsEnabled
 from .sparloading import SparLoading
 from .gustloading import GustL
 from gpkitmodels.GP.materials import cfrpud, cfrpfabric, foamhd
@@ -21,7 +21,6 @@ class BoxSpar(Model):
     -----------------------
     hin                     [in]        height between caps
     I                       [m^4]       spar x moment of inertia
-    J                       [m^4]       spar x polar moment of inertia
     Sy                      [m^3]       section modulus
     dm                      [kg]        segment spar mass
     w                       [in]        spar width
@@ -29,6 +28,8 @@ class BoxSpar(Model):
     t                       [in]        spar cap thickness
     tshear                  [in]        shear web thickness
     tcore                   [in]        core thickness
+
+    SKIP VERIFICATION
 
     Upper Unbounded
     ---------------
@@ -63,8 +64,8 @@ class BoxSpar(Model):
         exec parse_variables(BoxSpar.__doc__)
 
         b = self.b = surface.b
-        cave = surface.cave
-        tau = surface.tau
+        cave = self.cave = surface.cave
+        tau = self.tau = surface.tau
         deta = surface.deta
         rho = self.material.rho
         rhoshear = self.shearMaterial.rho
@@ -74,17 +75,18 @@ class BoxSpar(Model):
 
         self.weight = W >= 2*dm.sum()*g
 
-        return [
-            I/mfac <= w*t*hin**2,
-            J*2*(hin + w) <= 2*(hin*w)**2*2*tshear,
-            dm >= (rho*4*w*t + 4*tshear*rhoshear*(hin + w)
-                   + 2*rhocore*tcore*(w + hin))*b/2*deta,
-            w <= wlim*cave,
-            cave*tau >= hin + 4*t + 2*tcore,
-            self.weight,
-            t >= tmin,
-            Sy*(hin/2 + 2*t + tcore) <= I,
-            tshear >= tshearmin,
-            tcore >= tcoret*cave*tau,
-            d == w,
-        ]
+        constraints = [I/mfac <= w*t*hin**2,
+                       dm >= (rho*4*w*t + 4*tshear*rhoshear*(hin + w)
+                              + 2*rhocore*tcore*(w + hin))*b/2*deta,
+                       w <= wlim*cave,
+                       cave*tau >= hin + 4*t + 2*tcore,
+                       self.weight,
+                       t >= tmin,
+                       Sy*(hin/2 + 2*t + tcore) <= I,
+                       tshear >= tshearmin,
+                       tcore >= tcoret*cave*tau,
+                       d == w,
+                      ]
+
+        return constraints
+
