@@ -23,5 +23,5 @@ This repository contains those GP-/SP-compatible models that we consider well do
     * [Tail Boom Flexibility](https://github.com/convexengineering/gplibrary/tree/master/gpkitmodels/SP/aircraft/tail/tail_boom_flex.py)
     * [Wing Spanwise Effectiveness](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/SP/aircraft/wing/wing.py)
   * Atmosphere
-    * Tony Tao's fits approximated as signomial equalities. Valid until 10,000m of altitude. 
+    * Tony Tao's fits as (efficient) signomial equalities. Valid until 10,000m of altitude. 
 
