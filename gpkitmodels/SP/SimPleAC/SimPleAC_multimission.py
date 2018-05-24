@@ -5,7 +5,7 @@ from relaxed_constants import relaxed_constants, post_process
 import numpy as np
 import matplotlib.pyplot as plt
 
-from SimPleAC_mission4 import Mission, SimPleAC
+from SimPleAC_mission import Mission, SimPleAC
 from atmosphere import Atmosphere
 
 # SimPleAC with multimission design (3.5)
@@ -50,6 +50,21 @@ class Multimission(Model):
 
 
         return constraints, self.aircraft, self.missions
+
+def test():
+    Nmissions = 2
+    Nsegments = 4
+    aircraft = SimPleAC()
+    m = Multimission(aircraft,Nmissions,Nsegments)
+    m.substitutions.update({
+        'h_{cruise_{mm}}':[5000*units('m'), 5000*units('m')],
+        'Range_{mm}'     :[3000*units('km'), 2000*units('km')],
+        'W_{p_{mm}}'     :[6250*units('N'),   8000*units('N')],
+        'C_{mm}'         :[120*units('1/hr'), 360*units('1/hr')],
+    })
+    #m.cost = m['W_{f_{mm}}']*units('1/N') + sum(m.missions[i]['C_m']*m.missions[i]['t_m'] for i in range(0,Nmissions))
+    m.cost = (m.missions[0]['W_{f_m}']*units('1/N') + m.missions[1]['C_m']*m.missions[1]['t_m'])
+    sol = m.localsolve(verbosity = 4)
 
 if __name__ == "__main__":
     Nmissions = 2
