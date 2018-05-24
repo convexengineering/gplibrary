@@ -8,8 +8,9 @@ import matplotlib.pyplot as plt
 class Atmosphere(Model):
     """
     Atmosphere models borrowed from Tony Tao, 2017.
-    Fits included for all variables, but boundedness will vary depending on 
-    model application.
+    Fits included for all variables. Density and viscosity are demonstrated. 
+    The rest are commented, to be used with modeler's discretion!
+    Boundedness will vary depending on model application for other variables.
     Signomial equalities are fast and reliable here!
     """
     def setup(self):
