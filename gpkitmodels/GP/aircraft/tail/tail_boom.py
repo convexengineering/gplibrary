@@ -18,11 +18,11 @@ class TailBoomAero(Model):
 
     Upper Unbounded
     ---------------
-    Re, Cf, l, V, rho (if not rhovalue)
+    Re, Cf, l, V, rho
 
     Lower Unbounded
     ---------------
-    l, V, rho (if not rhovalue)
+    l, V, rho
 
     LaTex Strings
     -------------
@@ -35,7 +35,6 @@ class TailBoomAero(Model):
 
         l = self.l = static.l
         rho = self.rho = state.rho
-        self.rhovalue = rho.key.value
         V = self.V = state.V
         mu = self.mu = state.mu
 
@@ -115,7 +114,7 @@ class TailBoomBending(Model):
     Upper Unbounded
     ---------------
     tailboom.I0, tailboom.Sy
-    tailboom.J (if tailboomJ), tailboom.I (if tailboomJ)
+    tailboom.J (if tailboomJ), tailboom.I
 
     Lower Unbounded
     ---------------
@@ -161,7 +160,7 @@ class TailBoomBending(Model):
 
         self.tailboomJ = hasattr(tailboom, "J")
         if self.tailboomJ:
-            constraints.append(tailboom.J >= 1e-50*units("m^4"))
+            constraints.append(tailboom.J >= 1e-10*units("m^4"))
 
         return constraints, beam
 

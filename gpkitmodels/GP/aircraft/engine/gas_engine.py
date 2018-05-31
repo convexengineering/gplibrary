@@ -5,6 +5,7 @@ import pandas as pd
 # from gpkitmodels.tools.fit_constraintset import FitCS
 from gpfit.fit_constraintset import FitCS
 
+
 class Engine(Model):
     "engine model"
     def setup(self, DF70=False):
@@ -34,6 +35,7 @@ class Engine(Model):
     def flight_model(self, state):
         return EnginePerf(self, state)
 
+
 class EnginePerf(Model):
     "engine performance model"
     def setup(self, static, state):
@@ -45,8 +47,11 @@ class EnginePerf(Model):
         eta_alternator = Variable("\\eta_{alternator}", 0.8, "-",
                                   "alternator efficiency")
         href = Variable("h_{ref}", 1000, "ft", "reference altitude")
-        lfac = [-0.035*(v.value/hr.value) + 1.0
-                for v, hr in zip(state["h"], href)]
+        h_vals = state.substitutions("h")
+        if len(href) == 1:
+            h_vals = [h_vals]
+        lfac = [-0.035*(v/hr.value) + 1.0
+                for v, hr in zip(h_vals, href)]
         Leng = Variable("L_{eng}", lfac, "-", "shaft power loss factor")
         Pshaftmax = Variable("P_{shaft-max}",
                              "hp", "Max shaft power at altitude")
@@ -61,6 +66,6 @@ class EnginePerf(Model):
             Pshaftmax/static["P_{sl-max}"] == Leng,
             Pshaftmax >= Ptotal,
             Ptotal >= Pshaft + Pavn/eta_alternator
-            ]
+        ]
 
         return constraints

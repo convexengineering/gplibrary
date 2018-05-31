@@ -61,15 +61,16 @@ class Planform(Model):
     """
     def return_c(self, c):
         " return normalized chord distribution "
-        return np.array([2./(1+c[self.lam])*(1+(c[self.lam]-1)*e) for e
-                         in c[self.eta]])
+        lam = c(self.lam).to("dimensionless").magnitude
+        eta = c(self.eta).to("dimensionless").magnitude
+        return np.array([2./(1+lam)*(1+(lam-1)*e) for e in eta])
 
     def return_cmac(self, c):
         " return normalized MAC "
         cbar = self.return_c(c)
         lam = cbar[1:]/cbar[:-1]
         maci = 2./3*cbar[:-1]*(1 + lam + lam**2)/(1 + lam)
-        deta = np.diff(c[self.eta])
+        deta = np.diff(c(self.eta))
         num = sum([(cbar[i] + cbar[i+1])/2*maci[i]*deta[i] for i
                    in range(len(deta))])
         den = sum([(cbar[i] + cbar[i+1])/2*deta[i] for i in range(len(deta))])
@@ -77,7 +78,7 @@ class Planform(Model):
 
     return_avg = lambda self, c: (self.return_c(c)[:-1]
                                   + self.return_c(c)[1:])/2.
-    return_deta = lambda self, c: np.diff(c[self.eta])
+    return_deta = lambda self, c: np.diff(c(self.eta))
 
     def setup(self, N):
         exec parse_variables(Planform.__doc__)
@@ -101,11 +102,12 @@ class WingAero(Model):
 
     Upper Unbounded
     ---------------
-    Cd, Re, AR, cmac, V, rho (if not rhovalue)
+    Cd, Re, static.planform.AR
+    state.V, state.mu (if not muValue), state.rho (if not rhoValue)
 
     Lower Unbounded
     ---------------
-    cmac, V, rho (if not rhovalue)
+    state.V, state.mu (if not muValue), state.rho (if not rhoValue)
 
     LaTex Strings
     -------------
@@ -118,22 +120,25 @@ class WingAero(Model):
     def setup(self, static, state,
               fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"):
         self.state = state
+        self.static = static
         exec parse_variables(WingAero.__doc__)
 
         df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
 
-        AR = self.AR = static.planform.AR
-        cmac = self.cmac = static.planform.cmac
-        rho = self.rho = state.rho
-        self.rhovalue = rho.key.value
-        V = self.V = state.V
-        mu = self.mu = state.mu
+        AR = static.planform.AR
+        cmac = static.planform.cmac
+        rho = state.rho
+        V = state.V
+        mu = state.mu
+        # needed for Climb model in solar
+        self.rhoValue = bool(rho.key.value)
+        self.muValue = bool(mu.key.value)
 
         if fd["d"] == 2:
-            independentvars = [self.CL, self.Re]
+            independentvars = [CL, Re]
         elif fd["d"] == 3:
-            independentvars = [self.CL, self.Re, static.planform.tau]
+            independentvars = [CL, Re, static.planform.tau]
 
         return [Cd >= cdp + CL**2/np.pi/AR/e,
                 Re == rho*V*cmac/mu,
@@ -150,6 +155,8 @@ class Wing(Model):
     ---------
     W                   [lbf]       wing weight
     mfac        1.2     [-]         wing weight margin factor
+
+    SKIP VERIFICATION
 
     Upper Unbounded
     ---------------
