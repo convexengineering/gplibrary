@@ -1,12 +1,12 @@
 from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, VarKey, units,Vectorize
 from gpkit.constraints.bounded import Bounded
-from relaxed_constants import relaxed_constants, post_process
+from gpkit.algorithms import relaxed_constants, post_process
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from SimPleAC_mission import Mission, SimPleAC
-from atmosphere import Atmosphere
+from gpkitmodels.SP.atmosphere.atmosphere import Atmosphere
 
 # SimPleAC with multimission design (3.5)
 

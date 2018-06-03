@@ -1,13 +1,13 @@
 from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, VarKey, units,Vectorize
 from gpkit.constraints.bounded import Bounded
 from gpkit.constraints.tight import Tight
-from relaxed_constants import relaxed_constants, post_process
+from gpkit.algorithms import relaxed_constants, post_process
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Importing models
-from atmosphere import Atmosphere
+from gpkitmodels.SP.atmosphere.atmosphere import Atmosphere
 
 # SimPleAC with mission design and flight segments, and lapse rate and BSFC model (3.4.2)
 
