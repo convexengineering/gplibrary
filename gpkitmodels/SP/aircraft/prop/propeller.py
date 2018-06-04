@@ -125,11 +125,11 @@ class BladeElementProp(Model):
                         blade.omega == omega,
                         blade.r[0] == static.R/(2.*N)]
 
-        for n in range(1,N):
-            constraints += [TCS([blade.r[n] >= blade.r[n-1] + static.R/N])]
+        #for n in range(1,N):
+        #    constraints += [TCS([blade.r[n] >= blade.r[n-1] + static.R/N])]
 
-            if MIL:    #Enforce MIL constraint at design condition
-                constraints += [blade.eta_i[n] == blade.eta_i[n-1]]
+        #    if MIL:    #Enforce MIL constraint at design condition
+        #        constraints += [blade.eta_i[n] == blade.eta_i[n-1]]
 
         constraints += [TCS([Q >= sum(blade.dQ)]),
                         eta == state.V*T/(omega*Q),
@@ -140,6 +140,11 @@ class BladeElementProp(Model):
 
         with SignomialsEnabled():
             constraints += [TCS([T <= sum(blade.dT)])] 
+            for n in range(1,N):
+                constraints += [SignomialEquality(blade.r[n],blade.r[n-1] + static.R/N)]
 
+                if MIL:    #Enforce MIL constraint at design condition
+                    constraints += [blade.eta_i[n] == blade.eta_i[n-1]]
+                    
         return constraints, blade 
 
