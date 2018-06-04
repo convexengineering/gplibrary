@@ -62,7 +62,7 @@ class BladeElementPerf(Model):
         c = static.c
         beta = static.beta
         constraints = [TCS([Wa>=V + va]),
-                        #TCS([Wt + vt<=omega*r]),
+                        TCS([Wt + vt<=omega*r]),
                         #Wt == omega*r,
                         TCS([G == (1./2.)*Wr*c*cl]),
                         F == (2./pi)*(1.01116*f**.0379556)**(10), #This is the GP fit of arccos(exp(-f))
@@ -86,7 +86,7 @@ class BladeElementPerf(Model):
                     ]
         with SignomialsEnabled():
             constraints += [SignomialEquality(Wr**2,(Wa**2+Wt**2)),
-                            SignomialEquality(Wt + vt,omega*r),
+                            #SignomialEquality(Wt + vt,omega*r),
                             #SignomialEquality(Wa,V+va),
                             SignomialEquality(beta*pi/180., alpha*pi/180. + (0.946041 * (Wa/Wt)**0.996025)),
                             #SignomialEquality(cl**0.163122,0.237871 * (alpha)**-0.0466595 * (Re)**0.0255029
@@ -145,6 +145,6 @@ class BladeElementProp(Model):
 
                 if MIL:    #Enforce MIL constraint at design condition
                     constraints += [blade.eta_i[n] == blade.eta_i[n-1]]
-                    
+
         return constraints, blade 
 
