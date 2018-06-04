@@ -39,9 +39,9 @@ class BladeElementPerf(Model):
     M                       [-]         Mach number
     a           295         [m/s]       Speed of sound at altitude
     alpha                   [-]         local angle of attack
-    beta_max    1.05        [-]         max twist angle
+    beta_max    90          [-]         max twist angle
     alpha_max   11          [-]         stall AoA
-    cl0         .477        [-]         zero AoA lift
+    cl0         .000477        [-]         zero AoA lift
     dclda       .1086       [-]         lift slope (per degree)
 
     """
@@ -62,7 +62,8 @@ class BladeElementPerf(Model):
         c = static.c
         beta = static.beta
         constraints = [TCS([Wa>=V + va]),
-                        TCS([Wt + vt<=omega*r]),
+                        #TCS([Wt + vt<=omega*r]),
+                        #Wt == omega*r,
                         TCS([G == (1./2.)*Wr*c*cl]),
                         F == (2./pi)*(1.01116*f**.0379556)**(10), #This is the GP fit of arccos(exp(-f))
                         M == Wr/a,
@@ -77,14 +78,16 @@ class BladeElementPerf(Model):
                         #eta_i*(1.+va/V) + 1 <= (vt/(omega*r)),
                         TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]),                   
                         #TCS(XfoilFit(fd_cl, cl, [alpha,Re], name="clpolar")),
-                        #beta <= beta_max
+                        #beta <= beta_max,
                         XfoilFit(fd_cd, cd, [cl,Re], name="cdpolar"),
                         alpha <= alpha_max,
+                        alpha >= .000001,
                         cl <= cl_max
                     ]
         with SignomialsEnabled():
             constraints += [SignomialEquality(Wr**2,(Wa**2+Wt**2)),
-                            #SignomialEquality(Wt + vt,omega*r),
+                            SignomialEquality(Wt + vt,omega*r),
+                            #SignomialEquality(Wa,V+va),
                             SignomialEquality(beta*pi/180., alpha*pi/180. + (0.946041 * (Wa/Wt)**0.996025)),
                             #SignomialEquality(cl**0.163122,0.237871 * (alpha)**-0.0466595 * (Re)**0.0255029
                             #                             + 0.351074 * (alpha)**0.255199 * (Re)**-0.021581
@@ -110,7 +113,8 @@ class BladeElementProp(Model):
     T                       [lbf]       total thrust
     Q                       [N*m]       total torque
     """
-    def setup(self,static,  state, N = 5, onDesign = False):
+    
+    def setup(self,static,  state, N = 5, MIL = False):
         exec parse_variables(BladeElementProp.__doc__)
         
         with Vectorize(N):
@@ -124,7 +128,7 @@ class BladeElementProp(Model):
         for n in range(1,N):
             constraints += [TCS([blade.r[n] >= blade.r[n-1] + static.R/N])]
 
-            if onDesign:    #Enforce MIL constraint at design condition
+            if MIL:    #Enforce MIL constraint at design condition
                 constraints += [blade.eta_i[n] == blade.eta_i[n-1]]
 
         constraints += [TCS([Q >= sum(blade.dQ)]),
