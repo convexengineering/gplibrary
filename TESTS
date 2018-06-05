@@ -1,5 +1,5 @@
-gpkitmodels/GP/aircraft/wing/wing_test.py
-gpkitmodels/GP/aircraft/tail/tail_tests.py
-gpkitmodels/GP/aircraft/fuselage/test_fuselage.py
-gpkitmodels/GP/aircraft/prop/prop_test.py
-gpkitmodels/GP/aircraft/motor/motor_test.py
+gplibrary/GP/aircraft/wing/wing_test.py
+gplibrary/GP/aircraft/tail/tail_tests.py
+gplibrary/GP/aircraft/fuselage/test_fuselage.py
+gplibrary/GP/aircraft/prop/prop_test.py
+gplibrary/GP/aircraft/motor/motor_test.py

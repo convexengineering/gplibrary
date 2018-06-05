@@ -37,7 +37,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE."""
 
 setup(
-    name="gpkitmodels",
+    name="gplibrary",
     description="Library of geometric and signomial programming models "
                 "that can be manipulated and solved using GPkit.",
     author="MIT Department of Aeronautics and Astronautics",
@@ -46,7 +46,7 @@ setup(
     install_requires=["numpy>=1.12", "scipy", "pint"],
     version="0.0.0.0",
     packages=find_packages(),
-    package_data={"gpkitmodels": ["GP/aircraft/wing/*.csv",
+    package_data={"gplibrary": ["GP/aircraft/wing/*.csv",
                                   ("GP/aircraft/fuselage/"
                                    "fuselage_profile_drag/*.csv"),
                                   "GP/aircraft/engine/*.csv",
