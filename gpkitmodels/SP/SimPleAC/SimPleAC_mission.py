@@ -1,10 +1,7 @@
+import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, VarKey, units,Vectorize
 from gpkit.constraints.bounded import Bounded
 from gpkit.constraints.tight import Tight
-from gpkit.algorithms import relaxed_constants, post_process
-
-import numpy as np
-import matplotlib.pyplot as plt
 
 # Importing models
 from gpkitmodels.SP.atmosphere.atmosphere import Atmosphere
@@ -282,7 +279,7 @@ def test():
         'T/O factor_m'   :2,
     })
     m.cost = m['W_{f_m}']*units('1/N') + m['C_m']*m['t_m']
-    sol = m.localsolve(verbosity = 4)
+    sol = m.localsolve(verbosity = 2)
 
 
 if __name__ == "__main__":

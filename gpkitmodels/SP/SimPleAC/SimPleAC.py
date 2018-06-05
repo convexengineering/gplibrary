@@ -90,7 +90,7 @@ class SimPleAC(Model):
 def test():
     m = SimPleAC()
     m.cost = m['W_f'] 
-    sol = m.localsolve(verbosity = 4)
+    sol = m.localsolve(verbosity = 2)
 
 if __name__ == "__main__":
     # Most basic way to execute the model 

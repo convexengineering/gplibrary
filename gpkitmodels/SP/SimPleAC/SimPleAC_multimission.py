@@ -1,10 +1,6 @@
+import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, VarKey, units,Vectorize
 from gpkit.constraints.bounded import Bounded
-from gpkit.algorithms import relaxed_constants, post_process
-
-import numpy as np
-import matplotlib.pyplot as plt
-
 from SimPleAC_mission import Mission, SimPleAC
 from gpkitmodels.SP.atmosphere.atmosphere import Atmosphere
 
@@ -64,7 +60,7 @@ def test():
     })
     #m.cost = m['W_{f_{mm}}']*units('1/N') + sum(m.missions[i]['C_m']*m.missions[i]['t_m'] for i in range(0,Nmissions))
     m.cost = (m.missions[0]['W_{f_m}']*units('1/N') + m.missions[1]['C_m']*m.missions[1]['t_m'])
-    sol = m.localsolve(verbosity = 4)
+    sol = m.localsolve(verbosity = 2)
 
 if __name__ == "__main__":
     Nmissions = 2
