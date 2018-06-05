@@ -38,7 +38,7 @@ class MultiPointProp(Model):
         Propeller.flight_model = BladeElementProp
         p   = Propeller()
         #pp = p.flight_model(p,fs, onDesign = False)
-        pp1 = p.flight_model(p,fs1, MIL = True)
+        pp1 = p.flight_model(p,fs1, MIL = False)
         pp1.substitutions[pp1.T]  = 100
         pp2 = p.flight_model(p,fs2)
         pp2.substitutions[pp2.T]  = 150

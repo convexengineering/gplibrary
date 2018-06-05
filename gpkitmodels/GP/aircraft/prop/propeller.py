@@ -33,7 +33,7 @@ class ActuatorProp(Model):
     def helper(self, c):
         return 2. - 1./c(self.etaadd)
 
-    def setup(self, static, state):
+    def setup(self, static, state, N = 1, MIL = False):
         exec parse_variables(ActuatorProp.__doc__)
 
         V = state.V

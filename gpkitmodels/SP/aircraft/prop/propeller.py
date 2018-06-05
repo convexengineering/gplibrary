@@ -97,7 +97,7 @@ class BladeElementPerf(Model):
                             TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),
 
             ]
-        return constraints, state
+        return constraints
 
 
 
