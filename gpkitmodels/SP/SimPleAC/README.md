@@ -290,3 +290,8 @@ We have tested a variety of potential objectives for the SimpPleAC model, some o
     \item $\frac{W_f}{T_{flight}}$: Product of the fuel weight and the inverse of the time of flight. 
     \item $W_{f} + c \times T_{flight}$: A linear combination of fuel weight and time of flight. This can simulate recurring costs (fuel and labor), and yield interesting results. 
 \end{itemize}
+
+Extension to mission and multimission design
+------------
+
+This model has been developed extensively in [Berk's Master's thesis](http://convex.mit.edu/publications/ozturk_masters_thesis.pdf) where it has been extended to [single-mission](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/SP/SimPleAC/SimPleAC_mission.py) and [multi-mission](https://github.com/convexengineering/gplibrary/blob/master/gpkitmodels/SP/SimPleAC/SimPleAC_multimission.py) scenarios.
