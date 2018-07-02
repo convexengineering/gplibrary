@@ -29,6 +29,7 @@ class Planform(Model):
     lam             0.5                 [-]     taper ratio
     cbarmac         self.return_cmac    [-]     non-dim MAC
 
+
     Variables of length N
     ---------------------
     eta         np.linspace(0,1,N)      [-]     (2y/b)
@@ -98,6 +99,8 @@ class WingAero(Model):
     e               0.9     [-]     span efficiency
     Re                      [-]     reynolds number
     cdp                     [-]     wing profile drag coefficient
+    CDi                     [-]     induced drag coefficient
+
 
     Upper Unbounded
     ---------------
@@ -135,12 +138,18 @@ class WingAero(Model):
         elif fd["d"] == 3:
             independentvars = [self.CL, self.Re, static.planform.tau]
 
-        return [Cd >= cdp + CL**2/np.pi/AR/e,
+
+        self.Di = (CDi >= CL**2/np.pi/AR/e)
+
+        self.constraints = [Cd >= cdp + CDi,
+                self.Di,
                 Re == rho*V*cmac/mu,
                 # XfoilFit(fd, cdp, [CL, Re], airfoil="jho1.dat"),
                 XfoilFit(fd, cdp, independentvars, name="polar"),
                 CL <= CLstall
                ]
+
+        return self.constraints
 
 class Wing(Model):
     """

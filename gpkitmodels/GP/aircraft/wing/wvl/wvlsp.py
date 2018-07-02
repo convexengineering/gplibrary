@@ -10,12 +10,12 @@ from gpkitmodels.GP.aircraft.wing import wing
 class WVL(WingAero):
     """ weissenger vortex lifting line
 
-    Variables of length Na
+    Variables of length self.Nwvl
     ---------------------
     dy                      [m]         spanwise section length
     G                       [m]         Gamma/Vinf vortex filament strength
 
-    Variables of length [Na,Na]
+    Variables of length [self.Nwvl,self.Nwvl]
     ---------------------------
     B       self.Bmatrix    [-]         B matrix
 
@@ -26,14 +26,12 @@ class WVL(WingAero):
     def setup(self, static, state,
               fitdata=dirname(abspath(wing.__file__)) + sep + "jho_fitdata.csv"):
         self.wingaero = super(WVL, self).setup(static, state, fitdata)
-        Na = (static.N-1)*2
+        self.eta = static.planform.eta
+        self.Nwvl = (static.N-1)*2
         exec parse_variables(WVL.__doc__)
 
-        S = self.static.planform.S
+        S = static.planform.S
         dylist = np.array(list(np.flip(static.planform.deta, 0)) + list(static.planform.deta))
-
-        for dd in dylist:
-            print type(dd)
 
         with SignomialsEnabled():
             self.Di = TCS([self.CDi >= 2*np.dot(G, np.dot(B, G))/S])

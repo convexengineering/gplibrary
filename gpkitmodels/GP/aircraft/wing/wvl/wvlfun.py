@@ -3,6 +3,8 @@ from numpy import array, pi, zeros, flip, diff
 
 def wvl(self, c):
 
+    N = self.Nwvl
+
     y = c[self.eta]
     yv = y[:-1] + diff(y)/2
     y = array(list(flip(-y, 0)) + list(y[1:]))
@@ -11,10 +13,10 @@ def wvl(self, c):
     z = zeros(len(y))
     zv = zeros(len(yv))
 
-    wyG = zeros([2*N, 2*N])
-    wzG = zeros([2*N, 2*N])
+    wyG = zeros([N, N])
+    wzG = zeros([N, N])
 
-    for i in range(2*N):
+    for i in range(N):
         rsqi = (yv-y[i])**2 + (zv-z[i])**2
         rsqp = (yv-y[i+1])**2 + (zv-z[i+1])**2
         wyG[i, :] = ((zv-z[i])/rsqi - (zv-z[i+1])/rsqp)/(4*pi)

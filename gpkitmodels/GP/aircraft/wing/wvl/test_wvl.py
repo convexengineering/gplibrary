@@ -11,6 +11,5 @@ fs = FlightState()
 perf = W.flight_model(W, fs)
 loading = [W.spar.loading(W, fs)]
 # loading[0].substitutions["W"] = 100
-
 m = Model(perf.Cd, [W, fs, perf, loading, loading[0].W == W.W])
 m.localsolve(verbosity=0)

@@ -27,6 +27,8 @@ class CapSpar(Model):
     t                       [in]        spar cap thickness
     tshear                  [in]        shear web thickness
 
+    SKIP VERIFICATION
+
     Upper Unbounded
     ---------------
     W, cave, tau

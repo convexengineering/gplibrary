@@ -13,6 +13,8 @@ class WingCore(Model):
     W                           [lbf]       wing core weight
     Abar            0.0753449   [-]         normalized cross section area
 
+    SKIP VERIFICATION
+
     Upper Unbounded
     ---------------
     W
