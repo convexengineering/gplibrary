@@ -93,6 +93,7 @@ class BladeElementPerf(Model):
                             #                             + 0.351074 * (alpha)**0.255199 * (Re)**-0.021581
                             #                             + 0.224209 * (alpha)**-0.0427746 * (Re)**0.0258791),
                             SignomialEquality(cl, cl0 + alpha*dclda),
+                            #TCS(cl <=cl0 + alpha*dclda),
                             TCS([dT <= rho*B*G*(Wt-eps*Wa)*dr]),
                             TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),
 
@@ -141,7 +142,8 @@ class BladeElementProp(Model):
         with SignomialsEnabled():
             constraints += [TCS([T <= sum(blade.dT)])] 
             for n in range(1,N):
-                constraints += [SignomialEquality(blade.r[n],blade.r[n-1] + static.R/N)]
+                constraints += [#SignomialEquality(blade.r[n],blade.r[n-1] + static.R/N)]
+                            blade.r[n] <= blade.r[n-1] + static.R/N]
 
                 if MIL:    #Enforce MIL constraint at design condition
                     constraints += [blade.eta_i[n] == blade.eta_i[n-1]]
