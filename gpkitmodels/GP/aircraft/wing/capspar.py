@@ -58,6 +58,15 @@ class CapSpar(Model):
         self.surface = surface
         exec parse_variables(CapSpar.__doc__)
 
+        E.key.descr['pr'] = 1
+        wlim.key.descr['pr'] = 3
+        hin.key.descr['fix'] = True
+        I.key.descr['fix'] = True
+        Sy.key.descr['fix'] = True
+        w.key.descr['fix'] = True
+        t.key.descr['fix'] = True
+        tshear.key.descr['fix'] = True
+
         cave = self.cave = surface.cave
         b = self.b = surface.b
         deta = surface.deta

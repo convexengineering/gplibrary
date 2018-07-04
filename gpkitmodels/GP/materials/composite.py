@@ -21,6 +21,12 @@ class CFRPFabric(Model):
     """
     def setup(self):
         exec parse_variables(CFRPFabric.__doc__)
+        rho.key.descr['pr'] = 2
+        tmin.key.descr['pr'] = 1
+        tau.key.descr['pr'] = 2
+        E.key.descr['pr'] = 2
+        sigma.key.descr['pr'] = 2
+        G.key.descr['pr'] = 2
 
 class CFRPUD(Model):
     """ Carbon Fiber Reinforced Plastic Unidirectional Material Properties
@@ -41,6 +47,10 @@ class CFRPUD(Model):
     """
     def setup(self):
         exec parse_variables(CFRPUD.__doc__)
+        rho.key.descr['pr'] = 2
+        E.key.descr['pr'] = 1
+        sigma.key.descr['pr'] = 2
+        tmin.key.descr['pr'] = 1
 
 class Kevlar(Model):
     """ Kevlar Material Properties
@@ -60,3 +70,6 @@ class Kevlar(Model):
     """
     def setup(self):
         exec parse_variables(Kevlar.__doc__)
+        rho.key.descr['pr'] = 1
+        tmin.key.descr['pr'] = 1
+        tau.key.descr['pr'] = 2

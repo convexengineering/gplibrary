@@ -83,6 +83,16 @@ class Planform(Model):
     def setup(self, N):
         exec parse_variables(Planform.__doc__)
 
+        # CLmax.key.descr['pr'] = 10
+         #CM.key.descr['pr'] = 7
+        # lam.key.descr['pr'] = 12
+         #AR.key.descr['pr'] = 0
+        # S.key.descr['fix'] = True
+        # b.key.descr['fix'] = True
+         #croot.key.descr['fix'] = False  # True # <-----------------
+        # cmac.key.descr['fix'] = True
+        # cave.key.descr['fix'] = True
+
         return [b**2 == S*AR,
                 cave == cbave*S/b,
                 croot == S/b*cbar[0],
@@ -122,6 +132,8 @@ class WingAero(Model):
         self.state = state
         self.static = static
         exec parse_variables(WingAero.__doc__)
+        # CLstall.key.descr['pr'] = 3
+        # e.key.descr['pr'] = 6
 
         df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
@@ -154,7 +166,7 @@ class Wing(Model):
     Variables
     ---------
     W                   [lbf]       wing weight
-    mfac        1.2     [-]         wing weight margin factor
+    mfac        1.0     [-]         wing weight margin factor
 
     SKIP VERIFICATION
 
@@ -196,6 +208,6 @@ class Wing(Model):
             self.foam = self.fillModel(self.planform)
             self.components.extend([self.foam])
 
-        constraints = [W/mfac >= sum(c["W"] for c in self.components)]
+        constraints = [W >= sum(c["W"] for c in self.components)]
 
         return constraints, self.planform, self.components

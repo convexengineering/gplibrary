@@ -53,6 +53,8 @@ class SparLoading(Model):
     def setup(self, wing, state, out=False):
         self.wing = wing
         exec parse_variables(SparLoading.__doc__)
+        kappa.key.descr['pr'] = 3
+        twmax.key.descr['pr'] = 2
 
         b = self.b = self.wing.planform.b
         I = self.I = self.wing.spar.I
