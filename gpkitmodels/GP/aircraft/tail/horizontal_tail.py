@@ -42,8 +42,8 @@ class HorizontalTail(Wing):
 
     def setup(self, N=3):
         exec parse_variables(HorizontalTail.__doc__)
-        # Vh.key.descr['pr'] = 4
-        # lh.key.descr['fix'] = True
+        Vh.key.descr['pr'] = 4
+        lh.key.descr['fix'] = True
 
         self.ascs = Wing.setup(self, N)
         self.planform.substitutions.update(

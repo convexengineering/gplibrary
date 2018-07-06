@@ -83,15 +83,15 @@ class Planform(Model):
     def setup(self, N):
         exec parse_variables(Planform.__doc__)
 
-        # CLmax.key.descr['pr'] = 10
-         #CM.key.descr['pr'] = 7
-        # lam.key.descr['pr'] = 12
-         #AR.key.descr['pr'] = 0
-        # S.key.descr['fix'] = True
-        # b.key.descr['fix'] = True
-         #croot.key.descr['fix'] = False  # True # <-----------------
-        # cmac.key.descr['fix'] = True
-        # cave.key.descr['fix'] = True
+        CLmax.key.descr['pr'] = 10
+        CM.key.descr['pr'] = 7
+        lam.key.descr['pr'] = 12
+        AR.key.descr['pr'] = 0
+        S.key.descr['fix'] = True
+        b.key.descr['fix'] = True
+        croot.key.descr['fix'] = False  # True # <-----------------
+        cmac.key.descr['fix'] = True
+        cave.key.descr['fix'] = True
 
         return [b**2 == S*AR,
                 cave == cbave*S/b,
@@ -132,8 +132,8 @@ class WingAero(Model):
         self.state = state
         self.static = static
         exec parse_variables(WingAero.__doc__)
-        # CLstall.key.descr['pr'] = 3
-        # e.key.descr['pr'] = 6
+        CLstall.key.descr['pr'] = 3
+        e.key.descr['pr'] = 6
 
         df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
