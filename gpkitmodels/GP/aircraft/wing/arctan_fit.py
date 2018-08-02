@@ -7,13 +7,13 @@ plt.rcParams.update({'font.size':15})
 GENERATE = True
 
 def arctanfit():
-    u = np.linspace(1e-15, 0.7, 100)
-    w = np.arctan(u)
+    u = np.linspace(1e-15, 2, 100)
+    w = 1./np.arctan(u)
 
     x = np.log(u)
     y = np.log(w)
 
-    cn, err = fit(x, y, 1, "MA")
+    cn, err = fit(x, y, 1, "SMA")
     rm = err
     print "RMS error: %.4f" % rm
 
@@ -22,7 +22,7 @@ def arctanfit():
     fig, ax = plt.subplots()
     ax.plot(u, w, lw=2)
     ax.plot(u, np.exp(yfit), "--", lw=2)
-    ax.set_xlim([0, 0.7])
+    ax.set_xlim([0, 2])
     ax.grid()
     ax.set_xlabel("$V_{\\mathrm{gust}}/V$")
     ax.set_ylabel("$\\alpha_{\\mathrm{gust}}$")

@@ -65,10 +65,12 @@ class Propeller(Model):
     W                               [lbf]           prop weight
     K           4e-4                [1/ft^2]        prop weight scaling factor
     T_m                             [lbf]           prop max static thrust
+    B           2                   [-]             number of blades
 
     Variables of length N
     ---------------------
     c                               [ft]            prop chord
+    beta                            [-]             prop twist
     """
 
     flight_model = ActuatorProp
