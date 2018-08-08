@@ -61,20 +61,20 @@ class Fuselage(Model):
 
     Variables
     ---------
-    R                           [ft]            fuselage radius
+    R                           [in]            fuselage radius
     l               16          [in]            fuselage length
     Sw                          [ft^2]          total wetted fuselage area
     Sw_c                        [ft^2]          center wetted fuselage area
     Sw_n                        [ft^2]          nose wetted fuselage area
     Sw_t                        [ft^2]          tail wetted fuselage area
-    W                           [lbf]           fuselage weight
+    W                           [gf]           fuselage weight
     mfac            2.0         [-]             fuselage weight margin factor
     fbody                       [-]             fuselage body fineness ratio
     fnose                       [-]             fuselage nose fineness ratio
     fbulk           1.0         [-]             fuselage bulk fineness ratio
     f                           [-]             overall fineness ratio
     k                           [-]             fuselage form factor
-    Vol                         [ft^3]          fuselae volume
+    Vol                         [ft^3]          fuselage volume
     Vol_nose                    [in^3]          nose volume
     Vol_tail                    [in^3]          tail volume
     Vol_center                  [in^3]          tail volume
