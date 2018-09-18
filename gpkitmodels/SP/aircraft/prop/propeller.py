@@ -33,7 +33,7 @@ class BladeElementPerf(Model):
     Re                      [-]         blade reynolds number
     f                       [-]         intermediate tip loss variable
     F                       [-]         Prandtl tip loss factor
-    cl_max      1.2         [-]         max airfoil cl
+    cl_max      .6         [-]         max airfoil cl
     dr                      [m]         length of blade element
     M                       [-]         Mach number
     a           295         [m/s]       Speed of sound at altitude
@@ -56,9 +56,12 @@ class BladeElementPerf(Model):
             orient="records")[0]
         c = static.c
         B = static.B
-        beta = static.beta
-        constraints = [#TCS([Wa>=V + va]),
-                        #TCS([Wt + vt<=omega*r]),
+        #beta = static.beta
+
+        dtr = pi/180.
+
+        constraints = [TCS([Wa>=V + va]),
+                        TCS([Wt + vt<=omega*r]),
                         TCS([G == (1./2.)*Wr*c*cl]),
                         F == (2./pi)*(1.01116*f**.0379556)**(10), #This is the GP fit of arccos(exp(-f))
                         M == Wr/a,
@@ -71,20 +74,24 @@ class BladeElementPerf(Model):
                         Re == Wr*c*rho/mu,
                         eta_i == (V/(omega*r))*(Wt/Wa),
                         TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]),                   
-                        #XfoilFit(fd, cd, [cl,Re], name="polar"),
-                        TCS([cd >= .028 + .05*cl**2]),
-                        alpha <= alpha_max,
+                        XfoilFit(fd, cd, [cl,Re], name="polar"),
+                        #TCS([cd >= .028 + .05*cl**2]),
+                        #alpha <= alpha_max,
                         #alpha >= .000001,
                         cl <= cl_max,
-                        cl <= alpha*pi/180.*dclda,
+                        #cl <= alpha*dtr*dclda,
+                        #beta == alpha,
                     ]
         with SignomialsEnabled():
             constraints += [SignomialEquality(Wr**2,(Wa**2+Wt**2)),
-                            SignomialEquality(Wt + vt,omega*r),
-                            SignomialEquality(Wa,V+va),
+                            #Wr**2>= (Wa**2+Wt**2),
+                            #SignomialEquality(Wt + vt,omega*r),
+                            #SignomialEquality(Wa,V+va),
                             TCS([dT <= rho*B*G*(Wt-eps*Wa)*dr]),
                             TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),
-                            SignomialEquality(beta*pi/180., alpha*pi/180. + 1./(1.02712*(Wa/Wt)**-0.0981213)**(1./.1)),
+                            #SignomialEquality(beta*dtr, alpha*dtr + 1./(1.02712*(Wa/Wt)**-0.0981213)**(1./.1)),
+                            #SignomialEquality(beta, alpha + 1./(1.02712*(Wa/Wt)**-0.0981213)**(1./.1)),
+                            #SignomialEquality(beta*dtr,alpha*dtr + (Wa/Wt)**-5.),
                             #SignomialEquality(cl,(cl0 + alpha*pi/180.*dclda)),
                             #TCS([beta*pi/180. >= alpha*pi/180. + (0.946041 * (Wa/Wt)**0.996025)]),
                             #SignomialEquality(cl**0.163122,0.237871 * (alpha)**-0.0466595 * (Re)**0.0255029
@@ -116,6 +123,7 @@ class BladeElementProp(Model):
         with Vectorize(N):
             blade = BladeElementPerf(static, state)
 
+        self.blade = blade
 
         constraints = [blade.dr == static.R/(N),
                         blade.omega == omega,
