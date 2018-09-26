@@ -83,18 +83,18 @@ class Fuselage(Model):
 class Wing(Model):
     def setup(self):
         # Non-dimensional constants
-        C_Lmax     = Variable("C_{L,max}", 1.6, "-", "lift coefficient at stall", pr=5.)
-        e          = Variable("e", 0.92, "-", "Oswald efficiency factor", pr=3.)
-        k          = Variable("k", 1.17, "-", "form factor", pr=10.)
-        N_ult      = Variable("N_{ult}", 3.3, "-", "ultimate load factor", pr=15.)
-        S_wetratio = Variable("(\\frac{S}{S_{wet}})", 2.075, "-", "wetted area ratio", pr=3.)
-        tau        = Variable("\\tau", 0.12, "-", "airfoil thickness to chord ratio", pr=10.)
+        C_Lmax     = Variable("C_{L,max}", 1.598, "-", "lift coefficient at stall", pr=5, r=1.051)  # 1.6
+        e          = Variable("e", 0.92, "-", "Oswald efficiency factor", pr=3., r=1.03)  # 0.92
+        k          = Variable("k", 1.164, "-", "form factor", pr=10., r=1.106)  # 1.17
+        N_ult      = Variable("N_{ult}", 3.26, "-", "ultimate load factor", pr=15., r=1.163)  # 3.3
+        S_wetratio = Variable("(\\frac{S}{S_{wet}})", 2.074, "-", "wetted area ratio", pr=3., r=1.030)  # 2.075
+        tau        = Variable("\\tau", 0.119, "-", "airfoil thickness to chord ratio", pr=10., r=1.106)  # 0.12
 
         # Dimensional constants
-        W_w_coeff1 = Variable("W_{w_{coeff1}}", 2e-5, "1/m",
-                              "wing weight coefficient 1", pr= 30.) #orig  12e-5
-        W_w_coeff2 = Variable("W_{w_{coeff2}}", 60., "Pa",
-                              "wing weight coefficient 2", pr=10.)
+        W_w_coeff1 = Variable("W_{w_{coeff1}}", 1.908e-5, "1/m",
+                              "wing weight coefficient 1", pr= 30., r=1.363)  # orig  12e-5  # 2e-5
+        W_w_coeff2 = Variable("W_{w_{coeff2}}", 59.7, "Pa",
+                              "wing weight coefficient 2", pr=10., r=1.106)  # 60
 
         # Free Variables (fixed for performance eval.)
         A         = Variable("A", "-", "aspect ratio",fix = True)
@@ -203,8 +203,8 @@ class Mission(Model):
         # Mission variables
         hcruise    = Variable('h_{cruise_m}', 'm', 'minimum cruise altitude')
         Range      = Variable("Range_m", "km", "aircraft range")
-        W_p        = Variable("W_{p_m}", "N", "payload weight", pr=20.)
-        V_min      = Variable("V_{min_m}", "m/s", "takeoff speed", pr=20.)
+        W_p        = Variable("W_{p_m}", "N", "payload weight", pr=20., r=1.225)
+        V_min      = Variable("V_{min_m}", "m/s", "takeoff speed", pr=20., r=1.225)
         TOfac      = Variable('T/O factor_m', '-','takeoff thrust factor')
         cost_index = Variable("C_m", '1/hr','hourly cost index')
 
@@ -273,9 +273,9 @@ def test():
     m.substitutions.update({
         'h_{cruise_m}'   :5000*units('m'),
         'Range_m'        :3000*units('km'),
-        'W_{p_m}'        :6250*units('N'),
+        'W_{p_m}'        :6123.72*units('N'),  # 6250
         'C_m'            :120*units('1/hr'),
-        'V_{min_m}'      :25*units('m/s'),
+        'V_{min_m}'      :24.49*units('m/s'),  # 25
         'T/O factor_m'   :2,
     })
     m.cost = m['W_{f_m}']*units('1/N') + m['C_m']*m['t_m']
