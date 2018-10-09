@@ -95,7 +95,7 @@ class hacker_q150_45_motor(Model):
 
 def motor_test():
     test = Motor_P_Test()
-    test.solve()
+    test.solve(solver="cvxopt")
 
 def test():
     motor_test()

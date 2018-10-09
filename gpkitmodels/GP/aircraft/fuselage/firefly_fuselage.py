@@ -62,7 +62,7 @@ class Fuselage(Model):
     Variables
     ---------
     R                           [in]            fuselage radius
-    l               16          [in]            fuselage length
+    l                           [in]            fuselage length
     Sw                          [ft^2]          total wetted fuselage area
     Sw_c                        [ft^2]          center wetted fuselage area
     Sw_n                        [ft^2]          nose wetted fuselage area
@@ -113,7 +113,7 @@ class Fuselage(Model):
             Sw_t >= R**2*(0.012322*fbulk**2 + 1.524925*fbulk + 0.502498),
             
             Vol_center == np.pi*R**2*lbody,
-            Vol_nose == 4./3.*np.pi*R**2.0*lnose,
+            Vol_nose == 2./3.*np.pi*R**2.0*lnose,
             #Vol_tail == 4./3.*np.pi*R**3.0,
             f == l/R/2.,
             k >= 1 + 60/f**3 + f/400,

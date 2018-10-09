@@ -100,6 +100,8 @@ class WingAero(Model):
     Re                      [-]     reynolds number
     cdp                     [-]     wing profile drag coefficient
 
+    SKIP VERIFICATION
+    
     Upper Unbounded
     ---------------
     Cd, Re, static.planform.AR
