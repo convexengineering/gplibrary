@@ -42,15 +42,15 @@ class Motor(Model):
 
     Variables
     ---------
-    Qstar       .8          [kg/(N*m)]         motor specific torque
+    Qstar       .5          [kg/(N*m)]         motor specific torque
     W                       [lbf]              motor weight
     Qmax                    [N*m]              motor max. torque
-    V_max       300         [V]                motor max voltage
+    V_max       700         [V]                motor max voltage
     Kv_min     1            [rpm/V]         min motor voltage constant
-    Kv_max     1000         [rpm/V]         max motor voltage constant
+    Kv_max     2000         [rpm/V]         max motor voltage constant
     Kv                      [rpm/V]         motor voltage constant
-    i0         4.5          [amps]          zero-load current
-    R          .033         [ohms]          internal resistance
+    i0         2.5          [amps]          zero-load current
+    R          .023         [ohms]          internal resistance
     """
 
     flight_model = MotorPerf

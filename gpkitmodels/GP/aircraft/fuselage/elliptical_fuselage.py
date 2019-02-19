@@ -64,7 +64,7 @@ class Fuselage(Model):
             f == l/R/2,
             k >= 1 + 60/f**3 + f/400,
             3*(S/np.pi)**1.6075 >= 2*(l*R*2)**1.6075 + (2*R)**(2*1.6075),
-            Vol <= 4*np.pi/3*(l/2)*R**2,
+            Vol == 4*np.pi/3*(l/2)*R**2,
             W/mfac >= S*rhocfrp*t*g,
             t >= nply*tmin,
             ]

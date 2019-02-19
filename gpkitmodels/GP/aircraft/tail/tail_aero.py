@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 from gpkit import Model, parse_variables
-from gpfit.fit_constraintset import XfoilFit
+from my_constraint_set import XfoilFit
 
 #pylint: disable=exec-used, attribute-defined-outside-init, undefined-variable
 #pylint: disable=no-member

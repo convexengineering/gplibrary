@@ -1,6 +1,6 @@
 " propeller model "
 from numpy import pi
-from gpkit import Model, Variable,Vectorize,parse_variables, SignomialsEnabled, SignomialEquality
+from gpkit import Model, Variable,Vectorize,parse_variables, SignomialsEnabled, SignomialEquality, units
 from gpkit.constraints.tight import Tight as TCS
 from gpfit.fit_constraintset import XfoilFit
 import os
@@ -13,7 +13,7 @@ class ActuatorProp(Model):
     ---------
     T                       [lbf]       thrust
     Tc                      [-]         coefficient of thrust
-    etaadd     .7           [-]         swirl and nonuniformity losses
+    etaadd     .8           [-]         swirl and nonuniformity losses
     etav       .85          [-]         viscous losses
     etai                    [-]         inviscid losses
     eta                     [-]         overall efficiency
@@ -24,10 +24,10 @@ class ActuatorProp(Model):
     CP                      [-]         power coefficient
     Q                       [N*m]       torque
     omega                   [rpm]       propeller rotation rate
-    omega_max  10000        [rpm]       max rotation rate
+    omega_max               [rpm]       max rotation rate
     P_shaft                 [kW]        shaft power
-    M_tip      .5           [-]         Tip mach number
-    a          295          [m/s]       Speed of sound at altitude
+    M_tip      .7           [-]         Tip mach number
+    a          320          [m/s]       Speed of sound at altitude
     """
 
     def helper(self, c):
@@ -48,14 +48,61 @@ class ActuatorProp(Model):
                        CT >= Tc*lam**2,
                        CP <= Q*omega/(.5*rho*(omega*R)**3*pi*R**2),
                        eta >= CT*lam/CP,
-                       omega <= omega_max,
+                       #omega <= omega_max,
                        P_shaft == Q*omega,
                        (M_tip*a)**2 >= (omega*R)**2 + V**2,
                        static.T_m >= T
                       ]
         return constraints
 
+class ActuatorProp2(Model):
+    """ Propeller Model
 
+    Variables
+    ---------
+    T                       [lbf]       thrust
+    Tc                      [-]         coefficient of thrust
+    etaadd     .7           [-]         swirl and nonuniformity losses
+    etav       .85          [-]         viscous losses
+    etai                    [-]         inviscid losses
+    eta                     [-]         overall efficiency
+    z1         self.helper  [-]         efficiency helper 1
+    z2                      [-]         efficiency helper 2
+    lam                     [-]         advance ratio
+    CT                      [-]         thrust coefficient
+    CP                      [-]         power coefficient
+    Q                       [N*m]       torque
+    omega                   [rpm]       propeller rotation rate
+    omega_max               [rpm]       max rotation rate
+    P_shaft                 [kW]        shaft power
+    M_tip      .7           [-]         Tip mach number
+    a          320          [m/s]       Speed of sound at altitude
+    """
+
+    def helper(self, c):
+        return 2. - 1./c(self.etaadd)
+
+    def setup(self, static, state):
+        exec parse_variables(ActuatorProp.__doc__)
+
+        V = state.V
+        rho = state.rho
+        R = static.R
+
+        constraints = [eta <= etav*etai,
+                       Tc >= T/(0.5*rho*V**2*pi*R**2),
+                       z2 >= Tc + 1,
+                       etai*(z1 + z2**0.5/(etaadd/(6.*units("in")/static.R))) <= 2,
+                       lam >= V/(omega*R),
+                       CT >= Tc*lam**2,
+                       CP <= Q*omega/(.5*rho*(omega*R)**3*pi*R**2),
+                       eta >= CT*lam/CP,
+                       #omega <= omega_max,
+                       P_shaft == Q*omega,
+                       (M_tip*a)**2 >= (omega*R)**2 + V**2,
+                       static.T_m >= T
+                      ]
+        return constraints
 class Propeller(Model):
     """ Propeller Model
 
@@ -63,7 +110,7 @@ class Propeller(Model):
     ---------
     R                               [ft]            prop radius
     W                               [lbf]           prop weight
-    K           4e-4                [1/ft^2]        prop weight scaling factor
+    K           4e-4                [1/ft]        prop weight scaling factor
     T_m                             [lbf]           prop max static thrust
     B           2                   [-]             number of blades
 
@@ -78,4 +125,4 @@ class Propeller(Model):
     def setup(self, N = 5):
         exec parse_variables(Propeller.__doc__)
         self.N = N
-        return [W >= K*T_m*R**2]
+        return [W >= K*T_m*R]

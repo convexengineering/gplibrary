@@ -3,6 +3,7 @@ import numpy as np
 from gpkit import Variable, Model, parse_variables, SignomialsEnabled, SignomialEquality
 from fuselage_skin import FuselageSkin
 from gpkit.constraints.tight import Tight as TCS
+from math import pi
 
 
 class FuselageLoading(Model):
@@ -67,11 +68,11 @@ class Fuselage(Model):
     Sw_c                        [ft^2]          center wetted fuselage area
     Sw_n                        [ft^2]          nose wetted fuselage area
     Sw_t                        [ft^2]          tail wetted fuselage area
-    W                           [gf]           fuselage weight
-    mfac            2.0         [-]             fuselage weight margin factor
+    W                           [kgf]           fuselage weight
+    mfac            1.0         [-]             fuselage weight margin factor
     fbody                       [-]             fuselage body fineness ratio
     fnose                       [-]             fuselage nose fineness ratio
-    fbulk           1.0         [-]             fuselage bulk fineness ratio
+    fbulk           1.0            [-]             fuselage bulk fineness ratio
     f                           [-]             overall fineness ratio
     k                           [-]             fuselage form factor
     Vol                         [ft^3]          fuselage volume
@@ -87,9 +88,15 @@ class Fuselage(Model):
     Vol_payload                 [in^3]          Req'd payload volume
     Rm                          [in]            Motor radius
     t_ins           5           [mm]            Insulation thickness
-    t_TEG           6           [mm]            TEG thickness
+    t_TEG           .00001           [mm]            TEG thickness
     t_margin        5           [mm]            Thickness margin
-    fnose_max       2           [-]             max nose fineness ratio
+    fnose_max       5           [-]             max nose fineness ratio
+    V_batt                      [cm^3]             battery volume
+    l_batt                      [in]            battery length    
+    V_batt_fwd                  [cm^3]          forward battery volume
+    V_batt_top                  [cm^3]          top battery volume
+    t_batt                      [mm]            battery thickness
+    f_fwd                       [-]             proportion of the battery forward      
     """
 
     flight_model = FuselageAero
@@ -123,11 +130,18 @@ class Fuselage(Model):
             Vol_nose >= Vol_payload,
             W/mfac >= self.skin["W"],
             fnose <= fnose_max,
-            2.*R >= 2.*Rm+t_ins+t_TEG+t_margin,
+            2.*R >= 2.*Rm+t_ins+t_margin+t_batt,
             #TCS([l >= lnose + ltail + lbody]),
+            V_batt_fwd == V_batt*f_fwd,
+            l_batt == V_batt_fwd/(pi*R**2.),
+            t_batt == V_batt_top/(pi*R*lbody),
+            f_fwd <= 1,
+            f_fwd >= 1e-10,
             ]
         with SignomialsEnabled():
-            constraints.extend([SignomialEquality(l,lnose + ltail + lbody),
+            constraints.extend([SignomialEquality(l,lnose + ltail + lbody+l_batt),
+                                #SignomialEquality(V_batt, V_batt_fwd+V_batt_top)
+                                V_batt <= V_batt_fwd+V_batt_top
                                 ])
 
         return self.components, constraints
