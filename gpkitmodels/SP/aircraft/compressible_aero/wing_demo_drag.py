@@ -4,6 +4,7 @@ import os.path
 from subprocess import CalledProcessError
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.gridspec as gridspec
 import gpkit
 from gpkit import units, Variable, Model
 from gpkit.tools.autosweep import autosweep_1d
@@ -17,74 +18,75 @@ import flight_state
 
 
 def drag_plots():
-    aspect = 10
+    fig_dir = 'docs/figures/wing_drag_model'
+    aspect = 4
     C_L = 0.3
 
     flight_state_model = flight_state.FlightState()
     airfoil_model = airfoil.DummyAirfoil(flight_state_model)
-    wing_model = wing.WingAeroSubsonic(flight_state_model, airfoil_model, limit_sweep_to_valid_range=False)
+    wing_model_cos1 = wing.WingAeroSubsonic(
+        flight_state_model, airfoil_model, pressure_drag_cos_exponent=1)
+    wing_model_cos3 = wing.WingAeroSubsonic(
+        flight_state_model, airfoil_model, pressure_drag_cos_exponent=3)
 
-    wing_model.substitutions['S_ref'] = 1    # [units: meter^2]
-    wing_model.substitutions['aspect'] = aspect    # [units: dimensionless]
-    wing_model.substitutions['p_static'] = 30e3    # [units: pascal]
-    wing_model.substitutions['C_L'] = C_L    # [units: dimensionless]
+    fig1, axes = plt.subplots(ncols=2, nrows=3, sharex='all', sharey='row',
+                              figsize=(8, 6))
 
-    # minimize drag
-    wing_model.cost = wing_model['drag']
+    for wing_model, plot_col in zip([wing_model_cos1, wing_model_cos3], [0, 1]):
+        wing_model.substitutions['S_ref'] = 1    # [units: meter^2]
+        wing_model.substitutions['aspect'] = aspect    # [units: dimensionless]
+        wing_model.substitutions['p_static'] = 30e3    # [units: pascal]
+        wing_model.substitutions['C_L'] = C_L    # [units: dimensionless]
+        # wing_model.substitutions['alpha'] = np.deg2rad(2.)    # [units: radian]
 
-    # Plot drag vs Mach at various sweeps
-    ax1 = plt.subplot(3, 1, 1)
-    plt.subplot(3, 1, 2, sharex=ax1)
-    plt.subplot(3, 1, 3, sharex=ax1)
+        # minimize drag
+        wing_model.cost = wing_model['drag']
 
-    mach = np.linspace(0.5, 0.99, 20)
-    C_D = np.zeros(len(mach))
-    c_l = np.zeros(len(mach))
-    alpha = np.zeros(len(mach))
-    sweeps = np.deg2rad([1e-6, 30, 60])
-    # sweeps = np.deg2rad([1e-6, 20, 40])
-    for sweep in sweeps:
-        for i in range(len(mach)):
-            wing_model.substitutions['mach'] = mach[i]
-            wing_model.substitutions['sweep_c2'] = sweep
-            try:
-                sol = wing_model.solve()
-                C_D[i] = sol['variables']['C_D']
-                c_l[i] = sol['variables']['c_l']
-                alpha[i] = sol['variables']['alpha']
-            # except CalledProcessError, RuntimeWarning:
-            except:
-                C_D[i] = np.nan
-                c_l[i] = np.nan
-                alpha[i] = np.nan
-        plt.subplot(3, 1, 1)
-        plt.plot(mach, C_D, label='$\\Lambda = ${:.0f} deg'.format(
-            np.rad2deg(sweep)))
-        plt.subplot(3, 1, 2)
-        plt.plot(mach, c_l, label='$\\Lambda = ${:.0f} deg'.format(
-            np.rad2deg(sweep)))
-        plt.subplot(3, 1, 3)
-        plt.plot(mach, np.rad2deg(alpha), label='$\\Lambda = ${:.0f} deg'.format(
-            np.rad2deg(sweep)))
-    plt.subplot(3, 1, 1)
-    plt.ylim([0, 0.025])
-    plt.ylabel('$C_D$ [-]')
-    plt.xlabel('Freestream Mach number $M_\\infty$ [-]')
-    plt.legend()
-    plt.title('Drag vs Mach at constant $C_L =${:.2f}'.format(C_L))
+        # Plot drag vs Mach at various sweeps
+        mach = np.linspace(0.5, 0.99, 20)
+        C_D = np.zeros(len(mach))
+        c_l = np.zeros(len(mach))
+        alpha = np.zeros(len(mach))
+        sweeps = np.deg2rad([1e-6, 20, 40, 60])
+        # sweeps = np.deg2rad([1e-6, 20, 40])
+        for sweep in sweeps:
+            for i in range(len(mach)):
+                wing_model.substitutions['mach'] = mach[i]
+                wing_model.substitutions['sweep_c2'] = sweep
+                try:
+                    sol = wing_model.solve()
+                    C_D[i] = sol['variables']['C_D']
+                    c_l[i] = sol['variables']['c_l']
+                    alpha[i] = sol['variables']['alpha']
+                # except CalledProcessError, RuntimeWarning:
+                except:
+                    C_D[i] = np.nan
+                    c_l[i] = np.nan
+                    alpha[i] = np.nan
 
-    plt.subplot(3, 1, 2)
-    plt.ylabel('$c_l$ [-]')
-    plt.xlabel('Freestream Mach number $M_\\infty$ [-]')
-    plt.legend()
+            axes[0, plot_col].plot(mach, C_D, label='$\\Lambda = ${:.0f} deg'.format(
+                np.rad2deg(sweep)))
+            axes[1, plot_col].plot(mach, c_l, label='$\\Lambda = ${:.0f} deg'.format(
+                np.rad2deg(sweep)))
+            axes[2, plot_col].plot(mach, np.rad2deg(alpha), label='$\\Lambda = ${:.0f} deg'.format(
+                np.rad2deg(sweep)))
 
-    plt.subplot(3, 1, 3)
-    plt.ylabel('Angle of attack $\\alpha$ [deg]')
-    plt.xlabel('Freestream Mach number $M_\\infty$ [-]')
-    plt.legend()
+        axes[0, plot_col].set_ylim([0, 0.025])
+        axes[0, plot_col].set_ylabel('$C_D$ [-]')
+        axes[0, plot_col].set_title(
+            'Drag vs Mach at constant $C_L =${:.2f}'.format(C_L)
+            + '\n $\\cos^{{{:d}}} \\Lambda$, $AR={:.0f}$'.format(
+                wing_model.pressure_drag_cos_exponent, aspect))
+
+        axes[1, plot_col].set_ylabel('$c_l$ [-]')
+        axes[1, plot_col].legend(loc='lower right')
+
+        axes[2, plot_col].set_ylabel('Angle of attack $\\alpha$ [deg]')
+        axes[2, plot_col].set_xlabel('Freestream Mach number $M_\\infty$ [-]')
 
     plt.tight_layout()
-    plt.subplots_adjust(hspace=0)
+    plt.subplots_adjust(hspace=0, wspace=0.1)
+    plt.savefig(os.path.join(fig_dir, 'drag_cos_exp.png'))
     """
     Why does C_D (at const C_L) decrease with sweep at low mach?
     I think because of cos^3 term on pressure drag in Drela 8.183?

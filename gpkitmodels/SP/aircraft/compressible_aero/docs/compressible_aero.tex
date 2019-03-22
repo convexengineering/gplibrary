@@ -218,7 +218,7 @@ The plots indicate that the DATCOM model does match/approach Drela's model where
 \end{figure}
 
 
-\paragraph{GP implementation of DATCOM model}
+\subsubsection{GP implementation of DATCOM model}
 The following plots compare the DATCOM model as given in \cite{Raymer2012} to my GPkit implementation of that model. Figure \ref{fig:wing_model_GP_mach} shows that the models match exactly across a range of Mach numbers at zero sweep. This verifies that the GPkit model has been implemented correctly.
 
 Figure \ref{fig:wing_model_GP_sweep} shows that the GPkit implementation diverges from the DATCOM model as sweep $\Lambda$ increases. This is because of a Taylor series approximation used in the model. The DATCOM model contains a $\tan^2(\Lambda)$ term. This term is not GP compatible, so the GP model approximates $\tan^2(\Lambda)$ with a \nth{12} order Taylor series, which is a GP-compatible posynomial. The Taylor series and $\tan^2(\Lambda)$ are compared in the bottom part of Figure \ref{fig:wing_model_GP_sweep}. The model is usably accurate up to a sweep angle of about \SI{70}{\degree} (grey vertical line in Figure \ref{fig:wing_model_GP_sweep}).
@@ -252,13 +252,38 @@ Specifically, we parameterize the (2D) performance of the airfoil as $c_{df}(c_l
 
 Then, the 3D drag is modeled as:
 \begin{equation}
+\label{eq:3d_wing_drag_drela}
 C_D = c_{df}(M_\infty) + c_{dp}(M_\perp) \cos^3\Lambda + \frac{C_L^2}{\pi \ar e}
 \end{equation}
 
 On the right-hand side, the first term is the friction drag at the freestream Mach number. The second term is the pressure drag, which depends on the Mach number \emph{perpendicular to the wing}. In this model, sweep reduces drag by reducing $M_\perp$ for a given $M_\infty$. The third term is the induced drag, and $e$ is the ``span efficiency''. It depends on the aspect ratio $\ar$ and taper $\lambda$ of the wing.
 
+This model is probably only valid for high aspect ratio wings. It assumes that the airflow over the wing is 2D with a spanwise $M_\infty \sin\Lambda$ component superimposed. A low $\ar$ wing may have 3D flow effects that invalidate this assumption.
+Also I think the $C_L^2$ induced drag term comes from lifting line theory, which assumes a high aspect ratio wing.
+Future work should quantify the minimum aspect ratio at which this model is sufficiently accurate by comparing to  a more sophisticated model (vortex-lattice or volume-discretizing CFD) or wind tunnel data.
 
-Probably only valid for high aspect ratio wings?
+There is also some question about the exponent on the $\cos \Lambda$ term multiplying the pressure drag coefficient in Eq. \ref{eq:3d_wing_drag_drela}. Drela \cite{Drela2014} says that this exponent should be $3$, and provides a reasonable theoretical justification. However, Hoerner \cite{Hoerner1965} claims that ``the pressure coefficients reduce in proportion to $\cos \Lambda$'' (i.e. and exponent of $1$).
+
+Figure \ref{fig:wing_model_drag_cos_exp} shows the effect of the cosine exponent on the drag model. Compare this to data on the effect of sweep from other references in Fig. \ref{fig:wing_drag_vs_sweep_refs}. Using $\cos^3$ causes a moderate decrease in drag with increasing sweep at sub-critical Mach numbers. This agrees with Loftin's figure (left of Fig. \ref{fig:wing_drag_vs_sweep_refs}) but not with Hoerner's (right of Fig. \ref{fig:wing_drag_vs_sweep_refs}).
+
+For now I am going to use $\cos^3$, but we should remember that this is an ambiguous choice and revisit it if a) the model does not agree with CFD drag predictions, or b) if the overall model converges to very swept wings for slow-flying aircraft.
+
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=\textwidth]{figures/wing_drag_model/drag_cos_exp}
+    \caption{\label{fig:wing_model_drag_cos_exp} Comparison of $C_D$ vs. $M$ predictions for the wing drag model. the left column uses a $\cos\Lambda$ term on the pressure drag, the right column uses $\cos^3 \Lambda$. For sweep angles up to $\Lambda = \SI{40}{\degree}$, increasing sweep (beneficially) pushes the drag divergence to higher Mach numbers. For $\Lambda = \SI{60}{\degree}$, the wing must operate at very high $\alpha$ to achieve $C_L=0.3$, because $C_{L\alpha}$ decreases with sweep. Thus the $\Lambda = \SI{60}{\degree}$ wing reaches the $c_{l, max} = 1.1$ limit of the airfoil model at relatively low Mach number.}
+\end{figure}
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/wing_drag_model/loftin_sweep}
+    \includegraphics[width=0.45\textwidth]{figures/wing_drag_model/hoerner_fig_15_31}
+    \caption{\label{fig:wing_drag_vs_sweep_refs} $C_D$ versus Mach number at various sweep angles, from Loftin \cite{Loftin1985} (right) and Hoerner \cite{Hoerner1965} (left). Compare to our model in the top row of Fig. \ref{fig:wing_model_drag_cos_exp}.}
+\end{figure}
+
+
+
 
 We'll need to do some shenanigans to make $\cos$ and $\cos^3$ GP compatible. Their Taylor series about 0 have negative terms.
 

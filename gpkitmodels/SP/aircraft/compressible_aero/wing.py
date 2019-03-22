@@ -7,7 +7,8 @@ from gpkit.constraints.tight import Tight
 from gpkit.constraints.loose import Loose
 
 class WingAeroSubsonic(Model):
-    def setup(self, flight_state, airfoil, limit_sweep_to_valid_range=True):
+    def setup(self, flight_state, airfoil, limit_sweep_to_valid_range=True,
+              pressure_drag_cos_exponent=1):
         """Model for aerodynamics of a wing.
 
         Valid at speeds up to the drag diverence Mach number,
@@ -19,12 +20,30 @@ class WingAeroSubsonic(Model):
         Beware: It seems GPkit's autosweep does not work with this model
          - Matt, 2019-03-06 14:40.
 
+        Arguments:
+            flight_state (FlightState): A gpkit Model describing the
+                static pressure, Mach number, etc. at which the wing is flying.
+            limit_sweep_to_valid_range (boolean): If true, include an upper limit
+                constraint on wing sweep, to prevent sweep from going to high
+                values at which the model is not valid. The model uses Taylor series
+                approximations of trigonometric functions of sweep, and these
+                are not accurate for very high sweep angles.
+            pressure_drag_cos_exponent (scalar): The exponent on the `cos(sweep)`
+                term multiplying the pressure drag coefficient. Drela argues that
+                this exponent should be 3 (See [3], eqn. 8.183). However, Hoerner [4]
+                argues that it should be 1.
+
         References:
             [1] USAF Stability and Control DATCOM.
             [2] Raymer, Daniel. "Aircraft Design: a Conceptual Approach,"
                 5th edition, AIAA, 2012.
+            [3] Drela, Mark. "Flight Vehicle Aerodynamics," MIT Press,
+                2014.
+            [4] Hoerner, S. F. "Fluid Dynamic Drag,"
+                1965.
         """
         #pylint: disable=invalid-name
+        self.pressure_drag_cos_exponent = pressure_drag_cos_exponent
 
         ### Declare Geometric Programming variables ###
         lift = Variable('lift', 'newton', 'Wing lift force')
@@ -115,7 +134,8 @@ class WingAeroSubsonic(Model):
             # TODO Drela suggests that the cosine term should be cos**3,
             # but Hoerner suggests that it should be cos.
             # We need to validate this model against AVL or wind tunnel data
-            C_D >= airfoil['c_df'] + (airfoil['c_dp'] * _helper_cos)  + C_Di,
+            C_D >= (airfoil['c_df'] + (airfoil['c_dp'] * _helper_cos**self.pressure_drag_cos_exponent)
+                + C_Di),
 
             # Definition of C_D
             drag == flight_state['p_dyn'] * S_ref * C_D,
