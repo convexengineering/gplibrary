@@ -17,7 +17,7 @@
 \addbibresource{references_for_compressible_aero.bib}
 
 
-\title{Modeling Transonic Aerodynamics in Geometric Programs}
+\title{Modeling Compressible Aerodynamics of Aircraft in Geometric Programs}
 
 \author{Matthew Vernacchia\\
 Department of Aeronautics and Astronautics, MIT}
@@ -25,11 +25,14 @@ Department of Aeronautics and Astronautics, MIT}
 \date{\today}
 
 \begin{document}
+
 \maketitle
+
 This document discusses techniques and challenges for modeling the aerodynamics of transonic aircraft within the geometric programming optimization framework.
 
 This work is done to support an exploration of the small and fast aircraft design space. It is part of the Firefly project, sponsored by BAE Systems and MIT Lincoln Laboratories.
 
+\tableofcontents
 
 \section{Fuselage}
 \subsection{Fuselage Drag}
@@ -283,9 +286,45 @@ For now I am going to use $\cos^3$, but we should remember that this is an ambig
 \end{figure}
 
 
+\subsubsection{GP implementation of the model}
+For the airfoil model ($c_d(c_l, M)$) I implemented some polynomial equations in \texttt{DummyAirfoil} which qualitatively replicate the behavior shown in Fig. 8.34 of Drela's book \cite{Drela2014}. This is a reasonable placeholder, but we should replace this with a fit to our own MSES runs.
+
+The only tricky part of the model is the $\cos\Lambda$ terms. We calculate the perpendicular Mach number as $M_\perp = M_\infty \cos\Lambda$. Decreasing $M_\perp$ decreases $c_d$, so if we are minimizing drag at fixed $M_\infty$ there is an ``optimization pressure'' to \emph{reduce} $\cos\Lambda$. We need a lower bound on $\cos\Lambda$.
+
+GP and SP models cannot contain trigonometric functions. The Taylor series of $\cos$ about $0$ can be used to bound $\cos\Lambda$ from below:
+
+\begin{equation}
+h_{\cos\Lambda} \geq 1 - \frac{\Lambda^2}{2} + \frac{\Lambda^4}{24} -  \frac{\Lambda^6}{720} + ...
+\end{equation}
+
+Where $h_{\cos\Lambda}$ is a helper variable that is represents $\cos\Lambda$. However, the Taylor series has negative coefficients, so this is an SP, not GP, constraint (which makes the model more expensive to solve).
+
+The Taylor series of $\sec$ ($1/\cos$) is a posynomial; however it only allows us to put an GP upper bound on $\cos\Lambda$:
+
+\begin{equation}
+h_{\cos\Lambda}^{-1} \geq 1 + \frac{\Lambda^2}{2} + \frac{5 \Lambda^4}{24} + ...
+\end{equation}
+
+and we need a \emph{lower} bound.
+
+I also tried some shenanigans with using $\cos\Lambda$ or $\tan\Lambda$ as the decision variable in place of $\Lambda$. However, I could not figure out GP-compatible constraints that would relate $\cos$ and $\tan$ and bound them in the correct directions.
+
+Thus, I think we are stuck using an SP model for $\cos\Lambda$. Note though that if $\Lambda$ is fixed, \texttt{gpkit} will allow the wing model to be solved as a GP.
 
 
-We'll need to do some shenanigans to make $\cos$ and $\cos^3$ GP compatible. Their Taylor series about 0 have negative terms.
+\subsection{Optimizing for L/D - demonstration of the wing model}
+Here we demonstrate the interaction of the lift and drag components of the wing model by optimizing for $L/D$. See the code in \texttt{wing\_demo\_best\_ld.py} We optimize the model to minimize the cost $D/L$. We also add a light cost on sweep ($+ 0.005\Lambda$). This notionally represents the structural and packaging issues associated with high sweep (which are not captured in the wing aerodynamics model alone).\footnote{Otherwise, the optimization would run away to high sweep even at low $M$ because of the small (and possible non-physical, see discussion above) reduction in $C_D$ from increasing $\Lambda$.}
+
+The results in Fig. \ref{fig:wing_best_ld} mostly match my intuition. For $M_\infty$ below the airfoil's critical Mach number ($\approx 0.73$), the best wing is un-swept. At higher Mach numbers the optimal sweep increases and the achievable $L/D$ decreases.
+
+Interestingly, the optimal 2D lift coefficient $c_l$ (roughly proportional to angle of attack) increases at higher $M_\infty$. I don't know enough about aerodynamic design to know if this is reasonable.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=\textwidth]{figures/wing_best_ld/best_ld}
+    \caption{\label{fig:wing_best_ld} Using the wing model to optimize for $L/D$ at various Mach numbers. The cost function is $D/L$, plus a light cost on sweep.}
+\end{figure}
+
 
 \printbibliography
 

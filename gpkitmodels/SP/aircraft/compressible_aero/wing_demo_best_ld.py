@@ -16,6 +16,7 @@ import flight_state
 
 
 def ld_plots():
+    fig_dir = 'docs/figures/wing_best_ld'
     aspect = 10
 
     flight_state_model = flight_state.FlightState()
@@ -55,21 +56,24 @@ def ld_plots():
         c_l[i] = sol['variables']['c_l']
         sweep[i] = sol['variables']['sweep_c2']
 
-    plt.subplot(3, 1, 1)
+    ax1 = plt.subplot(3, 1, 1)
+    plt.title('Optimizing for best $L/D$' + 
+              '\n$AR={{{:.0f}}}$'.format(aspect))
     plt.plot(mach, ld, label='GP model', **gp_plot_style)
     plt.ylabel('$L/D$')
 
-    plt.subplot(3, 1, 2)
+    plt.subplot(3, 1, 2, sharex=ax1)
     plt.plot(mach, np.rad2deg(sweep), label='GP model', **gp_plot_style)
     plt.ylabel('Sweep $\\Lambda$ [deg]')
 
-    plt.subplot(3, 1, 3)
+    plt.subplot(3, 1, 3, sharex=ax1)
     plt.plot(mach, c_l, label='GP model', **gp_plot_style)
     plt.ylabel('2D lift coeff. $c_l$ [-]')
     plt.xlabel('Freestream Mach number $M_\\infty$ [-]')
 
-    plt.suptitle('Optimizing for best $L/D$')
     plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
+    plt.savefig(os.path.join(fig_dir, 'best_ld.png'))
 
 
 def main():
