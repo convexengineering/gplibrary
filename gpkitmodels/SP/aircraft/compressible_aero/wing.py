@@ -42,6 +42,13 @@ class WingAeroSubsonic(Model):
             [4] Hoerner, S. F. "Fluid Dynamic Drag,"
                 1965.
         """
+        """
+        TODO: add the effects of taper & wing load distribution.
+        Perhaps this will be a useful source:
+        "Estimating the Oswald Factor From Basic Aircraft Geometrical Parameters"
+        http://www.fzt.haw-hamburg.de/pers/Scholz/OPerA/OPerA_PRE_DLRK_12-09-10_MethodOnly.pdf
+        """
+
         #pylint: disable=invalid-name
         self.pressure_drag_cos_exponent = pressure_drag_cos_exponent
 
