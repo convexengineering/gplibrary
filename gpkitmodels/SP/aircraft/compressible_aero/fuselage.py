@@ -8,10 +8,10 @@ class FuselageGeom(Model):
     def setup(self):
         ### Declare Geometric Programming variables ###
         # Fuselage dimensions
-        length = Variable('length', 'meter', 'Fuselage length')
-        diam = Variable('diam', 'meter', 'Fuselage diameter')
-        fineness = Variable('fineness', '', 'Fuselage fineness ratio (length/diameter)')
-        S_ref = Variable('S_ref', 'm^2', 'Fuselage cross section reference area')
+        self.length = length = Variable('length', 'meter', 'Fuselage length')
+        self.diam = diam = Variable('diam', 'meter', 'Fuselage diameter')
+        self.fineness = fineness = Variable('fineness', '', 'Fuselage fineness ratio (length/diameter)')
+        self.S_ref = S_ref = Variable('S_ref', 'm^2', 'Fuselage cross section reference area')
 
         ### Declare Geometric Programming constraints. ###
        # Geometric constraints
@@ -43,36 +43,44 @@ class FuselageGeom(Model):
 
 
 class FuselageAeroSubsonic(Model):
+    """Model for aerodynamics of a fuselage at speeds up to Mach 1.
+
+    Assumes a "missile-like" nose + cylinder fuselage.
+
+    Based on Chapter 2.4 of Fleeman [1]
+
+    References:
+        [1] Fleeman, Eugene L, "Missile Design and System Engineering",
+            American Institute of Aeronautics and Astronautics, 2012.
+        [2] Jerger, J. J., "Systems Preliminary Design," Principles
+            of Guided Missile Design, 1960.
+
+    GP docstring stuff:
+    
+    Upper Unbounded
+    ---------------
+    drag_fuse, fuse_geom.length
+
+    Lower Unbounded
+    ---------------
+    fuse_geom.diam, fuse_geom.fineness
+    """
     def setup(self, fuse_geom, flight_state):
-        """Model for aerodynamics of a fuselage at speeds up to Mach 1.
-
-        Assumes a "missile-like" nose + cylinder fuselage.
-
-        Based on Chapter 2.4 of Fleeman [1]
-
-        References:
-            [1] Fleeman, Eugene L, "Missile Design and System Engineering",
-                American Institute of Aeronautics and Astronautics, 2012.
-            [2] Jerger, J. J., "Systems Preliminary Design," Principles
-                of Guided Missile Design, 1960.
-
-        TODO "Unbounded" tags, ask Ned how to use them.
-        """
         self.fuse_geom = fuse_geom
         self.flight_state = flight_state
 
         ### Declare Geometric Programming variables ###
-        drag_fuse = Variable('drag_fuse', 'newton', 'Fuselage drag')
+        self.drag_fuse = drag_fuse = Variable('drag_fuse', 'newton', 'Fuselage drag')
 
         # Drag coefficients
-        C_D0_fuse = Variable('C_D0_fuse', '', 'Fuselage drag coefficient at zero lift')
-        C_D0_fric = Variable('C_D0_fric', '', 'Fuselage skin friction drag coeff')
-        C_D0_base = Variable('C_D0_base', '', 'Fuselage base drag coefficient')
+        self.C_D0_fuse = C_D0_fuse = Variable('C_D0_fuse', '', 'Fuselage drag coefficient at zero lift')
+        self.C_D0_fric = C_D0_fric = Variable('C_D0_fric', '', 'Fuselage skin friction drag coeff')
+        self.C_D0_base = C_D0_base = Variable('C_D0_base', '', 'Fuselage base drag coefficient')
 
         # Parameters "internal" to the model
         # Parameter in the skin friction equation provided in [1], which is originally
         # from Jerger [2].
-        _jerger_param = Variable('_jerger_param', 0.053, 'lbf^0.2 ft^-0.2', 'Skin friction parameter')
+        self._jerger_param = _jerger_param = Variable('_jerger_param', 0.053, 'lbf^0.2 ft^-0.2', 'Skin friction parameter')
 
 
         ### Declare Geometric Programming constraints. ###

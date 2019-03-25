@@ -52,19 +52,39 @@ class WingSwept(Model):
 
 
 class WingAeroSubsonic(Model):
+    """Model for aerodynamics of a wing.
+
+    Valid at speeds up to the drag divergence Mach number,
+    or maybe to Mach 1 for a swept wing.
+
+    The lift model is based on 4.1.3.2 of the DATCOM [1]
+    and Eq. 12.6 of Raymer [2].
+
+    Beware: It seems GPkit's autosweep does not work with this model
+     - Matt, 2019-03-06 14:40.
+
+    References:
+        [1] USAF Stability and Control DATCOM.
+        [2] Raymer, Daniel. "Aircraft Design: a Conceptual Approach,"
+            5th edition, AIAA, 2012.
+        [3] Drela, Mark. "Flight Vehicle Aerodynamics," MIT Press,
+            2014.
+        [4] Hoerner, S. F. "Fluid Dynamic Drag,"
+            1965.
+
+    GP docstring stuff:
+
+    Upper Unbounded
+    ---------------
+    drag
+
+    Lower Unbounded
+    ---------------
+    lift
+    """
     def setup(self, flight_state, wing, airfoil, limit_sweep_to_valid_range=True,
               pressure_drag_cos_exponent=1):
-        """Model for aerodynamics of a wing.
-
-        Valid at speeds up to the drag divergence Mach number,
-        or maybe to Mach 1 for a swept wing.
-
-        The lift model is based on 4.1.3.2 of the DATCOM [1]
-        and Eq. 12.6 of Raymer [2].
-
-        Beware: It seems GPkit's autosweep does not work with this model
-         - Matt, 2019-03-06 14:40.
-
+        """
         Arguments:
             flight_state (FlightState): A gpkit Model describing the
                 static pressure, Mach number, etc. at which the wing is flying.
@@ -78,14 +98,6 @@ class WingAeroSubsonic(Model):
                 this exponent should be 3 (See [3], eqn. 8.183). However, Hoerner [4]
                 argues that it should be 1.
 
-        References:
-            [1] USAF Stability and Control DATCOM.
-            [2] Raymer, Daniel. "Aircraft Design: a Conceptual Approach,"
-                5th edition, AIAA, 2012.
-            [3] Drela, Mark. "Flight Vehicle Aerodynamics," MIT Press,
-                2014.
-            [4] Hoerner, S. F. "Fluid Dynamic Drag,"
-                1965.
         """
         """
         TODO: add the effects of taper & wing load distribution.
@@ -100,27 +112,27 @@ class WingAeroSubsonic(Model):
         self.flight_state = flight_state
 
         ### Declare Geometric Programming variables ###
-        lift = Variable('lift', 'newton', 'Wing lift force')
-        drag = Variable('drag', 'newton', 'Wing drag force')
+        self.lift = lift = Variable('lift', 'newton', 'Wing lift force')
+        self.drag = drag = Variable('drag', 'newton', 'Wing drag force')
 
         # Flight conditions
-        mach_perp = airfoil['mach_perp']
-        alpha = Variable('alpha', 'radian', 'Wing angle of attack')
+        self.mach_perp = mach_perp = airfoil['mach_perp']
+        self.alpha = alpha = Variable('alpha', 'radian', 'Wing angle of attack')
 
         # Lift coefficients
-        C_L = Variable('C_L', '', 'Wing lift coefficient')
-        C_La = Variable('C_La', 'radian**-1', 'Wing d C_L/ d alpha')
-        alpha_max = Variable('alpha_max', 12, 'degree', 'Max angle of attack for linear regime.')
+        self.C_L = C_L = Variable('C_L', '', 'Wing lift coefficient')
+        self.C_La = C_La = Variable('C_La', 'radian**-1', 'Wing d C_L/ d alpha')
+        self.alpha_max = alpha_max = Variable('alpha_max', 12, 'degree', 'Max angle of attack for linear regime.')
 
         # Drag coefficients
-        C_D = Variable('C_D', '', 'Wing drag coefficient')
-        C_Di = Variable('C_Di', '', 'Wing induced drag coefficient')
-        span_eff = Variable('span_eff', 0.9, '', 'Span efficiency factor, aka e')
+        self.C_D = C_D = Variable('C_D', '', 'Wing drag coefficient')
+        self.C_Di = C_Di = Variable('C_Di', '', 'Wing induced drag coefficient')
+        self.span_eff = span_eff = Variable('span_eff', 0.9, '', 'Span efficiency factor, aka e')
 
         # Helper variables
-        _t1 = Variable('_t1', '', 'Helper variable for posynomial in sqrt')
-        _t2 = Variable('_t2', '', 'Helper variable for tan^2 Taylor series')
-        _helper_cos = Variable('_helper_cos', '', 'Helper variable for cos Taylor series')
+        self._t1 = _t1 = Variable('_t1', '', 'Helper variable for posynomial in sqrt')
+        self._t2 = _t2 = Variable('_t2', '', 'Helper variable for tan^2 Taylor series')
+        self._helper_cos = _helper_cos = Variable('_helper_cos', '', 'Helper variable for cos Taylor series')
 
 
         ### Declare Geometric Programming constraints. ###
