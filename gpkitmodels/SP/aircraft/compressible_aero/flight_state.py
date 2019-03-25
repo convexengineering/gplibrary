@@ -13,7 +13,7 @@ class FlightState(Model):
         mach = Variable('mach', '', 'Freestream Mach number')
         p_dyn = Variable('p_dyn', 'pascal', 'Freestream dynamic pressure')
         p_static = Variable('p_static', 30e3, 'pascal', 'Freestream static pressure')
-        _gamma_air = Variable('_gamma_air', 1.40, '', 'Ratio of specific heats of air')
+        gamma_air = Variable('gamma_air', 1.40, '', 'Ratio of specific heats of air')
         if mach_fixed:
             beta_pg = Variable('beta_pg',
                                lambda c: (1 - c[mach]**2)**0.5, '', 'Prandtl-Glauert beta parameter')
@@ -23,7 +23,7 @@ class FlightState(Model):
         # Dynamic pressure
         # Source: https://en.wikipedia.org/wiki/Dynamic_pressure#Compressible_flow
         constraints = [
-            p_dyn == 0.5 * _gamma_air * p_static * mach**2,
+            p_dyn == 0.5 * gamma_air * p_static * mach**2,
 
             # Limit on Mach number range of model
             Loose([mach <= 1]),
