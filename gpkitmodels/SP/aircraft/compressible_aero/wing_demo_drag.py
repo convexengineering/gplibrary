@@ -24,10 +24,11 @@ def drag_plots():
 
     flight_state_model = flight_state.FlightState()
     airfoil_model = airfoil.DummyAirfoil(flight_state_model)
+    wing_geom = wing.WingSwept()
     wing_model_cos1 = wing.WingAeroSubsonic(
-        flight_state_model, airfoil_model, pressure_drag_cos_exponent=1)
+        flight_state_model, wing_geom, airfoil_model, pressure_drag_cos_exponent=1)
     wing_model_cos3 = wing.WingAeroSubsonic(
-        flight_state_model, airfoil_model, pressure_drag_cos_exponent=3)
+        flight_state_model, wing_geom, airfoil_model, pressure_drag_cos_exponent=3)
 
     fig1, axes = plt.subplots(ncols=2, nrows=3, sharex='all', sharey='row',
                               figsize=(8, 6))

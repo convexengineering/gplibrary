@@ -40,7 +40,9 @@ def lift_plots():
 
     flight_state_model = flight_state.FlightState()
     airfoil_model = airfoil.DummyAirfoil(flight_state_model)
-    wing_model = wing.WingAeroSubsonic(flight_state_model, airfoil_model, limit_sweep_to_valid_range=False)
+    wing_geom = wing.WingSwept()
+    wing_model = wing.WingAeroSubsonic(flight_state_model, wing_geom, airfoil_model,
+                                       limit_sweep_to_valid_range=False)
 
     wing_model.substitutions['S_ref'] = 1    # [units: meter^2]
     wing_model.substitutions['aspect'] = aspect    # [units: dimensionless]
