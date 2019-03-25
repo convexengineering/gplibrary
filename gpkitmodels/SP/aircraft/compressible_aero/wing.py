@@ -82,10 +82,12 @@ class WingAeroSubsonic(Model):
     ---------------
     lift
     """
-    def setup(self, flight_state, wing, airfoil, limit_sweep_to_valid_range=True,
+    def setup(self, wing, airfoil, flight_state, limit_sweep_to_valid_range=True,
               pressure_drag_cos_exponent=1):
-        """
+        """Create an instance of the model.
         Arguments:
+            wing (WingSwept): A gpkit Model describing the geometry of the wing.
+            airfoil (gpkit.Model): A gpkit Model describing the airfoil drag vs. c_l and Mach.
             flight_state (FlightState): A gpkit Model describing the
                 static pressure, Mach number, etc. at which the wing is flying.
             limit_sweep_to_valid_range (boolean): If true, include an upper limit
@@ -130,8 +132,8 @@ class WingAeroSubsonic(Model):
         self.span_eff = span_eff = Variable('span_eff', 0.9, '', 'Span efficiency factor, aka e')
 
         # Helper variables
-        self._t1 = _t1 = Variable('_t1', '', 'Helper variable for posynomial in sqrt')
-        self._t2 = _t2 = Variable('_t2', '', 'Helper variable for tan^2 Taylor series')
+        self._helper_sqrt_arg = _helper_sqrt_arg = Variable('_helper_sqrt_arg', '', 'Helper variable for posynomial in sqrt')
+        self._helper_tan2 = _helper_tan2 = Variable('_helper_tan2', '', 'Helper variable for tan^2 Taylor series')
         self._helper_cos = _helper_cos = Variable('_helper_cos', '', 'Helper variable for cos Taylor series')
 
 
@@ -153,17 +155,17 @@ class WingAeroSubsonic(Model):
 
             # DATCOM lift model
             # Re-arranged for GP, using helper variables
-            Tight([C_La**-1 >= (1 + _t1**0.5) / (pi * wing['aspect'])]),
+            Tight([C_La**-1 >= (1 + _helper_sqrt_arg**0.5) / (pi * wing['aspect'])]),
 
             # DATCOM lift model
             # stuff in the square root
-            Tight([_t1 >= 1 + (wing['aspect'] * pi / (airfoil['c_la_2d'] / units('radian')))**2
-                   * (1 + _t2 / flight_state['beta_pg']**2)],
+            Tight([_helper_sqrt_arg >= 1 + (wing['aspect'] * pi / (airfoil['c_la_2d'] / units('radian')))**2
+                   * (1 + _helper_tan2 / flight_state['beta_pg']**2)],
                    reltol=1e-3),
 
             # DATCOM lift model
             # Taylor series approximation for tan**2(sweep)
-            Tight([_t2 >= wing['sweep_c2']**2
+            Tight([_helper_tan2 >= wing['sweep_c2']**2
                    + 2/3. * wing['sweep_c2']**4
                    + 17/45. * wing['sweep_c2']**6
                    + 62/315. * wing['sweep_c2']**8
