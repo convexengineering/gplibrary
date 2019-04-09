@@ -21,6 +21,7 @@ class Multimission(Model):
             hcruise    = Variable('h_{cruise_{mm}}', 'm', 'minimum cruise altitude')
             Range      = Variable("Range_{mm}", "km", "aircraft range")
             W_p        = Variable("W_{p_{mm}}", "N", "payload weight", pr=20.)
+            rho_p        = Variable("\\rho_{p_{mm}}", "N", "payload density", pr=10.)
             V_min      = Variable("V_{min_{mm}}", 25, "m/s", "takeoff speed", pr=20.)
             cost_index = Variable("C_{mm}", '1/hr','hourly cost index')
             TOfac      = Variable('T/O factor_{mm}', 2.,'-','takeoff thrust factor')
@@ -33,6 +34,7 @@ class Multimission(Model):
             self.missions[i]['h_{cruise_m}'] == hcruise[i],
             self.missions[i]['Range_m']      == Range[i],
             self.missions[i]['W_{p_m}']        == W_p[i],
+            self.missions[i]['\\rho_{p_m}']  == rho_p[i],
             self.missions[i]['V_{min_m}']    == V_min[i],
             self.missions[i]['C_m']          == cost_index[i],
             self.missions[i]['T/O factor_m'] == TOfac[i],

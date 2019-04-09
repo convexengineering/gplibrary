@@ -70,12 +70,14 @@ class Fuselage(Model):
     def setup(self):
         # Free Variables
         CDA0      = Variable("(CDA0)", "m^2", "fuselage drag area") #0.035 originally
+        CDA0_c    = Variable("(CDA0)_c", 10, "m", "fuselage drag coefficient constant")
         C_D_fuse  = Variable('C_{D_{fuse}}','-','fuselage drag coefficient')
         # Free variables (fixed for performance eval.)
+        V_fuse = Variable('V_{fuse}', 'm^3', 'total volume in the fuselage', fix = True)
         V_f_fuse  = Variable('V_{f_{fuse}}','m^3','fuel volume in the fuselage', fix = True)
 
         constraints = []
-        constraints += [V_f_fuse == 10*units('m')*CDA0,
+        constraints += [V_fuse == CDA0_c*CDA0,
                         V_f_fuse >= 1*10**-5*units('m^3')]
 
         return constraints
@@ -204,6 +206,7 @@ class Mission(Model):
         hcruise    = Variable('h_{cruise_m}', 'm', 'minimum cruise altitude')
         Range      = Variable("Range_m", "km", "aircraft range")
         W_p        = Variable("W_{p_m}", "N", "payload weight", pr=20.)
+        rho_p      = Variable("\\rho_{p_m}", "kg/m^3", "payload density", pr = 10.)
         V_min      = Variable("V_{min_m}", "m/s", "takeoff speed", pr=20.)
         TOfac      = Variable('T/O factor_m', '-','takeoff thrust factor')
         cost_index = Variable("C_m", '1/hr','hourly cost index')
@@ -262,6 +265,10 @@ class Mission(Model):
                         ((W_p+self.aircraft.fuse['V_{f_{fuse}}']*self.aircraft['g']*self.aircraft['\\rho_f']) *
                          self.aircraft['W'] * self.aircraft.wing['S']))]
 
+        # Fuselage volume
+        constraints += [self.aircraft.fuse['V_{fuse}'] >=
+                        self.aircraft.fuse['V_{f_{fuse}}'] + W_p/(rho_p*self.aircraft['g'])]
+
         # Upper bounding variables
         constraints += [t_m <= 100000*units('hr'),
             W_f_m <= 1e10*units('N')]
@@ -274,6 +281,7 @@ def test():
         'h_{cruise_m}'   :5000*units('m'),
         'Range_m'        :3000*units('km'),
         'W_{p_m}'        :6250*units('N'),
+        '\\rho_{p_m}'    :1500*units('kg/m^3'),
         'C_m'            :120*units('1/hr'),
         'V_{min_m}'      :25*units('m/s'),
         'T/O factor_m'   :2,
@@ -289,6 +297,7 @@ if __name__ == "__main__":
         'h_{cruise_m}'   :5000*units('m'),
         'Range_m'        :3000*units('km'),
         'W_{p_m}'        :6250*units('N'),
+        '\\rho_{p_m}'    :1500*units('kg/m^3'),
         'C_m'            :120*units('1/hr'),
         'V_{min_m}'      :25*units('m/s'),
         'T/O factor_m'   :2,
