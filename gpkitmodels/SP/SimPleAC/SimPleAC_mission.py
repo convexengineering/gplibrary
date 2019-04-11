@@ -68,15 +68,15 @@ class SimPleACP(Model):
 class Fuselage(Model):
     def setup(self):
         # Free Variables
-        S         = Variable('S_{fuse}', 'm^2', 'fuselage surface area', fix = True)
-        l         = Variable('l_{fuse}', 'm', 'fuselage length', fix = True)
-        r         = Variable('r_{fuse}', 'm', 'fuselage minor radius', fix = True)
-        f         = Variable('f_{fuse}', '-', 'fuselage fineness ratio')
-        k         = Variable('k_{fuse}', '-', 'fuselage form factor', fix = True)
+        S         = Variable('S_{fuse}', 'm^2', 'fuselage surface area')
+        l         = Variable('l_{fuse}', 'm', 'fuselage length')
+        r         = Variable('r_{fuse}', 'm', 'fuselage minor radius')
+        f         = Variable('f_{fuse}', '-', 'fuselage fineness ratio', fix = True)
+        k         = Variable('k_{fuse}', '-', 'fuselage form factor')
         # Free variables (fixed for performance eval.)
         V         = Variable('V_{fuse}', 'm^3', 'total volume in the fuselage', fix = True)
-        V_f_fuse  = Variable('V_{f_{fuse}}','m^3','fuel volume in the fuselage', fix = True)
-        W_fuse    = Variable('W_{fuse}', 'N', 'fuselage weight', fix = True)
+        V_f_fuse  = Variable('V_{f_{fuse}}','m^3','fuel volume in the fuselage')
+        W_fuse    = Variable('W_{fuse}', 'N', 'fuselage weight')
         p = 1.6075
 
         constraints = [f == l/r/2,
