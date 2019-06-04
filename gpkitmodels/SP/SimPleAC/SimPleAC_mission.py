@@ -1,12 +1,11 @@
 import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, VarKey, units,Vectorize
-from gpkit.constraints.bounded import Bounded
-from gpkit.constraints.tight import Tight
+from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, VarKey, units, Vectorize
 
-# Importing models
+# Importing atmospheric model
 from gpkitmodels.SP.atmosphere.atmosphere import Atmosphere
 
-# SimPleAC with mission design and flight segments, and lapse rate and BSFC model (3.4.2)
+# SimPleAC with mission design and flight segments,
+# and lapse rate and BSFC model (updated 5/31/2019 by Berk Ozturk)
 
 class SimPleAC(Model):
     def setup(self):
@@ -26,11 +25,8 @@ class SimPleAC(Model):
         V_f_avail = Variable("V_{f_{avail}}", "m^3", "fuel volume available")
 
         constraints = []
-  
-        # Thrust and drag model
-        constraints += [self.fuse['C_{D_{fuse}}'] == self.fuse['(CDA0)'] / self.wing['S']]
 
-        # Fuel volume model 
+        # Fuel volume model
         with SignomialsEnabled():
             constraints += [V_f == W_f / g / rho_f,
                     V_f_avail <= self.wing['V_{f_{wing}}'] + self.fuse['V_{f_{fuse}}'], #[SP]
@@ -46,7 +42,8 @@ class SimPleACP(Model):
         self.aircraft = aircraft
         self.engineP  = aircraft.engine.dynamic(state)
         self.wingP    = aircraft.wing.dynamic(state)
-        self.Pmodels  = [self.engineP, self.wingP]
+        self.fuseP    = aircraft.fuse.dynamic(state)
+        self.Pmodels  = [self.engineP, self.wingP, self.fuseP]
 
         # Free variables
         C_D       = Variable("C_D", "-", "drag coefficient")
@@ -58,10 +55,11 @@ class SimPleACP(Model):
         constraints = []
 
         constraints += [self.engineP['T'] * V <= self.aircraft.engine['\\eta_{prop}'] * self.engineP['P_{shaft}'],
-                    C_D >= self.aircraft['C_{D_{fuse}}'] + self.wingP['C_{D_{wpar}}'] + self.wingP['C_{D_{ind}}'],
+                    C_D >= self.fuseP['C_{D_{fuse}}'] + self.wingP['C_{D_{wpar}}'] + self.wingP['C_{D_{ind}}'],
                     D >= 0.5 * state['\\rho'] * self.aircraft['S'] * C_D * V ** 2,
                     Re == (state['\\rho'] / state['\\mu']) * V * (self.aircraft['S'] / self.aircraft['A']) ** 0.5,
                     self.wingP['C_f'] >= 0.074 / Re ** 0.2,
+                    self.fuseP['Re_{fuse}'] == state['\\rho']*V*self.aircraft.fuse['l_{fuse}']/state['\\mu'],
                     LoD == self.wingP['C_L'] / C_D]
 
         return constraints, self.Pmodels
@@ -69,16 +67,44 @@ class SimPleACP(Model):
 class Fuselage(Model):
     def setup(self):
         # Free Variables
-        CDA0      = Variable("(CDA0)", "m^2", "fuselage drag area") #0.035 originally
-        C_D_fuse  = Variable('C_{D_{fuse}}','-','fuselage drag coefficient')
+        S         = Variable('S_{fuse}', 'm^2', 'fuselage surface area')
+        l         = Variable('l_{fuse}', 'm', 'fuselage length')
+        r         = Variable('r_{fuse}', 'm', 'fuselage minor radius')
+        f         = Variable('f_{fuse}', '-', 'fuselage fineness ratio', fix = True)
+        k         = Variable('k_{fuse}', '-', 'fuselage form factor')
         # Free variables (fixed for performance eval.)
-        V_f_fuse  = Variable('V_{f_{fuse}}','m^3','fuel volume in the fuselage', fix = True)
+        V         = Variable('V_{fuse}', 'm^3', 'total volume in the fuselage', fix = True)
+        V_f_fuse  = Variable('V_{f_{fuse}}','m^3','fuel volume in the fuselage')
+        W_fuse    = Variable('W_{fuse}', 'N', 'fuselage weight')
+        p = 1.6075
 
-        constraints = []
-        constraints += [V_f_fuse == 10*units('m')*CDA0,
-                        V_f_fuse >= 1*10**-5*units('m^3')]
+        constraints = [f == l/r/2,
+                       f <= 6,
+                       k >= 1 + 60/f**3 + f/400,
+                        3*(S/np.pi)**p >= 2*(l*2*r)**p + (2*r)**(2*p),
+                        V == 4./6.*np.pi*r**2*l,
+                        V_f_fuse >= 1*10**-10*units('m^3'),
+                       ]
 
         return constraints
+
+    def dynamic(self,state):
+        return FuselageP(self,state)
+
+class FuselageP(Model):
+    def setup(self,fuselage,state):
+        # Constants
+        Cfref      = Variable('C_{f_{fuse,ref}}', 0.455, '-', 'fuselage reference skin friction coefficient', pr=10.)
+        # Free Variables
+        Re         = Variable('Re_{fuse}', '-', 'fuselage Reynolds number')
+        Cf         = Variable('C_{f_{fuse}}', '-', 'fuselage skin friction coefficient')
+        Cd         = Variable('C_{D_{fuse}}', '-', 'fuselage drag coefficient')
+
+        constraints = [Cf >= Cfref/Re**0.3,
+                       Cd >= fuselage['k_{fuse}']*Cf,
+                       ]
+        return constraints
+
 
 class Wing(Model):
     def setup(self):
@@ -99,7 +125,7 @@ class Wing(Model):
         # Free Variables (fixed for performance eval.)
         A         = Variable("A", "-", "aspect ratio",fix = True)
         S         = Variable("S", "m^2", "total wing area", fix = True)
-        W_w       = Variable("W_w", "N", "wing weight")#, fix = True)
+        W_w       = Variable("W_w", "N", "wing weight")
         W_w_strc  = Variable('W_{w_{strc}}','N','wing structural weight', fix = True)
         W_w_surf  = Variable('W_{w_{surf}}','N','wing skin weight', fix = True)
         V_f_wing  = Variable("V_{f_{wing}}",'m^3','fuel volume in the wing', fix = True)
@@ -204,6 +230,7 @@ class Mission(Model):
         hcruise    = Variable('h_{cruise_m}', 'm', 'minimum cruise altitude')
         Range      = Variable("Range_m", "km", "aircraft range")
         W_p        = Variable("W_{p_m}", "N", "payload weight", pr=20.)
+        rho_p      = Variable("\\rho_{p_m}", "kg/m^3", "payload density", pr=10.)
         V_min      = Variable("V_{min_m}", "m/s", "takeoff speed", pr=20.)
         TOfac      = Variable('T/O factor_m', '-','takeoff thrust factor')
         cost_index = Variable("C_m", '1/hr','hourly cost index')
@@ -216,8 +243,8 @@ class Mission(Model):
                         h[1:Nsegments-1] >= hcruise,  # Adding minimum cruise altitude
 
                         # Weights at beginning and end of mission
-                        Wstart[0] >= W_p + self.aircraft.wing['W_w'] + self.aircraft.engine['W_e'] + W_f_m,
-                        Wend[Nsegments-1] >= W_p + self.aircraft.wing['W_w'] + self.aircraft.engine['W_e'],
+                        Wstart[0] >= W_p + self.aircraft.wing['W_w'] + self.aircraft.engine['W_e'] + self.aircraft.fuse['W_{fuse}'] + W_f_m,
+                        Wend[Nsegments-1] >= W_p + self.aircraft.wing['W_w'] + self.aircraft.engine['W_e'] + self.aircraft.fuse['W_{fuse}'],
 
                         # Lift, and linking segment start and end weights
                         Wavg <= 0.5 * state['\\rho'] * self.aircraft['S'] * self.aircraftP.wingP['C_L'] * self.aircraftP['V'] ** 2,
@@ -238,6 +265,7 @@ class Mission(Model):
 
                         # Max MSL thrust at least 2*climb thrust
                         self.aircraft.engine['P_{shaft,max}'] >= TOfac*self.aircraftP.engineP['P_{shaft}'][0],
+
                         # Flight time
                         t_s == R_s/self.aircraftP['V'],
 
@@ -249,7 +277,8 @@ class Mission(Model):
                         ]
 
         # Maximum takeoff weight
-        constraints += [self.aircraft['W'] >= W_p + self.aircraft.wing['W_w'] + self.aircraft['W_f'] + self.aircraft.engine['W_e']]
+        constraints += [self.aircraft['W'] >= W_p + self.aircraft.wing['W_w'] + self.aircraft['W_f'] +
+                        self.aircraft.engine['W_e'] + self.aircraft.fuse['W_{fuse}']]
 
         # Stall constraint
         constraints += [self.aircraft['W'] <= 0.5 * state['\\rho'] *
@@ -259,8 +288,15 @@ class Mission(Model):
         constraints += [self.aircraft.wing['W_{w_{strc}}']**2. >=
                         self.aircraft.wing['W_{w_{coeff1}}']**2. / self.aircraft.wing['\\tau']**2. *
                         (self.aircraft.wing['N_{ult}']**2. * self.aircraft.wing['A'] ** 3. *
-                        ((W_p+self.aircraft.fuse['V_{f_{fuse}}']*self.aircraft['g']*self.aircraft['\\rho_f']) *
+                        ((W_p + self.aircraft.fuse['W_{fuse}'] +
+                          self.aircraft['W_e'] + self.aircraft.fuse['V_{f_{fuse}}']*self.aircraft['g']*self.aircraft['\\rho_f']) *
                          self.aircraft['W'] * self.aircraft.wing['S']))]
+
+        # Fuselage volume and weight
+        constraints += [self.aircraft.fuse['V_{fuse}'] >=
+                        self.aircraft.fuse['V_{f_{fuse}}'] + W_p/(rho_p*self.aircraft['g']),
+                        self.aircraft.fuse['W_{fuse}'] == self.aircraft.fuse['S_{fuse}']*self.aircraft.wing['W_{w_{coeff2}}'],
+                        ]
 
         # Upper bounding variables
         constraints += [t_m <= 100000*units('hr'),
@@ -274,6 +310,7 @@ def test():
         'h_{cruise_m}'   :5000*units('m'),
         'Range_m'        :3000*units('km'),
         'W_{p_m}'        :6250*units('N'),
+        '\\rho_{p_m}'    :1500*units('kg/m^3'),
         'C_m'            :120*units('1/hr'),
         'V_{min_m}'      :25*units('m/s'),
         'T/O factor_m'   :2,
@@ -283,12 +320,13 @@ def test():
 
 
 if __name__ == "__main__":
-    # Most basic way to execute the model 
+    # Most basic way to execute the model
     m = Mission(SimPleAC(),4)
     m.substitutions.update({
         'h_{cruise_m}'   :5000*units('m'),
         'Range_m'        :3000*units('km'),
         'W_{p_m}'        :6250*units('N'),
+        '\\rho_{p_m}'    :1500*units('kg/m^3'),
         'C_m'            :120*units('1/hr'),
         'V_{min_m}'      :25*units('m/s'),
         'T/O factor_m'   :2,
