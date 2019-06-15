@@ -4,9 +4,9 @@ from gpkit import ConstraintSet, Variable
 
 def summing_vars(models, varname):
     "returns a list of variables with shared varname in model list"
-    modelnames = [m.__class__.__name__ for m in models]
+    modelnames = set(m.lineage for m in models)
     vkeys = np.hstack([list(m.varkeys[varname]) for m in models])
-    vkeys = [v for v in vkeys if v.models[-1] in modelnames]
+    vkeys = [v for v in vkeys if v.lineage in modelnames]
     vrs = [m[v] for m, v in zip(models, vkeys)]
     return vrs
 
@@ -21,7 +21,7 @@ class SummingConstraintSet(ConstraintSet):
                     twovars += 1
             if twovars > 1:
                 for dvar in model.variables_byname(varname):
-                    if model.__class__.__name__ == dvar.descr["models"][0]:
+                    if model.lineage == dvar.lineage:
                         mvars = dvar
             else:
                 mvars = model[varname]
@@ -29,7 +29,7 @@ class SummingConstraintSet(ConstraintSet):
                 mvars = [mvars]
             # next line makes the recursion stop at depth one
             # for safety to avoid double counting
-            mvars = [v for v in mvars if v.key.models[0] == model.name]
+            mvars = [v for v in mvars if v.key.lineage == model.lineage]
             assert len(mvars) == 1
             summedvars = summedvars.union([v.key for v in mvars])
             for constraint in model.flat():
