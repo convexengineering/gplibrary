@@ -44,6 +44,7 @@ class GustL(SparLoading):
 
     def setup(self, wing, state, out=False):
         exec parse_variables(GustL.__doc__)
+        vgust.key.descr['pr'] = 7
         self.load = SparLoading.setup(self, wing, state, out=out)
 
         cbar = self.wing.planform.cbar

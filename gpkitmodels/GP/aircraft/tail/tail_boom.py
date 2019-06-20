@@ -58,7 +58,8 @@ class TailBoomState(Model):
     """
     def setup(self):
         exec parse_variables(TailBoomState.__doc__)
-
+        rhosl.key.descr['pr'] = 1
+        Vne.key.descr['pr'] = 8
 
 class VerticalBoomTorsion(Model):
     """ Tail Boom Torsion from Vertical Tail
@@ -83,6 +84,7 @@ class VerticalBoomTorsion(Model):
     """
     def setup(self, tailboom, vtail, state):
         exec parse_variables(VerticalBoomTorsion.__doc__)
+        taucfrp.key.descr['pr'] = 1
 
         J = self.J = tailboom.J
         d0 = self.d0 = tailboom.d
@@ -134,6 +136,7 @@ class TailBoomBending(Model):
         self.htail = htail
         self.tailboom = tailboom
         exec parse_variables(TailBoomBending.__doc__)
+        kappa.key.descr['pr'] = 2
 
         Beam.qbarFun = [1e-10]*N
         Beam.SbarFun = [1.]*N
@@ -189,6 +192,7 @@ class TailBoom(TubeSpar):
     def setup(self, N=5):
         self.N = N
         exec parse_variables(TailBoom.__doc__)
+        rhoA.key.descr['pr'] = 10
         self.spar = super(TailBoom, self).setup(N, self)
 
         if self.secondaryWeight:

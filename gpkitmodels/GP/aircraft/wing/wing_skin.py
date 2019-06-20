@@ -38,6 +38,11 @@ class WingSkin(Model):
     def setup(self, surface):
         exec parse_variables(WingSkin.__doc__)
 
+        Jtbar.key.descr['pr'] = 2
+        Cmw.key.descr['pr'] = 4
+        rhosl.key.descr['pr'] = 1
+        Vne.key.descr['pr'] = 4
+
         croot = self.croot = surface.croot
         S = self.S = surface.S
         rho = self.material.rho
