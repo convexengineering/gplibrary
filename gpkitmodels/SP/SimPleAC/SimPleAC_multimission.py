@@ -60,7 +60,7 @@ def test():
     })
 
     m.cost = (m.missions[0]['W_{f_m}']*units('1/N') + m.missions[1]['C_m']*m.missions[1]['t_m'])
-    sol = m.localsolve(verbosity = 2)
+    sol = m.localsolve(verbosity = 0)
 
 if __name__ == "__main__":
     Nmissions = 2

@@ -298,9 +298,10 @@ class Mission(Model):
                         self.aircraft.fuse['W_{fuse}'] == self.aircraft.fuse['S_{fuse}']*self.aircraft.wing['W_{w_{coeff2}}'],
                         ]
 
-        # Upper bounding variables
+        # Bounding variables
         constraints += [t_m <= 100000*units('hr'),
-            W_f_m <= 1e10*units('N')]
+            W_f_m <= 1e10*units('N'),
+            cost_index >= 1*units('1/hr')]
 
         return constraints, state, self.aircraft, self.aircraftP
 
@@ -316,7 +317,7 @@ def test():
         'T/O factor_m'   :2,
     })
     m.cost = m['W_{f_m}']*units('1/N') + m['C_m']*m['t_m']
-    sol = m.localsolve(verbosity = 2)
+    sol = m.localsolve(verbosity = 0)
 
 
 if __name__ == "__main__":
@@ -332,5 +333,5 @@ if __name__ == "__main__":
         'T/O factor_m'   :2,
     })
     m.cost = m['W_{f_m}']*units('1/N') + m['C_m']*m['t_m']
-    sol = m.localsolve(verbosity = 4)
+    sol = m.localsolve(verbosity = 2)
     #print sol.table()
