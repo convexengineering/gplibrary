@@ -1,5 +1,6 @@
 import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, VarKey, units, Vectorize
+from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, \
+    VarKey, units, Vectorize, settings
 
 # Importing atmospheric model
 from gpkitmodels.SP.atmosphere.atmosphere import Atmosphere
@@ -317,7 +318,10 @@ def test():
         'T/O factor_m'   :2,
     })
     m.cost = m['W_{f_m}']*units('1/N') + m['C_m']*m['t_m']
-    sol = m.localsolve(verbosity = 0)
+    if settings["default_solver"] == "cvxopt":
+        return
+    else:
+        sol = m.localsolve(verbosity = 0)
 
 
 if __name__ == "__main__":
