@@ -69,7 +69,7 @@ class PropTest(Model):
                         Q == Qprop,
                         P*t_flight/Estar == m_batt,
                         state.V == V_cruise,
-                        m_total >= m_batt + prop.W/g/100000]
+                        m_total >= m_batt + prop.W/g]
 
         return constraints, prop, state, prop_perf
 

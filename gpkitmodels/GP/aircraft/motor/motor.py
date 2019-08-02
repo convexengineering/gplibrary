@@ -42,15 +42,16 @@ class Motor(Model):
 
     Variables
     ---------
-    Qstar       .8          [kg/(N*m)]         motor specific torque
-    W                       [lbf]              motor weight
-    Qmax                    [N*m]              motor max. torque
-    V_max       300         [V]                motor max voltage
+    Qstar       20          [(N*m)/kg]      motor specific torque
+    W                       [lbf]           motor weight
+    m                       [kg]            motor mass
+    Qmax                    [N*m]           motor max. torque
+    V_max      800          [V]             motor max voltage
     Kv_min     1            [rpm/V]         min motor voltage constant
     Kv_max     1000         [rpm/V]         max motor voltage constant
     Kv                      [rpm/V]         motor voltage constant
-    i0         4.5          [amps]          zero-load current
-    R          .033         [ohms]          internal resistance
+    i0         4            [amps]          zero-load current
+    R          .05          [ohms]          internal resistance
     """
 
     flight_model = MotorPerf
@@ -58,7 +59,10 @@ class Motor(Model):
     def setup(self):
         exec parse_variables(Motor.__doc__)
 
-        constraints = [W >= Qstar*Qmax*g,
+        constraints = [W >= Qmax/Qstar*g,
+                        W == m*g,
+                        #R*(m*Kv**2) == W1,
+                        #i0 == i01*Kv,
                        Kv >= Kv_min,
                        Kv <= Kv_max]
 

@@ -95,13 +95,14 @@ class hacker_q150_45_motor(Model):
 
 def motor_test():
     test = Motor_P_Test()
-    test.solve()
+    sol = test.solve()
+    print sol.table()
 
 def test():
     motor_test()
     actuator_propulsor_test()
     propulsor_test()
-    ME_propulsor_test()
+    #ME_propulsor_test()
     
 if __name__ == "__main__":
     test()

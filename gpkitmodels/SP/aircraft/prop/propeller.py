@@ -184,7 +184,9 @@ class BladeElementProp(Model):
         constraints += [TCS([Q >= sum(blade.dQ)]),
                         eta == state.V*T/(omega*Q),
                         blade.M[-1] <= Mtip,
-                        static.T_m >= T,
+                        #static.T_m >= T,
+                        static.omega_max >= omega,
+                        static.P_m >= Q*omega,
                         omega <= omega_max
                         ]
 
@@ -213,15 +215,22 @@ class Propeller(Model):
 
     *Note: R_hub should be specified using f_hub (hub radius fraction) so that the control point distribution can be precomputed
     *       r/R is precomputed based on 1-f_hub and N
+    *       Hamilton Standard propeller weight equations are used
     Variables
     ---------
     R                               [m]             prop tip radius
     R_hub                           [m]             prop hub radius
     f_hub                           [-]             prop hub fraction
     W                               [lbf]           prop weight
-    K           4e-4                [1/ft^2]        prop weight scaling factor
+    K           134                 [lbf]           prop weight scaling factor
     T_m                             [lbf]           prop max static thrust
+    P_m                             [hp]            prop max power
     B           2                   [-]             number of blades
+    omega_max                       [rpm]           maximum RPM 
+    D_scale     10                  [ft]            scalar for diameter
+    B_scale     4                   [-]             scalar for blade count
+    ND_scale    20000               [rpm*ft]        scalar for D*RPM
+    P_scale     10.                 [hp/ft^2]       scalar for D*RPM
 
 
     Variables of length N
@@ -243,7 +252,7 @@ class Propeller(Model):
         self.r = VectorVariable(N, "r", r_pc, "-", "r/R radial locations")
         self.dr = Variable("dr", dR, "-", "delta_r/R")
 
-        constraints = [W >= K*T_m*R**2,
+        constraints = [W == K *((2*R/D_scale)**2*(B/B_scale)**.7*(omega_max*2*R/ND_scale)**.4*(P_m/(P_scale*4*R**2))**.12),
                         f_hub == R_hub/R,
                         f_hub == f]
         return constraints
