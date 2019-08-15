@@ -43,7 +43,7 @@ setup(
     author="MIT Department of Aeronautics and Astronautics",
     author_email="gpkit@mit.edu",
     url="https://www.github.com/hoburg/gpkit-models",
-    install_requires=["numpy>=1.12", "scipy", "pint"],
+    install_requires=["numpy>=1.12", "scipy", "pint", "future"],
     version="0.0.0.0",
     packages=find_packages(),
     package_data={"gpkitmodels": ["GP/aircraft/wing/*.csv",
