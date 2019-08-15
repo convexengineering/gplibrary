@@ -1,4 +1,6 @@
 "naca_polarfits.py"
+from builtins import zip
+from builtins import range
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -85,7 +87,7 @@ def plot_fits(naca_range, re_range):
     return fig, ax
 
 if __name__ == "__main__":
-    Re = range(200, 950, 50)
+    Re = list(range(200, 950, 50))
     NACA = ["0005", "0008", "0009", "0010", "0015", "0020"]
     X, Y = fit_setup(NACA, Re) # call fit(X, Y, 4, "SMA") to get fit
     F, A = plot_fits(NACA, Re)

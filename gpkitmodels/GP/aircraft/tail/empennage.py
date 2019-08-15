@@ -38,7 +38,7 @@ class Empennage(Model):
 
     """
     def setup(self, N=2):
-        exec parse_variables(Empennage.__doc__)
+        exec(parse_variables(Empennage.__doc__))
 
         self.htail = HorizontalTail()
         self.hSparModel = self.htail.sparModel

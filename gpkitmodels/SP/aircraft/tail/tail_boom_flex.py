@@ -21,7 +21,7 @@ class TailBoomFlexibility(Model):
 
     """
     def setup(self, htail, hbending, wing):
-        exec parse_variables(TailBoomFlexibility.__doc__)
+        exec(parse_variables(TailBoomFlexibility.__doc__))
 
         mh = htail.mh
         mw = wing.mw

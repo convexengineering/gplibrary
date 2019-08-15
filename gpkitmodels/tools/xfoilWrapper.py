@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import subprocess
 import numpy as np
 import scipy.optimize as spo
@@ -68,7 +70,7 @@ def single_cl(CL, Re = 1e7, M = 0.0, airfoil=[], pathname = "/home/ckarcher/Xfoi
         elif ('naca' == airfoil.lower()[0:4]) and (len(airfoil)==8):
             topline = airfoil + ' \n'
     else:
-        print "Error: Invalid airfoil passed into XFOIL.  Defaulting to a NACA0012."
+        print("Error: Invalid airfoil passed into XFOIL.  Defaulting to a NACA0012.")
         topline = 'naca0012 \n'
 
     initial_list = np.linspace(sample_min,sample_max,num_samples).tolist()

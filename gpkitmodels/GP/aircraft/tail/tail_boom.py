@@ -31,7 +31,7 @@ class TailBoomAero(Model):
     """
     def setup(self, static, state):
         self.state = state
-        exec parse_variables(TailBoomAero.__doc__)
+        exec(parse_variables(TailBoomAero.__doc__))
 
         l = self.l = static.l
         rho = self.rho = state.rho
@@ -57,7 +57,7 @@ class TailBoomState(Model):
 
     """
     def setup(self):
-        exec parse_variables(TailBoomState.__doc__)
+        exec(parse_variables(TailBoomState.__doc__))
 
 
 class VerticalBoomTorsion(Model):
@@ -82,7 +82,7 @@ class VerticalBoomTorsion(Model):
 
     """
     def setup(self, tailboom, vtail, state):
-        exec parse_variables(VerticalBoomTorsion.__doc__)
+        exec(parse_variables(VerticalBoomTorsion.__doc__))
 
         J = self.J = tailboom.J
         d0 = self.d0 = tailboom.d
@@ -133,7 +133,7 @@ class TailBoomBending(Model):
         self.state = state
         self.htail = htail
         self.tailboom = tailboom
-        exec parse_variables(TailBoomBending.__doc__)
+        exec(parse_variables(TailBoomBending.__doc__))
 
         Beam.qbarFun = [1e-10]*N
         Beam.SbarFun = [1.]*N
@@ -188,7 +188,7 @@ class TailBoom(TubeSpar):
 
     def setup(self, N=5):
         self.N = N
-        exec parse_variables(TailBoom.__doc__)
+        exec(parse_variables(TailBoom.__doc__))
         self.spar = super(TailBoom, self).setup(N, self)
 
         if self.secondaryWeight:

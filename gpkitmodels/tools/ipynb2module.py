@@ -1,7 +1,9 @@
 
 "tool for importing ipython notebooks as modules"
+from __future__ import print_function
 
 
+from builtins import object
 import io, os, sys, types
 
 # Import Modules

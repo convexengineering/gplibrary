@@ -1,4 +1,6 @@
 "jho1_polarfits.py"
+from builtins import zip
+from builtins import range
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -77,7 +79,7 @@ def plot_fits(re):
     return fig, ax, fig1
 
 if __name__ == "__main__":
-    Re = range(200, 750, 50)
+    Re = list(range(200, 750, 50))
     X, Y = fit_setup(Re) # call fit(X, Y, 4, "SMA") to get fit
     F, A, F1 = plot_fits([300, 350, 400, 450, 500])
     F.savefig("jho1polarfit1.pdf", bbox_inches="tight")

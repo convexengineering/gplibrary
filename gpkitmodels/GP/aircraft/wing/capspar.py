@@ -56,7 +56,7 @@ class CapSpar(Model):
 
     def setup(self, N, surface):
         self.surface = surface
-        exec parse_variables(CapSpar.__doc__)
+        exec(parse_variables(CapSpar.__doc__))
 
         cave = self.cave = surface.cave
         b = self.b = surface.b

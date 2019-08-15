@@ -20,7 +20,7 @@ class CFRPFabric(Model):
 
     """
     def setup(self):
-        exec parse_variables(CFRPFabric.__doc__)
+        exec(parse_variables(CFRPFabric.__doc__))
 
 class CFRPUD(Model):
     """ Carbon Fiber Reinforced Plastic Unidirectional Material Properties
@@ -40,7 +40,7 @@ class CFRPUD(Model):
 
     """
     def setup(self):
-        exec parse_variables(CFRPUD.__doc__)
+        exec(parse_variables(CFRPUD.__doc__))
 
 class Kevlar(Model):
     """ Kevlar Material Properties
@@ -59,4 +59,4 @@ class Kevlar(Model):
 
     """
     def setup(self):
-        exec parse_variables(Kevlar.__doc__)
+        exec(parse_variables(Kevlar.__doc__))

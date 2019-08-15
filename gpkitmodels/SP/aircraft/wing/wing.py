@@ -14,7 +14,7 @@ class Wing(WingGP):
 
     """
     def setup(self, N=5):
-        exec parse_variables(Wing.__doc__)
+        exec(parse_variables(Wing.__doc__))
 
         self.wing = WingGP.setup(self, N=N)
         with SignomialsEnabled():

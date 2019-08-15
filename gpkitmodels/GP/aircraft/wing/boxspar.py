@@ -61,7 +61,7 @@ class BoxSpar(Model):
 
     def setup(self, N, surface):
         self.surface = surface
-        exec parse_variables(BoxSpar.__doc__)
+        exec(parse_variables(BoxSpar.__doc__))
 
         b = self.b = surface.b
         cave = self.cave = surface.cave

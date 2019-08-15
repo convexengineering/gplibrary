@@ -31,7 +31,7 @@ class WingCore(Model):
 
     def setup(self, surface):
         self.surface = surface
-        exec parse_variables(WingCore.__doc__)
+        exec(parse_variables(WingCore.__doc__))
 
         cave = self.cave = surface.cave
         b = self.b = surface.b

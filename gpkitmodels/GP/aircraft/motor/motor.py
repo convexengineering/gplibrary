@@ -22,7 +22,7 @@ class MotorPerf(Model):
     v                       [V]             woltage
     """
     def setup(self, static, state):
-        exec parse_variables(MotorPerf.__doc__)
+        exec(parse_variables(MotorPerf.__doc__))
 
         Kv = static.Kv
         R  = static.R
@@ -56,7 +56,7 @@ class Motor(Model):
     flight_model = MotorPerf
 
     def setup(self):
-        exec parse_variables(Motor.__doc__)
+        exec(parse_variables(Motor.__doc__))
 
         constraints = [W >= Qstar*Qmax*g,
                        Kv >= Kv_min,
@@ -70,7 +70,7 @@ class PropulsorPerf(Model):
     """
 
     def setup(self, static, state):
-        exec parse_variables(PropulsorPerf.__doc__)
+        exec(parse_variables(PropulsorPerf.__doc__))
         self.prop = static.prop.flight_model(static.prop, state)
         self.motor = static.motor.flight_model(static.motor, state)
 
@@ -95,7 +95,7 @@ class Propulsor(Model):
 
 
     def setup(self):
-        exec parse_variables(Propulsor.__doc__)
+        exec(parse_variables(Propulsor.__doc__))
 
         Propeller.flight_model = self.prop_flight_model
         self.prop = Propeller()

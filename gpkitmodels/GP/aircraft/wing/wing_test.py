@@ -19,7 +19,7 @@ class FlightState(Model):
 
     """
     def setup(self):
-        exec parse_variables(FlightState.__doc__)
+        exec(parse_variables(FlightState.__doc__))
 
         return [qne == V**2*rho*1.2]
 

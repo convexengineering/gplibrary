@@ -1,4 +1,5 @@
 " cylindrical fuselage.py "
+from __future__ import absolute_import
 import numpy as np
 from gpkit import Variable, Model
 from fuel_tank import FuelTank

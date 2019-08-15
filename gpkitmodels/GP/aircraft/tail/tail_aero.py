@@ -30,7 +30,7 @@ class TailAero(Model):
     """
     def setup(self, static, state):
         self.state = state
-        exec parse_variables(TailAero.__doc__)
+        exec(parse_variables(TailAero.__doc__))
 
         cmac = self.cmac = static.planform.cmac
         b = self.b = static.planform.b

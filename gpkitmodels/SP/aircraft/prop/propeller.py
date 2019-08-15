@@ -1,4 +1,5 @@
 " propeller model "
+from builtins import range
 from numpy import pi
 from gpkit import Model, Variable,Vectorize,parse_variables, SignomialsEnabled, SignomialEquality
 from gpkit.constraints.tight import Tight as TCS
@@ -42,7 +43,7 @@ class BladeElementPerf(Model):
     """
 
     def setup(self,static,  state):
-        exec parse_variables(BladeElementPerf.__doc__)
+        exec(parse_variables(BladeElementPerf.__doc__))
 
         V       = state.V
         rho     = state.rho
@@ -91,7 +92,7 @@ class BladeElementProp(Model):
     Q                       [N*m]       total torque
     """
     def setup(self,static,  state, N = 5):
-        exec parse_variables(BladeElementProp.__doc__)
+        exec(parse_variables(BladeElementProp.__doc__))
         
         with Vectorize(N):
             blade = BladeElementPerf(static, state)

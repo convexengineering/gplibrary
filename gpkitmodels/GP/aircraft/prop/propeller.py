@@ -34,7 +34,7 @@ class ActuatorProp(Model):
         return 2. - 1./c(self.etaadd)
 
     def setup(self, static, state):
-        exec parse_variables(ActuatorProp.__doc__)
+        exec(parse_variables(ActuatorProp.__doc__))
 
         V = state.V
         rho = state.rho
@@ -74,6 +74,6 @@ class Propeller(Model):
     flight_model = ActuatorProp
 
     def setup(self, N = 5):
-        exec parse_variables(Propeller.__doc__)
+        exec(parse_variables(Propeller.__doc__))
         self.N = N
         return [W >= K*T_m*R**2]

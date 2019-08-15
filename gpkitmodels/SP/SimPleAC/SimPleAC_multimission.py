@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from builtins import range
 import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, \
     VarKey, units, Vectorize, settings

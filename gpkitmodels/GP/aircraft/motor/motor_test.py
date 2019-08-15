@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
 from motor import Propulsor, Motor, MotorPerf
 from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp

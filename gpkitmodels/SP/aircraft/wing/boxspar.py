@@ -14,7 +14,7 @@ class BoxSpar(BoxSparGP):
     """
 
     def setup(self, N, surface):
-        exec parse_variables(BoxSpar.__doc__)
+        exec(parse_variables(BoxSpar.__doc__))
         self.boxspar = BoxSparGP.setup(self, N=N, surface=surface)
 
         cave = self.cave

@@ -1,4 +1,5 @@
 " engine_model.py "
+from builtins import zip
 from gpkit import Model, Variable, units
 import os
 import pandas as pd

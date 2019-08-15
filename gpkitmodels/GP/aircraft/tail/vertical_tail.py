@@ -36,7 +36,7 @@ class VerticalTail(Wing):
     sparModel = None
 
     def setup(self, N=3):
-        exec parse_variables(VerticalTail.__doc__)
+        exec(parse_variables(VerticalTail.__doc__))
 
         self.ascs = Wing.setup(self, N)
         self.planform.substitutions.update(

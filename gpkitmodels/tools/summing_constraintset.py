@@ -1,4 +1,5 @@
 " helpers.py "
+from builtins import zip
 import numpy as np
 from gpkit import ConstraintSet, Variable
 

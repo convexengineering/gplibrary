@@ -1,4 +1,5 @@
 " wing.py "
+from builtins import range
 from os import sep
 from os.path import abspath, dirname
 import numpy as np
@@ -81,7 +82,7 @@ class Planform(Model):
     return_deta = lambda self, c: np.diff(c(self.eta))
 
     def setup(self, N):
-        exec parse_variables(Planform.__doc__)
+        exec(parse_variables(Planform.__doc__))
 
         return [b**2 == S*AR,
                 cave == cbave*S/b,
@@ -121,7 +122,7 @@ class WingAero(Model):
               fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"):
         self.state = state
         self.static = static
-        exec parse_variables(WingAero.__doc__)
+        exec(parse_variables(WingAero.__doc__))
 
         df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
@@ -180,7 +181,7 @@ class Wing(Model):
 
     def setup(self, N=5):
         self.N = N
-        exec parse_variables(Wing.__doc__)
+        exec(parse_variables(Wing.__doc__))
 
         self.planform = Planform(N)
         self.components = []

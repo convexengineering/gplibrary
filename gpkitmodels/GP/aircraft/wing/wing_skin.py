@@ -36,7 +36,7 @@ class WingSkin(Model):
     material = cfrpfabric
 
     def setup(self, surface):
-        exec parse_variables(WingSkin.__doc__)
+        exec(parse_variables(WingSkin.__doc__))
 
         croot = self.croot = surface.croot
         S = self.S = surface.S
@@ -71,7 +71,7 @@ class WingSecondStruct(Model):
 
     """
     def setup(self, surface):
-        exec parse_variables(WingSecondStruct.__doc__)
+        exec(parse_variables(WingSecondStruct.__doc__))
 
         S = self.S = surface.S
 

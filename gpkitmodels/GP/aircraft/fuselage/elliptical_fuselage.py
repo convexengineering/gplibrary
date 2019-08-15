@@ -16,7 +16,7 @@ class FuselageAero(Model):
 
     """
     def setup(self, static, state):
-        exec parse_variables(FuselageAero.__doc__)
+        exec(parse_variables(FuselageAero.__doc__))
 
         V = state.V
         rho = state.rho
@@ -55,7 +55,7 @@ class Fuselage(Model):
     flight_model = FuselageAero
 
     def setup(self):
-        exec parse_variables(Fuselage.__doc__)
+        exec(parse_variables(Fuselage.__doc__))
 
         rhocfrp = self.material.rho
         tmin = self.material.tmin
