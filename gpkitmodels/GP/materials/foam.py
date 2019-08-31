@@ -12,8 +12,9 @@ class FoamHD(Model):
     rho             \\rho_{\\mathrm{foam}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self):
-        exec parse_variables(FoamHD.__doc__)
+        pass
 
 class FoamLD(Model):
     """ Foam low density material properties
@@ -27,5 +28,6 @@ class FoamLD(Model):
     rho             \\rho_{\\mathrm{foam}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self):
-        exec parse_variables(FoamLD.__doc__)
+        pass

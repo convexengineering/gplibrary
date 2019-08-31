@@ -80,9 +80,8 @@ class Planform(Model):
                                   + self.return_c(c)[1:])/2.
     return_deta = lambda self, c: np.diff(c(self.eta))
 
+    @parse_variables(__doc__, globals())
     def setup(self, N):
-        exec parse_variables(Planform.__doc__)
-
         return [b**2 == S*AR,
                 cave == cbave*S/b,
                 croot == S/b*cbar[0],
@@ -117,11 +116,10 @@ class WingAero(Model):
     cdp             c_{d_p}
 
     """
-    def setup(self, static, state,
-              fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"):
+    @parse_variables(__doc__, globals())
+    def setup(self, static, state, fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"): # TODO: make multi-line work
         self.state = state
         self.static = static
-        exec parse_variables(WingAero.__doc__)
 
         df = pd.read_csv(fitdata)
         fd = df.to_dict(orient="records")[0]
@@ -178,10 +176,9 @@ class Wing(Model):
     skinModel = WingSkin
     sparJ = False
 
+    @parse_variables(__doc__, globals())
     def setup(self, N=5):
         self.N = N
-        exec parse_variables(Wing.__doc__)
-
         self.planform = Planform(N)
         self.components = []
 

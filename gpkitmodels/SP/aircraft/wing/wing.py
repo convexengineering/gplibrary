@@ -13,9 +13,8 @@ class Wing(WingGP):
     mw          [-]     span wise effectiveness
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self, N=5):
-        exec parse_variables(Wing.__doc__)
-
         self.wing = WingGP.setup(self, N=N)
         with SignomialsEnabled():
             constraints = [mw*(1 + 2/self.planform["AR"]) >= 2*np.pi]

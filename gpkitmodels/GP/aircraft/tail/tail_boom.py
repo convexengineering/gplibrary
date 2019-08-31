@@ -29,9 +29,9 @@ class TailBoomAero(Model):
     Cf      C_f
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self, static, state):
         self.state = state
-        exec parse_variables(TailBoomAero.__doc__)
 
         l = self.l = static.l
         rho = self.rho = state.rho
@@ -56,8 +56,9 @@ class TailBoomState(Model):
     Vne             V_{\\mathrm{NE}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self):
-        exec parse_variables(TailBoomState.__doc__)
+        pass
 
 
 class VerticalBoomTorsion(Model):
@@ -81,9 +82,8 @@ class VerticalBoomTorsion(Model):
     taucfrp     \\tau_{\\mathrm{CFRP}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self, tailboom, vtail, state):
-        exec parse_variables(VerticalBoomTorsion.__doc__)
-
         J = self.J = tailboom.J
         d0 = self.d0 = tailboom.d
         b = self.b = vtail.planform.b
@@ -106,8 +106,8 @@ class TailBoomBending(Model):
     kappa           0.1     [-]     max tail boom deflection
     Nsafety         1.0     [-]     safety load factor
 
-    Variables of length N-1
-    -----------------------
+    Variables of length tailboom.N-1
+    --------------------------------
     Mr                      [N*m]   section root moment
 
 
@@ -128,12 +128,12 @@ class TailBoomBending(Model):
     thmax   \\theta_{\\mathrm{max}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self, tailboom, htail, state):
         N = self.N = tailboom.N
         self.state = state
         self.htail = htail
         self.tailboom = tailboom
-        exec parse_variables(TailBoomBending.__doc__)
 
         Beam.qbarFun = [1e-10]*N
         Beam.SbarFun = [1.]*N
@@ -186,9 +186,9 @@ class TailBoom(TubeSpar):
     tailLoad = TailBoomBending
     secondaryWeight = None
 
+    @parse_variables(__doc__, globals())
     def setup(self, N=5):
         self.N = N
-        exec parse_variables(TailBoom.__doc__)
         self.spar = super(TailBoom, self).setup(N, self)
 
         if self.secondaryWeight:

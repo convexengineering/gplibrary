@@ -50,9 +50,9 @@ class SparLoading(Model):
 
     new_SbarFun = None
 
+    @parse_variables(__doc__, globals())
     def setup(self, wing, state, out=False):
         self.wing = wing
-        exec parse_variables(SparLoading.__doc__)
 
         b = self.b = self.wing.planform.b
         I = self.I = self.wing.spar.I

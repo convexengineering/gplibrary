@@ -12,9 +12,8 @@ class BoxSpar(BoxSparGP):
     J                       [m^4]       spar x polar moment of inertia
 
     """
-
+    @parse_variables(__doc__, globals())
     def setup(self, N, surface):
-        exec parse_variables(BoxSpar.__doc__)
         self.boxspar = BoxSparGP.setup(self, N=N, surface=surface)
 
         cave = self.cave

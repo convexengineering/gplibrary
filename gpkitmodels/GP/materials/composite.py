@@ -19,8 +19,9 @@ class CFRPFabric(Model):
     tau         \\tau_{\\mathrm{CFRP}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self):
-        exec parse_variables(CFRPFabric.__doc__)
+        pass
 
 class CFRPUD(Model):
     """ Carbon Fiber Reinforced Plastic Unidirectional Material Properties
@@ -39,8 +40,9 @@ class CFRPUD(Model):
     sigma       \\sigma_{\\mathrm{CFRP}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self):
-        exec parse_variables(CFRPUD.__doc__)
+        pass
 
 class Kevlar(Model):
     """ Kevlar Material Properties
@@ -58,5 +60,6 @@ class Kevlar(Model):
     tau         \\tau_{\\mathrm{Kevlar}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self):
-        exec parse_variables(Kevlar.__doc__)
+        pass
