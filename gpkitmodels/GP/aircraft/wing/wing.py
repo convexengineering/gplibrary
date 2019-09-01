@@ -117,7 +117,8 @@ class WingAero(Model):
 
     """
     @parse_variables(__doc__, globals())
-    def setup(self, static, state, fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"): # TODO: make multi-line work
+    def setup(self, static, state,
+              fitdata=dirname(abspath(__file__)) + sep + "jho_fitdata.csv"):
         self.state = state
         self.static = static
 
