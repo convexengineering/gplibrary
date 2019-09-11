@@ -17,11 +17,11 @@ class WingSkin(Model):
 
     Upper Unbounded
     ---------------
-    W, croot
+    W, surface.croot
 
     Lower Unbounded
     ---------------
-    S
+    surface.S
 
     LaTex Strings
     -------------
@@ -35,16 +35,17 @@ class WingSkin(Model):
     """
     material = cfrpfabric
 
+    @parse_variables(__doc__, globals())
     def setup(self, surface):
-        exec(parse_variables(WingSkin.__doc__))
+        self.surface = surface
 
-        croot = self.croot = surface.croot
-        S = self.S = surface.S
+        croot = surface.croot
+        S = surface.S
         rho = self.material.rho
         tau = self.material.tau
         tmin = self.material.tmin
 
-        return [W >= rho*surface.S*2*t*g,
+        return [W >= rho*S*2*t*g,
                 t >= tmin,
                 tau >= 1/Jtbar/croot**2/t*Cmw*S*rhosl*Vne**2]
 
@@ -70,9 +71,8 @@ class WingSecondStruct(Model):
     rhoA    \\rho_{A}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self, surface):
-        exec(parse_variables(WingSecondStruct.__doc__))
-
         S = self.S = surface.S
 
         return [W >= rhoA*S*g]

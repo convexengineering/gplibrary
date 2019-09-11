@@ -54,9 +54,9 @@ class CapSpar(Model):
     shearMaterial = cfrpfabric
     coreMaterial = foamhd
 
+    @parse_variables(__doc__, globals())
     def setup(self, N, surface):
         self.surface = surface
-        exec(parse_variables(CapSpar.__doc__))
 
         cave = self.cave = surface.cave
         b = self.b = surface.b

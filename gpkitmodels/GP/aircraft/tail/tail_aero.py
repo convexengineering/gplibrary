@@ -28,9 +28,9 @@ class TailAero(Model):
     Cd      C_d
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self, static, state):
         self.state = state
-        exec(parse_variables(TailAero.__doc__))
 
         cmac = self.cmac = static.planform.cmac
         b = self.b = static.planform.b

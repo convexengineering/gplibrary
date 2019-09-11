@@ -42,8 +42,8 @@ class GustL(SparLoading):
         eta = c(self.wing.planform.eta).to("dimensionless").magnitude
         return hstack([adnumber(1e-10), 1-array(cos(eta[1:]*pi/2))])
 
+    @parse_variables(__doc__, globals())
     def setup(self, wing, state, out=False):
-        exec(parse_variables(GustL.__doc__))
         self.load = SparLoading.setup(self, wing, state, out=out)
 
         cbar = self.wing.planform.cbar

@@ -20,9 +20,8 @@ class TailBoomFlexibility(Model):
     SMcorr      SM_{\\mathrm{corr}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self, htail, hbending, wing):
-        exec(parse_variables(TailBoomFlexibility.__doc__))
-
         mh = htail.mh
         mw = wing.mw
         Vh = htail.Vh

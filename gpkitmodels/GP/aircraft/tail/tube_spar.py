@@ -40,9 +40,8 @@ class TubeSpar(Model):
     minusk2 = lambda self, c: 1-c(self.k)/2.
     material = cfrpfabric
 
+    @parse_variables(__doc__, globals())
     def setup(self, N, surface):
-        exec(parse_variables(TubeSpar.__doc__))
-
         deta = surface.deta
         tmin = self.material.tmin
         rho = self.material.rho

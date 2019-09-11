@@ -37,9 +37,8 @@ class Empennage(Model):
     mfac        m_{\\mathrm{fac}}
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self, N=2):
-        exec(parse_variables(Empennage.__doc__))
-
         self.htail = HorizontalTail()
         self.hSparModel = self.htail.sparModel
         self.htail.substitutions.update({self.htail.mfac: 1.1})

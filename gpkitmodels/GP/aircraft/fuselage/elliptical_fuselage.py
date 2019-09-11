@@ -15,9 +15,8 @@ class FuselageAero(Model):
     mfac    1.0     [-]         fuselage drag margin
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self, static, state):
-        exec(parse_variables(FuselageAero.__doc__))
-
         V = state.V
         rho = state.rho
         l = static.l
@@ -54,9 +53,8 @@ class Fuselage(Model):
     material = cfrpfabric
     flight_model = FuselageAero
 
+    @parse_variables(__doc__, globals())
     def setup(self):
-        exec(parse_variables(Fuselage.__doc__))
-
         rhocfrp = self.material.rho
         tmin = self.material.tmin
 
@@ -70,5 +68,3 @@ class Fuselage(Model):
             ]
 
         return constraints
-
-

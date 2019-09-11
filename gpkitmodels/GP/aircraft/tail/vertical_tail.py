@@ -35,9 +35,8 @@ class VerticalTail(Wing):
     fillModel = WingCore
     sparModel = None
 
+    @parse_variables(__doc__, globals())
     def setup(self, N=3):
-        exec(parse_variables(VerticalTail.__doc__))
-
         self.ascs = Wing.setup(self, N)
         self.planform.substitutions.update(
             {self.planform.lam: 0.8, self.planform.AR: 4})

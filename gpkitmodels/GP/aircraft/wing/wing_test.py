@@ -18,9 +18,8 @@ class FlightState(Model):
     qne                 [kg/s^2/m]   never exceed dynamic pressure
 
     """
+    @parse_variables(__doc__, globals())
     def setup(self):
-        exec(parse_variables(FlightState.__doc__))
-
         return [qne == V**2*rho*1.2]
 
 def wing_test():

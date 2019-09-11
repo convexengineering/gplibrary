@@ -17,7 +17,7 @@ class BladeElementPerf(Model):
     dT                      [lbf]       thrust
     eta_i                   [-]         local induced efficiency
     dQ                      [N*m]       torque
-    omega                   [rpm]       propeller rotation rate 
+    omega                   [rpm]       propeller rotation rate
     Wa                      [m/s]       Axial total relative velocity
     Wt                      [m/s]       Tangential total relative velocity
     Wr                      [m/s]       Total relative velocity
@@ -42,9 +42,8 @@ class BladeElementPerf(Model):
 
     """
 
+    @parse_variables(__doc__, globals())
     def setup(self,static,  state):
-        exec(parse_variables(BladeElementPerf.__doc__))
-
         V       = state.V
         rho     = state.rho
         R       = static.R
@@ -66,14 +65,14 @@ class BladeElementPerf(Model):
                         AR_b <= AR_b_max,
                         Re == Wr*c*rho/mu,
                         eta_i == (V/(omega*r))*(Wt/Wa),
-                        TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]),                   
+                        TCS([f+(r/R)*B/(2*lam_w) <= (B/2.)*(1./lam_w)]),
                         XfoilFit(fd, cd, [cl,Re], name="polar"),
                         cl <= cl_max
                     ]
         with SignomialsEnabled():
             constraints += [SignomialEquality(Wr**2,(Wa**2+Wt**2)),
                             TCS([dT <= rho*B*G*(Wt-eps*Wa)*dr]),
-                            TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),                    
+                            TCS([vt**2*F**2*(1.+(4.*lam_w*R/(pi*B*r))**2) >= (B*G/(4.*pi*r))**2]),
             ]
         return constraints, state
 
@@ -91,9 +90,8 @@ class BladeElementProp(Model):
     T                       [lbf]       total thrust
     Q                       [N*m]       total torque
     """
-    def setup(self,static,  state, N = 5):
-        exec(parse_variables(BladeElementProp.__doc__))
-        
+    @parse_variables(__doc__, globals())
+    def setup(self,static,  state, N=5):
         with Vectorize(N):
             blade = BladeElementPerf(static, state)
 
@@ -115,7 +113,6 @@ class BladeElementProp(Model):
                         ]
 
         with SignomialsEnabled():
-            constraints += [TCS([T <= sum(blade.dT)])] 
+            constraints += [TCS([T <= sum(blade.dT)])]
 
-        return constraints, blade 
-
+        return constraints, blade
