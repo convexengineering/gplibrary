@@ -1,9 +1,8 @@
 " cylindrical fuselage.py "
-from __future__ import absolute_import
 import numpy as np
 from gpkit import Variable, Model
-from fuel_tank import FuelTank
-from fuselage_skin import FuselageSkin
+from .fuel_tank import FuelTank
+from .fuselage_skin import FuselageSkin
 
 class Fuselage(Model):
     "The thing that carries the fuel, engine, and payload"
@@ -89,4 +88,3 @@ class FuselageAero(Model):
             ]
 
         return constraints
-

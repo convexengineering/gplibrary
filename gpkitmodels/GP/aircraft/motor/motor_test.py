@@ -1,9 +1,8 @@
-from __future__ import absolute_import
 from gpkit import Model, parse_variables, SignomialsEnabled, SignomialEquality, units
-from motor import Propulsor, Motor, MotorPerf
+from gpkitmodels.GP.aircraft.motor.motor import Propulsor, Motor, MotorPerf
 from gpkitmodels.GP.aircraft.prop.propeller import Propeller, ActuatorProp
-from gpkitmodels.SP.aircraft.prop.propeller import BladeElementProp
 from gpkitmodels.GP.aircraft.wing.wing_test import FlightState
+from gpkitmodels.SP.aircraft.prop.propeller import BladeElementProp
 
 class Propulsor_Test(Model):
     """Propulsor Test Model
@@ -48,7 +47,7 @@ class BladeElement_Propulsor_Test(Model):
 def actuator_propulsor_test():
     test = Actuator_Propulsor_Test()
     test.solve()
-    
+
 def ME_propulsor_test():
     test = BladeElement_Propulsor_Test()
     sol = test.localsolve()
@@ -103,6 +102,6 @@ def test():
     actuator_propulsor_test()
     propulsor_test()
     ME_propulsor_test()
-    
+
 if __name__ == "__main__":
     test()
