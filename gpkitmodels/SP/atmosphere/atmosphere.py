@@ -1,3 +1,4 @@
+from __future__ import print_function
 from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, VarKey, units
 from gpkit.constraints.bounded import Bounded
 from gpkit import Vectorize
@@ -60,4 +61,4 @@ if __name__ == "__main__":
     m.substitutions.update({'h':5000*units('m')})
     m.cost = m['\\mu']*m['\\rho']
     sol = m.localsolve(verbosity = 3)
-    print sol.table()
+    print(sol.table())

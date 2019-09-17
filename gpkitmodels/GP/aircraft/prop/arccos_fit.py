@@ -1,3 +1,4 @@
+from __future__ import print_function
 import unittest
 from numpy import log, exp, log10, vstack
 from numpy import arccos,arange
@@ -10,4 +11,4 @@ y = log(j)
 K = 1
 
 cstrt, rmsErr = fit(x,y,K,"SMA")
-print rmsErr
+print(rmsErr)

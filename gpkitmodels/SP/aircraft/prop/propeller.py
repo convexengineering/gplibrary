@@ -1,4 +1,5 @@
 " propeller model "
+from builtins import range
 from numpy import pi
 from gpkit import Model, Variable,Vectorize,parse_variables, SignomialsEnabled, SignomialEquality
 from gpkit.constraints.tight import Tight as TCS

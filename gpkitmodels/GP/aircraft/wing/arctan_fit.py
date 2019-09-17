@@ -1,3 +1,4 @@
+from __future__ import print_function
 from gpfit.fit import fit
 import os
 import matplotlib.pyplot as plt
@@ -15,7 +16,7 @@ def arctanfit():
 
     cn, err = fit(x, y, 1, "MA")
     rm = err
-    print "RMS error: %.4f" % rm
+    print("RMS error: %.4f" % rm)
 
     yfit = cn.evaluate(x)
     df = cn.get_dataframe()

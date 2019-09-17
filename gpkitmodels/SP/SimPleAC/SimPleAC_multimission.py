@@ -1,7 +1,8 @@
+from builtins import range
 import numpy as np
 from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, \
     VarKey, units, Vectorize, settings
-from SimPleAC_mission import Mission, SimPleAC
+from gpkitmodels.SP.SimPleAC.SimPleAC_mission import Mission, SimPleAC
 from gpkitmodels.SP.atmosphere.atmosphere import Atmosphere
 
 # SimPleAC with multimission design (updated 5/31/2019, by Berk Ozturk)
@@ -80,4 +81,3 @@ if __name__ == "__main__":
 
     m.cost = (m.missions[0]['W_{f_m}']*units('1/N') + m.missions[1]['C_m']*m.missions[1]['t_m'])
     sol = m.localsolve(verbosity = 2)
-

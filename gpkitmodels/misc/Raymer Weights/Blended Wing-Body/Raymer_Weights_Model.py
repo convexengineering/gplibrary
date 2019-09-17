@@ -1,5 +1,6 @@
 # Below is a Weights breakdown for the Blended wing body.  This method is GP Compatible!
 
+from builtins import range
 from gpkit import VectorVariable, Variable, Model, units
 import numpy as np
 from gpkit.tools import te_exp_minus1
@@ -39,7 +40,7 @@ def secant(x, nterm):
                        69348874393137901,
                        15514534163557086905] )
     if nterm > 12:
-        n_extend = np.asarray(range(13, nterm+1))
+        n_extend = np.asarray(list(range(13, nterm+1)))
         E2n_add = (8 * np.sqrt(n_extend/np.pi) 
                       * (4*n_extend/(np.pi * np.exp(1)))**(2*n_extend))
         E2n = np.append(E2n, E2n_add)

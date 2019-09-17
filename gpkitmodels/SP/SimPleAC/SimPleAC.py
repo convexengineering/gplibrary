@@ -1,3 +1,4 @@
+from __future__ import print_function
 from gpkit import Model, Variable, SignomialsEnabled, VarKey, units
 import numpy as np
 import matplotlib.pyplot as plt
@@ -97,4 +98,4 @@ if __name__ == "__main__":
     m = SimPleAC()
     m.cost = m['W_f'] 
     sol = m.localsolve(verbosity = 4)
-    print sol.table()
+    print(sol.table())

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pandas as pd
 import numpy as np
 from numpy import logspace, log, log10
@@ -24,7 +25,7 @@ Type = 'SMA'
 K = 2
 
 cstrt, rmserror = fit(x, y, K, Type)
-print "RMS error = %.4f" % rmserror
+print("RMS error = %.4f" % rmserror)
 yfit = cstrt.evaluate(x)
 
 fig, ax = plt.subplots()
@@ -50,7 +51,7 @@ Type = 'SMA'
 K = 2
 
 cstrt, rmserror = fit(x,y,K,Type)
-print "RMS error = %.4f" % rmserror
+print("RMS error = %.4f" % rmserror)
 yfit = cstrt.evaluate(x)
 
 fig, ax = plt.subplots()
@@ -73,7 +74,7 @@ x = np.array(log(RPM/RPM_max))
 Type = 'SMA'
 K = 1
 cstrt, rmserror = fit(x,y,K,Type)
-print "RMS error = %.4f" % rmserror
+print("RMS error = %.4f" % rmserror)
 yfit = cstrt.evaluate(x)
 
 fig, ax = plt.subplots()
@@ -106,7 +107,7 @@ y = np.array(w)
 
 A = np.vstack([x, np.ones(len(x))]).T
 m, c = np.linalg.lstsq(A, y)[0]
-print "Equation: y = %.4gx + %.4f" % (m, c)
+print("Equation: y = %.4gx + %.4f" % (m, c))
 fig, ax = plt.subplots()
 ax.plot(x, y, 'o', label='RCV Engine Data', markerfacecolor="None")
 ax.plot(x, m*x + c, label='Fitted Line')

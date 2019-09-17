@@ -1,8 +1,12 @@
+from __future__ import print_function
+from builtins import str
+from builtins import zip
+from builtins import range
+import numpy as np
 from gpkit import ConstraintSet
 from gpkit import Variable, NomialArray
 from gpkit.small_scripts import unitstr
-from xfoilWrapper import blind_call, single_cl
-import numpy as np
+from .xfoilWrapper import blind_call, single_cl
 
 class FitCS(ConstraintSet):
     def __init__(self, df, ivar, dvars, nobounds=False, err_margin=False, airfoil=False):
@@ -107,7 +111,7 @@ class FitCS(ConstraintSet):
                 elif "naca" in self.airfoil:
                     topline = self.airfoil + "\n"
                 else:
-                    print "Bad airfoil specified"
+                    print("Bad airfoil specified")
             else:
                 runxfoil = False
             bndwrn = True
@@ -128,12 +132,12 @@ class FitCS(ConstraintSet):
                 try:
                     x = blind_call(topline, cl, re, 0.0)
                     if "VISCAL:  Convergence failed" in x:
-                        print "Convergence Warning: %s" % failmsg
+                        print("Convergence Warning: %s" % failmsg)
                         cd, cl = cdgp, 1.0
                     else:
                         cd, cl = x[0], x[1]
                 except:
-                    print "Unable to start Xfoil: %s" % failmsg
+                    print("Unable to start Xfoil: %s" % failmsg)
                     cd, cl = cdgp, 1.0
 
                 err = 1 - cdgp/cd
@@ -142,7 +146,7 @@ class FitCS(ConstraintSet):
                            " Xfoil cd=%.6f, GP sol cd=%.6f" %
                            (", ".join(d.descr["models"]), err, re, cl, cd,
                             cdgp))
-                    print "Warning: %s" % msg
+                    print("Warning: %s" % msg)
                 else:
                     bndwrn = False
 
@@ -165,4 +169,4 @@ class FitCS(ConstraintSet):
                                + " %s bound. Solution is %.4f but"
                                " bound is %.4f" %
                                (direct, num, bnd))
-                        print "Warning: " + msg
+                        print("Warning: " + msg)
