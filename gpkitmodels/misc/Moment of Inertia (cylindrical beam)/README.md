@@ -159,7 +159,7 @@ if __name__ == "__main__":
     M.substitutions.update({"I": 10**-4})
     M.substitutions.update({"r_o_{max}": 0.2})
     sol = M.sweep({"I": np.logspace(-10, -3, 100)}, skipsweepfailures=True)
-    print sol.table()
+    print(sol.table())
 
     I, A, ro = sol("I"), sol("A"), sol("r_o")
     plt.semilogx(I, (4*I**2/(A**2*ro**2) + A/np.pi - ro**2)/(ro**2))

@@ -88,7 +88,6 @@ test_reports_nounits/
 *.generated.tex
 *.tex.md
 *.md.py
-*.sh
 
 # xfoil polars
 *.pol

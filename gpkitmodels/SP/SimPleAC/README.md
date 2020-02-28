@@ -1,7 +1,7 @@
 SimPleAC
 ========
 
-In this example, we modify the simple wing model proposed by Prof. Warren Hoburg in his thesis to create a simple aircraft model incorporating signomial programming (SP). Firstly, we initialize the SimPleAC model, and define all of it its constants and free variables. 
+In this example, we modify the simple wing model proposed by Prof. Warren Hoburg in his thesis to create a simple aircraft model incorporating signomial programming (SP). Firstly, we initialize the SimPleAC model, and define all of it its constants and free variables.
 
 ```python
 from gpkit import Model, Variable, SignomialsEnabled, VarKey, units
@@ -15,7 +15,7 @@ class SimPleAC(Model):
         mu         = Variable("\\mu", 1.775e-5, "kg/m/s", "viscosity of air", pr=4.)
         rho        = Variable("\\rho", 1.23, "kg/m^3", "density of air", pr=5.)
         rho_f      = Variable("\\rho_f", 817, "kg/m^3", "density of fuel")
-        
+
         # Non-dimensional constants
         C_Lmax     = Variable("C_{L,max}", 1.6, "-", "stall CL", pr=5.)
         e          = Variable("e", 0.92, "-", "Oswald efficiency factor", pr=3.)
@@ -33,12 +33,12 @@ class SimPleAC(Model):
 
         # Dimensional constants
         Range     = Variable("Range",3000, "km", "aircraft range")
-        TSFC      = Variable("TSFC", 0.6, "1/hr", 
+        TSFC      = Variable("TSFC", 0.6, "1/hr",
             "thrust specific fuel consumption")
         V_min     = Variable("V_{min}", 25, "m/s", "takeoff speed", pr=20.)
-        W_0       = Variable("W_0", 6250, "N", 
+        W_0       = Variable("W_0", 6250, "N",
             "aircraft weight excluding wing", pr=20.)
-        
+
         # Free Variables
         LoD       = Variable('L/D','-','lift-to-drag ratio')
         D         = Variable("D", "N", "total drag force")
@@ -53,7 +53,7 @@ class SimPleAC(Model):
         V_f       = Variable("V_f", "m^3", "fuel volume")
         V_f_avail = Variable("V_{f_{avail}}","m^3","fuel volume available")
         T_flight  = Variable("T_{flight}", "hr", "flight time")
-        
+
         # Free variables (fixed for performance eval.)
         A         = Variable("A", "-", "aspect ratio", fix = True)
         S         = Variable("S", "m^2", "total wing area", fix = True)
@@ -69,7 +69,7 @@ class SimPleAC(Model):
 Weight and Lift model
 -----------------
 
-The simple aircraft borrows a majority of its aerodynamic model from Prof. Warren Hoburg's thesis, with some minor adjustments to make the model a SP. The aircraft is assumed to be in steady-level flight so that thrust equals drag, and the lift equals the weight. 
+The simple aircraft borrows a majority of its aerodynamic model from Prof. Warren Hoburg's thesis, with some minor adjustments to make the model a SP. The aircraft is assumed to be in steady-level flight so that thrust equals drag, and the lift equals the weight.
 
 The total weight of the aircraft is the sum of the payload weight $W_0$, the wing weight $W_w$, and the fuel weight $W_f$.
 
@@ -95,7 +95,7 @@ The time of flight of the aircraft, which is a useful metric of performance, is 
     T_{flight} \geq \frac{Range}{V}
 \end{equation}
 
-The lift-to-drag ratio is also defined: 
+The lift-to-drag ratio is also defined:
 
 \begin{equation}
     L/D = \frac{C_L}{C_D}    
@@ -104,7 +104,7 @@ The lift-to-drag ratio is also defined:
 ```python
         # Weight and lift model
         constraints += [W >= W_0 + W_w + W_f,
-                W_0 + W_w + 0.5 * W_f <= 
+                W_0 + W_w + 0.5 * W_f <=
                         0.5 * rho * S * C_L * V ** 2,
                 W <= 0.5 * rho * S * C_Lmax * V_min ** 2,
                 T_flight >= Range / V,
@@ -122,12 +122,12 @@ We assume a constant thrust specific fuel consumption (TSFC) for the 'engine' of
 
 the fuel weight required is the product of the TSFC, time of flight, and the total drag on the aircraft. The drag of the aircraft is the product of dynamic pressure ($\frac{1}{2} \rho V^2$), the planform area $S$, and the coefficient of drag of the aircraft:
 
-\begin{equation} 
+\begin{equation}
     D \geq \frac{1}{2}  \rho V^2 S  C_D
 \label{e:d}
 \end{equation}
 
-The drag coefficient of the aircraft is assumed to be the sum of the fuselage drag, the wing profile drag, and the wing induced drag coefficients: 
+The drag coefficient of the aircraft is assumed to be the sum of the fuselage drag, the wing profile drag, and the wing induced drag coefficients:
 
 \begin{equation}
     C_D \geq C_{D_{fuse}} + C_{D_{wpar}} + C_{D_{ind}}
@@ -148,9 +148,9 @@ where the $CDA_0$ is linearly proportional to the volume of fuel in the fuselage
 \label{e:vffuse}
 \end{equation}
 
-Note that we correct the dimensionality of the volume here, since GPkit automatically checks units. 
+Note that we correct the dimensionality of the volume here, since GPkit automatically checks units.
 
-The wing profile drag is the product of the form factor, the friction drag coefficient, and the wetted area ratio of the wing, 
+The wing profile drag is the product of the form factor, the friction drag coefficient, and the wetted area ratio of the wing,
 
 \begin{equation}
     C_{D_{wpar}} = k C_f S_{wetratio}
@@ -193,28 +193,28 @@ The induced drag of the wing is calculated with a span efficiency factor e, and 
 Fuel volume model
 -----------------
 
-The fuel volume model is the main difference between simpleWing and SimPleAC, and introduces the only signomial constraints in the model. Firstly we define the required fuel volume using fuel density $\rho_f$. 
+The fuel volume model is the main difference between simpleWing and SimPleAC, and introduces the only signomial constraints in the model. Firstly we define the required fuel volume using fuel density $\rho_f$.
 
 \begin{equation}
     V_f = \frac{W_f } {\rho_f g}
 \label{e:vf}
 \end{equation}
 
-We consider wing fuel tanks and fuselage fuel tanks. The fuselage fuel was defined in the aerodynamic model, where the fuel volume contributes to drag. 
+We consider wing fuel tanks and fuselage fuel tanks. The fuselage fuel was defined in the aerodynamic model, where the fuel volume contributes to drag.
 
 \begin{equation}
     V_{f_{wing}}^2 \leq 0.0009 \frac{S \tau^2}{AR}
 \label{e:vfwing}
 \end{equation}
 
-The signomial constraint is introduced here, where the available fuel volume is upper-bounded by the sum of the fuselage and wing fuel volumes. 
+The signomial constraint is introduced here, where the available fuel volume is upper-bounded by the sum of the fuselage and wing fuel volumes.
 
 \begin{equation}
     V_{f_{avail}} \leq V_{f_{wing}} + V_{f_{fuse}}
 \label{vfavail}
 \end{equation}
 
-We constrain the total fuel volume to be less than the available fuel volume. 
+We constrain the total fuel volume to be less than the available fuel volume.
 
 \begin{equation}
     V_{f_{avail}} \geq V_{f}
@@ -222,10 +222,10 @@ We constrain the total fuel volume to be less than the available fuel volume.
 \end{equation}
 
 ```python
-        # Fuel volume model 
+        # Fuel volume model
         with SignomialsEnabled():
             constraints +=[V_f == W_f / g / rho_f,
-                V_f_wing**2 <= 0.0009*S**3/A*tau**2, 
+                V_f_wing**2 <= 0.0009*S**3/A*tau**2,
                     # linear with b and tau, quadratic with chord
                 V_f_avail <= V_f_wing + V_f_fuse, #[SP]
                 V_f_avail >= V_f]
@@ -234,21 +234,21 @@ We constrain the total fuel volume to be less than the available fuel volume.
 Wing Weight Build-Up
 ---------------
 
-The wing surface weight is a function of the planform area of the wing. 
+The wing surface weight is a function of the planform area of the wing.
 
 \begin{equation}
 W_{w_{surf}} \geq W_{w_{coeff2}} S
 \label{e:wwsurf}
 \end{equation}
 
-The wing structural weight is a complex posynomial expression that takes into account the root bending moment and shear relief due to presence of fuel in the wings. 
+The wing structural weight is a complex posynomial expression that takes into account the root bending moment and shear relief due to presence of fuel in the wings.
 
 \begin{equation}
 W_{w_{strc}}^2 \geq \frac{W_{w_{coeff1}}^2}{\tau^2} (N_{ult}^2 AR ^ 3 ((W_0+\rho_fgV_{f_{fuse}}) W S))
 \label{e:wwstrc}
 \end{equation}
 
-The total wing weight is lower-bounded. 
+The total wing weight is lower-bounded.
 
 \begin{equation}
 W_w \geq W_{w_{surf}} + W_{w_{strc}}
@@ -268,14 +268,14 @@ W_w \geq W_{w_{surf}} + W_{w_{strc}}
 Running the model
 -----------------
 
-The ```main``` method within ```SimPleAC.py``` allows the model to be run directly from a terminal with the command ```python SimPleAC.py```. 
+The ```main``` method within ```SimPleAC.py``` allows the model to be run directly from a terminal with the command ```python SimPleAC.py```.
 
 ```python
 if __name__ == "__main__":
     m = SimPleAC()
-    m.cost = m['W_f'] 
+    m.cost = m['W_f']
     sol = m.localsolve(verbosity = 4)
-    print sol.table()
+    print(sol.table())
 ```
 
 
@@ -286,9 +286,9 @@ We have tested a variety of potential objectives for the SimpPleAC model, some o
 \begin{itemize}
     \item $W_f$: Fuel weight, the default objective.
     \item $W$: Total aircraft weight. Like fuel weight, but also adding extra cost for airframe weight.
-    \item $D$: Drag. 
-    \item $\frac{W_f}{T_{flight}}$: Product of the fuel weight and the inverse of the time of flight. 
-    \item $W_{f} + c \times T_{flight}$: A linear combination of fuel weight and time of flight. This can simulate recurring costs (fuel and labor), and yield interesting results. 
+    \item $D$: Drag.
+    \item $\frac{W_f}{T_{flight}}$: Product of the fuel weight and the inverse of the time of flight.
+    \item $W_{f} + c \times T_{flight}$: A linear combination of fuel weight and time of flight. This can simulate recurring costs (fuel and labor), and yield interesting results.
 \end{itemize}
 
 Extension to mission and multimission design

@@ -10,7 +10,7 @@ class SimPleAC(Model):
         mu         = Variable("\\mu", 1.775e-5, "kg/m/s", "viscosity of air", pr=4.)
         rho        = Variable("\\rho", 1.23, "kg/m^3", "density of air", pr=5.)
         rho_f      = Variable("\\rho_f", 817, "kg/m^3", "density of fuel")
-        
+
         # Non-dimensional constants
         C_Lmax     = Variable("C_{L,max}", 1.6, "-", "max CL with flaps down", pr=5.)
         e          = Variable("e", 0.92, "-", "Oswald efficiency factor", pr=3.)
@@ -29,7 +29,7 @@ class SimPleAC(Model):
         TSFC      = Variable("TSFC", 0.6, "1/hr", "thrust specific fuel consumption")
         V_min     = Variable("V_{min}", 25, "m/s", "takeoff speed", pr=20.)
         W_0       = Variable("W_0", 6250, "N", "aircraft weight excluding wing", pr=20.)
-        
+
         # Free Variables
         LoD       = Variable('L/D','-','lift-to-drag ratio')
         D         = Variable("D", "N", "total drag force")
@@ -44,7 +44,7 @@ class SimPleAC(Model):
         V_f       = Variable("V_f", "m^3", "fuel volume")
         V_f_avail = Variable("V_{f_{avail}}","m^3","fuel volume available")
         T_flight  = Variable("T_{flight}", "hr", "flight time")
-        
+
         # Free variables (fixed for performance eval.)
         A         = Variable("A", "-", "aspect ratio",fix = True)
         S         = Variable("S", "m^2", "total wing area", fix = True)
@@ -54,7 +54,7 @@ class SimPleAC(Model):
         V_f_wing  = Variable("V_f_wing",'m^3','fuel volume in the wing', fix = True)
         V_f_fuse  = Variable('V_f_fuse','m^3','fuel volume in the fuselage', fix = True)
         constraints = []
-  
+
         # Weight and lift model
         constraints += [W >= W_0 + W_w + W_f,
                     W_0 + W_w + 0.5 * W_f <= 0.5 * rho * S * C_L * V ** 2,
@@ -73,7 +73,7 @@ class SimPleAC(Model):
                     Re <= (rho / mu) * V * (S / A) ** 0.5,
                     C_f >= 0.074 / Re ** 0.2]
 
-        # Fuel volume model 
+        # Fuel volume model
         with SignomialsEnabled():
             constraints +=[V_f == W_f / g / rho_f,
                     V_f_wing**2 <= 0.0009*S**3/A*tau**2, # linear with b and tau, quadratic with chord
@@ -90,12 +90,25 @@ class SimPleAC(Model):
 
 def test():
     m = SimPleAC()
-    m.cost = m['W_f'] 
+    m.cost = m['W_f']
     sol = m.localsolve(verbosity = 2)
 
 if __name__ == "__main__":
-    # Most basic way to execute the model 
-    m = SimPleAC()
-    m.cost = m['W_f'] 
-    sol = m.localsolve(verbosity = 4)
+    # Most basic way to execute the model
+    from gpkit import Vectorize
+    with Vectorize(3):
+        m = SimPleAC()
+    # m.cost = m['W']
+    # sol1 = m.localsolve(verbosity = 2)
+    m.substitutions["Range"] = [1000, 3000, 6000]
+    m.extend([  m["A"] == m["A"][0],
+                m["S"] == m["S"][0],
+                m["W_w"] == m["W_w"][0],
+                m["W_w_strc"] == m["W_w_strc"][0],
+                m["W_w_surf"] == m["W_w_surf"][0],
+                m["V_f_wing"] == m["V_f_wing"][0],
+                m["V_f_fuse"] == m["V_f_fuse"][0]])
+    m.cost = 3*m['W_f'][0] + m['W_f'][1] + 0.33*m['W_f'][2]
+    sol = m.localsolve(verbosity = 1)
+    # print(sol1.diff(sol2))
     print(sol.table())
