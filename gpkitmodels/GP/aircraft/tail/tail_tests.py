@@ -70,7 +70,7 @@ def test_emp():
                       "\\theta_{root}"]:
                 m.substitutions[l[v]] = 1e-3
 
-    m.solve(verbosity=0)
+    m.solve(verbosity=0, use_leqs=False)  # cvxopt gets singular with leqs
 
 def test_tailboom_mod():
 

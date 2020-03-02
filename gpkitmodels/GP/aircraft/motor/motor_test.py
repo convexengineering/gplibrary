@@ -50,7 +50,7 @@ def actuator_propulsor_test():
 
 def ME_propulsor_test():
     test = BladeElement_Propulsor_Test()
-    sol = test.localsolve()
+    sol = test.localsolve(use_leqs=False)  # cvxopt gets singular with leqs
 
 def propulsor_test():
     test = Propulsor_Test()

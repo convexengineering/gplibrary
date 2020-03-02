@@ -65,7 +65,8 @@ def test():
     if settings["default_solver"] == "cvxopt":
         return
     else:
-        sol = m.localsolve(verbosity = 0)
+        sol = m.localsolve(verbosity=0)
+
 if __name__ == "__main__":
     Nmissions = 2
     Nsegments = 4

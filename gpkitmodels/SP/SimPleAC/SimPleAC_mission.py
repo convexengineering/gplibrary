@@ -319,24 +319,11 @@ def test():
     })
     m.cost = m['W_{f_m}']*units('1/N') + m['C_m']*m['t_m']
     if settings["default_solver"] == "cvxopt":
-        return
+        return None
     else:
-        sol = m.localsolve(verbosity = 0)
+        return m.localsolve(verbosity=0)
 
 
 if __name__ == "__main__":
-    # Most basic way to execute the model
-    m = Mission(SimPleAC(),4)
-    m.substitutions.update({
-        # "P_{shaft,max}" : 54.41*units("kW"),
-        'h_{cruise_m}'   :5000*units('m'),
-        'Range_m'        :3000*units('km'),
-        'W_{p_m}'        :6250*units('N'),
-        '\\rho_{p_m}'    :1500*units('kg/m^3'),
-        'C_m'            :120*units('1/hr'),
-        'V_{min_m}'      :25*units('m/s'),
-        'T/O factor_m'   :2,
-    })
-    m.cost = m['W_{f_m}']*units('1/N') + (m['C_m']*m['t_m'])**0.1
-    sol = m.localsolve(verbosity = 0)
+    sol = test()
     print(sol.table())
