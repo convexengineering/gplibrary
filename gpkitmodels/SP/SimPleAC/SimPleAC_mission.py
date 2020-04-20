@@ -108,9 +108,7 @@ class Wing(Model):
         # Non-dimensional constants
         C_Lmax     = Variable("C_{L,max}", 1.6, "-", "lift coefficient at stall", pr=5.)
         e          = Variable("e", 0.92, "-", "Oswald efficiency factor", pr=3.)
-        # k          = Variable("k", "-", "form factor")
         N_ult      = Variable("N_{ult}", 3, "-", "ultimate load factor", pr=15.)
-        # S_wetratio = Variable("(\\frac{S}{S_{wet}})", "-", "wetted area ratio")
         tau        = Variable("\\tau", "-", "airfoil thickness to chord ratio")
         tau_ref    = Variable("\\tau_{ref}", 0.12, "-", "reference airfoil thickness to chord ratio")
 
@@ -176,7 +174,7 @@ class Engine(Model):
     def setup(self):
         # Dimensional constants
         BSFC_ref    = Variable("BSFC_{ref}", 0.32, "lbf/(hp*hr)", "reference brake specific fuel consumption")
-        eta_prop    = Variable("\\eta_{prop}",0.8,'-',"propeller efficiency")
+        eta_prop    = Variable("\\eta_{prop}", 0.8, '-',"propeller efficiency")
         P_shaft_ref = Variable("P_{shaft,ref}", 10, "hp", "reference MSL maximum shaft power")
         W_e_ref     = Variable("W_{e,ref}", 10, "lbf","reference engine weight")
         h_ref       = Variable("h_{ref}", 15000,'ft','engine lapse reference altitude')
@@ -326,7 +324,7 @@ def test():
         'T/O factor_m'   :2,
     })
     m.cost = m['W_{f_m}']*units('1/N') + m['C_m']*m['t_m']
-    sol = m.localsolve(verbosity = 0)
+    sol = m.localsolve(verbosity=0)
 
 if __name__ == "__main__":
     test()
