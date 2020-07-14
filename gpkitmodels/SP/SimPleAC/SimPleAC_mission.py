@@ -65,7 +65,7 @@ class Fuselage(Model):
     def setup(self):
         # Free Variables
         S         = Variable('S_{fuse}', 'm^2', 'fuselage surface area')
-        l         = Variable('l_{fuse}', 'm', 'fuselage length', fix = True)
+        l         = Variable('l_{fuse}', 'm', 'fuselage length')
         r         = Variable('r_{fuse}', 'm', 'fuselage minor radius')
         f         = Variable('f_{fuse}', '-', 'fuselage fineness ratio', fix = True)
         k         = Variable('k_{fuse}', '-', 'fuselage form factor')
