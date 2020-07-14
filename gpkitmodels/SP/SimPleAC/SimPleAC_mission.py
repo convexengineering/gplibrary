@@ -1,12 +1,10 @@
 import numpy as np
-from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, \
-    VarKey, units, Vectorize, settings
+from gpkit import Model, Variable, SignomialsEnabled, SignomialEquality, VarKey, units, Vectorize
 
 # Importing atmospheric model
 from gpkitmodels.SP.atmosphere.atmosphere import Atmosphere
 
-# SimPleAC with mission design and flight segments,
-# and lapse rate and BSFC model (updated 5/31/2019 by Berk Ozturk)
+# SimPleAC with mission design and flight segments, and lapse rate and BSFC model (3.4.2)
 
 class SimPleAC(Model):
     def setup(self):
@@ -50,7 +48,6 @@ class SimPleACP(Model):
         C_D       = Variable("C_D", "-", "drag coefficient")
         D         = Variable("D", "N", "total drag force")
         LoD       = Variable('L/D','-','lift-to-drag ratio')
-        Re        = Variable("Re", "-", "Reynolds number")
         V         = Variable("V", "m/s", "cruising speed")
 
         constraints = []
@@ -58,8 +55,7 @@ class SimPleACP(Model):
         constraints += [self.engineP['T'] * V <= self.aircraft.engine['\\eta_{prop}'] * self.engineP['P_{shaft}'],
                     C_D >= self.fuseP['C_{D_{fuse}}'] + self.wingP['C_{D_{wpar}}'] + self.wingP['C_{D_{ind}}'],
                     D >= 0.5 * state['\\rho'] * self.aircraft['S'] * C_D * V ** 2,
-                    Re == (state['\\rho'] / state['\\mu']) * V * (self.aircraft['S'] / self.aircraft['A']) ** 0.5,
-                    self.wingP['C_f'] >= 0.074 / Re ** 0.2,
+                    self.wingP['Re'] == (state['\\rho'] / state['\\mu']) * V * (self.aircraft['S'] / self.aircraft['A']) ** 0.5,
                     self.fuseP['Re_{fuse}'] == state['\\rho']*V*self.aircraft.fuse['l_{fuse}']/state['\\mu'],
                     LoD == self.wingP['C_L'] / C_D]
 
@@ -75,7 +71,7 @@ class Fuselage(Model):
         k         = Variable('k_{fuse}', '-', 'fuselage form factor')
         # Free variables (fixed for performance eval.)
         V         = Variable('V_{fuse}', 'm^3', 'total volume in the fuselage', fix = True)
-        V_f_fuse  = Variable('V_{f_{fuse}}','m^3','fuel volume in the fuselage')
+        V_f_fuse  = Variable('V_{f_{fuse}}', 'm^3', 'fuel volume in the fuselage')
         W_fuse    = Variable('W_{fuse}', 'N', 'fuselage weight')
         p = 1.6075
 
@@ -112,10 +108,9 @@ class Wing(Model):
         # Non-dimensional constants
         C_Lmax     = Variable("C_{L,max}", 1.6, "-", "lift coefficient at stall", pr=5.)
         e          = Variable("e", 0.92, "-", "Oswald efficiency factor", pr=3.)
-        k          = Variable("k", 1.17, "-", "form factor", pr=10.)
-        N_ult      = Variable("N_{ult}", 3.3, "-", "ultimate load factor", pr=15.)
-        S_wetratio = Variable("(\\frac{S}{S_{wet}})", 2.075, "-", "wetted area ratio", pr=3.)
-        tau        = Variable("\\tau", 0.12, "-", "airfoil thickness to chord ratio", pr=10.)
+        N_ult      = Variable("N_{ult}", 3, "-", "ultimate load factor", pr=15.)
+        tau        = Variable("\\tau", "-", "airfoil thickness to chord ratio", fix = True)
+        tau_ref    = Variable("\\tau_{ref}", 0.12, "-", "reference airfoil thickness to chord ratio")
 
         # Dimensional constants
         W_w_coeff1 = Variable("W_{w_{coeff1}}", 2e-5, "1/m",
@@ -137,8 +132,12 @@ class Wing(Model):
         constraints += [W_w_surf >= W_w_coeff2 * S,
                         W_w >= W_w_surf + W_w_strc]
 
-        # Wing fuel model
-        constraints += [V_f_wing**2 <= 0.0009*S**3/A*tau**2] # linear with b and tau, quadratic with chord
+      # Wing fuel and form factor model
+        constraints += [V_f_wing**2 <= 0.0009*S**3/A*tau**2, # linear with b and tau, quadratic with chord
+                        tau >= 0.08, tau <= 0.23,
+                        ]
+
+        # Form factor model
 
         return constraints
 
@@ -149,16 +148,25 @@ class WingP(Model):
     def setup(self,wing,state):
         self.wing = wing
         # Free Variables
-        C_f       = Variable("C_f", "-", "skin friction coefficient")
-        C_D_ind   = Variable('C_{D_{ind}}', '-', "wing induced drag")
-        C_D_wpar  = Variable('C_{D_{wpar}}', '-', 'wing profile drag')
+        C_D_ind   = Variable('C_{D_{ind}}', '-', "wing induced drag coefficient")
+        C_D_wpar  = Variable('C_{D_{wpar}}', '-', "wing profile drag coefficient")
         C_L       = Variable("C_L", "-", "wing lift coefficient")
+        Re        = Variable("Re", "-", "Reynolds number")
+        Re_ref    = Variable("Re_{ref}", 1500000, "-", "reference Reynolds number")
 
         constraints = []
 
         # Drag model
+        w = C_D_wpar
+        u_1 = C_L
+        u_2 = Re/Re_ref
+        u_3 = self.wing['\\tau']/self.wing['\\tau_{ref}']
+        nc = w**0.00488697 >= 0.000347324 * (u_1)**6.64787 * (u_2)**-0.00842527 * (u_3)**-0.406817 + \
+                            0.974515 * (u_1)**-0.00206058 * (u_2)**-0.00117649 * (u_3)**-0.000597604 + \
+                            0.000211504 * (u_1)**1.35483 * (u_2)**-0.252459 * (u_3)**3.91243
+        nc.name = 'drag'
         constraints += [C_D_ind == C_L ** 2 / (np.pi * self.wing['A'] * self.wing['e']),
-                        C_D_wpar == self.wing['k'] * C_f * self.wing["(\\frac{S}{S_{wet}})"]]
+                        nc]
 
         return constraints
 
@@ -166,18 +174,16 @@ class Engine(Model):
     def setup(self):
         # Dimensional constants
         BSFC_ref    = Variable("BSFC_{ref}", 0.32, "lbf/(hp*hr)", "reference brake specific fuel consumption")
-        eta_prop    = Variable("\\eta_{prop}",0.8,'-',"propeller efficiency")
-        P_shaft_ref = Variable("P_{shaft,ref}",149,"kW","reference MSL maximum shaft power")
-        W_e_ref     = Variable("W_{e,ref}",153, "lbf","reference engine weight")
-        h_ref       = Variable("h_{ref}",15000,'ft','engine lapse reference altitude')
+        eta_prop    = Variable("\\eta_{prop}", 0.8, '-',"propeller efficiency")
+        P_shaft_ref = Variable("P_{shaft,ref}", 10, "hp", "reference MSL maximum shaft power")
+        W_e_ref     = Variable("W_{e,ref}", 10, "lbf","reference engine weight")
+        h_ref       = Variable("h_{ref}", 15000,'ft','engine lapse reference altitude')
 
         # Free variables
         P_shaft_max = Variable("P_{shaft,max}","kW","MSL maximum shaft power")
-        W_e         = Variable("W_e","N","engine weight")
+        W_e         = Variable("W_e", "N", "engine weight", fix = True)
 
-        constraints = []
-        constraints += [(W_e/W_e_ref)**1.92 >= 0.00441 * (P_shaft_max/P_shaft_ref)**0.759
-                                + 1.44 * (P_shaft_max/P_shaft_ref)**2.90]
+        constraints = [(W_e/W_e_ref) == 1.27847 * (P_shaft_max/P_shaft_ref)**0.772392]
         return constraints
 
     def dynamic(self,state):
@@ -190,9 +196,9 @@ class EngineP(Model):
 
         # Free variables
         BSFC        = Variable("BSFC", "lbf/(hp*hr)", "brake specific fuel consumption")
-        P_shaft     = Variable("P_{shaft}","kW","shaft power")
-        P_shaft_alt = Variable("P_{shaft,alt}","kW",'maximum shaft power at altitude')
-        Thrust      = Variable("T","N","propeller thrust")
+        P_shaft     = Variable("P_{shaft}", "kW","shaft power")
+        P_shaft_alt = Variable("P_{shaft,alt}", "kW", 'maximum shaft power at altitude')
+        Thrust      = Variable("T", "N", "propeller thrust")
 
         L           = Variable("L","-","power lapse percentage")
 
@@ -231,7 +237,7 @@ class Mission(Model):
         hcruise    = Variable('h_{cruise_m}', 'm', 'minimum cruise altitude')
         Range      = Variable("Range_m", "km", "aircraft range")
         W_p        = Variable("W_{p_m}", "N", "payload weight", pr=20.)
-        rho_p      = Variable("\\rho_{p_m}", "kg/m^3", "payload density", pr=10.)
+        rho_p      = Variable("\\rho_{p_m}", "kg/m^3", "payload density", pr = 10.)
         V_min      = Variable("V_{min_m}", "m/s", "takeoff speed", pr=20.)
         TOfac      = Variable('T/O factor_m', '-','takeoff thrust factor')
         cost_index = Variable("C_m", '1/hr','hourly cost index')
@@ -299,10 +305,10 @@ class Mission(Model):
                         self.aircraft.fuse['W_{fuse}'] == self.aircraft.fuse['S_{fuse}']*self.aircraft.wing['W_{w_{coeff2}}'],
                         ]
 
-        # Bounding variables
+        # Upper bounding variables
         constraints += [t_m <= 100000*units('hr'),
             W_f_m <= 1e10*units('N'),
-            cost_index >= 1*units('1/hr')]
+            cost_index >= 1e-10*units('1/hr')]
 
         return constraints, state, self.aircraft, self.aircraftP
 
@@ -311,19 +317,14 @@ def test():
     m.substitutions.update({
         'h_{cruise_m}'   :5000*units('m'),
         'Range_m'        :3000*units('km'),
-        'W_{p_m}'        :6250*units('N'),
+        'W_{p_m}'        :3000*units('N'),
         '\\rho_{p_m}'    :1500*units('kg/m^3'),
         'C_m'            :120*units('1/hr'),
-        'V_{min_m}'      :25*units('m/s'),
+        'V_{min_m}'      :35*units('m/s'),
         'T/O factor_m'   :2,
     })
     m.cost = m['W_{f_m}']*units('1/N') + m['C_m']*m['t_m']
-    if settings["default_solver"] == "cvxopt":
-        return None
-    else:
-        return m.localsolve(verbosity=0)
-
+    sol = m.localsolve(verbosity=0)
 
 if __name__ == "__main__":
-    sol = test()
-    print(sol.table())
+    test()
