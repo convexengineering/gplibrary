@@ -65,13 +65,13 @@ class Fuselage(Model):
     def setup(self):
         # Free Variables
         S         = Variable('S_{fuse}', 'm^2', 'fuselage surface area')
-        l         = Variable('l_{fuse}', 'm', 'fuselage length')
+        l         = Variable('l_{fuse}', 'm', 'fuselage length', fix = True)
         r         = Variable('r_{fuse}', 'm', 'fuselage minor radius')
         f         = Variable('f_{fuse}', '-', 'fuselage fineness ratio', fix = True)
         k         = Variable('k_{fuse}', '-', 'fuselage form factor')
         # Free variables (fixed for performance eval.)
         V         = Variable('V_{fuse}', 'm^3', 'total volume in the fuselage', fix = True)
-        V_f_fuse  = Variable('V_{f_{fuse}}','m^3','fuel volume in the fuselage')
+        V_f_fuse  = Variable('V_{f_{fuse}}', 'm^3', 'fuel volume in the fuselage')
         W_fuse    = Variable('W_{fuse}', 'N', 'fuselage weight')
         p = 1.6075
 
@@ -109,7 +109,7 @@ class Wing(Model):
         C_Lmax     = Variable("C_{L,max}", 1.6, "-", "lift coefficient at stall", pr=5.)
         e          = Variable("e", 0.92, "-", "Oswald efficiency factor", pr=3.)
         N_ult      = Variable("N_{ult}", 3, "-", "ultimate load factor", pr=15.)
-        tau        = Variable("\\tau", "-", "airfoil thickness to chord ratio")
+        tau        = Variable("\\tau", "-", "airfoil thickness to chord ratio", fix = True)
         tau_ref    = Variable("\\tau_{ref}", 0.12, "-", "reference airfoil thickness to chord ratio")
 
         # Dimensional constants
@@ -181,7 +181,7 @@ class Engine(Model):
 
         # Free variables
         P_shaft_max = Variable("P_{shaft,max}","kW","MSL maximum shaft power")
-        W_e         = Variable("W_e","N","engine weight")
+        W_e         = Variable("W_e", "N", "engine weight", fix = True)
 
         constraints = [(W_e/W_e_ref) == 1.27847 * (P_shaft_max/P_shaft_ref)**0.772392]
         return constraints
@@ -196,9 +196,9 @@ class EngineP(Model):
 
         # Free variables
         BSFC        = Variable("BSFC", "lbf/(hp*hr)", "brake specific fuel consumption")
-        P_shaft     = Variable("P_{shaft}","kW","shaft power")
-        P_shaft_alt = Variable("P_{shaft,alt}","kW",'maximum shaft power at altitude')
-        Thrust      = Variable("T","N","propeller thrust")
+        P_shaft     = Variable("P_{shaft}", "kW","shaft power")
+        P_shaft_alt = Variable("P_{shaft,alt}", "kW", 'maximum shaft power at altitude')
+        Thrust      = Variable("T", "N", "propeller thrust")
 
         L           = Variable("L","-","power lapse percentage")
 
