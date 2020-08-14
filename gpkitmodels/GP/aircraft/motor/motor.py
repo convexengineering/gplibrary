@@ -18,7 +18,7 @@ class MotorPerf(Model):
     etam                    [-]             motor efficiency
     Q                       [N*m]           torque
     omega                   [rpm]           propeller rotation rate
-    i                       [amps]          current
+    i                       [amp]           current
     v                       [V]             woltage
     """
     @parse_variables(__doc__, globals())
@@ -41,14 +41,14 @@ class Motor(Model):
 
     Variables
     ---------
-    Qstar       .8          [kg/(N*m)]         motor specific torque
-    W                       [lbf]              motor weight
-    Qmax                    [N*m]              motor max. torque
-    V_max       300         [V]                motor max voltage
+    Qstar       .8          [kg/(N*m)]      motor specific torque
+    W                       [lbf]           motor weight
+    Qmax                    [N*m]           motor max. torque
+    V_max       300         [V]             motor max voltage
     Kv_min     1            [rpm/V]         min motor voltage constant
     Kv_max     1000         [rpm/V]         max motor voltage constant
     Kv                      [rpm/V]         motor voltage constant
-    i0         4.5          [amps]          zero-load current
+    i0         4.5          [amp]           zero-load current
     R          .033         [ohms]          internal resistance
     """
 
