@@ -6,8 +6,11 @@ from gpkit import ConstraintSet, Variable
 def summing_vars(models, varname):
     "returns a list of variables with shared varname in model list"
     modelnames = set(m.lineage for m in models)
-    vkeys = np.hstack([list(m.varkeys[varname]) for m in models])
-    vkeys = [v for v in vkeys if v.lineage in modelnames]
+    vkeys = []
+    for m in models:
+        for v in m.varkeys[varname]:
+            if v.lineage in modelnames:
+                vkeys.append(v)
     vrs = [m[v] for m, v in zip(models, vkeys)]
     return vrs
 
