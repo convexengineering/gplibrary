@@ -1,7 +1,6 @@
 " spar loading for gust case "
 import os
 from numpy import pi, hstack, array
-from ad import adnumber
 from ad.admath import cos
 import pandas as pd
 from gpkit import parse_variables
@@ -40,7 +39,7 @@ class GustL(SparLoading):
 
     def return_cosm1(self, c):
         eta = c(self.wing.planform.eta).to("dimensionless").magnitude
-        return hstack([adnumber(1e-10), 1-array(cos(eta[1:]*pi/2))])
+        return hstack([1e-10, 1-array(cos(eta[1:]*pi/2))])
 
     @parse_variables(__doc__, globals())
     def setup(self, wing, state, out=False):
